@@ -8,6 +8,20 @@ import {
   requireAuth,
   signToken
 } from "./auth.js";
+import {
+  assertCharacterAccess,
+  buildCharacterKey,
+  createMonsterCharacter,
+  createNpcCharacter,
+  createPlayerCharacter,
+  deleteCharacterByKey,
+  deletePlayerByUsername,
+  getCharacterBundleByKey,
+  getCharacterByKey,
+  listDirectory,
+  normalizeUsername,
+  saveCharacterBundle
+} from "./characters.js";
 
 function withCors(response, origin) {
   const headers = new Headers(response.headers);
@@ -22,6 +36,14 @@ function withCors(response, origin) {
 
 function errorJson(message, status = 400, origin = "*") {
   return withCors(json({ error: message }, { status }), origin);
+}
+
+function decodePathParam(value) {
+  try {
+    return decodeURIComponent(String(value || ""));
+  } catch {
+    return String(value || "");
+  }
 }
 
 async function listRules(env) {
@@ -120,6 +142,143 @@ export default {
           }),
           origin
         );
+      }
+
+      if (path === "/api/directory" && request.method === "GET") {
+        const session = await requireAuth(request, env);
+        return withCors(json(await listDirectory(env, session)), origin);
+      }
+
+      if (path === "/api/directory/players" && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        if (session.role !== "master") return errorJson("Apenas o mestre pode criar jogadores.", 403, origin);
+
+        const body = await readJson(request);
+        const username = normalizeUsername(body.username);
+        const password = String(body.password || "");
+        const charName = String(body.charname || body.charName || "").trim() || username;
+
+        if (!username || !password) {
+          return errorJson("Usuario e senha sao obrigatorios.", 400, origin);
+        }
+
+        const existingUser = await getUserByUsername(env, username);
+        if (existingUser) {
+          return errorJson("Ja existe um jogador com esse usuario.", 409, origin);
+        }
+
+        const now = new Date().toISOString();
+        const userId = crypto.randomUUID();
+        const passwordHash = await hashPassword(password, String(env.PASSWORD_PEPPER || ""));
+
+        await env.DB.prepare(
+          `
+            insert into users (id, username, password_hash, role, is_active, created_at, updated_at)
+            values (?, ?, ?, 'player', 1, ?, ?)
+          `
+        ).bind(userId, username, passwordHash, now, now).run();
+
+        const player = await createPlayerCharacter(env, userId, username, charName, session.sub);
+
+        return withCors(
+          json(
+            {
+              user: {
+                id: userId,
+                username,
+                role: "player"
+              },
+              player
+            },
+            { status: 201 }
+          ),
+          origin
+        );
+      }
+
+      const playerDeleteMatch = path.match(/^\/api\/directory\/players\/([^/]+)$/);
+      if (playerDeleteMatch && request.method === "DELETE") {
+        const session = await requireAuth(request, env);
+        if (session.role !== "master") return errorJson("Apenas o mestre pode remover jogadores.", 403, origin);
+
+        const username = decodePathParam(playerDeleteMatch[1]);
+        const removed = await deletePlayerByUsername(env, username);
+        if (!removed) return errorJson("Jogador nao encontrado.", 404, origin);
+
+        return withCors(json({ ok: true, username: removed.username }), origin);
+      }
+
+      if (path === "/api/directory/npcs" && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        if (session.role !== "master") return errorJson("Apenas o mestre pode criar NPCs.", 403, origin);
+
+        const body = await readJson(request);
+        const name = String(body.name || "").trim();
+        if (!name) return errorJson("Informe o nome do NPC.", 400, origin);
+
+        const npc = await createNpcCharacter(env, name, session.sub);
+        return withCors(json(npc, { status: 201 }), origin);
+      }
+
+      const npcDeleteMatch = path.match(/^\/api\/directory\/npcs\/([^/]+)$/);
+      if (npcDeleteMatch && request.method === "DELETE") {
+        const session = await requireAuth(request, env);
+        if (session.role !== "master") return errorJson("Apenas o mestre pode remover NPCs.", 403, origin);
+
+        const deleted = await deleteCharacterByKey(env, buildCharacterKey("npc", decodePathParam(npcDeleteMatch[1])), "npc");
+        if (!deleted) return errorJson("NPC nao encontrado.", 404, origin);
+
+        return withCors(json({ ok: true, key: deleted.sheet_key }), origin);
+      }
+
+      if (path === "/api/directory/monsters" && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        if (session.role !== "master") return errorJson("Apenas o mestre pode criar monstros.", 403, origin);
+
+        const body = await readJson(request);
+        const name = String(body.name || "").trim();
+        if (!name) return errorJson("Informe o nome do monstro.", 400, origin);
+
+        const monster = await createMonsterCharacter(env, name, session.sub);
+        return withCors(json(monster, { status: 201 }), origin);
+      }
+
+      const monsterDeleteMatch = path.match(/^\/api\/directory\/monsters\/([^/]+)$/);
+      if (monsterDeleteMatch && request.method === "DELETE") {
+        const session = await requireAuth(request, env);
+        if (session.role !== "master") return errorJson("Apenas o mestre pode remover monstros.", 403, origin);
+
+        const deleted = await deleteCharacterByKey(
+          env,
+          buildCharacterKey("monster", decodePathParam(monsterDeleteMatch[1])),
+          "monster"
+        );
+        if (!deleted) return errorJson("Monstro nao encontrado.", 404, origin);
+
+        return withCors(json({ ok: true, key: deleted.sheet_key }), origin);
+      }
+
+      const characterMatch = path.match(/^\/api\/characters\/([^/]+)$/);
+      if (characterMatch && request.method === "GET") {
+        const session = await requireAuth(request, env);
+        const key = decodePathParam(characterMatch[1]);
+        const character = await getCharacterByKey(env, key);
+        if (!character) return errorJson("Ficha nao encontrada.", 404, origin);
+
+        assertCharacterAccess(session, character, "read");
+        return withCors(json(await getCharacterBundleByKey(env, key)), origin);
+      }
+
+      if (characterMatch && request.method === "PUT") {
+        const session = await requireAuth(request, env);
+        const key = decodePathParam(characterMatch[1]);
+        const character = await getCharacterByKey(env, key);
+        if (!character) return errorJson("Ficha nao encontrada.", 404, origin);
+
+        assertCharacterAccess(session, character, "write");
+        const body = await readJson(request);
+        const saved = await saveCharacterBundle(env, character, body, session);
+        return withCors(json(saved), origin);
       }
 
       if (path === "/api/rules" && request.method === "GET") {

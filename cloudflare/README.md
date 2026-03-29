@@ -14,6 +14,15 @@ Esta base cobre o inicio da API em Workers com:
 - `GET /api/health`
 - `POST /api/auth/login`
 - `GET /api/auth/session`
+- `GET /api/directory`
+- `POST /api/directory/players`
+- `DELETE /api/directory/players/:username`
+- `POST /api/directory/npcs`
+- `DELETE /api/directory/npcs/:id`
+- `POST /api/directory/monsters`
+- `DELETE /api/directory/monsters/:id`
+- `GET /api/characters/:key`
+- `PUT /api/characters/:key`
 - `GET /api/rules`
 - `POST /api/rules`
 - `PUT /api/rules/:id`
@@ -54,4 +63,5 @@ Depois de criar a conta Cloudflare, o proximo passo e:
 2. criar o banco D1
 3. aplicar `d1/schema.sql`
 4. configurar os secrets do Worker
-5. migrar as rotas de diretorio e fichas
+5. migrar transferencias e drops de memoria
+6. ligar o frontend publicado na nova API
