@@ -510,14 +510,14 @@
               <input type="number" id="itemEditorQty" class="form-input" min="0" step="1" placeholder="1" />
             </div>
 
-            <div class="item-editor-field">
-              <label class="form-label" for="itemEditorType">Tipo</label>
-              <select id="itemEditorType" class="form-input">
-                <option value="outro">Outro</option>
-                <option value="arma">Arma</option>
-                <option value="acessorio">Acessorio</option>
-              </select>
-            </div>
+              <div class="item-editor-field">
+                <label class="form-label" for="itemEditorTypeBtn">Tipo</label>
+                <input type="hidden" id="itemEditorType" value="outro" />
+                <button type="button" id="itemEditorTypeBtn" class="item-editor-select" aria-haspopup="dialog">
+                  <span id="itemEditorTypeLabel" class="item-editor-select-copy">Outro</span>
+                  <span class="item-editor-select-icon" aria-hidden="true">v</span>
+                </button>
+              </div>
 
             <div class="item-editor-field item-editor-compact" id="itemEditorDamageWrap" hidden>
               <label class="form-label" for="itemEditorDamage">Dano da arma</label>
@@ -525,17 +525,19 @@
             </div>
           </div>
 
-          <div class="item-editor-roll" id="itemEditorRollBox" hidden>
-            <div class="item-editor-roll-copy">
-              <span class="item-meta">Rolagem rapida</span>
-              <strong id="itemEditorDamageLabel">Dano: 1d10</strong>
+            <div class="item-editor-roll" id="itemEditorRollBox" hidden>
+              <div class="item-editor-roll-copy">
+                <span class="item-meta">Rolagem rapida</span>
+                <strong id="itemEditorDamageLabel">Dano: 1d10</strong>
+              </div>
+              <button type="button" class="btn-inline item-editor-roll-btn" id="itemEditorRollBtn">Rolar dano</button>
             </div>
-            <button type="button" class="btn-inline item-editor-roll-btn" id="itemEditorRollBtn">Rolar dano</button>
-          </div>
 
-          <div class="item-editor-field">
-            <label class="form-label" for="itemEditorDesc">Descricao</label>
-            <textarea
+            <div class="item-transfer item-editor-transfer" id="itemEditorTransfer" hidden></div>
+
+            <div class="item-editor-field">
+              <label class="form-label" for="itemEditorDesc">Descricao</label>
+              <textarea
               id="itemEditorDesc"
               class="notes-input auto-grow item-editor-desc"
               rows="5"

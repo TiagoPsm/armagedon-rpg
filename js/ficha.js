@@ -1241,17 +1241,20 @@ function getItemEditorElements() {
     name: document.getElementById("itemEditorName"),
     qty: document.getElementById("itemEditorQty"),
     type: document.getElementById("itemEditorType"),
+    typeBtn: document.getElementById("itemEditorTypeBtn"),
+    typeLabel: document.getElementById("itemEditorTypeLabel"),
     damageWrap: document.getElementById("itemEditorDamageWrap"),
     damage: document.getElementById("itemEditorDamage"),
     damageLabel: document.getElementById("itemEditorDamageLabel"),
     rollBox: document.getElementById("itemEditorRollBox"),
+    transfer: document.getElementById("itemEditorTransfer"),
     desc: document.getElementById("itemEditorDesc"),
     save: document.getElementById("itemEditorSaveBtn")
   };
 }
 
 function resetItemEditorState() {
-  const { root, name, qty, type, damage, desc } = getItemEditorElements();
+  const { root, name, qty, type, damage, transfer, desc } = getItemEditorElements();
 
   itemEditorIndex = -1;
   itemEditorSnapshot = null;
@@ -1262,7 +1265,20 @@ function resetItemEditorState() {
   if (qty) qty.value = "1";
   if (type) type.value = "outro";
   if (damage) damage.value = "";
+  if (transfer) {
+    transfer.hidden = true;
+    transfer.innerHTML = "";
+  }
   if (desc) desc.value = "";
+  updateItemEditorTypeUI("outro");
+  updateItemEditorDamageUI("outro", "");
+}
+
+function updateItemEditorTypeUI(type = "outro") {
+  const { typeLabel } = getItemEditorElements();
+  if (typeLabel) {
+    typeLabel.textContent = formatItemType(type);
+  }
 }
 
 function updateItemEditorDamageUI(type = "outro", damage = "") {
@@ -1290,12 +1306,49 @@ function syncItemFromEditor() {
   });
 
   inv[itemEditorIndex] = nextItem;
+  updateItemEditorTypeUI(nextItem.type);
   updateItemEditorDamageUI(nextItem.type, nextItem.damage);
+}
+
+async function openItemTypePicker() {
+  if (itemEditorIndex < 0) return;
+
+  const { type, typeBtn, damage } = getItemEditorElements();
+  if (!type) return;
+
+  const currentType = normalizeItemType(type.value);
+  const selectedType = await UI.pickOption({
+    title: "Escolher categoria",
+    kicker: "// Item",
+    message: "Defina o tipo do item para habilitar os campos especificos.",
+    cancelLabel: "Fechar",
+    options: [
+      { value: "outro", label: "Outro", meta: "Item geral", selected: currentType === "outro" },
+      { value: "arma", label: "Arma", meta: "Permite rolagem de dano", selected: currentType === "arma" },
+      { value: "acessorio", label: "Acessorio", meta: "Equipavel ou passivo", selected: currentType === "acessorio" }
+    ]
+  });
+
+  if (!selectedType) {
+    typeBtn?.focus();
+    return;
+  }
+
+  type.value = normalizeItemType(selectedType);
+  if (type.value !== "arma" && damage) {
+    damage.value = "";
+  }
+
+  syncItemFromEditor();
+  typeBtn?.focus();
 }
 
 function initItemEditor() {
   const root = document.getElementById("itemEditorRoot");
   if (!root) return;
+  if (root.parentElement !== document.body) {
+    document.body.appendChild(root);
+  }
 
   const closeEditor = shouldSave => {
     if (shouldSave) {
@@ -1317,6 +1370,9 @@ function initItemEditor() {
   document.getElementById("itemEditorCancelBtn")?.addEventListener("click", () => closeEditor(false));
   document.getElementById("itemEditorSaveBtn")?.addEventListener("click", () => closeEditor(true));
   document.getElementById("itemEditorRollBtn")?.addEventListener("click", () => rollCurrentEditorDamage());
+  document.getElementById("itemEditorTypeBtn")?.addEventListener("click", () => {
+    openItemTypePicker();
+  });
 
   ["itemEditorName", "itemEditorQty", "itemEditorDamage", "itemEditorDesc"].forEach(id => {
     document.getElementById(id)?.addEventListener("input", () => {
@@ -1326,16 +1382,6 @@ function initItemEditor() {
         if (textarea instanceof HTMLTextAreaElement) autoGrowTextarea(textarea);
       }
     });
-  });
-
-  document.getElementById("itemEditorType")?.addEventListener("change", event => {
-    const select = event.target;
-    if (!(select instanceof HTMLSelectElement)) return;
-    if (normalizeItemType(select.value) !== "arma") {
-      const damageInput = document.getElementById("itemEditorDamage");
-      if (damageInput) damageInput.value = "";
-    }
-    syncItemFromEditor();
   });
 
   document.addEventListener("keydown", event => {
@@ -1362,7 +1408,9 @@ function openItemEditor(index, { isNew = false } = {}) {
   damage.value = item.damage;
   desc.value = item.desc;
   autoGrowTextarea(desc);
+  updateItemEditorTypeUI(item.type);
   updateItemEditorDamageUI(item.type, item.damage);
+  renderItemEditorTransfer(index);
 
   root.hidden = false;
   window.requestAnimationFrame(() => {
@@ -2175,6 +2223,20 @@ function renderItemTransferBlock(index, targets) {
   `;
 }
 
+function renderItemEditorTransfer(index) {
+  const { transfer } = getItemEditorElements();
+  if (!transfer) return;
+
+  if (currentSheetTarget?.kind !== "player" || !inv[index]) {
+    transfer.hidden = true;
+    transfer.innerHTML = "";
+    return;
+  }
+
+  transfer.hidden = false;
+  transfer.innerHTML = renderItemTransferBlock(index, getItemTransferTargets());
+}
+
 async function pickItemTransferTarget(index) {
   const targets = getItemTransferTargets().filter(target => !target.isFull);
   if (!targets.length) return;
@@ -2205,6 +2267,11 @@ async function pickItemTransferTarget(index) {
     text: "Destino definido. Clique em Enviar para concluir a transferencia."
   };
 
+  if (itemEditorIndex === index) {
+    renderItemEditorTransfer(index);
+    return;
+  }
+
   renderInv(inv);
 }
 
@@ -2225,7 +2292,11 @@ async function transferItem(index) {
       tone: "fail",
       text: "Nenhum jogador com slot livre esta disponivel para receber este item."
     };
-    renderInv(inv);
+    if (itemEditorIndex === index) {
+      renderItemEditorTransfer(index);
+    } else {
+      renderInv(inv);
+    }
     return;
   }
 
@@ -2236,7 +2307,11 @@ async function transferItem(index) {
       tone: "fail",
       text: `${target.label} esta com a mochila cheia.`
     };
-    renderInv(inv);
+    if (itemEditorIndex === index) {
+      renderItemEditorTransfer(index);
+    } else {
+      renderInv(inv);
+    }
     return;
   }
 
@@ -2266,7 +2341,11 @@ async function transferItem(index) {
         tone: "fail",
         text: error?.message || "Falha ao transferir o item."
       };
-      renderInv(inv);
+      if (itemEditorIndex === index) {
+        renderItemEditorTransfer(index);
+      } else {
+        renderInv(inv);
+      }
       return;
     }
   } else {
@@ -2283,7 +2362,11 @@ async function transferItem(index) {
         tone: "fail",
         text: `${target.label} ficou sem slot livre para receber este item.`
       };
-      renderInv(inv);
+      if (itemEditorIndex === index) {
+        renderItemEditorTransfer(index);
+      } else {
+        renderInv(inv);
+      }
       return;
     }
 
@@ -2295,6 +2378,7 @@ async function transferItem(index) {
   itemTransferStates = {};
   inv.splice(index, 1);
   renderInv(inv);
+  resetItemEditorState();
   saveSheetSilently();
 }
 
@@ -2313,8 +2397,6 @@ function renderInv(list) {
   );
   const used = Math.min(inv.length, capacity);
   const canExpand = currentRole === "master" && currentSheetTarget?.kind === "player";
-  const canTransferItems = currentSheetTarget?.kind === "player";
-  const transferTargets = canTransferItems ? getItemTransferTargets() : [];
 
   inventorySlots = capacity;
 
@@ -2345,12 +2427,13 @@ function renderInv(list) {
 
     const itemType = normalizeItemType(item.type);
     const rollState = itemRollStates[index];
-    const rollStateClass =
-      rollState?.tone === "success"
-        ? "item-summary-line is-weapon"
-        : rollState?.tone === "fail"
-          ? "item-summary-line is-muted"
-          : "item-summary-line is-muted";
+    const primaryMeta = itemType === "arma" && item.damage
+      ? `Dano: ${item.damage}`
+      : `Quantidade: ${item.qty}`;
+    const secondaryMeta = itemType === "arma"
+      ? `Quantidade: ${item.qty}`
+      : rollState?.text || "Clique para abrir os detalhes";
+    const secondaryClass = secondaryMeta === "Clique para abrir os detalhes" ? "item-summary-line is-muted" : "item-summary-line";
 
     return `
       <article class="item-card inv-row" data-index="${index}">
@@ -2363,37 +2446,10 @@ function renderInv(list) {
           <div class="item-summary-main">
             <span class="${getItemTypeBadgeClass(itemType)}">${esc(formatItemType(itemType))}</span>
             <h3 class="item-title">${esc(item.name || "Item sem nome")}</h3>
-            <span class="item-summary-line">Quantidade: ${esc(item.qty)}</span>
-            ${
-              itemType === "arma" && item.damage
-                ? `<span class="item-summary-line is-weapon">Dano: ${esc(item.damage)}</span>`
-                : ""
-            }
-            <span class="item-summary-line ${item.desc ? "" : "is-muted"}">
-              ${esc(item.desc || "Clique para editar descricao e detalhes do item.")}
-            </span>
-            ${
-              rollState?.text
-                ? `<span class="${rollStateClass}">${esc(rollState.text)}</span>`
-                : ""
-            }
+            <span class="item-summary-line ${itemType === "arma" && item.damage ? "is-weapon" : ""}">${esc(primaryMeta)}</span>
+            <span class="${secondaryClass}">${esc(secondaryMeta)}</span>
           </div>
         </button>
-
-        <div class="item-card-actions">
-          <button class="btn-inline item-action-btn" onclick="openItemEditor(${index})">Editar</button>
-          ${
-            itemType === "arma"
-              ? `<button class="btn-inline item-action-btn" onclick="rollItemDamage(${index})">Rolar ${esc(item.damage || "dano")}</button>`
-              : ""
-          }
-        </div>
-
-        ${
-          canTransferItems
-            ? renderItemTransferBlock(index, transferTargets)
-            : ""
-        }
       </article>
     `;
   }).join("");
