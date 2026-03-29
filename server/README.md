@@ -90,6 +90,8 @@ Este diretorio ja inclui:
 - `Procfile`
 - `package-lock.json`
 
+Na raiz do repositorio tambem existe um `render.yaml` pronto para deploy no Render.
+
 Entao voce pode publicar o backend em um host Node ou Docker apontando a raiz para `server/`.
 
 ### Variaveis minimas de producao

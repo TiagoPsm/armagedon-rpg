@@ -3,10 +3,10 @@
 Este roteiro usa:
 
 - frontend: GitHub Pages
-- backend Node.js: Koyeb
+- backend Node.js: Render
 - banco PostgreSQL: Neon
 
-Essa combinacao exige pouco retrabalho no projeto atual.
+Essa combinacao exige pouco retrabalho no projeto atual e evita o fluxo do Koyeb que hoje pede verificacao de cartao.
 
 ## 1. Subir o repositorio para o GitHub
 
@@ -22,12 +22,12 @@ Se a branch principal tiver outro nome, ajuste `.github/workflows/pages.yml`.
 2. Crie um projeto novo.
 3. Abra o modal `Connect`.
 4. Copie a `connection string`.
-5. Troque o final para apontar para o banco `armagedon`, se necessario.
+5. Guarde a `connection string` direta e a `connection string` com pooling.
 
 Exemplo esperado:
 
 ```text
-postgresql://usuario:senha@host/armagedon?sslmode=require
+postgresql://usuario:senha@host/neondb?sslmode=require
 ```
 
 Observacao:
@@ -37,40 +37,29 @@ Observacao:
 
 ## 3. Criar as tabelas no banco publicado
 
-No seu computador, rode o schema do projeto usando a URL do Neon:
+No seu computador, rode o schema do projeto usando a URL direta do Neon:
 
 ```powershell
-$env:PGPASSWORD="SUA_SENHA_DO_NEON"
-& "C:\Program Files\PostgreSQL\17\bin\psql.exe" "postgresql://USUARIO:SENHA@HOST/armagedon?sslmode=require" -f ".\server\sql\schema.sql"
+& "C:\Program Files\PostgreSQL\17\bin\psql.exe" "postgresql://USUARIO:SENHA@HOST/neondb?sslmode=require" -f ".\server\sql\schema.sql"
 ```
 
 Se preferir, substitua a string inteira direto no comando e nao use `PGPASSWORD`.
 
-## 4. Publicar o backend no Koyeb
+## 4. Publicar o backend no Render
 
-1. Crie uma conta no Koyeb.
-2. Clique para criar um novo app a partir do GitHub.
-3. Escolha este repositorio.
-4. Defina a raiz do servico como:
-
-```text
-server
-```
-
-5. Selecione deploy por Node.js ou por Dockerfile.
-6. Defina estas variaveis:
+1. Crie uma conta no Render.
+2. Clique em `New +`.
+3. Escolha `Blueprint`.
+4. Conecte o seu GitHub ao Render.
+5. Escolha este repositorio.
+6. O Render deve detectar automaticamente o arquivo `render.yaml`.
+7. Preencha os segredos pedidos pelo Blueprint:
 
 ```text
-PORT=4000
-DATABASE_URL=postgresql://USUARIO:SENHA@HOST/armagedon?sslmode=require
-DATABASE_SSL=true
+DATABASE_URL=postgresql://USUARIO:SENHA@HOST/neondb?sslmode=require
 JWT_SECRET=UMA_CHAVE_BEM_GRANDE_E_UNICA
-CORS_ORIGIN=https://SEU-USUARIO.github.io
-MASTER_BOOTSTRAP_USERNAME=mestre
+CORS_ORIGIN=https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO
 MASTER_BOOTSTRAP_PASSWORD=SUA_NOVA_SENHA_DO_MESTRE
-PASSWORD_SALT_BYTES=16
-PASSWORD_KEYLEN=64
-PASSWORD_SCRYPT_COST=16384
 ```
 
 Se voce for usar dominio proprio no frontend depois, inclua tambem:
@@ -80,6 +69,12 @@ https://www.seudominio.com
 ```
 
 em `CORS_ORIGIN`, separado por virgula.
+
+Observacoes:
+
+- o `render.yaml` ja fixa o plano `free`
+- o backend deve usar a string com pooling do Neon
+- o Render Free pode dormir depois de 15 minutos sem trafego
 
 ## 5. Apontar o frontend para a API publicada
 
@@ -92,7 +87,7 @@ apiBaseUrl: "http://localhost:4000/api"
 por:
 
 ```js
-apiBaseUrl: "https://SEU-BACKEND.koyeb.app/api"
+apiBaseUrl: "https://SEU-BACKEND.onrender.com/api"
 ```
 
 Depois envie esse ajuste ao GitHub.
@@ -111,7 +106,7 @@ https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO/
 
 ## 7. Ajustar o CORS do backend
 
-Quando o GitHub Pages te entregar a URL final, volte no Koyeb e ajuste `CORS_ORIGIN` com a URL real do site.
+Quando o GitHub Pages te entregar a URL final, volte no Render e ajuste `CORS_ORIGIN` com a URL real do site.
 
 Se voce usar:
 
@@ -121,7 +116,17 @@ https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO
 
 entao essa URL precisa estar autorizada no backend.
 
-## 8. Teste final
+## 8. Limites do Render Free
+
+Segundo a documentacao oficial atual do Render:
+
+- web services free entram em spin down apos 15 minutos sem trafego
+- o primeiro acesso depois disso pode levar ate cerca de 1 minuto
+- mensagens WebSocket tambem contam como atividade
+
+Isso serve para hobby e teste, mas nao e o ideal para uso com exigencia de resposta imediata o tempo todo.
+
+## 9. Teste final
 
 Teste em producao:
 
@@ -134,7 +139,7 @@ Teste em producao:
 7. troca de item
 8. atualizacao entre duas abas
 
-## 9. Seguranca minima
+## 10. Seguranca minima
 
 Antes de usar com outras pessoas:
 

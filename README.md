@@ -93,11 +93,20 @@ Detalhes completos estao em `server/README.md`.
 
 ## Publicacao gratuita recomendada
 
-Com a arquitetura atual, o caminho mais simples sem reescrever o sistema e:
+Se o objetivo for publicar rapido com poucas mudancas, o caminho mais simples continua sendo:
 
 - frontend estatico no GitHub Pages
-- backend Node.js em um host gratuito compativel com Docker ou Node
-- banco PostgreSQL em um provedor serverless
+- backend Node.js no Render
+- banco PostgreSQL no Neon
+
+Se o objetivo for a melhor base gratuita possivel no medio prazo, a migracao recomendada agora passa a ser:
+
+- frontend: Cloudflare Pages
+- API: Cloudflare Workers
+- banco: Cloudflare D1
+- realtime: Durable Objects
+
+A base inicial dessa migracao esta em `cloudflare/`.
 
 ### Antes de publicar
 
@@ -132,12 +141,16 @@ Se sua branch principal nao se chama `main`, ajuste isso em `.github/workflows/p
 
 ### Backend
 
-O backend agora tambem esta pronto para deploy em plataformas que aceitam:
+O backend agora esta pronto para o Render com:
+
+- `render.yaml`
+
+Tambem continua compativel com hosts Node/Docker usando:
 
 - `server/Procfile`
 - `server/Dockerfile`
 
-Na maioria dos hosts, basta apontar o diretorio `server/` como raiz do servico e definir:
+No Render, basta conectar o repositorio e preencher os segredos do Blueprint. Em outros hosts, a configuracao minima continua sendo:
 
 - `PORT`
 - `DATABASE_URL`

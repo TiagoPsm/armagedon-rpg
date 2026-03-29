@@ -3,19 +3,15 @@ const DEFAULT_INVENTORY_SLOTS = 20;
 
 function sanitizeChance(value, fallback = "0") {
   if (value === "" || value === null || value === undefined) return fallback;
-
   const numeric = Number.parseFloat(String(value).replace(",", "."));
   if (Number.isNaN(numeric)) return fallback;
-
   return String(Math.max(0, Math.min(100, numeric)));
 }
 
 function sanitizeAttrValue(attr, value, fallback) {
   if (value === "" || value === null || value === undefined) return fallback;
-
   const numeric = Number.parseInt(value, 10);
   if (Number.isNaN(numeric)) return fallback;
-
   const min = attr === "Alma" ? 10 : 1;
   return String(Math.max(min, Math.min(30, numeric)));
 }
@@ -126,7 +122,7 @@ function buildDefaultSheet(kind, charName) {
   );
 }
 
-module.exports = {
+export {
   ATTRIBUTES,
   DEFAULT_INVENTORY_SLOTS,
   buildDefaultSheet,

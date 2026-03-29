@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: armagedon-api
+    runtime: node
+    plan: free
+    region: virginia
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 24.14.1
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL
+        value: "true"
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: MASTER_BOOTSTRAP_USERNAME
+        value: mestre
+      - key: MASTER_BOOTSTRAP_PASSWORD
+        sync: false
+      - key: PASSWORD_SALT_BYTES
+        value: "16"
+      - key: PASSWORD_KEYLEN
+        value: "64"
+      - key: PASSWORD_SCRYPT_COST
+        value: "16384"

@@ -1,0 +1,12 @@
+name = "armagedon-api"
+main = "src/index.js"
+compatibility_date = "2026-03-29"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "armagedon"
+database_id = "SUBSTITUIR_PELO_DATABASE_ID"
+
+[vars]
+MASTER_BOOTSTRAP_USERNAME = "mestre"
+

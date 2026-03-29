@@ -767,8 +767,7 @@ function normalizeItem(item) {
   return {
     name: item?.name || "",
     qty: item?.qty || 1,
-    desc: item?.desc || "",
-    image: item?.image || ""
+    desc: item?.desc || ""
   };
 }
 
@@ -2042,13 +2041,9 @@ function renderInv(list) {
 
     return `
       <article class="item-card inv-row" data-index="${index}">
-        <span class="item-slot-index">Slot ${index + 1}</span>
-        <div class="item-image">
-          ${
-            item.image
-              ? `<img src="${esc(item.image)}" alt="${esc(item.name || "Item")}" />`
-              : "<span>Sem imagem</span>"
-          }
+        <div class="item-card-head">
+          <span class="item-slot-index">Slot ${index + 1}</span>
+          <button class="btn-remove" onclick="removeItem(${index})">x</button>
         </div>
 
         <div class="item-fields">
@@ -2092,14 +2087,6 @@ function renderInv(list) {
               : ""
           }
         </div>
-
-        <div class="item-actions">
-          <label class="item-upload">
-            Imagem
-            <input type="file" accept="image/*" onchange="handleItemImage(${index}, event)" style="display:none" />
-          </label>
-          <button class="btn-remove" onclick="removeItem(${index})">x</button>
-        </div>
       </article>
     `;
   }).join("");
@@ -2110,20 +2097,6 @@ function renderInv(list) {
 function updateItem(index, field, value) {
   if (!inv[index]) return;
   inv[index][field] = field === "qty" ? String(Math.max(0, parseInt(value || "0", 10) || 0)) : value;
-}
-
-function handleItemImage(index, event) {
-  const file = event.target.files?.[0];
-  if (!file || !inv[index]) return;
-
-  const reader = new FileReader();
-  reader.onload = loadEvent => {
-    inv[index].image = loadEvent.target?.result || "";
-    renderInv(inv);
-    saveSheetSilently();
-  };
-
-  reader.readAsDataURL(file);
 }
 
 async function addItem() {
@@ -2140,7 +2113,7 @@ async function addItem() {
     return;
   }
 
-  inv.push({ name: "", qty: 1, desc: "", image: "" });
+  inv.push({ name: "", qty: 1, desc: "" });
   renderInv(inv);
   document.querySelectorAll(".inv-name")[inv.length - 1]?.focus();
   saveSheetSilently();
@@ -2155,12 +2128,10 @@ function removeItem(index) {
 
 function collectInv() {
   return Array.from(document.querySelectorAll(".inv-row")).map(row => {
-    const imageEl = row.querySelector(".item-image img");
     return {
       name: row.querySelector(".inv-name")?.value || "",
       qty: row.querySelector(".inv-qty")?.value || 1,
-      desc: row.querySelector(".inv-desc")?.value || "",
-      image: imageEl?.getAttribute("src") || ""
+      desc: row.querySelector(".inv-desc")?.value || ""
     };
   });
 }
