@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Armagedon | Regras</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/regras.css" />
+  <link rel="stylesheet" href="css/ui.css" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap"
+    rel="stylesheet"
+  />
+</head>
+<body>
+  <div class="bg-fixed bg-noise"></div>
+  <div class="bg-fixed bg-vignette"></div>
+  <div class="bg-fixed bg-blackfire"></div>
+  <div class="bg-fixed bg-cinders"></div>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-mark" aria-hidden="true">
+          <img src="Logo%20app.jpg" alt="" class="site-logo-img" />
+        </span>
+        <span class="logo-copy">
+          <strong>Armagedon</strong>
+          <small id="rulesHeaderRole">Arquivo de regras</small>
+        </span>
+      </div>
+
+      <nav class="main-nav" aria-label="Navegacao principal">
+        <a href="index.html" class="nav-link">Inicio</a>
+        <a href="ficha.html" class="nav-link">Fichas</a>
+        <a href="regras.html" class="nav-link active">Regras</a>
+      </nav>
+
+      <div class="header-right">
+        <span class="header-user" id="rulesUser">Convidado</span>
+        <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sair</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <section class="rules-hero">
+      <div class="page-heading">
+        <span class="section-label">// Arquivo da campanha</span>
+        <h1 class="page-title">Regras do RPG</h1>
+        <p class="page-copy" id="rulesIntro">
+          O mestre organiza aqui as regras, ajustes e esclarecimentos oficiais da campanha.
+        </p>
+      </div>
+
+      <div class="rules-status-grid">
+        <article class="rules-status-card">
+          <span>Postagens</span>
+          <strong id="ruleCount">0</strong>
+        </article>
+        <article class="rules-status-card">
+          <span>Seu acesso</span>
+          <strong id="rulesRoleLabel">Jogador</strong>
+        </article>
+        <article class="rules-status-card">
+          <span>Ultima atualizacao</span>
+          <strong id="lastRuleUpdate">Nenhuma</strong>
+        </article>
+      </div>
+    </section>
+
+    <section class="rules-block" id="rulesEditor" hidden>
+      <div class="rules-block-head">
+        <div>
+          <span class="section-label">// Painel do mestre</span>
+          <h2 class="rules-block-title" id="ruleFormTitle">Nova postagem</h2>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="cancelEditBtn" onclick="resetRuleForm()" hidden>Cancelar edicao</button>
+      </div>
+
+      <div class="rules-form-grid">
+        <div class="form-group">
+          <label class="form-label" for="ruleTitle">Titulo</label>
+          <input type="text" id="ruleTitle" class="form-input" placeholder="Ex: Regra de memoria e drops" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ruleTag">Categoria</label>
+          <input type="text" id="ruleTag" class="form-input" placeholder="Ex: Combate, Sistema, Progressao..." />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="ruleContent">Conteudo</label>
+        <textarea
+          id="ruleContent"
+          class="rules-textarea auto-grow"
+          rows="8"
+          placeholder="Escreva aqui a regra completa, excecoes, exemplos e observacoes..."
+        ></textarea>
+      </div>
+
+      <p class="form-error" id="ruleFormError"></p>
+      <p class="rules-form-status" id="ruleFormStatus"></p>
+
+      <div class="rules-editor-actions">
+        <button class="btn btn-primary" id="saveRuleBtn" onclick="saveRule()">Publicar regra</button>
+      </div>
+    </section>
+
+    <section class="rules-block rules-notice" id="playerNotice" hidden>
+      <span class="section-label">// Leitura</span>
+      <h2 class="rules-block-title">Consulta para jogadores</h2>
+      <p class="rules-notice-copy">
+        Apenas o mestre pode criar, editar ou apagar postagens. Os jogadores veem aqui a versao mais recente das regras da campanha.
+      </p>
+    </section>
+
+    <section class="rules-block">
+      <div class="rules-block-head">
+        <div>
+          <span class="section-label">// Postagens oficiais</span>
+          <h2 class="rules-block-title">Grimorio de regras</h2>
+        </div>
+        <span class="rules-updated" id="rulesUpdatedText">Nenhuma regra publicada.</span>
+      </div>
+
+      <div id="rulesList" class="rules-list">
+        <p class="empty-msg">Nenhuma regra publicada.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/ui.js"></script>
+  <script src="js/runtime-config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/regras.js"></script>
+</body>
+</html>

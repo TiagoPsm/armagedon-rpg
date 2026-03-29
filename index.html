@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Armagedon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="css/index.css" />
+  <link rel="stylesheet" href="css/ui.css" />
+</head>
+<body>
+  <div class="bg-layer bg-noise"></div>
+  <div class="bg-layer bg-vignette"></div>
+  <div class="bg-layer bg-scar"></div>
+
+  <section id="loginScreen" class="screen active">
+    <div class="shell login-shell">
+      <div class="intro-copy">
+        <p class="eyebrow">Portal da campanha</p>
+        <h1 class="title-display">
+          Armagedon
+          <span>acesso simples para mestre e jogadores</span>
+        </h1>
+        <p class="lead">
+          Entre com seu usuario para abrir sua area da campanha.
+        </p>
+      </div>
+
+      <aside class="login-card">
+        <p class="eyebrow">Entrar</p>
+        <h2>Acessar conta</h2>
+
+        <div class="form-group">
+          <label class="form-label" for="loginUser">Usuario</label>
+          <input
+            type="text"
+            id="loginUser"
+            class="form-input"
+            placeholder="Digite seu usuario"
+            autocomplete="username"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="loginPass">Senha</label>
+          <div class="password-wrap">
+            <input
+              type="password"
+              id="loginPass"
+              class="form-input"
+              placeholder="Digite sua senha"
+              autocomplete="current-password"
+            />
+            <button
+              type="button"
+              class="eye-btn"
+              onclick="togglePassword()"
+              aria-label="Mostrar ou ocultar senha"
+            >
+              <span id="eyeOpen">Abrir</span>
+              <span id="eyeClosed" style="display: none">Fechar</span>
+            </button>
+          </div>
+        </div>
+
+        <p class="login-error" id="loginError"></p>
+
+        <button type="button" class="btn btn-primary btn-full" onclick="handleLogin()">
+          Entrar
+        </button>
+      </aside>
+    </div>
+  </section>
+
+  <div id="homeScreen" class="screen">
+    <header class="site-header">
+      <div class="shell header-shell">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <img src="Logo%20app.jpg" alt="" class="site-logo-img" />
+          </span>
+          <span class="brand-copy">
+            <strong>Armagedon</strong>
+            <small id="headerRole">Portal</small>
+          </span>
+        </div>
+
+        <nav class="main-nav" aria-label="Navegacao principal">
+          <a href="index.html" class="nav-link active">Inicio</a>
+          <a href="ficha.html" class="nav-link">Fichas</a>
+          <a href="regras.html" class="nav-link">Regras</a>
+        </nav>
+
+        <div class="header-actions">
+          <span class="header-user" id="headerUser">Convidado</span>
+          <button type="button" class="btn btn-ghost btn-small" onclick="handleLogout()">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="shell dashboard-shell">
+      <section class="dashboard-card">
+        <p class="eyebrow">Sessao ativa</p>
+        <h2 class="dashboard-title">Bem-vindo, <span id="heroUser">Convidado</span></h2>
+        <p class="dashboard-copy" id="dashboardCopy">
+          Sua sessao e seus dados ficam salvos no navegador deste dispositivo.
+        </p>
+
+        <div class="status-grid">
+          <article class="status-card">
+            <span>Jogadores</span>
+            <strong id="playerCount">0</strong>
+          </article>
+          <article class="status-card">
+            <span>Seu acesso</span>
+            <strong id="roleLabel">Jogador</strong>
+          </article>
+        </div>
+
+        <div class="hero-actions">
+          <a href="ficha.html" class="btn btn-primary">Abrir fichas</a>
+          <a href="regras.html" class="btn btn-ghost">Ver regras</a>
+          <button type="button" class="btn btn-ghost" onclick="handleLogout()">Sair</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/ui.js"></script>
+  <script src="js/runtime-config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

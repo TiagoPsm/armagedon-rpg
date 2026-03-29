@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Armagedon | Fichas</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/ficha.css" />
+  <link rel="stylesheet" href="css/ui.css" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap"
+    rel="stylesheet"
+  />
+</head>
+<body>
+  <div class="bg-fixed bg-noise"></div>
+  <div class="bg-fixed bg-vignette"></div>
+  <div class="bg-fixed bg-blackfire"></div>
+  <div class="bg-fixed bg-cinders"></div>
+
+  <div id="masterScreen" class="screen">
+    <header class="site-header">
+      <div class="header-inner">
+        <div class="logo">
+          <span class="logo-mark" aria-hidden="true">
+            <img src="Logo%20app.jpg" alt="" class="site-logo-img" />
+          </span>
+          <span class="logo-copy">
+            <strong>Armagedon</strong>
+            <small>Painel de fichas</small>
+          </span>
+        </div>
+
+        <nav class="main-nav" aria-label="Navegacao principal">
+          <a href="index.html" class="nav-link">Inicio</a>
+          <a href="ficha.html" class="nav-link active">Fichas</a>
+          <a href="regras.html" class="nav-link">Regras</a>
+        </nav>
+
+        <div class="header-right">
+          <span class="header-user">Mestre</span>
+          <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-main">
+      <div class="page-heading">
+        <span class="section-label">// Painel do mestre</span>
+        <h1 class="page-title">Jogadores, NPCs e fichas</h1>
+      </div>
+
+      <div class="panel-group-heading">
+        <span class="section-label">// Controle de jogadores</span>
+        <h2 class="panel-group-title">Jogadores e acessos</h2>
+      </div>
+
+      <section class="panel-block">
+        <h2 class="panel-block-title">Adicionar jogador</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="newUser">Usuario</label>
+            <input
+              type="text"
+              id="newUser"
+              class="form-input"
+              placeholder="Nome de login..."
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="newPass">Senha</label>
+            <input
+              type="password"
+              id="newPass"
+              class="form-input"
+              placeholder="Senha..."
+              autocomplete="new-password"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="newChar">Nome do personagem</label>
+            <input
+              type="text"
+              id="newChar"
+              class="form-input"
+              placeholder="Nome do personagem..."
+              autocomplete="off"
+              autocapitalize="words"
+            />
+          </div>
+        </div>
+
+        <p class="form-error" id="addError"></p>
+        <button class="btn btn-primary" onclick="addPlayer()">Adicionar jogador</button>
+      </section>
+
+      <section class="panel-block">
+        <h2 class="panel-block-title">Jogadores ativos</h2>
+        <div id="playersList"></div>
+      </section>
+
+      <section class="panel-block">
+        <h2 class="panel-block-title">Acessar ficha</h2>
+        <p class="panel-block-sub">Cada jogador acessa apenas a propria ficha pelo login. O mestre pode abrir qualquer uma.</p>
+        <div id="playersBtns" class="players-btns"></div>
+      </section>
+
+      <div class="panel-group-heading panel-group-heading-spaced">
+        <span class="section-label">// Gerenciamento de NPCs e monstros</span>
+        <h2 class="panel-group-title">NPCs, inimigos e futuras criaturas</h2>
+      </div>
+
+      <section class="panel-block">
+        <h2 class="panel-block-title">NPCs do mestre</h2>
+        <p class="panel-block-sub">Crie, abra e apague NPCs usando a mesma ficha dos jogadores.</p>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="newNpcName">Nome do NPC</label>
+            <input
+              type="text"
+              id="newNpcName"
+              class="form-input"
+              placeholder="Nome do NPC..."
+              autocomplete="off"
+              autocapitalize="words"
+              spellcheck="false"
+            />
+          </div>
+        </div>
+
+        <p class="form-error" id="npcError"></p>
+        <button class="btn btn-primary" onclick="addNpc()">Criar NPC</button>
+
+        <div class="panel-block-sep"></div>
+        <div id="npcList"></div>
+      </section>
+
+      <section class="panel-block">
+        <h2 class="panel-block-title">Monstros do mestre</h2>
+        <p class="panel-block-sub">Crie e gerencie monstros com uma ficha propria: sem sanidade, sem inventario e com area de drop de memoria.</p>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="newMonsterName">Nome do monstro</label>
+            <input
+              type="text"
+              id="newMonsterName"
+              class="form-input"
+              placeholder="Nome do monstro..."
+              autocomplete="off"
+              autocapitalize="words"
+              spellcheck="false"
+            />
+          </div>
+        </div>
+
+        <p class="form-error" id="monsterError"></p>
+        <button class="btn btn-primary" onclick="addMonster()">Criar monstro</button>
+
+        <div class="panel-block-sep"></div>
+        <div id="monsterList"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="sheetScreen" class="screen">
+    <header class="site-header">
+      <div class="header-inner">
+        <div class="logo">
+          <span class="logo-mark" aria-hidden="true">
+            <img src="Logo%20app.jpg" alt="" class="site-logo-img" />
+          </span>
+          <span class="logo-copy">
+            <strong>Armagedon</strong>
+            <small id="sheetKindLabel">Ficha do personagem</small>
+          </span>
+        </div>
+
+        <nav class="main-nav" aria-label="Navegacao principal">
+          <a href="index.html" class="nav-link">Inicio</a>
+          <a href="ficha.html" class="nav-link active">Fichas</a>
+          <a href="regras.html" class="nav-link">Regras</a>
+        </nav>
+
+        <div class="header-right">
+          <span class="header-user" id="sheetUser"></span>
+          <button
+            class="btn btn-ghost btn-sm"
+            id="btnBackMaster"
+            onclick="backToMaster()"
+            style="display:none"
+          >
+            Voltar ao mestre
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-main">
+      <section class="sheet-block identity-block">
+        <div class="identity-main">
+          <div class="avatar-col">
+            <div class="avatar-frame">
+              <img id="avatarImg" src="" alt="Avatar do personagem" style="display:none" />
+              <span id="avatarPlaceholder">AR</span>
+            </div>
+
+            <label class="btn btn-ghost btn-sm avatar-btn">
+              Alterar imagem
+              <input
+                type="file"
+                id="avatarFile"
+                accept="image/*"
+                onchange="handleAvatar(event)"
+                style="display:none"
+              />
+            </label>
+          </div>
+
+          <div class="identity-fields">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="charName">Nome do personagem</label>
+                <input type="text" id="charName" class="form-input" placeholder="Nome..." />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="charClass">Classe ou arquetipo</label>
+                <input
+                  type="text"
+                  id="charClass"
+                  class="form-input"
+                  placeholder="Ex: Cacador das Sombras..."
+                />
+              </div>
+
+              <div class="form-group compact-field">
+                <label class="form-label" for="charLevel">Nivel</label>
+                <input
+                  type="number"
+                  id="charLevel"
+                  class="form-input"
+                  min="1"
+                  max="99"
+                  placeholder="1"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" id="charRaceGroup">
+                <label class="form-label" for="charRace">Raca ou origem</label>
+                <input
+                  type="text"
+                  id="charRace"
+                  class="form-input"
+                  placeholder="Ex: Humano desperto..."
+                />
+              </div>
+
+              <div class="form-group" id="charFactionGroup">
+                <label class="form-label" for="charFaction">Faccao</label>
+                <input
+                  type="text"
+                  id="charFaction"
+                  class="form-input"
+                  placeholder="Ex: Sem faccao..."
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="identity-side">
+          <div class="identity-note">
+            <span class="resource-sublabel">Salvamento</span>
+            <strong>Automatico</strong>
+            <p id="sheetSaveText">Toda alteracao da ficha fica salva para o usuario correto.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="sheet-grid">
+        <section class="sheet-block">
+          <div class="block-title-bar">
+            <span class="section-label" style="margin:0">// Recursos</span>
+          </div>
+
+          <div class="resources-row">
+            <div class="resource-card" id="vidaCard">
+              <div class="resource-name">Vida</div>
+
+              <div class="resource-inputs">
+                <div class="resource-field">
+                  <span class="resource-sublabel">Atual</span>
+                  <input
+                    type="number"
+                    id="vidaAtual"
+                    class="resource-input"
+                    min="0"
+                    placeholder="0"
+                    oninput="updateBar('vida')"
+                  />
+                </div>
+
+                <div class="resource-sep">/</div>
+
+                <div class="resource-field">
+                  <span class="resource-sublabel">Max</span>
+                  <input
+                    type="number"
+                    id="vidaMax"
+                    class="resource-input"
+                    min="0"
+                    placeholder="0"
+                    oninput="updateBar('vida')"
+                  />
+                </div>
+              </div>
+
+              <div class="bar-track"><div class="bar-fill bar-vida" id="barVida"></div></div>
+            </div>
+
+            <div class="resource-card" id="sanityCard">
+              <div class="resource-name">Sanidade</div>
+
+              <div class="resource-inputs">
+                <div class="resource-field">
+                  <span class="resource-sublabel">Atual</span>
+                  <input
+                    type="number"
+                    id="integAtual"
+                    class="resource-input"
+                    min="0"
+                    placeholder="0"
+                    oninput="updateBar('integ')"
+                  />
+                </div>
+
+                <div class="resource-sep">/</div>
+
+                <div class="resource-field">
+                  <span class="resource-sublabel">Max</span>
+                  <input
+                    type="number"
+                    id="integMax"
+                    class="resource-input"
+                    min="0"
+                    placeholder="0"
+                    oninput="updateBar('integ')"
+                  />
+                </div>
+              </div>
+
+              <div class="bar-track"><div class="bar-fill bar-integ" id="barInteg"></div></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="sheet-block">
+          <div class="block-title-bar">
+            <span class="section-label" style="margin:0">// Atributos</span>
+            <span class="block-hint">A cada 3 pontos, o modificador aumenta em 1</span>
+          </div>
+
+          <div class="attrs-shell">
+            <div class="attrs-grid">
+              <div class="attr-card">
+                <div class="attr-label">Forca</div>
+                <input type="number" id="attrForca" class="attr-input" min="1" max="30" placeholder="-" oninput="calcMod('Forca')" />
+                <div class="attr-mod-box">
+                  <div class="attr-mod-label">Mod</div>
+                  <div class="attr-mod" id="modForca">-</div>
+                </div>
+              </div>
+
+              <div class="attr-card">
+                <div class="attr-label">Agilidade</div>
+                <input type="number" id="attrAgilidade" class="attr-input" min="1" max="30" placeholder="-" oninput="calcMod('Agilidade')" />
+                <div class="attr-mod-box">
+                  <div class="attr-mod-label">Mod</div>
+                  <div class="attr-mod" id="modAgilidade">-</div>
+                </div>
+              </div>
+
+              <div class="attr-card">
+                <div class="attr-label">Inteligencia</div>
+                <input type="number" id="attrInteligencia" class="attr-input" min="1" max="30" placeholder="-" oninput="calcMod('Inteligencia')" />
+                <div class="attr-mod-box">
+                  <div class="attr-mod-label">Mod</div>
+                  <div class="attr-mod" id="modInteligencia">-</div>
+                </div>
+              </div>
+
+              <div class="attr-card">
+                <div class="attr-label">Resistencia</div>
+                <input type="number" id="attrResistencia" class="attr-input" min="1" max="30" placeholder="-" oninput="calcMod('Resistencia')" />
+                <div class="attr-mod-box">
+                  <div class="attr-mod-label">Mod</div>
+                  <div class="attr-mod" id="modResistencia">-</div>
+                </div>
+              </div>
+
+              <div class="attr-card attr-alma">
+                <div class="attr-label">Alma</div>
+                <input type="number" id="attrAlma" class="attr-input" min="10" max="30" placeholder="10" oninput="calcMod('Alma')" />
+                <div class="attr-mod-box">
+                  <div class="attr-mod-label">Mod</div>
+                  <div class="attr-mod" id="modAlma">-</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="sheet-block">
+        <div class="block-title-bar">
+          <span class="section-label" style="margin:0">// Habilidades e poderes</span>
+          <button class="btn-inline" onclick="addHabilidade()">+ Adicionar</button>
+        </div>
+
+        <div id="habList"><p class="empty-msg">Nenhuma habilidade registrada.</p></div>
+      </section>
+
+      <section class="sheet-block" id="ownedMemoriesSection">
+        <div class="block-title-bar">
+          <span class="section-label" style="margin:0">// Memorias possuidas</span>
+        </div>
+
+        <div id="ownedMemoryList"><p class="empty-msg">Nenhuma memoria possuida.</p></div>
+      </section>
+
+      <section class="sheet-block" id="memorySection" hidden>
+        <div class="block-title-bar">
+          <span class="section-label" style="margin:0">// Drop de memoria</span>
+          <button class="btn-inline" onclick="addMemoryDrop()">+ Memoria</button>
+        </div>
+
+        <div id="memoryList"><p class="empty-msg">Nenhuma memoria definida.</p></div>
+      </section>
+
+      <section class="sheet-block" id="inventorySection">
+        <div class="block-title-bar">
+          <span class="section-label" style="margin:0">// Inventario</span>
+          <div class="inventory-head-actions">
+            <span class="inventory-meta" id="inventoryMeta">0 / 20 slots</span>
+            <div class="inventory-master-controls" id="inventoryMasterControls" hidden>
+              <span class="inventory-adjust-label">Ajuste</span>
+              <input type="number" id="inventorySlotDelta" class="inventory-slot-input" min="1" step="1" value="1" />
+              <button class="btn-inline" id="inventoryIncreaseBtn" onclick="changeInventorySlots(1)">+ slots</button>
+              <button class="btn-inline" id="inventoryDecreaseBtn" onclick="changeInventorySlots(-1)">- slots</button>
+            </div>
+            <button class="btn-inline" id="inventoryAddBtn" onclick="addItem()">+ Item</button>
+          </div>
+        </div>
+
+        <div id="inventoryGrid" class="inventory-grid">
+          <p class="empty-msg">Inventario vazio.</p>
+        </div>
+      </section>
+
+      <section class="sheet-block">
+        <div class="block-title-bar">
+          <span class="section-label" style="margin:0">// Anotacoes</span>
+        </div>
+
+        <textarea
+          id="charNotes"
+          class="notes-input auto-grow"
+          placeholder="Anotacoes pessoais, segredos, objetivos e pistas..."
+        ></textarea>
+      </section>
+
+      <div class="save-row">
+        <span id="saveMsg" class="save-msg"></span>
+        <button class="btn btn-primary" onclick="saveSheet()">Salvar ficha</button>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/ui.js"></script>
+  <script src="js/runtime-config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ficha.js"></script>
+</body>
+</html>

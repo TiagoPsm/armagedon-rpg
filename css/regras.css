@@ -1,0 +1,375 @@
+.page-main {
+  width: min(1240px, calc(100vw - 2.5rem));
+  margin: 0 auto;
+  padding: 7rem 0 4rem;
+  display: grid;
+  gap: 1.2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.rules-hero,
+.rules-block {
+  padding: 1.45rem;
+  border-radius: 28px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02)),
+    rgba(13, 17, 23, 0.88);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  backdrop-filter: blur(14px);
+}
+
+.page-heading {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.section-label {
+  display: inline-block;
+  color: var(--accent-bright);
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.page-title,
+.rules-block-title,
+.rule-card-title {
+  margin: 0;
+  font-family: var(--font-display);
+  line-height: 0.98;
+}
+
+.page-title {
+  font-size: clamp(2.4rem, 4.5vw, 3.7rem);
+}
+
+.page-copy,
+.rules-notice-copy,
+.rule-card-content,
+.rules-updated,
+.empty-msg,
+.rules-form-status {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 1.04rem;
+  line-height: 1.5;
+}
+
+.rules-status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-top: 1.5rem;
+}
+
+.rules-status-card {
+  padding: 1rem 1.05rem;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.025);
+  display: grid;
+  gap: 0.35rem;
+}
+
+.rules-status-card span,
+.rule-card-meta,
+.rule-tag {
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.rules-status-card strong {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.rules-block-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.95rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.rules-block-title {
+  margin-top: 0.25rem;
+  font-size: clamp(1.6rem, 2.5vw, 2.3rem);
+}
+
+.rules-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 0.9rem;
+}
+
+.rules-textarea {
+  width: 100%;
+  min-height: 220px;
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  outline: none;
+  line-height: 1.55;
+  resize: none;
+  overflow: hidden;
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition),
+    background-color var(--transition);
+}
+
+.rules-textarea:focus {
+  border-color: rgba(235, 135, 71, 0.42);
+  box-shadow: 0 0 0 4px rgba(201, 93, 52, 0.12);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.rules-form-status {
+  min-height: 1.2rem;
+  color: var(--text-muted);
+}
+
+.rules-form-status.is-success {
+  color: var(--gold);
+}
+
+.rules-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.8rem;
+}
+
+.rules-notice {
+  background:
+    linear-gradient(180deg, rgba(195, 170, 105, 0.08), rgba(255, 255, 255, 0.02)),
+    rgba(13, 17, 23, 0.88);
+}
+
+.rules-list {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.empty-msg {
+  color: var(--text-muted);
+}
+
+.rule-card {
+  padding: 1.1rem;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015)),
+    rgba(255, 255, 255, 0.015);
+  display: grid;
+  gap: 0.95rem;
+}
+
+.rule-card-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.rule-card-head-main {
+  min-width: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.rule-card-title {
+  font-size: clamp(1.45rem, 2vw, 2rem);
+}
+
+.rule-tag {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(195, 170, 105, 0.18);
+  background: rgba(195, 170, 105, 0.08);
+  color: var(--gold);
+}
+
+.rule-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.rule-card-content {
+  white-space: pre-line;
+}
+
+.rule-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.rule-btn {
+  min-height: 40px;
+  padding: 0.58rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-soft);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  transition:
+    transform var(--transition),
+    border-color var(--transition),
+    color var(--transition),
+    background-color var(--transition);
+}
+
+.rule-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(235, 135, 71, 0.26);
+  color: var(--text);
+}
+
+.rule-btn-danger {
+  color: var(--danger);
+  border-color: rgba(225, 115, 95, 0.28);
+}
+
+.rule-btn-danger:hover {
+  background: rgba(225, 115, 95, 0.08);
+}
+
+.bg-blackfire,
+.bg-cinders {
+  z-index: 0;
+  opacity: 0.85;
+}
+
+.bg-blackfire {
+  background:
+    radial-gradient(circle at 10% 110%, rgba(4, 6, 12, 0.95) 0 10%, transparent 30%),
+    radial-gradient(circle at 26% 108%, rgba(16, 18, 26, 0.92) 0 12%, transparent 34%),
+    radial-gradient(circle at 42% 112%, rgba(8, 10, 18, 0.94) 0 13%, transparent 33%),
+    radial-gradient(circle at 58% 109%, rgba(18, 22, 34, 0.88) 0 12%, transparent 32%),
+    radial-gradient(circle at 74% 111%, rgba(10, 12, 22, 0.92) 0 13%, transparent 34%),
+    radial-gradient(circle at 90% 109%, rgba(6, 8, 16, 0.95) 0 11%, transparent 31%);
+  filter: blur(12px);
+  animation: blackfireRise 9s ease-in-out infinite alternate;
+}
+
+.bg-cinders {
+  background:
+    radial-gradient(circle at 15% 85%, rgba(231, 76, 60, 0.08), transparent 9%),
+    radial-gradient(circle at 28% 88%, rgba(154, 122, 0, 0.08), transparent 8%),
+    radial-gradient(circle at 46% 86%, rgba(231, 76, 60, 0.06), transparent 7%),
+    radial-gradient(circle at 63% 90%, rgba(154, 122, 0, 0.08), transparent 9%),
+    radial-gradient(circle at 81% 87%, rgba(231, 76, 60, 0.06), transparent 8%);
+  animation: emberFloat 16s linear infinite;
+}
+
+.bg-cinders::before,
+.bg-cinders::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 100%, rgba(231, 76, 60, 0.1), transparent 12%),
+    radial-gradient(circle at 34% 102%, rgba(18, 18, 30, 0.9), transparent 18%),
+    radial-gradient(circle at 52% 100%, rgba(231, 76, 60, 0.08), transparent 12%),
+    radial-gradient(circle at 70% 102%, rgba(20, 20, 32, 0.92), transparent 18%),
+    radial-gradient(circle at 88% 100%, rgba(231, 76, 60, 0.1), transparent 12%);
+  mix-blend-mode: screen;
+  opacity: 0.5;
+}
+
+.bg-cinders::after {
+  filter: blur(28px);
+  opacity: 0.3;
+  animation: emberPulse 7s ease-in-out infinite alternate;
+}
+
+@keyframes blackfireRise {
+  0% {
+    transform: translateY(2%) scale(1);
+    opacity: 0.72;
+  }
+  50% {
+    transform: translateY(-1%) scale(1.02);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateY(-3%) scale(1.04);
+    opacity: 0.8;
+  }
+}
+
+@keyframes emberFloat {
+  0% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateY(-4%);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(-8%);
+    opacity: 0.2;
+  }
+}
+
+@keyframes emberPulse {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 0.2;
+  }
+  to {
+    transform: translateY(-3%) scale(1.04);
+    opacity: 0.45;
+  }
+}
+
+@media (max-width: 900px) {
+  .rules-status-grid,
+  .rules-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rule-card-head,
+  .rules-block-head {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 720px) {
+  .page-main {
+    width: min(100%, calc(100% - 1.2rem));
+    padding-top: 6.7rem;
+  }
+
+  .rules-hero,
+  .rules-block {
+    padding: 1.2rem;
+  }
+
+  .rules-editor-actions .btn,
+  .rule-actions .rule-btn {
+    width: 100%;
+  }
+}
