@@ -1,6 +1,6 @@
 window.ARMAGEDON_CONFIG = Object.assign(
   {
-    apiBaseUrl: "http://localhost:4000/api"
+    apiBaseUrl: "https://armagedon-api.tiagopsm2008.workers.dev/api"
   },
   window.ARMAGEDON_CONFIG || {}
 );
