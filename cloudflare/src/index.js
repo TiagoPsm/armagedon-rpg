@@ -10,6 +10,7 @@ import {
 } from "./auth.js";
 import {
   assertCharacterAccess,
+  awardMonsterMemoryDrop,
   buildCharacterKey,
   createMonsterCharacter,
   createNpcCharacter,
@@ -20,7 +21,10 @@ import {
   getCharacterByKey,
   listDirectory,
   normalizeUsername,
-  saveCharacterBundle
+  rollMonsterMemoryDrop,
+  saveCharacterBundle,
+  transferItemBetweenPlayers,
+  transferMemoryBetweenPlayers
 } from "./characters.js";
 
 function withCors(response, origin) {
@@ -279,6 +283,67 @@ export default {
         const body = await readJson(request);
         const saved = await saveCharacterBundle(env, character, body, session);
         return withCors(json(saved), origin);
+      }
+
+      if (path === "/api/transfers/items/player-to-player" && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        const body = await readJson(request);
+        const sourceKey = String(body.sourceKey || "").trim().toLowerCase();
+        const targetKey = String(body.targetKey || "").trim().toLowerCase();
+        const itemIndex = body.itemIndex;
+
+        if (!sourceKey || !targetKey) {
+          return errorJson("Origem e destino sao obrigatorios.", 400, origin);
+        }
+
+        return withCors(json(await transferItemBetweenPlayers(env, session, sourceKey, targetKey, itemIndex)), origin);
+      }
+
+      if (path === "/api/transfers/memories/player-to-player" && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        const body = await readJson(request);
+        const sourceKey = String(body.sourceKey || "").trim().toLowerCase();
+        const targetKey = String(body.targetKey || "").trim().toLowerCase();
+        const memoryIndex = body.memoryIndex;
+
+        if (!sourceKey || !targetKey) {
+          return errorJson("Origem e destino sao obrigatorios.", 400, origin);
+        }
+
+        return withCors(
+          json(await transferMemoryBetweenPlayers(env, session, sourceKey, targetKey, memoryIndex)),
+          origin
+        );
+      }
+
+      if (path === "/api/transfers/memories/monster-roll" && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        const body = await readJson(request);
+        const monsterKey = String(body.monsterKey || "").trim().toLowerCase();
+        const dropIndex = body.dropIndex;
+
+        if (!monsterKey) {
+          return errorJson("Monstro obrigatorio.", 400, origin);
+        }
+
+        return withCors(json(await rollMonsterMemoryDrop(env, session, monsterKey, dropIndex)), origin);
+      }
+
+      if (path === "/api/transfers/memories/monster-award" && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        const body = await readJson(request);
+        const monsterKey = String(body.monsterKey || "").trim().toLowerCase();
+        const targetKey = String(body.targetKey || "").trim().toLowerCase();
+        const dropIndex = body.dropIndex;
+
+        if (!monsterKey || !targetKey) {
+          return errorJson("Monstro e destino sao obrigatorios.", 400, origin);
+        }
+
+        return withCors(
+          json(await awardMonsterMemoryDrop(env, session, monsterKey, dropIndex, targetKey)),
+          origin
+        );
       }
 
       if (path === "/api/rules" && request.method === "GET") {

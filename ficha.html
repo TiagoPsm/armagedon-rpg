@@ -408,9 +408,9 @@
                 </div>
               </div>
 
-              <div class="attr-card attr-alma">
+              <div class="attr-card">
                 <div class="attr-label">Alma</div>
-                <input type="number" id="attrAlma" class="attr-input" min="10" max="30" placeholder="10" oninput="calcMod('Alma')" />
+                <input type="number" id="attrAlma" class="attr-input" min="1" max="30" placeholder="-" oninput="calcMod('Alma')" />
                 <div class="attr-mod-box">
                   <div class="attr-mod-label">Mod</div>
                   <div class="attr-mod" id="modAlma">-</div>
@@ -482,6 +482,72 @@
       <div class="save-row">
         <span id="saveMsg" class="save-msg"></span>
         <button class="btn btn-primary" onclick="saveSheet()">Salvar ficha</button>
+      </div>
+
+      <div class="item-editor-root" id="itemEditorRoot" hidden>
+        <div class="item-editor-backdrop" data-item-editor-close="backdrop"></div>
+        <section
+          class="item-editor-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="itemEditorTitle"
+          tabindex="-1"
+        >
+          <button type="button" class="item-editor-close" id="itemEditorCloseBtn" aria-label="Fechar editor de item">
+            <span>x</span>
+          </button>
+          <p class="section-label item-editor-kicker">// Inventario</p>
+          <h2 class="item-editor-title" id="itemEditorTitle">Editar item</h2>
+
+          <div class="item-editor-grid">
+            <div class="item-editor-field">
+              <label class="form-label" for="itemEditorName">Nome do item</label>
+              <input type="text" id="itemEditorName" class="form-input" placeholder="Ex: Lanca fragmentada..." />
+            </div>
+
+            <div class="item-editor-field item-editor-compact">
+              <label class="form-label" for="itemEditorQty">Quantidade</label>
+              <input type="number" id="itemEditorQty" class="form-input" min="0" step="1" placeholder="1" />
+            </div>
+
+            <div class="item-editor-field">
+              <label class="form-label" for="itemEditorType">Tipo</label>
+              <select id="itemEditorType" class="form-input">
+                <option value="outro">Outro</option>
+                <option value="arma">Arma</option>
+                <option value="acessorio">Acessorio</option>
+              </select>
+            </div>
+
+            <div class="item-editor-field item-editor-compact" id="itemEditorDamageWrap" hidden>
+              <label class="form-label" for="itemEditorDamage">Dano da arma</label>
+              <input type="text" id="itemEditorDamage" class="form-input" placeholder="Ex: 1d10+2" />
+            </div>
+          </div>
+
+          <div class="item-editor-roll" id="itemEditorRollBox" hidden>
+            <div class="item-editor-roll-copy">
+              <span class="item-meta">Rolagem rapida</span>
+              <strong id="itemEditorDamageLabel">Dano: 1d10</strong>
+            </div>
+            <button type="button" class="btn-inline item-editor-roll-btn" id="itemEditorRollBtn">Rolar dano</button>
+          </div>
+
+          <div class="item-editor-field">
+            <label class="form-label" for="itemEditorDesc">Descricao</label>
+            <textarea
+              id="itemEditorDesc"
+              class="notes-input auto-grow item-editor-desc"
+              rows="5"
+              placeholder="Descricao, efeito, observacoes, peso ou detalhes de uso..."
+            ></textarea>
+          </div>
+
+          <div class="item-editor-actions">
+            <button type="button" class="btn btn-ghost" id="itemEditorCancelBtn">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="itemEditorSaveBtn">Salvar item</button>
+          </div>
+        </section>
       </div>
     </main>
   </div>

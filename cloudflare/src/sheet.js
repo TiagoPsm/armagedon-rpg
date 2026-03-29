@@ -1,5 +1,6 @@
 const ATTRIBUTES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"];
 const DEFAULT_INVENTORY_SLOTS = 20;
+const ITEM_TYPES = new Set(["arma", "acessorio", "outro"]);
 
 function sanitizeChance(value, fallback = "0") {
   if (value === "" || value === null || value === undefined) return fallback;
@@ -12,8 +13,7 @@ function sanitizeAttrValue(attr, value, fallback) {
   if (value === "" || value === null || value === undefined) return fallback;
   const numeric = Number.parseInt(value, 10);
   if (Number.isNaN(numeric)) return fallback;
-  const min = attr === "Alma" ? 10 : 1;
-  return String(Math.max(min, Math.min(30, numeric)));
+  return String(Math.max(1, Math.min(30, numeric)));
 }
 
 function normalizeInventorySlots(kind, value, used = 0) {
@@ -33,11 +33,26 @@ function normalizeHab(hab) {
 }
 
 function normalizeItem(item) {
+  const type = normalizeItemType(item?.type);
   return {
     name: String(item?.name || ""),
     qty: String(Math.max(0, Number.parseInt(item?.qty || "1", 10) || 0)),
-    desc: String(item?.desc || "")
+    desc: String(item?.desc || ""),
+    type,
+    damage: type === "arma" ? normalizeDamageExpression(item?.damage) : ""
   };
+}
+
+function normalizeItemType(value) {
+  const normalized = String(value || "outro").trim().toLowerCase();
+  return ITEM_TYPES.has(normalized) ? normalized : "outro";
+}
+
+function normalizeDamageExpression(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, "")
+    .slice(0, 24);
 }
 
 function normalizeOwnedMemory(memory) {
@@ -90,7 +105,7 @@ function normalizeSheetData(data, kind = "player", charNameFallback = "") {
     normalized[`attr${attr}`] = sanitizeAttrValue(
       attr,
       data?.[`attr${attr}`],
-      attr === "Alma" ? 10 : ""
+      ""
     );
   });
 

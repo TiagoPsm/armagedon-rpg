@@ -23,6 +23,10 @@ Esta base cobre o inicio da API em Workers com:
 - `DELETE /api/directory/monsters/:id`
 - `GET /api/characters/:key`
 - `PUT /api/characters/:key`
+- `POST /api/transfers/items/player-to-player`
+- `POST /api/transfers/memories/player-to-player`
+- `POST /api/transfers/memories/monster-roll`
+- `POST /api/transfers/memories/monster-award`
 - `GET /api/rules`
 - `POST /api/rules`
 - `PUT /api/rules/:id`
@@ -37,12 +41,9 @@ E tambem inclui:
 
 ## O que ainda falta migrar
 
-- diretorio de jogadores, NPCs e monstros
-- leitura e escrita de fichas
-- transferencia de itens
-- transferencia de memorias
-- drops de memoria de monstros
 - realtime com Durable Objects
+- refinamento das permissoes e sincronizacao em tempo real
+- testes completos de todos os fluxos publicados
 
 ## Como esta modelado
 
@@ -63,5 +64,5 @@ Depois de criar a conta Cloudflare, o proximo passo e:
 2. criar o banco D1
 3. aplicar `d1/schema.sql`
 4. configurar os secrets do Worker
-5. migrar transferencias e drops de memoria
-6. ligar o frontend publicado na nova API
+5. ligar o frontend publicado na nova API
+6. migrar realtime com Durable Objects

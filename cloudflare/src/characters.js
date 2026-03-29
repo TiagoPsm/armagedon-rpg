@@ -1,6 +1,9 @@
 import {
   buildDefaultSheet,
+  normalizeItem,
   normalizeInventorySlots,
+  normalizeOwnedMemory,
+  sanitizeChance,
   normalizeSheetData
 } from "./sheet.js";
 
@@ -351,6 +354,205 @@ async function deleteCharacterByKey(env, key, kind) {
   return existing;
 }
 
+async function insertTransferAudit(env, transferType, actorUserId, sourceCharacterId, targetCharacterId, payload) {
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+
+  await env.DB.prepare(
+    `
+      insert into transfer_audit (
+        id, transfer_type, actor_user_id, source_character_id, target_character_id, payload_json, created_at
+      )
+      values (?, ?, ?, ?, ?, ?, ?)
+    `
+  ).bind(
+    id,
+    transferType,
+    actorUserId || null,
+    sourceCharacterId || null,
+    targetCharacterId || null,
+    JSON.stringify(payload || {}),
+    now
+  ).run();
+}
+
+async function transferItemBetweenPlayers(env, actor, sourceKey, targetKey, itemIndex) {
+  const source = await getCharacterByKey(env, sourceKey);
+  const target = await getCharacterByKey(env, targetKey);
+
+  if (!source || !target) {
+    throw new Response(JSON.stringify({ error: "Ficha de origem ou destino nao encontrada." }), { status: 404 });
+  }
+  if (source.kind !== "player" || target.kind !== "player") {
+    throw new Response(JSON.stringify({ error: "A troca de item so pode acontecer entre jogadores." }), { status: 400 });
+  }
+  if (source.id === target.id) {
+    throw new Response(JSON.stringify({ error: "A origem e o destino nao podem ser a mesma ficha." }), { status: 400 });
+  }
+
+  assertCharacterAccess(actor, source, "write");
+
+  const sourceData = normalizeSheetData(source.data || {}, "player", source.name);
+  const targetData = normalizeSheetData(target.data || {}, "player", target.name);
+  const index = Number.parseInt(itemIndex, 10);
+
+  if (Number.isNaN(index) || index < 0 || index >= sourceData.inv.length) {
+    throw new Response(JSON.stringify({ error: "Item de origem nao encontrado." }), { status: 404 });
+  }
+
+  const targetCapacity = Math.max(
+    normalizeInventorySlots("player", targetData.inventorySlots, targetData.inv.length),
+    targetData.inv.length
+  );
+
+  if (targetData.inv.length >= targetCapacity) {
+    throw new Response(JSON.stringify({ error: "O jogador de destino esta com a mochila cheia." }), { status: 409 });
+  }
+
+  const transferredItem = normalizeItem(sourceData.inv[index]);
+  sourceData.inv.splice(index, 1);
+  targetData.inv.push(transferredItem);
+
+  await persistCharacterData(env, source, sourceData);
+  await persistCharacterData(env, target, targetData);
+
+  await insertTransferAudit(env, "item-player-to-player", actor.sub, source.id, target.id, {
+    item: transferredItem,
+    sourceKey: source.key,
+    targetKey: target.key
+  });
+
+  return {
+    item: transferredItem,
+    sourceKey: source.key,
+    targetKey: target.key
+  };
+}
+
+async function transferMemoryBetweenPlayers(env, actor, sourceKey, targetKey, memoryIndex) {
+  const source = await getCharacterByKey(env, sourceKey);
+  const target = await getCharacterByKey(env, targetKey);
+
+  if (!source || !target) {
+    throw new Response(JSON.stringify({ error: "Ficha de origem ou destino nao encontrada." }), { status: 404 });
+  }
+  if (source.kind !== "player" || target.kind !== "player") {
+    throw new Response(JSON.stringify({ error: "A transferencia so pode acontecer entre jogadores." }), { status: 400 });
+  }
+  if (source.id === target.id) {
+    throw new Response(JSON.stringify({ error: "A origem e o destino nao podem ser a mesma ficha." }), { status: 400 });
+  }
+
+  assertCharacterAccess(actor, source, "write");
+
+  const sourceData = normalizeSheetData(source.data || {}, "player", source.name);
+  const targetData = normalizeSheetData(target.data || {}, "player", target.name);
+  const index = Number.parseInt(memoryIndex, 10);
+
+  if (Number.isNaN(index) || index < 0 || index >= sourceData.ownedMemories.length) {
+    throw new Response(JSON.stringify({ error: "Memoria nao encontrada." }), { status: 404 });
+  }
+
+  const transferredMemory = normalizeOwnedMemory(sourceData.ownedMemories[index]);
+  sourceData.ownedMemories.splice(index, 1);
+  targetData.ownedMemories.push(transferredMemory);
+
+  await persistCharacterData(env, source, sourceData);
+  await persistCharacterData(env, target, targetData);
+
+  await insertTransferAudit(env, "memory-player-to-player", actor.sub, source.id, target.id, {
+    memory: transferredMemory,
+    sourceKey: source.key,
+    targetKey: target.key
+  });
+
+  return {
+    memory: transferredMemory,
+    sourceKey: source.key,
+    targetKey: target.key
+  };
+}
+
+async function rollMonsterMemoryDrop(env, actor, monsterKey, dropIndex) {
+  const monster = await getCharacterByKey(env, monsterKey);
+  if (!monster) throw new Response(JSON.stringify({ error: "Monstro nao encontrado." }), { status: 404 });
+  if (monster.kind !== "monster") throw new Response(JSON.stringify({ error: "A rolagem so vale para monstros." }), { status: 400 });
+  if (actor.role !== "master") {
+    throw new Response(JSON.stringify({ error: "Apenas o mestre pode rolar drops de memoria." }), { status: 403 });
+  }
+
+  const monsterData = normalizeSheetData(monster.data || {}, "monster", monster.name);
+  const index = Number.parseInt(dropIndex, 10);
+  const drop = monsterData.memoryDrops[index];
+
+  if (!drop) throw new Response(JSON.stringify({ error: "Drop de memoria nao encontrado." }), { status: 404 });
+
+  const chance = Number.parseFloat(sanitizeChance(drop.chance, "0")) || 0;
+  const rolled = Number((Math.random() * 100).toFixed(1));
+  const success = chance > 0 && rolled <= chance;
+
+  return {
+    rolled,
+    chance,
+    success,
+    drop: {
+      index,
+      name: drop.name,
+      desc: drop.desc
+    }
+  };
+}
+
+async function awardMonsterMemoryDrop(env, actor, monsterKey, dropIndex, targetKey) {
+  if (actor.role !== "master") {
+    throw new Response(JSON.stringify({ error: "Apenas o mestre pode enviar memorias de monstros." }), { status: 403 });
+  }
+
+  const monster = await getCharacterByKey(env, monsterKey);
+  const target = await getCharacterByKey(env, targetKey);
+
+  if (!monster || !target) {
+    throw new Response(JSON.stringify({ error: "Monstro ou destino nao encontrado." }), { status: 404 });
+  }
+  if (monster.kind !== "monster") {
+    throw new Response(JSON.stringify({ error: "A origem precisa ser um monstro." }), { status: 400 });
+  }
+  if (!["player", "npc"].includes(target.kind)) {
+    throw new Response(
+      JSON.stringify({ error: "Memorias de monstro so podem ser enviadas para jogadores ou NPCs." }),
+      { status: 400 }
+    );
+  }
+
+  const monsterData = normalizeSheetData(monster.data || {}, "monster", monster.name);
+  const targetData = normalizeSheetData(target.data || {}, target.kind, target.name);
+  const index = Number.parseInt(dropIndex, 10);
+  const drop = monsterData.memoryDrops[index];
+
+  if (!drop) throw new Response(JSON.stringify({ error: "Drop de memoria nao encontrado." }), { status: 404 });
+
+  const memory = normalizeOwnedMemory({
+    name: drop.name,
+    desc: drop.desc,
+    source: monster.name
+  });
+
+  targetData.ownedMemories.push(memory);
+  await persistCharacterData(env, target, targetData);
+
+  await insertTransferAudit(env, "memory-drop-award", actor.sub, monster.id, target.id, {
+    memory,
+    monsterKey: monster.key,
+    targetKey: target.key
+  });
+
+  return {
+    memory,
+    monsterKey: monster.key,
+    targetKey: target.key
+  };
+}
+
 export {
   assertCharacterAccess,
   buildCharacterKey,
@@ -363,5 +565,9 @@ export {
   getCharacterByKey,
   listDirectory,
   normalizeUsername,
-  saveCharacterBundle
+  rollMonsterMemoryDrop,
+  saveCharacterBundle,
+  transferItemBetweenPlayers,
+  transferMemoryBetweenPlayers,
+  awardMonsterMemoryDrop
 };

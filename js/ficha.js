@@ -6,6 +6,11 @@ const NPC_PREFIX = "npc:";
 const MONSTER_PREFIX = "monster:";
 const ATTRIBUTES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"];
 const DEFAULT_INVENTORY_SLOTS = 20;
+const ITEM_TYPES = {
+  arma: "Arma",
+  acessorio: "Acessorio",
+  outro: "Outro"
+};
 
 let currentUser = null;
 let currentRole = null;
@@ -18,6 +23,10 @@ let ownedMemories = [];
 let memoryRollStates = {};
 let ownedMemoryTransferStates = {};
 let itemTransferStates = {};
+let itemRollStates = {};
+let itemEditorIndex = -1;
+let itemEditorSnapshot = null;
+let itemEditorIsNew = false;
 let remoteSheetsCache = {};
 let saveTimer = null;
 let saveRequestId = 0;
@@ -50,6 +59,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   initAutoSave();
+  initItemEditor();
   syncAutoGrowTextareas();
 });
 
@@ -558,6 +568,8 @@ async function loadSheet(username, kind = "player") {
   memoryRollStates = {};
   ownedMemoryTransferStates = {};
   itemTransferStates = {};
+  itemRollStates = {};
+  resetItemEditorState();
 
   updateBar("vida");
   if (kind !== "monster") updateBar("integ");
@@ -746,11 +758,7 @@ function normalizeSheetData(data, kind = "player") {
   };
 
   ATTRIBUTES.forEach(attr => {
-    if (attr === "Alma") {
-      normalized[`attr${attr}`] = sanitizeAttrValue(attr, data[`attr${attr}`], 10);
-    } else {
-      normalized[`attr${attr}`] = sanitizeAttrValue(attr, data[`attr${attr}`], "");
-    }
+    normalized[`attr${attr}`] = sanitizeAttrValue(attr, data[`attr${attr}`], "");
   });
 
   return normalized;
@@ -764,11 +772,26 @@ function normalizeHab(hab) {
 }
 
 function normalizeItem(item) {
+  const type = normalizeItemType(item?.type);
   return {
-    name: item?.name || "",
-    qty: item?.qty || 1,
-    desc: item?.desc || ""
+    name: String(item?.name || ""),
+    qty: String(Math.max(0, Number.parseInt(item?.qty || "1", 10) || 0)),
+    desc: String(item?.desc || ""),
+    type,
+    damage: type === "arma" ? normalizeDamageExpression(item?.damage) : ""
   };
+}
+
+function normalizeItemType(value) {
+  const normalized = String(value || "outro").trim().toLowerCase();
+  return Object.prototype.hasOwnProperty.call(ITEM_TYPES, normalized) ? normalized : "outro";
+}
+
+function normalizeDamageExpression(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, "")
+    .slice(0, 24);
 }
 
 function normalizeInventorySlots(kind, value) {
@@ -793,6 +816,71 @@ function normalizeMemoryDrop(drop) {
     name: drop?.name || "",
     desc: drop?.desc || "",
     chance: sanitizeChance(drop?.chance, "0")
+  };
+}
+
+function itemHasContent(item) {
+  return Boolean(
+    String(item?.name || "").trim() ||
+      String(item?.desc || "").trim() ||
+      (normalizeItemType(item?.type) === "arma" && String(item?.damage || "").trim()) ||
+      Number.parseInt(item?.qty || "0", 10) > 1
+  );
+}
+
+function formatItemType(type) {
+  return ITEM_TYPES[normalizeItemType(type)] || ITEM_TYPES.outro;
+}
+
+function getItemTypeBadgeClass(type) {
+  if (type === "arma") return "item-type-badge is-weapon";
+  if (type === "acessorio") return "item-type-badge is-accessory";
+  return "item-type-badge";
+}
+
+function parseDamageExpression(expression) {
+  const sanitized = normalizeDamageExpression(expression);
+  const match = sanitized.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
+  if (!match) return null;
+
+  const diceCount = Number.parseInt(match[1], 10);
+  const diceSides = Number.parseInt(match[2], 10);
+  const modifier = Number.parseInt(match[3] || "0", 10);
+
+  if (
+    Number.isNaN(diceCount) ||
+    Number.isNaN(diceSides) ||
+    Number.isNaN(modifier) ||
+    diceCount < 1 ||
+    diceCount > 20 ||
+    diceSides < 2 ||
+    diceSides > 1000 ||
+    Math.abs(modifier) > 1000
+  ) {
+    return null;
+  }
+
+  return {
+    expression: sanitized,
+    diceCount,
+    diceSides,
+    modifier
+  };
+}
+
+function rollDamageExpression(expression) {
+  const parsed = parseDamageExpression(expression);
+  if (!parsed) return null;
+
+  const rolls = Array.from({ length: parsed.diceCount }, () => 1 + Math.floor(Math.random() * parsed.diceSides));
+  const subtotal = rolls.reduce((sum, roll) => sum + roll, 0);
+  const total = subtotal + parsed.modifier;
+
+  return {
+    ...parsed,
+    rolls,
+    subtotal,
+    total
   };
 }
 
@@ -1024,8 +1112,7 @@ function sanitizeAttrValue(attr, value, fallback) {
   const numeric = Number.parseInt(value, 10);
   if (Number.isNaN(numeric)) return fallback;
 
-  const min = attr === "Alma" ? 10 : 1;
-  const clamped = Math.max(min, Math.min(30, numeric));
+  const clamped = Math.max(1, Math.min(30, numeric));
   return String(clamped);
 }
 
@@ -1034,7 +1121,7 @@ function enforceSheetRules() {
     const input = document.getElementById(`attr${attr}`);
     if (!input) return;
 
-    input.value = sanitizeAttrValue(attr, input.value, attr === "Alma" ? 10 : "");
+    input.value = sanitizeAttrValue(attr, input.value, "");
     calcMod(attr);
   });
 }
@@ -1078,7 +1165,7 @@ function calcMod(attr) {
   const target = document.getElementById(`mod${attr}`);
   if (!input || !target) return;
 
-  input.value = sanitizeAttrValue(attr, input.value, attr === "Alma" ? 10 : "");
+  input.value = sanitizeAttrValue(attr, input.value, "");
   const value = Number.parseInt(input.value, 10);
 
   if (Number.isNaN(value)) {
@@ -1145,6 +1232,223 @@ function handleAvatar(event) {
   };
 
   reader.readAsDataURL(file);
+}
+
+function getItemEditorElements() {
+  return {
+    root: document.getElementById("itemEditorRoot"),
+    dialog: document.querySelector(".item-editor-dialog"),
+    name: document.getElementById("itemEditorName"),
+    qty: document.getElementById("itemEditorQty"),
+    type: document.getElementById("itemEditorType"),
+    damageWrap: document.getElementById("itemEditorDamageWrap"),
+    damage: document.getElementById("itemEditorDamage"),
+    damageLabel: document.getElementById("itemEditorDamageLabel"),
+    rollBox: document.getElementById("itemEditorRollBox"),
+    desc: document.getElementById("itemEditorDesc"),
+    save: document.getElementById("itemEditorSaveBtn")
+  };
+}
+
+function resetItemEditorState() {
+  const { root, name, qty, type, damage, desc } = getItemEditorElements();
+
+  itemEditorIndex = -1;
+  itemEditorSnapshot = null;
+  itemEditorIsNew = false;
+
+  if (root) root.hidden = true;
+  if (name) name.value = "";
+  if (qty) qty.value = "1";
+  if (type) type.value = "outro";
+  if (damage) damage.value = "";
+  if (desc) desc.value = "";
+}
+
+function updateItemEditorDamageUI(type = "outro", damage = "") {
+  const { damageWrap, rollBox, damageLabel } = getItemEditorElements();
+  const isWeapon = normalizeItemType(type) === "arma";
+  const cleanDamage = normalizeDamageExpression(damage);
+
+  if (damageWrap) damageWrap.hidden = !isWeapon;
+  if (rollBox) rollBox.hidden = !isWeapon;
+  if (damageLabel) {
+    damageLabel.textContent = cleanDamage ? `Dano: ${cleanDamage}` : "Dano: definir";
+  }
+}
+
+function syncItemFromEditor() {
+  if (itemEditorIndex < 0 || !inv[itemEditorIndex]) return;
+
+  const { name, qty, type, damage, desc } = getItemEditorElements();
+  const nextItem = normalizeItem({
+    name: name?.value || "",
+    qty: qty?.value || "1",
+    type: type?.value || "outro",
+    damage: damage?.value || "",
+    desc: desc?.value || ""
+  });
+
+  inv[itemEditorIndex] = nextItem;
+  updateItemEditorDamageUI(nextItem.type, nextItem.damage);
+}
+
+function initItemEditor() {
+  const root = document.getElementById("itemEditorRoot");
+  if (!root) return;
+
+  const closeEditor = shouldSave => {
+    if (shouldSave) {
+      commitItemEditor();
+      return;
+    }
+    cancelItemEditor();
+  };
+
+  root.addEventListener("click", event => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (target.dataset.itemEditorClose) {
+      closeEditor(false);
+    }
+  });
+
+  document.getElementById("itemEditorCloseBtn")?.addEventListener("click", () => closeEditor(false));
+  document.getElementById("itemEditorCancelBtn")?.addEventListener("click", () => closeEditor(false));
+  document.getElementById("itemEditorSaveBtn")?.addEventListener("click", () => closeEditor(true));
+  document.getElementById("itemEditorRollBtn")?.addEventListener("click", () => rollCurrentEditorDamage());
+
+  ["itemEditorName", "itemEditorQty", "itemEditorDamage", "itemEditorDesc"].forEach(id => {
+    document.getElementById(id)?.addEventListener("input", () => {
+      syncItemFromEditor();
+      if (id === "itemEditorDesc") {
+        const textarea = document.getElementById(id);
+        if (textarea instanceof HTMLTextAreaElement) autoGrowTextarea(textarea);
+      }
+    });
+  });
+
+  document.getElementById("itemEditorType")?.addEventListener("change", event => {
+    const select = event.target;
+    if (!(select instanceof HTMLSelectElement)) return;
+    if (normalizeItemType(select.value) !== "arma") {
+      const damageInput = document.getElementById("itemEditorDamage");
+      if (damageInput) damageInput.value = "";
+    }
+    syncItemFromEditor();
+  });
+
+  document.addEventListener("keydown", event => {
+    if (itemEditorIndex < 0) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeEditor(false);
+    }
+  });
+}
+
+function openItemEditor(index, { isNew = false } = {}) {
+  const item = inv[index];
+  const { root, dialog, name, qty, type, damage, desc } = getItemEditorElements();
+  if (!item || !root || !dialog || !name || !qty || !type || !damage || !desc) return;
+
+  itemEditorIndex = index;
+  itemEditorIsNew = isNew;
+  itemEditorSnapshot = normalizeItem(item);
+
+  name.value = item.name;
+  qty.value = item.qty;
+  type.value = item.type;
+  damage.value = item.damage;
+  desc.value = item.desc;
+  autoGrowTextarea(desc);
+  updateItemEditorDamageUI(item.type, item.damage);
+
+  root.hidden = false;
+  window.requestAnimationFrame(() => {
+    dialog.focus();
+    name.focus();
+  });
+}
+
+function commitItemEditor() {
+  if (itemEditorIndex < 0 || !inv[itemEditorIndex]) {
+    resetItemEditorState();
+    return;
+  }
+
+  syncItemFromEditor();
+  const currentItem = normalizeItem(inv[itemEditorIndex]);
+
+  if (itemEditorIsNew && !itemHasContent(currentItem)) {
+    inv.splice(itemEditorIndex, 1);
+  } else {
+    inv[itemEditorIndex] = currentItem;
+  }
+
+  renderInv(inv);
+  resetItemEditorState();
+  saveSheetSilently();
+}
+
+function cancelItemEditor() {
+  if (itemEditorIndex >= 0) {
+    if (itemEditorIsNew) {
+      inv.splice(itemEditorIndex, 1);
+    } else if (itemEditorSnapshot) {
+      inv[itemEditorIndex] = normalizeItem(itemEditorSnapshot);
+    }
+    renderInv(inv);
+  }
+
+  resetItemEditorState();
+}
+
+function rollCurrentEditorDamage() {
+  if (itemEditorIndex < 0) return;
+  syncItemFromEditor();
+  rollItemDamage(itemEditorIndex, { preserveModal: true });
+}
+
+async function rollItemDamage(index, options = {}) {
+  const item = normalizeItem(inv[index]);
+  if (!item || item.type !== "arma") return;
+
+  const result = rollDamageExpression(item.damage);
+  if (!result) {
+    itemRollStates[index] = {
+      tone: "fail",
+      text: "Defina um dano valido, como 1d10 ou 2d6+3."
+    };
+    renderInv(inv);
+    await UI.alert("Defina um dano valido para a arma, por exemplo 1d10 ou 2d6+3.", {
+      title: "Dano invalido",
+      kicker: "// Inventario"
+    });
+    if (options.preserveModal) openItemEditor(index, { isNew: itemEditorIsNew });
+    return;
+  }
+
+  const modifierText = result.modifier
+    ? ` ${result.modifier > 0 ? "+" : "-"} ${Math.abs(result.modifier)}`
+    : "";
+  itemRollStates[index] = {
+    tone: "success",
+    text: `Ultimo dano: ${result.total} (${result.expression})`
+  };
+  renderInv(inv);
+
+  await UI.alert(
+    `Resultado: ${result.total}. Rolagens: ${result.rolls.join(" + ")}${modifierText}.`,
+    {
+      title: item.name || "Rolagem de arma",
+      kicker: "// Dano"
+    }
+  );
+
+  if (options.preserveModal) {
+    openItemEditor(index, { isNew: itemEditorIsNew });
+  }
 }
 
 function renderHabs(list) {
@@ -2039,6 +2343,15 @@ function renderInv(list) {
       `;
     }
 
+    const itemType = normalizeItemType(item.type);
+    const rollState = itemRollStates[index];
+    const rollStateClass =
+      rollState?.tone === "success"
+        ? "item-summary-line is-weapon"
+        : rollState?.tone === "fail"
+          ? "item-summary-line is-muted"
+          : "item-summary-line is-muted";
+
     return `
       <article class="item-card inv-row" data-index="${index}">
         <div class="item-card-head">
@@ -2046,47 +2359,41 @@ function renderInv(list) {
           <button class="btn-remove" onclick="removeItem(${index})">x</button>
         </div>
 
-        <div class="item-fields">
-          <div class="item-top">
-            <div>
-              <span class="item-meta">Item</span>
-              <input
-                class="item-input inv-name"
-                type="text"
-                placeholder="Nome..."
-                value="${esc(item.name)}"
-                oninput="updateItem(${index}, 'name', this.value)"
-              />
-            </div>
-
-            <div>
-              <span class="item-meta">Qtd</span>
-              <input
-                class="item-input item-qty inv-qty"
-                type="number"
-                min="0"
-                value="${esc(item.qty)}"
-                oninput="updateItem(${index}, 'qty', this.value)"
-              />
-            </div>
+        <button class="item-summary-btn" onclick="openItemEditor(${index})">
+          <div class="item-summary-main">
+            <span class="${getItemTypeBadgeClass(itemType)}">${esc(formatItemType(itemType))}</span>
+            <h3 class="item-title">${esc(item.name || "Item sem nome")}</h3>
+            <span class="item-summary-line">Quantidade: ${esc(item.qty)}</span>
+            ${
+              itemType === "arma" && item.damage
+                ? `<span class="item-summary-line is-weapon">Dano: ${esc(item.damage)}</span>`
+                : ""
+            }
+            <span class="item-summary-line ${item.desc ? "" : "is-muted"}">
+              ${esc(item.desc || "Clique para editar descricao e detalhes do item.")}
+            </span>
+            ${
+              rollState?.text
+                ? `<span class="${rollStateClass}">${esc(rollState.text)}</span>`
+                : ""
+            }
           </div>
+        </button>
 
-          <div>
-            <span class="item-meta">Descricao</span>
-            <textarea
-              class="item-desc inv-desc auto-grow"
-              rows="2"
-              placeholder="Descricao curta..."
-              oninput="updateItem(${index}, 'desc', this.value)"
-            >${esc(item.desc)}</textarea>
-          </div>
-
+        <div class="item-card-actions">
+          <button class="btn-inline item-action-btn" onclick="openItemEditor(${index})">Editar</button>
           ${
-            canTransferItems
-              ? renderItemTransferBlock(index, transferTargets)
+            itemType === "arma"
+              ? `<button class="btn-inline item-action-btn" onclick="rollItemDamage(${index})">Rolar ${esc(item.damage || "dano")}</button>`
               : ""
           }
         </div>
+
+        ${
+          canTransferItems
+            ? renderItemTransferBlock(index, transferTargets)
+            : ""
+        }
       </article>
     `;
   }).join("");
@@ -2096,7 +2403,10 @@ function renderInv(list) {
 
 function updateItem(index, field, value) {
   if (!inv[index]) return;
-  inv[index][field] = field === "qty" ? String(Math.max(0, parseInt(value || "0", 10) || 0)) : value;
+  inv[index] = normalizeItem({
+    ...inv[index],
+    [field]: value
+  });
 }
 
 async function addItem() {
@@ -2113,27 +2423,32 @@ async function addItem() {
     return;
   }
 
-  inv.push({ name: "", qty: 1, desc: "" });
+  inv.push(normalizeItem({ name: "", qty: 1, type: "outro", damage: "", desc: "" }));
   renderInv(inv);
-  document.querySelectorAll(".inv-name")[inv.length - 1]?.focus();
-  saveSheetSilently();
+  openItemEditor(inv.length - 1, { isNew: true });
 }
 
 function removeItem(index) {
+  if (itemEditorIndex === index) {
+    resetItemEditorState();
+  }
   itemTransferStates = {};
+  delete itemRollStates[index];
   inv.splice(index, 1);
+  itemRollStates = Object.fromEntries(
+    Object.entries(itemRollStates)
+      .map(([key, value]) => {
+        const numericKey = Number.parseInt(key, 10);
+        if (numericKey > index) return [String(numericKey - 1), value];
+        return [key, value];
+      })
+  );
   renderInv(inv);
   saveSheetSilently();
 }
 
 function collectInv() {
-  return Array.from(document.querySelectorAll(".inv-row")).map(row => {
-    return {
-      name: row.querySelector(".inv-name")?.value || "",
-      qty: row.querySelector(".inv-qty")?.value || 1,
-      desc: row.querySelector(".inv-desc")?.value || ""
-    };
-  });
+  return inv.map(normalizeItem);
 }
 
 function getInventorySlotDelta() {
