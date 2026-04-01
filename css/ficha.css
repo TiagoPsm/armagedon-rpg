@@ -1120,7 +1120,7 @@
 
 .dice-tray-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: flex-start;
   gap: 1rem;
   margin-bottom: 1.3rem;
@@ -1187,7 +1187,7 @@
 
 .dice-tray-top-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
   gap: 1rem;
 }
 
@@ -1214,6 +1214,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.65rem;
+  align-items: stretch;
 }
 
 .dice-option-btn,
@@ -1261,10 +1262,22 @@
 
 .dice-mode-btn {
   font-family: var(--font-ui);
-  font-size: 0.69rem;
-  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  padding: 0.8rem 0.55rem;
+  font-size: 0.63rem;
+  line-height: 1.25;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   text-align: center;
+  white-space: normal;
+  word-break: keep-all;
+}
+
+.dice-tray-side > .dice-tray-preview {
+  display: none;
 }
 
 .dice-tray-fields {
