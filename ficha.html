@@ -241,46 +241,40 @@
                 />
               </div>
 
-              <div class="form-group compact-field">
+              <div class="form-group compact-field level-field-group">
                 <label class="form-label" for="charLevel">Nível</label>
-                <input
-                  type="number"
-                  id="charLevel"
-                  class="form-input"
-                  min="1"
-                  max="99"
-                  placeholder="1"
-                />
-              </div>
-
-              <div class="form-group compact-field dice-launcher-group">
-                <span class="form-label">Dados</span>
-                <button
-                  type="button"
-                  class="dice-launcher-btn"
-                  id="openDiceTrayBtn"
-                  aria-haspopup="dialog"
-                  aria-controls="diceTrayRoot"
-                >
-                  <span class="dice-launcher-icon" aria-hidden="true">
-                    <svg viewBox="0 0 64 64" class="dice-launcher-svg" focusable="false" aria-hidden="true">
-                      <path
-                        d="M32 4l24 14v28L32 60 8 46V18L32 4zm0 6.9L14 21v22l18 10.5L50 43V21L32 10.9z"
-                        fill="currentColor"
-                        opacity="0.95"
-                      ></path>
-                      <path
-                        d="M32 18l11 6.5-11 6.3-11-6.3L32 18zm0 14l11 6.4v12.7L32 44.8 21 51.1V38.4L32 32z"
-                        fill="currentColor"
-                        opacity="0.45"
-                      ></path>
-                    </svg>
-                  </span>
-                  <span class="dice-launcher-copy">
-                    <strong>Rolar</strong>
-                    <small>D4 a D100</small>
-                  </span>
-                </button>
+                <div class="level-field-row">
+                  <input
+                    type="number"
+                    id="charLevel"
+                    class="form-input"
+                    min="1"
+                    max="99"
+                    placeholder="1"
+                  />
+                  <button
+                    type="button"
+                    class="dice-launcher-btn"
+                    id="openDiceTrayBtn"
+                    aria-haspopup="dialog"
+                    aria-controls="diceTrayRoot"
+                    aria-label="Abrir mesa de dados"
+                    title="Abrir mesa de dados"
+                  >
+                    <span class="dice-launcher-icon" aria-hidden="true">
+                      <svg viewBox="0 0 64 64" class="dice-launcher-svg" focusable="false" aria-hidden="true">
+                        <path
+                          d="M32 6l20 11.5v23L32 52 12 40.5v-23L32 6z"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="4"
+                          stroke-linejoin="round"
+                        ></path>
+                        <circle cx="32" cy="29" r="3.5" fill="currentColor"></circle>
+                      </svg>
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -528,75 +522,86 @@
           </button>
 
           <p class="section-label dice-tray-kicker">// Mesa</p>
-          <h2 class="dice-tray-title" id="diceTrayTitle">Lançar dados</h2>
-          <p class="dice-tray-subtitle">
-            Escolha o tipo de dado, ajuste a quantidade e o modificador e veja a rolagem acontecer na tela.
-          </p>
+          <div class="dice-tray-header">
+            <div class="dice-tray-heading">
+              <h2 class="dice-tray-title" id="diceTrayTitle">Lançar dados</h2>
+              <p class="dice-tray-subtitle">
+                Escolha o dado, ajuste a rolagem e acompanhe o resultado no centro da mesa.
+              </p>
+            </div>
+            <div class="dice-tray-badge" id="diceTrayBadge">1d20</div>
+          </div>
 
           <div class="dice-tray-layout">
-            <div class="dice-tray-controls">
-              <div class="dice-tray-block">
-                <span class="item-meta">Escolha o dado</span>
-                <div class="dice-option-grid" id="diceOptionGrid"></div>
-              </div>
+              <div class="dice-tray-controls">
+                <div class="dice-tray-top-grid">
+                  <div class="dice-tray-block">
+                    <span class="item-meta">Dado</span>
+                    <div class="dice-option-grid" id="diceOptionGrid"></div>
+                  </div>
 
-              <div class="dice-tray-block">
-                <span class="item-meta">Modo de rolagem</span>
-                <div class="dice-mode-grid" id="diceModeGrid">
-                  <button type="button" class="dice-mode-btn is-active" data-dice-mode="normal" aria-pressed="true">Normal</button>
-                  <button type="button" class="dice-mode-btn" data-dice-mode="advantage" aria-pressed="false">Vantagem</button>
-                  <button type="button" class="dice-mode-btn" data-dice-mode="disadvantage" aria-pressed="false">Desvantagem</button>
-                </div>
-              </div>
-
-              <div class="dice-tray-fields">
-                <div class="dice-tray-field">
-                  <label class="form-label" for="diceTrayQty">Quantidade</label>
-                  <input type="number" id="diceTrayQty" class="form-input" min="1" max="20" value="1" />
-                </div>
-
-                <div class="dice-tray-field">
-                  <label class="form-label" for="diceTrayModifier">Modificador</label>
-                  <input type="number" id="diceTrayModifier" class="form-input" min="-1000" max="1000" value="0" />
-                </div>
-              </div>
-
-              <div class="dice-tray-field dice-tray-expression">
-                <label class="form-label" for="diceTrayExpression">Expressão livre</label>
-                <input type="text" id="diceTrayExpression" class="form-input" maxlength="24" placeholder="Ex: 2d6+3" />
-              </div>
-
-              <div class="dice-tray-preview">
-                <span class="item-meta">Expressão</span>
-                <strong id="diceExpressionPreview">1d20</strong>
-              </div>
-
-              <div class="dice-tray-actions">
-                <button type="button" class="btn btn-ghost" id="diceTrayCancelBtn">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="diceTrayRollBtn">Rolar agora</button>
-              </div>
-            </div>
-
-            <div class="dice-tray-stage-col">
-              <div class="dice-tray-stage">
-                <div class="dice-visual-shell">
-                  <div class="dice-visual" id="diceVisual" data-tone="gold">
-                    <span class="dice-face face-front">D20</span>
-                    <span class="dice-face face-back">D20</span>
-                    <span class="dice-face face-right">D20</span>
-                    <span class="dice-face face-left">D20</span>
-                    <span class="dice-face face-top">D20</span>
-                    <span class="dice-face face-bottom">D20</span>
+                  <div class="dice-tray-block">
+                    <span class="item-meta">Modo</span>
+                    <div class="dice-mode-grid" id="diceModeGrid">
+                      <button type="button" class="dice-mode-btn is-active" data-dice-mode="normal" aria-pressed="true">Normal</button>
+                      <button type="button" class="dice-mode-btn" data-dice-mode="advantage" aria-pressed="false">Vantagem</button>
+                      <button type="button" class="dice-mode-btn" data-dice-mode="disadvantage" aria-pressed="false">Desvantagem</button>
+                    </div>
                   </div>
                 </div>
+
+                <div class="dice-tray-fields">
+                  <div class="dice-tray-field">
+                    <label class="form-label" for="diceTrayQty">Quantidade</label>
+                    <input type="number" id="diceTrayQty" class="form-input" min="1" max="20" value="1" />
+                  </div>
+
+                  <div class="dice-tray-field">
+                    <label class="form-label" for="diceTrayModifier">Modificador</label>
+                    <input type="number" id="diceTrayModifier" class="form-input" min="-1000" max="1000" value="0" />
+                  </div>
+                </div>
+
+                <div class="dice-tray-field dice-tray-expression">
+                  <label class="form-label" for="diceTrayExpression">Expressão livre</label>
+                  <input type="text" id="diceTrayExpression" class="form-input" maxlength="24" placeholder="Ex: 2d6+3" />
+                </div>
+
+                <div class="dice-tray-preview">
+                  <span class="item-meta">Expressão</span>
+                  <strong id="diceExpressionPreview">1d20</strong>
+                </div>
+
+                <div class="dice-tray-actions">
+                  <button type="button" class="btn btn-ghost" id="diceTrayCancelBtn">Cancelar</button>
+                  <button type="button" class="btn btn-primary" id="diceTrayRollBtn">Rolar agora</button>
+                </div>
               </div>
 
-              <div class="dice-result-card" id="diceResultCard">
-                <span class="item-meta">Resultado</span>
-                <strong id="diceResultTotal">Pronto para rolar</strong>
-                <p id="diceResultDetail">Selecione um dado para iniciar a rolagem.</p>
+              <div class="dice-tray-stage-col">
+                <div class="dice-tray-stage">
+                  <div class="dice-stage-aura" aria-hidden="true"></div>
+                  <div class="dice-stage-floor" aria-hidden="true"></div>
+
+                  <div class="dice-visual-shell">
+                    <div class="dice-visual" id="diceVisual" data-tone="gold">
+                      <span class="dice-face face-front">20</span>
+                      <span class="dice-face face-back">20</span>
+                      <span class="dice-face face-right">20</span>
+                      <span class="dice-face face-left">20</span>
+                      <span class="dice-face face-top">20</span>
+                      <span class="dice-face face-bottom">20</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="dice-result-card" id="diceResultCard">
+                  <span class="item-meta">Resultado</span>
+                  <span class="dice-result-state" id="diceResultState" hidden></span>
+                  <strong id="diceResultTotal">Pronto para rolar</strong>
+                  <p id="diceResultDetail">Selecione um dado para iniciar a rolagem.</p>
+                </div>
               </div>
-            </div>
           </div>
         </section>
       </div>
