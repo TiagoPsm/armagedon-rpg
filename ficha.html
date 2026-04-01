@@ -264,13 +264,16 @@
                     <span class="dice-launcher-icon" aria-hidden="true">
                       <svg viewBox="0 0 64 64" class="dice-launcher-svg" focusable="false" aria-hidden="true">
                         <path
-                          d="M32 6l20 11.5v23L32 52 12 40.5v-23L32 6z"
+                          d="M32 11l15.5 8.8v18.4L32 47 16.5 38.2V19.8L32 11z"
                           fill="none"
                           stroke="currentColor"
-                          stroke-width="4"
+                          stroke-width="3"
                           stroke-linejoin="round"
                         ></path>
-                        <circle cx="32" cy="29" r="3.5" fill="currentColor"></circle>
+                        <path
+                          d="M32 31.5m-2.8 0a2.8 2.8 0 1 0 5.6 0a2.8 2.8 0 1 0-5.6 0"
+                          fill="currentColor"
+                        ></path>
                       </svg>
                     </span>
                   </button>
@@ -518,15 +521,15 @@
           tabindex="-1"
         >
           <button type="button" class="dice-tray-close" id="diceTrayCloseBtn" aria-label="Fechar rolagem de dados">
-            <span>x</span>
+            <span>&times;</span>
           </button>
 
           <p class="section-label dice-tray-kicker">// Mesa</p>
           <div class="dice-tray-header">
             <div class="dice-tray-heading">
-              <h2 class="dice-tray-title" id="diceTrayTitle">Lançar dados</h2>
+              <h2 class="dice-tray-title" id="diceTrayTitle">Mesa de dados</h2>
               <p class="dice-tray-subtitle">
-                Escolha o dado, ajuste a rolagem e acompanhe o resultado no centro da mesa.
+                Escolha o dado, ajuste a rolagem e acompanhe o impacto no centro da mesa.
               </p>
             </div>
             <div class="dice-tray-badge" id="diceTrayBadge">1d20</div>
@@ -579,7 +582,7 @@
               </div>
 
               <div class="dice-tray-stage-col">
-                <div class="dice-tray-stage">
+                <div class="dice-tray-stage" id="diceTrayStage">
                   <div class="dice-stage-aura" aria-hidden="true"></div>
                   <div class="dice-stage-floor" aria-hidden="true"></div>
 

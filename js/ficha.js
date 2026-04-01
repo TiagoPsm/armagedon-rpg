@@ -1535,6 +1535,7 @@ function getDiceTrayElements() {
   return {
     root: document.getElementById("diceTrayRoot"),
     dialog: document.querySelector(".dice-tray-dialog"),
+    stage: document.getElementById("diceTrayStage"),
     optionGrid: document.getElementById("diceOptionGrid"),
     modeGrid: document.getElementById("diceModeGrid"),
     qty: document.getElementById("diceTrayQty"),
@@ -1895,6 +1896,47 @@ function buildDiceTrayResultDetail(result) {
   }`;
 }
 
+function applyDiceTraySpecialState(elements, special) {
+  const { visual, stage, resultCard, resultState } = elements;
+  const classes = ["is-critical", "is-fumble"];
+
+  if (visual) visual.classList.remove(...classes);
+  if (stage) stage.classList.remove(...classes);
+  if (resultCard) resultCard.classList.remove(...classes);
+  if (resultState) {
+    resultState.hidden = true;
+    resultState.textContent = "";
+    resultState.className = "dice-result-state";
+  }
+
+  if (!special) return;
+
+  if (stage) void stage.offsetWidth;
+
+  if (special === "critical") {
+    if (visual) visual.classList.add("is-critical");
+    if (stage) stage.classList.add("is-critical");
+    if (resultCard) resultCard.classList.add("is-critical");
+    if (resultState) {
+      resultState.hidden = false;
+      resultState.textContent = "Crítico dourado";
+      resultState.classList.add("is-critical");
+    }
+    return;
+  }
+
+  if (special === "fumble") {
+    if (visual) visual.classList.add("is-fumble");
+    if (stage) stage.classList.add("is-fumble");
+    if (resultCard) resultCard.classList.add("is-fumble");
+    if (resultState) {
+      resultState.hidden = false;
+      resultState.textContent = "Falha rubra";
+      resultState.classList.add("is-fumble");
+    }
+  }
+}
+
 function rollDiceExpressionWithMode(expression, mode) {
   const normalizedMode = normalizeDiceTrayMode(mode);
   const first = rollDamageExpression(expression);
@@ -1957,16 +1999,9 @@ function renderDiceTray() {
 
   if (elements.visual) {
     elements.visual.dataset.tone = preset.theme;
-    elements.visual.classList.remove("is-critical", "is-fumble");
   }
-  if (elements.resultCard) {
-    elements.resultCard.classList.remove("is-critical", "is-fumble");
-  }
-  if (elements.resultState) {
-    elements.resultState.hidden = true;
-    elements.resultState.textContent = "";
-    elements.resultState.className = "dice-result-state";
-  }
+
+  applyDiceTraySpecialState(elements, "");
 
   if (
     diceTrayState.lastResult
@@ -1975,24 +2010,7 @@ function renderDiceTray() {
   ) {
     if (elements.resultTotal) elements.resultTotal.textContent = String(diceTrayState.lastResult.total);
     if (elements.resultDetail) elements.resultDetail.textContent = buildDiceTrayResultDetail(diceTrayState.lastResult);
-
-    if (diceTrayState.lastResult.special === "critical") {
-      if (elements.visual) elements.visual.classList.add("is-critical");
-      if (elements.resultCard) elements.resultCard.classList.add("is-critical");
-      if (elements.resultState) {
-        elements.resultState.hidden = false;
-        elements.resultState.textContent = "Máximo";
-        elements.resultState.classList.add("is-critical");
-      }
-    } else if (diceTrayState.lastResult.special === "fumble") {
-      if (elements.visual) elements.visual.classList.add("is-fumble");
-      if (elements.resultCard) elements.resultCard.classList.add("is-fumble");
-      if (elements.resultState) {
-        elements.resultState.hidden = false;
-        elements.resultState.textContent = "Mínimo";
-        elements.resultState.classList.add("is-fumble");
-      }
-    }
+    applyDiceTraySpecialState(elements, diceTrayState.lastResult.special);
   } else {
     if (elements.resultTotal) elements.resultTotal.textContent = expression;
     if (elements.resultDetail) {
@@ -2012,15 +2030,16 @@ function renderDiceTray() {
 }
 
 function animateDiceTray(preset) {
-  const { visual } = getDiceTrayElements();
+  const { visual, stage } = getDiceTrayElements();
   if (!visual) return Promise.resolve();
 
-  const fallbackMs = 1500;
+  const fallbackMs = 1050;
   visual.classList.remove("is-rolling", "is-critical", "is-fumble");
+  if (stage) stage.classList.remove("is-critical", "is-fumble");
   void visual.offsetWidth;
-  visual.style.setProperty("--dice-rotate-x", `${880 + Math.floor(Math.random() * 640)}deg`);
-  visual.style.setProperty("--dice-rotate-y", `${920 + Math.floor(Math.random() * 720)}deg`);
-  visual.style.setProperty("--dice-rotate-z", `${220 + Math.floor(Math.random() * 320)}deg`);
+  visual.style.setProperty("--dice-rotate-x", `${620 + Math.floor(Math.random() * 340)}deg`);
+  visual.style.setProperty("--dice-rotate-y", `${680 + Math.floor(Math.random() * 360)}deg`);
+  visual.style.setProperty("--dice-rotate-z", `${140 + Math.floor(Math.random() * 140)}deg`);
   visual.dataset.tone = preset.theme;
   setDiceVisualText(String(preset.sides));
   visual.classList.add("is-rolling");
