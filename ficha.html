@@ -258,22 +258,20 @@
                     id="openDiceTrayBtn"
                     aria-haspopup="dialog"
                     aria-controls="diceTrayRoot"
-                    aria-label="Abrir mesa de dados"
-                    title="Abrir mesa de dados"
+                    aria-label="Abrir rolagem de dados"
+                    title="Abrir rolagem de dados"
                   >
                     <span class="dice-launcher-icon" aria-hidden="true">
                       <svg viewBox="0 0 64 64" class="dice-launcher-svg" focusable="false" aria-hidden="true">
                         <path
-                          d="M32 11l15.5 8.8v18.4L32 47 16.5 38.2V19.8L32 11z"
+                          d="M32 9l18 11v24L32 55 14 44V20L32 9z"
                           fill="none"
                           stroke="currentColor"
                           stroke-width="3"
                           stroke-linejoin="round"
                         ></path>
-                        <path
-                          d="M32 31.5m-2.8 0a2.8 2.8 0 1 0 5.6 0a2.8 2.8 0 1 0-5.6 0"
-                          fill="currentColor"
-                        ></path>
+                        <circle cx="26" cy="28" r="2.5" fill="currentColor"></circle>
+                        <circle cx="38" cy="36" r="2.5" fill="currentColor"></circle>
                       </svg>
                     </span>
                   </button>
@@ -524,15 +522,15 @@
             <span>&times;</span>
           </button>
 
-          <p class="section-label dice-tray-kicker">// Mesa</p>
+          <p class="section-label dice-tray-kicker">// Rolagem</p>
           <div class="dice-tray-header">
             <div class="dice-tray-heading">
-              <h2 class="dice-tray-title" id="diceTrayTitle">Mesa de dados</h2>
+              <h2 class="dice-tray-title" id="diceTrayTitle">Lançar dados</h2>
               <p class="dice-tray-subtitle">
-                Escolha o dado, ajuste a rolagem e acompanhe o impacto no centro da mesa.
+                Escolha o dado, ajuste a rolagem e veja o resultado em um painel limpo e direto.
               </p>
             </div>
-            <div class="dice-tray-badge" id="diceTrayBadge">1d20</div>
+            <div class="dice-tray-badge" id="diceTrayBadge">D20</div>
           </div>
 
           <div class="dice-tray-layout">
@@ -570,9 +568,9 @@
                   <input type="text" id="diceTrayExpression" class="form-input" maxlength="24" placeholder="Ex: 2d6+3" />
                 </div>
 
-                <div class="dice-tray-preview">
-                  <span class="item-meta">Expressão</span>
-                  <strong id="diceExpressionPreview">1d20</strong>
+                <div class="dice-tray-preview dice-tray-preview-legacy" hidden>
+                  <span class="item-meta">Expressão atual</span>
+                  <strong>1d20</strong>
                 </div>
 
                 <div class="dice-tray-actions">
@@ -581,21 +579,13 @@
                 </div>
               </div>
 
-              <div class="dice-tray-stage-col">
-                <div class="dice-tray-stage" id="diceTrayStage">
-                  <div class="dice-stage-aura" aria-hidden="true"></div>
-                  <div class="dice-stage-floor" aria-hidden="true"></div>
-
-                  <div class="dice-visual-shell">
-                    <div class="dice-visual" id="diceVisual" data-tone="gold">
-                      <span class="dice-face face-front">20</span>
-                      <span class="dice-face face-back">20</span>
-                      <span class="dice-face face-right">20</span>
-                      <span class="dice-face face-left">20</span>
-                      <span class="dice-face face-top">20</span>
-                      <span class="dice-face face-bottom">20</span>
-                    </div>
-                  </div>
+              <aside class="dice-tray-side">
+                <div class="dice-tray-preview">
+                  <span class="item-meta">Resumo</span>
+                  <strong id="diceExpressionPreview">1d20</strong>
+                  <p class="dice-tray-preview-note">
+                    A expressão livre substitui a quantidade, o dado e o modificador.
+                  </p>
                 </div>
 
                 <div class="dice-result-card" id="diceResultCard">
@@ -604,7 +594,7 @@
                   <strong id="diceResultTotal">Pronto para rolar</strong>
                   <p id="diceResultDetail">Selecione um dado para iniciar a rolagem.</p>
                 </div>
-              </div>
+              </aside>
           </div>
         </section>
       </div>

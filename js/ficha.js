@@ -1,4 +1,4 @@
-const SHEETS_KEY = "tc_sheets";
+﻿const SHEETS_KEY = "tc_sheets";
 const NPCS_KEY = "tc_npcs";
 const MONSTERS_KEY = "tc_monsters";
 const REMOTE_SHEETS_KEY = "tc_remote_sheets";
@@ -8,17 +8,17 @@ const ATTRIBUTES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"]
 const DEFAULT_INVENTORY_SLOTS = 20;
 const ITEM_TYPES = {
   arma: "Arma",
-  acessorio: "Acessório",
+  acessorio: "AcessÃ³rio",
   outro: "Outro"
 };
 const DICE_PRESETS = [
-  { key: "d4", label: "D4", sides: 4, subtitle: "Tetraedro", theme: "ember" },
-  { key: "d6", label: "D6", sides: 6, subtitle: "Cubo", theme: "ash" },
-  { key: "d8", label: "D8", sides: 8, subtitle: "Octaedro", theme: "ember" },
-  { key: "d10", label: "D10", sides: 10, subtitle: "Decaedro", theme: "ember" },
-  { key: "d12", label: "D12", sides: 12, subtitle: "Dodecaedro", theme: "gold" },
-  { key: "d20", label: "D20", sides: 20, subtitle: "Vinte faces", theme: "gold" },
-  { key: "d100", label: "D100", sides: 100, subtitle: "Percentual", theme: "frost" }
+  { key: "d4", label: "D4", sides: 4 },
+  { key: "d6", label: "D6", sides: 6 },
+  { key: "d8", label: "D8", sides: 8 },
+  { key: "d10", label: "D10", sides: 10 },
+  { key: "d12", label: "D12", sides: 12 },
+  { key: "d20", label: "D20", sides: 20 },
+  { key: "d100", label: "D100", sides: 100 }
 ];
 const DICE_TRAY_MODES = {
   normal: "Normal",
@@ -301,7 +301,7 @@ async function addPlayer() {
   errEl.textContent = "";
 
   if (!username || !password) {
-    errEl.textContent = "Usuário e senha são obrigatórios.";
+    errEl.textContent = "UsuÃ¡rio e senha sÃ£o obrigatÃ³rios.";
     return;
   }
 
@@ -325,7 +325,7 @@ async function addPlayer() {
   } else {
     const players = AUTH.getPlayers();
     if (players.find(player => player.username.toLowerCase() === username.toLowerCase())) {
-      errEl.textContent = "Já existe um jogador com esse nome.";
+      errEl.textContent = "JÃ¡ existe um jogador com esse nome.";
       return;
     }
 
@@ -360,7 +360,7 @@ async function addNpc() {
   } else {
     const npcs = readNpcs();
     if (npcs.some(npc => npc.name.toLowerCase() === name.toLowerCase())) {
-      errEl.textContent = "Já existe um NPC com esse nome.";
+      errEl.textContent = "JÃ¡ existe um NPC com esse nome.";
       return;
     }
 
@@ -406,7 +406,7 @@ async function addMonster() {
   } else {
     const monsters = readMonsters();
     if (monsters.some(monster => monster.name.toLowerCase() === name.toLowerCase())) {
-      errEl.textContent = "Já existe um monstro com esse nome.";
+      errEl.textContent = "JÃ¡ existe um monstro com esse nome.";
       return;
     }
 
@@ -473,9 +473,9 @@ function resetMonsterForm() {
 }
 
 async function removePlayer(username) {
-  const confirmed = await UI.confirm(`Remover "${username}"? A ficha será apagada.`, {
+  const confirmed = await UI.confirm(`Remover "${username}"? A ficha serÃ¡ apagada.`, {
     title: "Excluir jogador",
-    kicker: "// Confirmação",
+    kicker: "// ConfirmaÃ§Ã£o",
     confirmLabel: "Remover",
     cancelLabel: "Cancelar",
     variant: "danger"
@@ -520,7 +520,7 @@ function openSheetLegacy(target, fromMaster) {
 
   if (sheetUser) {
     sheetUser.textContent =
-      resolvedTarget.kind === "npc" ? `${resolvedTarget.label} · NPC` : resolvedTarget.label;
+      resolvedTarget.kind === "npc" ? `${resolvedTarget.label} Â· NPC` : resolvedTarget.label;
   }
   if (backButton) backButton.style.display = fromMaster ? "inline-block" : "none";
   if (sheetKindLabel) {
@@ -529,8 +529,8 @@ function openSheetLegacy(target, fromMaster) {
   if (sheetSaveText) {
     sheetSaveText.textContent =
       resolvedTarget.kind === "npc"
-        ? "Toda alteração desta ficha de NPC fica salva neste navegador do mestre."
-        : "Toda alteração da ficha fica salva para o usuário correto.";
+        ? "Toda alteraÃ§Ã£o desta ficha de NPC fica salva neste navegador do mestre."
+        : "Toda alteraÃ§Ã£o da ficha fica salva para o usuÃ¡rio correto.";
   }
 
   loadSheet(resolvedTarget.key);
@@ -1052,9 +1052,9 @@ async function removeNpc(npcId) {
   const npc = npcs.find(candidate => candidate.id === npcId);
   if (!npc) return;
 
-  const confirmed = await UI.confirm(`Apagar o NPC "${npc.name}"? A ficha será apagada.`, {
+  const confirmed = await UI.confirm(`Apagar o NPC "${npc.name}"? A ficha serÃ¡ apagada.`, {
     title: "Excluir NPC",
-    kicker: "// Confirmação",
+    kicker: "// ConfirmaÃ§Ã£o",
     confirmLabel: "Excluir",
     cancelLabel: "Cancelar",
     variant: "danger"
@@ -1083,9 +1083,9 @@ async function removeMonster(monsterId) {
   const monster = monsters.find(candidate => candidate.id === monsterId);
   if (!monster) return;
 
-  const confirmed = await UI.confirm(`Apagar o monstro "${monster.name}"? A ficha será apagada.`, {
+  const confirmed = await UI.confirm(`Apagar o monstro "${monster.name}"? A ficha serÃ¡ apagada.`, {
     title: "Excluir monstro",
-    kicker: "// Confirmação",
+    kicker: "// ConfirmaÃ§Ã£o",
     confirmLabel: "Excluir",
     cancelLabel: "Cancelar",
     variant: "danger"
@@ -1346,12 +1346,12 @@ async function openItemTypePicker() {
   const selectedType = await UI.pickOption({
     title: "Escolher categoria",
     kicker: "// Item",
-    message: "Defina o tipo do item para habilitar os campos específicos.",
+    message: "Defina o tipo do item para habilitar os campos especÃ­ficos.",
     cancelLabel: "Fechar",
     options: [
       { value: "outro", label: "Outro", meta: "Item geral", selected: currentType === "outro" },
       { value: "arma", label: "Arma", meta: "Permite rolagem de dano", selected: currentType === "arma" },
-      { value: "acessorio", label: "Acessório", meta: "Equipável ou passivo", selected: currentType === "acessorio" }
+      { value: "acessorio", label: "AcessÃ³rio", meta: "EquipÃ¡vel ou passivo", selected: currentType === "acessorio" }
     ]
   });
 
@@ -1492,12 +1492,12 @@ async function rollItemDamage(index, options = {}) {
   if (!result) {
     itemRollStates[index] = {
       tone: "fail",
-      text: "Defina um dano válido, como 1d10 ou 2d6+3."
+      text: "Defina um dano vÃ¡lido, como 1d10 ou 2d6+3."
     };
     renderInv(inv);
-    await UI.alert("Defina um dano válido para a arma, por exemplo 1d10 ou 2d6+3.", {
-      title: "Dano inválido",
-      kicker: "// Inventário"
+    await UI.alert("Defina um dano vÃ¡lido para a arma, por exemplo 1d10 ou 2d6+3.", {
+      title: "Dano invÃ¡lido",
+      kicker: "// InventÃ¡rio"
     });
     if (options.preserveModal) openItemEditor(index, { isNew: itemEditorIsNew });
     return;
@@ -1535,7 +1535,6 @@ function getDiceTrayElements() {
   return {
     root: document.getElementById("diceTrayRoot"),
     dialog: document.querySelector(".dice-tray-dialog"),
-    stage: document.getElementById("diceTrayStage"),
     optionGrid: document.getElementById("diceOptionGrid"),
     modeGrid: document.getElementById("diceModeGrid"),
     qty: document.getElementById("diceTrayQty"),
@@ -1546,7 +1545,6 @@ function getDiceTrayElements() {
     cancel: document.getElementById("diceTrayCancelBtn"),
     close: document.getElementById("diceTrayCloseBtn"),
     badge: document.getElementById("diceTrayBadge"),
-    visual: document.getElementById("diceVisual"),
     resultCard: document.getElementById("diceResultCard"),
     resultState: document.getElementById("diceResultState"),
     resultTotal: document.getElementById("diceResultTotal"),
@@ -1582,19 +1580,6 @@ function getActiveDiceTrayExpression() {
   return customExpression || buildDiceTrayExpression();
 }
 
-function getDiceFacePreviewValue(preset, expression = "") {
-  const parsed = parseDamageExpression(expression);
-  return String(parsed?.diceSides || preset.sides || 20);
-}
-
-function setDiceVisualText(text) {
-  const { visual } = getDiceTrayElements();
-  if (!visual) return;
-  visual.querySelectorAll(".dice-face").forEach(face => {
-    face.textContent = String(text || "20").replace(/^d/i, "").slice(0, 5);
-  });
-}
-
 function renderDiceOptions() {
   const { optionGrid } = getDiceTrayElements();
   if (!optionGrid) return;
@@ -1605,6 +1590,7 @@ function renderDiceOptions() {
       class="dice-option-btn ${diceTrayState.preset === preset.key ? "is-active" : ""}"
       data-dice-option="${preset.key}"
       aria-pressed="${diceTrayState.preset === preset.key ? "true" : "false"}"
+      title="${preset.label}"
     >
       <span class="dice-option-value">${preset.sides}</span>
     </button>
@@ -1630,96 +1616,6 @@ function formatDiceTrayRollSummary(result) {
   return `${result.total} (${result.rolls.join(" + ")}${modifierText})`;
 }
 
-function legacyBuildDiceTrayResultDetail(result) {
-  if (!result) return "";
-
-  if (result.mode === "advantage" || result.mode === "disadvantage") {
-    const modeLabel = DICE_TRAY_MODES[result.mode];
-    return `${modeLabel} | 1ª: ${formatDiceTrayRollSummary(result.first)} | 2ª: ${formatDiceTrayRollSummary(result.second)} | Escolhido: ${result.chosen.total}`;
-  }
-
-  return `Expressão: ${result.expression} | Rolagens: ${result.chosen.rolls.join(" + ")}${
-    result.chosen.modifier
-      ? ` | Modificador: ${result.chosen.modifier > 0 ? "+" : ""}${result.chosen.modifier}`
-      : ""
-  }`;
-}
-
-function legacyRollDiceExpressionWithMode(expression, mode) {
-  const normalizedMode = normalizeDiceTrayMode(mode);
-  const first = rollDamageExpression(expression);
-  if (!first) return null;
-
-  if (normalizedMode === "normal") {
-    return {
-      mode: normalizedMode,
-      expression: first.expression,
-      total: first.total,
-      chosen: first,
-      first,
-      second: null
-    };
-  }
-
-  const second = rollDamageExpression(expression);
-  if (!second) return null;
-
-  const chosen = normalizedMode === "advantage"
-    ? (second.total > first.total ? second : first)
-    : (second.total < first.total ? second : first);
-
-  return {
-    mode: normalizedMode,
-    expression: first.expression,
-    total: chosen.total,
-    chosen,
-    first,
-    second
-  };
-}
-
-function legacyRenderDiceTray() {
-  const elements = getDiceTrayElements();
-  const preset = getDicePreset(diceTrayState.preset);
-  const expression = getActiveDiceTrayExpression();
-
-  if (elements.qty) elements.qty.value = String(clampDiceTrayQuantity(diceTrayState.qty));
-  if (elements.modifier) elements.modifier.value = String(clampDiceTrayModifier(diceTrayState.modifier));
-  if (elements.expression) elements.expression.value = normalizeDamageExpression(diceTrayState.customExpression);
-  if (elements.preview) elements.preview.textContent = expression;
-  if (elements.roll) {
-    elements.roll.disabled = diceTrayState.rolling;
-    elements.roll.textContent = diceTrayState.rolling ? "Rolando..." : "Rolar agora";
-  }
-  if (elements.visual) {
-    elements.visual.dataset.tone = preset.theme;
-  }
-
-  if (
-    diceTrayState.lastResult
-    && diceTrayState.lastResult.expression === expression
-    && diceTrayState.lastResult.mode === diceTrayState.mode
-  ) {
-    if (elements.resultTotal) elements.resultTotal.textContent = String(diceTrayState.lastResult.total);
-    if (elements.resultDetail) elements.resultDetail.textContent = buildDiceTrayResultDetail(diceTrayState.lastResult);
-  } else {
-    if (elements.resultTotal) elements.resultTotal.textContent = expression;
-    if (elements.resultDetail) {
-      const modeLabel = DICE_TRAY_MODES[diceTrayState.mode].toLowerCase();
-      const isCustom = Boolean(normalizeDamageExpression(diceTrayState.customExpression));
-      elements.resultDetail.textContent = isCustom
-        ? `Pronto para rolar ${expression} em modo ${modeLabel}.`
-        : `Pronto para lançar ${preset.label.toLowerCase()}${clampDiceTrayQuantity(diceTrayState.qty) > 1 ? " em sequência" : ""} no modo ${modeLabel}.`;
-    }
-  }
-
-  renderDiceOptions();
-  renderDiceModeButtons();
-  if (!diceTrayState.rolling) {
-    setDiceVisualText(normalizeDamageExpression(diceTrayState.customExpression) || preset.label);
-  }
-}
-
 function openDiceTray() {
   const { root, dialog } = getDiceTrayElements();
   if (!root || !dialog) return;
@@ -1740,67 +1636,6 @@ function closeDiceTray() {
   root.hidden = true;
 }
 
-function legacyAnimateDiceTray(preset) {
-  const { visual } = getDiceTrayElements();
-  if (!visual) return Promise.resolve();
-
-  const fallbackMs = 1250;
-  visual.classList.remove("is-rolling");
-  void visual.offsetWidth;
-  visual.style.setProperty("--dice-rotate-x", `${720 + Math.floor(Math.random() * 540)}deg`);
-  visual.style.setProperty("--dice-rotate-y", `${760 + Math.floor(Math.random() * 620)}deg`);
-  visual.style.setProperty("--dice-rotate-z", `${180 + Math.floor(Math.random() * 240)}deg`);
-  visual.dataset.tone = preset.theme;
-  setDiceVisualText(preset.label);
-  visual.classList.add("is-rolling");
-
-  return new Promise(resolve => {
-    let settled = false;
-    const finish = () => {
-      if (settled) return;
-      settled = true;
-      visual.classList.remove("is-rolling");
-      resolve();
-    };
-
-    visual.addEventListener("animationend", finish, { once: true });
-    window.setTimeout(finish, fallbackMs);
-  });
-}
-
-async function legacyRollDiceTray() {
-  if (diceTrayState.rolling) return;
-
-  const elements = getDiceTrayElements();
-  diceTrayState.qty = clampDiceTrayQuantity(elements.qty?.value ?? diceTrayState.qty);
-  diceTrayState.modifier = clampDiceTrayModifier(elements.modifier?.value ?? diceTrayState.modifier);
-  diceTrayState.customExpression = normalizeDamageExpression(elements.expression?.value ?? diceTrayState.customExpression);
-  diceTrayState.mode = normalizeDiceTrayMode(diceTrayState.mode);
-
-  const preset = getDicePreset(diceTrayState.preset);
-  const expression = getActiveDiceTrayExpression();
-  const result = rollDiceExpressionWithMode(expression, diceTrayState.mode);
-
-  if (!result) {
-    await UI.alert("Não foi possível interpretar essa rolagem.", {
-      title: "Rolagem inválida",
-      kicker: "// Dados"
-    });
-    return;
-  }
-
-  diceTrayState.rolling = true;
-  diceTrayState.lastResult = null;
-  renderDiceTray();
-
-  await animateDiceTray(preset);
-
-  diceTrayState.rolling = false;
-  diceTrayState.lastResult = result;
-  setDiceVisualText(String(result.total));
-  renderDiceTray();
-}
-
 function initDiceTray() {
   const { root, dialog, qty, modifier, expression, roll, cancel, close, optionGrid, modeGrid } = getDiceTrayElements();
   const openButton = document.getElementById("openDiceTrayBtn");
@@ -1808,6 +1643,24 @@ function initDiceTray() {
 
   if (root.parentElement !== document.body) {
     document.body.appendChild(root);
+  }
+
+  const trayKicker = root.querySelector(".dice-tray-kicker");
+  const trayTitle = document.getElementById("diceTrayTitle");
+  const traySubtitle = root.querySelector(".dice-tray-subtitle");
+  const expressionLabel = root.querySelector('label[for="diceTrayExpression"]');
+  const previewLabel = root.querySelector(".dice-tray-side .item-meta");
+  const previewNote = root.querySelector(".dice-tray-preview-note");
+
+  if (trayKicker) trayKicker.textContent = "// Rolagem";
+  if (trayTitle) trayTitle.textContent = "Lançar dados";
+  if (traySubtitle) {
+    traySubtitle.textContent = "Escolha o dado, ajuste a rolagem e veja o resultado em um painel limpo e direto.";
+  }
+  if (expressionLabel) expressionLabel.textContent = "Expressão livre";
+  if (previewLabel) previewLabel.textContent = "Resumo";
+  if (previewNote) {
+    previewNote.textContent = "A expressão livre substitui a quantidade, o dado e o modificador.";
   }
 
   openButton.addEventListener("click", openDiceTray);
@@ -1886,7 +1739,7 @@ function buildDiceTrayResultDetail(result) {
 
   if (result.mode === "advantage" || result.mode === "disadvantage") {
     const modeLabel = DICE_TRAY_MODES[result.mode];
-    return `${modeLabel} | 1ª: ${formatDiceTrayRollSummary(result.first)} | 2ª: ${formatDiceTrayRollSummary(result.second)}`;
+    return `${modeLabel} | 1ª: ${result.first.total} | 2ª: ${result.second.total} | Escolhido: ${result.chosen.total}`;
   }
 
   return `Rolagens: ${result.chosen.rolls.join(" + ")}${
@@ -1897,11 +1750,9 @@ function buildDiceTrayResultDetail(result) {
 }
 
 function applyDiceTraySpecialState(elements, special) {
-  const { visual, stage, resultCard, resultState } = elements;
+  const { resultCard, resultState } = elements;
   const classes = ["is-critical", "is-fumble"];
 
-  if (visual) visual.classList.remove(...classes);
-  if (stage) stage.classList.remove(...classes);
   if (resultCard) resultCard.classList.remove(...classes);
   if (resultState) {
     resultState.hidden = true;
@@ -1911,11 +1762,7 @@ function applyDiceTraySpecialState(elements, special) {
 
   if (!special) return;
 
-  if (stage) void stage.offsetWidth;
-
   if (special === "critical") {
-    if (visual) visual.classList.add("is-critical");
-    if (stage) stage.classList.add("is-critical");
     if (resultCard) resultCard.classList.add("is-critical");
     if (resultState) {
       resultState.hidden = false;
@@ -1926,8 +1773,6 @@ function applyDiceTraySpecialState(elements, special) {
   }
 
   if (special === "fumble") {
-    if (visual) visual.classList.add("is-fumble");
-    if (stage) stage.classList.add("is-fumble");
     if (resultCard) resultCard.classList.add("is-fumble");
     if (resultState) {
       resultState.hidden = false;
@@ -1985,20 +1830,15 @@ function renderDiceTray() {
   const preset = getDicePreset(diceTrayState.preset);
   const expression = getActiveDiceTrayExpression();
   const customExpression = normalizeDamageExpression(diceTrayState.customExpression);
-  const previewFace = getDiceFacePreviewValue(preset, expression);
 
   if (elements.qty) elements.qty.value = String(clampDiceTrayQuantity(diceTrayState.qty));
   if (elements.modifier) elements.modifier.value = String(clampDiceTrayModifier(diceTrayState.modifier));
   if (elements.expression) elements.expression.value = customExpression;
   if (elements.preview) elements.preview.textContent = expression;
-  if (elements.badge) elements.badge.textContent = expression;
+  if (elements.badge) elements.badge.textContent = preset.label;
   if (elements.roll) {
     elements.roll.disabled = diceTrayState.rolling;
     elements.roll.textContent = diceTrayState.rolling ? "Rolando..." : "Rolar agora";
-  }
-
-  if (elements.visual) {
-    elements.visual.dataset.tone = preset.theme;
   }
 
   applyDiceTraySpecialState(elements, "");
@@ -2012,50 +1852,18 @@ function renderDiceTray() {
     if (elements.resultDetail) elements.resultDetail.textContent = buildDiceTrayResultDetail(diceTrayState.lastResult);
     applyDiceTraySpecialState(elements, diceTrayState.lastResult.special);
   } else {
-    if (elements.resultTotal) elements.resultTotal.textContent = expression;
+    if (elements.resultTotal) elements.resultTotal.textContent = "Pronto";
     if (elements.resultDetail) {
       const modeLabel = DICE_TRAY_MODES[diceTrayState.mode].toLowerCase();
       const isCustom = Boolean(customExpression);
       elements.resultDetail.textContent = isCustom
-        ? `Pronto para rolar ${expression} em modo ${modeLabel}.`
-        : `Pronto para rolar ${expression}${clampDiceTrayQuantity(diceTrayState.qty) > 1 ? " em sequência" : ""} no modo ${modeLabel}.`;
+        ? `Expressão pronta: ${expression}. Modo ${modeLabel}.`
+        : `Selecione os dados e role em modo ${modeLabel}.`;
     }
   }
 
   renderDiceOptions();
   renderDiceModeButtons();
-  if (!diceTrayState.rolling) {
-    setDiceVisualText(diceTrayState.lastResult?.total ?? previewFace);
-  }
-}
-
-function animateDiceTray(preset) {
-  const { visual, stage } = getDiceTrayElements();
-  if (!visual) return Promise.resolve();
-
-  const fallbackMs = 1050;
-  visual.classList.remove("is-rolling", "is-critical", "is-fumble");
-  if (stage) stage.classList.remove("is-critical", "is-fumble");
-  void visual.offsetWidth;
-  visual.style.setProperty("--dice-rotate-x", `${620 + Math.floor(Math.random() * 340)}deg`);
-  visual.style.setProperty("--dice-rotate-y", `${680 + Math.floor(Math.random() * 360)}deg`);
-  visual.style.setProperty("--dice-rotate-z", `${140 + Math.floor(Math.random() * 140)}deg`);
-  visual.dataset.tone = preset.theme;
-  setDiceVisualText(String(preset.sides));
-  visual.classList.add("is-rolling");
-
-  return new Promise(resolve => {
-    let settled = false;
-    const finish = () => {
-      if (settled) return;
-      settled = true;
-      visual.classList.remove("is-rolling");
-      resolve();
-    };
-
-    visual.addEventListener("animationend", finish, { once: true });
-    window.setTimeout(finish, fallbackMs);
-  });
 }
 
 async function rollDiceTray() {
@@ -2067,7 +1875,6 @@ async function rollDiceTray() {
   diceTrayState.customExpression = normalizeDamageExpression(elements.expression?.value ?? diceTrayState.customExpression);
   diceTrayState.mode = normalizeDiceTrayMode(diceTrayState.mode);
 
-  const preset = getDicePreset(diceTrayState.preset);
   const expression = getActiveDiceTrayExpression();
   const result = rollDiceExpressionWithMode(expression, diceTrayState.mode);
 
@@ -2080,17 +1887,11 @@ async function rollDiceTray() {
   }
 
   diceTrayState.rolling = true;
-  diceTrayState.lastResult = null;
   renderDiceTray();
-
-  await animateDiceTray(preset);
-
-  diceTrayState.rolling = false;
   diceTrayState.lastResult = result;
-  setDiceVisualText(String(result.total));
+  diceTrayState.rolling = false;
   renderDiceTray();
 }
-
 function renderHabs(list) {
   habs = list.map(normalizeHab);
   const element = document.getElementById("habList");
@@ -2106,7 +1907,7 @@ function renderHabs(list) {
       (hab, index) => `
         <div class="hab-row">
           <input class="hab-name" type="text" placeholder="Nome..." value="${esc(hab.name)}" oninput="updateHab(${index}, 'name', this.value)"/>
-          <textarea class="hab-desc auto-grow" rows="3" placeholder="Efeito, custo, descrição..." oninput="updateHab(${index}, 'desc', this.value)">${esc(hab.desc)}</textarea>
+          <textarea class="hab-desc auto-grow" rows="3" placeholder="Efeito, custo, descriÃ§Ã£o..." oninput="updateHab(${index}, 'desc', this.value)">${esc(hab.desc)}</textarea>
           <button class="btn-remove" onclick="removeHab(${index})">x</button>
         </div>
       `
@@ -2151,7 +1952,7 @@ function renderOwnedMemories(list) {
 
   if (!ownedMemories.length) {
     element.className = "";
-    element.innerHTML = '<p class="empty-msg">Nenhuma memória possuída.</p>';
+    element.innerHTML = '<p class="empty-msg">Nenhuma memÃ³ria possuÃ­da.</p>';
     return;
   }
 
@@ -2166,9 +1967,9 @@ function renderOwnedMemories(list) {
           data-source="${esc(memory.source)}"
         >
           <div class="owned-memory-body">
-            <span class="item-meta">Memória</span>
-            <h3 class="owned-memory-title">${esc(memory.name || "Memória sem nome")}</h3>
-            <p class="owned-memory-desc">${esc(memory.desc || "Sem descrição.")}</p>
+            <span class="item-meta">MemÃ³ria</span>
+            <h3 class="owned-memory-title">${esc(memory.name || "MemÃ³ria sem nome")}</h3>
+            <p class="owned-memory-desc">${esc(memory.desc || "Sem descriÃ§Ã£o.")}</p>
             ${
               memory.source
                 ? `<span class="owned-memory-source">Origem: ${esc(memory.source)}</span>`
@@ -2223,8 +2024,8 @@ function renderOwnedMemoryTransferBlock(index, targets) {
   if (!targets.length) {
     return `
       <div class="owned-memory-transfer">
-        <span class="item-meta">Transferência</span>
-        <div class="memory-award-status">Não há outro jogador disponível para receber esta memória.</div>
+        <span class="item-meta">TransferÃªncia</span>
+        <div class="memory-award-status">NÃ£o hÃ¡ outro jogador disponÃ­vel para receber esta memÃ³ria.</div>
       </div>
     `;
   }
@@ -2255,7 +2056,7 @@ function renderOwnedMemoryTransferBlock(index, targets) {
         </button>
         <button class="btn-inline owned-memory-transfer-send" onclick="transferOwnedMemory(${index})">Enviar</button>
       </div>
-          <div class="${statusClass}">${esc(state.text || "Selecione o jogador de destino para transferir esta memória.")}</div>
+          <div class="${statusClass}">${esc(state.text || "Selecione o jogador de destino para transferir esta memÃ³ria.")}</div>
     </div>
   `;
 }
@@ -2270,9 +2071,9 @@ async function pickOwnedMemoryTransferTarget(index) {
     : targets[0].value;
 
   const selected = await UI.pickOption({
-    title: "Transferir memória",
+    title: "Transferir memÃ³ria",
     kicker: "// Jogadores",
-    message: "Escolha qual jogador vai receber esta memória.",
+    message: "Escolha qual jogador vai receber esta memÃ³ria.",
     options: targets.map(target => ({
       value: target.value,
       label: target.label,
@@ -2287,7 +2088,7 @@ async function pickOwnedMemoryTransferTarget(index) {
     ...state,
     target: selected,
     tone: "",
-    text: "Destino definido. Clique em Enviar para concluir a transferência."
+    text: "Destino definido. Clique em Enviar para concluir a transferÃªncia."
   };
 
   renderOwnedMemories(ownedMemories);
@@ -2303,10 +2104,10 @@ async function transferOwnedMemory(index) {
 
   const target = createPlayerTarget(targetUsername);
   const confirmed = await UI.confirm(
-      `Transferir "${memory.name || "Memória sem nome"}" para ${target.label}?`,
+      `Transferir "${memory.name || "MemÃ³ria sem nome"}" para ${target.label}?`,
     {
-        title: "Transferir memória",
-        kicker: "// Memórias possuídas",
+        title: "Transferir memÃ³ria",
+        kicker: "// MemÃ³rias possuÃ­das",
       confirmLabel: "Transferir",
       cancelLabel: "Cancelar"
     }
@@ -2326,7 +2127,7 @@ async function transferOwnedMemory(index) {
       ownedMemoryTransferStates[index] = {
         ...state,
         tone: "fail",
-      text: error?.message || "Falha ao transferir a memória."
+      text: error?.message || "Falha ao transferir a memÃ³ria."
       };
       renderOwnedMemories(ownedMemories);
       return;
@@ -2389,7 +2190,7 @@ function parseMemoryAwardTarget(value) {
 
 function buildOwnedMemoryEntry(drop) {
   return normalizeOwnedMemory({
-    name: String(drop?.name || "").trim() || "Memória sem nome",
+    name: String(drop?.name || "").trim() || "MemÃ³ria sem nome",
     desc: String(drop?.desc || "").trim(),
     source: currentSheetTarget?.label || "Origem desconhecida"
   });
@@ -2416,7 +2217,7 @@ function applyMemoryRollState(index) {
     result.className = "memory-roll-result";
     if (state?.status) result.classList.add(`is-${state.status}`);
     if (state?.isRolling) result.classList.add("is-rolling");
-    result.textContent = state?.resultText || "Defina a chance e role para descobrir se a memória caiu.";
+    result.textContent = state?.resultText || "Defina a chance e role para descobrir se a memÃ³ria caiu.";
   }
 
   renderMemoryAwardControls(index);
@@ -2446,16 +2247,16 @@ function renderMemoryAwardControls(index) {
 
   if (state.awarded) {
     award.innerHTML = `
-      <span class="item-meta">Memória enviada</span>
-      <div class="${statusClass}">${esc(state.awardText || "Memória enviada para a ficha escolhida.")}</div>
+      <span class="item-meta">MemÃ³ria enviada</span>
+      <div class="${statusClass}">${esc(state.awardText || "MemÃ³ria enviada para a ficha escolhida.")}</div>
     `;
     return;
   }
 
   if (!targets.length) {
     award.innerHTML = `
-      <span class="item-meta">Enviar memória</span>
-      <div class="memory-award-status is-fail">Não há jogadores ou NPCs disponíveis para receber esta memória.</div>
+      <span class="item-meta">Enviar memÃ³ria</span>
+      <div class="memory-award-status is-fail">NÃ£o hÃ¡ jogadores ou NPCs disponÃ­veis para receber esta memÃ³ria.</div>
     `;
     return;
   }
@@ -2470,13 +2271,13 @@ function renderMemoryAwardControls(index) {
   };
 
   award.innerHTML = `
-    <span class="item-meta">Enviar memória para</span>
+    <span class="item-meta">Enviar memÃ³ria para</span>
     <button class="btn-inline memory-picker-btn" onclick="pickMemoryAwardTarget(${index})">
       <span class="memory-picker-label">${esc(formatMemoryTargetLabel(selectedTarget, targets, "Escolher destino"))}</span>
       <span class="memory-picker-hint">Alterar</span>
     </button>
     <button class="btn-inline memory-award-btn" onclick="awardMemoryDrop(${index})">Enviar para ficha</button>
-    <div class="${statusClass}">${esc(state.awardText || "A memória caiu. Escolha quem vai recebê-la.")}</div>
+    <div class="${statusClass}">${esc(state.awardText || "A memÃ³ria caiu. Escolha quem vai recebÃª-la.")}</div>
   `;
 }
 
@@ -2492,9 +2293,9 @@ async function pickMemoryAwardTarget(index) {
     : targets[0].value;
 
   const selected = await UI.pickOption({
-    title: "Enviar memória",
+    title: "Enviar memÃ³ria",
     kicker: "// Destino",
-    message: "Escolha quem vai receber esta memória.",
+    message: "Escolha quem vai receber esta memÃ³ria.",
     options: targets.map(target => ({
       value: target.value,
       label: target.label,
@@ -2522,7 +2323,7 @@ function renderMemoryDrops(list) {
 
   if (!memoryDrops.length) {
     element.className = "";
-    element.innerHTML = '<p class="empty-msg">Nenhuma memória definida.</p>';
+    element.innerHTML = '<p class="empty-msg">Nenhuma memÃ³ria definida.</p>';
     return;
   }
 
@@ -2533,13 +2334,13 @@ function renderMemoryDrops(list) {
         <div class="memory-row">
           <div class="memory-main">
             <div class="memory-field">
-              <span class="item-meta">Memória</span>
-              <input class="memory-name" type="text" placeholder="Nome da memória..." value="${esc(drop.name)}" oninput="updateMemoryDrop(${index}, 'name', this.value)" />
+              <span class="item-meta">MemÃ³ria</span>
+              <input class="memory-name" type="text" placeholder="Nome da memÃ³ria..." value="${esc(drop.name)}" oninput="updateMemoryDrop(${index}, 'name', this.value)" />
             </div>
 
             <div class="memory-field">
-              <span class="item-meta">Descrição e efeito</span>
-              <textarea class="memory-desc auto-grow" rows="3" placeholder="Descrição do drop, raridade, condição ou efeito..." oninput="updateMemoryDrop(${index}, 'desc', this.value)">${esc(drop.desc)}</textarea>
+              <span class="item-meta">DescriÃ§Ã£o e efeito</span>
+              <textarea class="memory-desc auto-grow" rows="3" placeholder="DescriÃ§Ã£o do drop, raridade, condiÃ§Ã£o ou efeito..." oninput="updateMemoryDrop(${index}, 'desc', this.value)">${esc(drop.desc)}</textarea>
             </div>
           </div>
 
@@ -2560,7 +2361,7 @@ function renderMemoryDrops(list) {
                 <div class="memory-roll-threshold" id="memoryThreshold${index}" style="left:${formatChancePercent(drop.chance)}%"></div>
                 <div class="memory-roll-fill" id="memoryRollFill${index}"></div>
               </div>
-          <div class="memory-roll-result" id="memoryRollResult${index}">Defina a chance e role para descobrir se a memória caiu.</div>
+          <div class="memory-roll-result" id="memoryRollResult${index}">Defina a chance e role para descobrir se a memÃ³ria caiu.</div>
             </div>
 
             <div class="memory-award" id="memoryAward${index}" hidden></div>
@@ -2626,7 +2427,7 @@ async function rollMemoryDrop(index) {
   delete memoryRollStates[index];
   renderMemoryAwardControls(index);
   result.className = "memory-roll-result is-rolling";
-  result.textContent = "Rolando o destino da memória...";
+  result.textContent = "Rolando o destino da memÃ³ria...";
 
   let chance = formatChancePercent(drop.chance);
   let rolled = Number((Math.random() * 100).toFixed(1));
@@ -2643,7 +2444,7 @@ async function rollMemoryDrop(index) {
       success = Boolean(remoteResult.success);
     } catch (error) {
       result.className = "memory-roll-result is-fail";
-    result.textContent = error?.message || "Falha ao rolar o drop da memória.";
+    result.textContent = error?.message || "Falha ao rolar o drop da memÃ³ria.";
       return;
     }
   }
@@ -2665,8 +2466,8 @@ async function rollMemoryDrop(index) {
       awardTone: "",
       awardText: "",
       resultText: success
-        ? `Memória obtida. Rolagem ${rolled}% dentro da chance de ${chance}%.`
-        : `Sem memória. Rolagem ${rolled}% acima da chance de ${chance}%.`
+        ? `MemÃ³ria obtida. Rolagem ${rolled}% dentro da chance de ${chance}%.`
+        : `Sem memÃ³ria. Rolagem ${rolled}% acima da chance de ${chance}%.`
     };
     applyMemoryRollState(index);
   }, 1250);
@@ -2676,14 +2477,14 @@ async function awardMemoryDrop(index) {
   const drop = memoryDrops[index];
   const state = memoryRollStates[index];
   if (!drop || !state?.success || state.awarded) return;
-  const awardedMemoryName = String(drop?.name || "").trim() || "Memória sem nome";
+  const awardedMemoryName = String(drop?.name || "").trim() || "MemÃ³ria sem nome";
 
   const target = parseMemoryAwardTarget(state.target);
   if (!target || target.kind === "monster") {
     memoryRollStates[index] = {
       ...state,
       awardTone: "fail",
-      awardText: "Escolha um jogador ou NPC válido para receber a memória."
+      awardText: "Escolha um jogador ou NPC vÃ¡lido para receber a memÃ³ria."
     };
     renderMemoryAwardControls(index);
     return;
@@ -2700,7 +2501,7 @@ async function awardMemoryDrop(index) {
       memoryRollStates[index] = {
         ...state,
         awardTone: "fail",
-      awardText: error?.message || "Falha ao enviar a memória."
+      awardText: error?.message || "Falha ao enviar a memÃ³ria."
       };
       renderMemoryAwardControls(index);
       return;
@@ -2779,7 +2580,7 @@ function renderItemTransferBlock(index, targets) {
     return `
       <div class="item-transfer">
         <span class="item-meta">Troca de item</span>
-        <div class="memory-award-status">Nenhum jogador disponível com slot livre para receber este item.</div>
+        <div class="memory-award-status">Nenhum jogador disponÃ­vel com slot livre para receber este item.</div>
       </div>
     `;
   }
@@ -2810,7 +2611,7 @@ function renderItemTransferBlock(index, targets) {
         </button>
         <button class="btn-inline item-transfer-send" onclick="transferItem(${index})">Enviar</button>
       </div>
-      <div class="${statusClass}">${esc(state.text || "O item só pode ser enviado para jogadores com slot livre no inventário.")}</div>
+      <div class="${statusClass}">${esc(state.text || "O item sÃ³ pode ser enviado para jogadores com slot livre no inventÃ¡rio.")}</div>
     </div>
   `;
 }
@@ -2840,7 +2641,7 @@ async function pickItemTransferTarget(index) {
 
   const selected = await UI.pickOption({
     title: "Transferir item",
-    kicker: "// Inventário",
+    kicker: "// InventÃ¡rio",
     message: "Escolha qual jogador vai receber este item.",
     options: targets.map(target => ({
       value: target.value,
@@ -2856,7 +2657,7 @@ async function pickItemTransferTarget(index) {
     ...state,
     target: selected,
     tone: "",
-    text: "Destino definido. Clique em Enviar para concluir a transferência."
+    text: "Destino definido. Clique em Enviar para concluir a transferÃªncia."
   };
 
   if (itemEditorIndex === index) {
@@ -2882,7 +2683,7 @@ async function transferItem(index) {
     itemTransferStates[index] = {
       ...state,
       tone: "fail",
-      text: "Nenhum jogador com slot livre está disponível para receber este item."
+      text: "Nenhum jogador com slot livre estÃ¡ disponÃ­vel para receber este item."
     };
     if (itemEditorIndex === index) {
       renderItemEditorTransfer(index);
@@ -2897,7 +2698,7 @@ async function transferItem(index) {
     itemTransferStates[index] = {
       ...state,
       tone: "fail",
-      text: `${target.label} está com a mochila cheia.`
+      text: `${target.label} estÃ¡ com a mochila cheia.`
     };
     if (itemEditorIndex === index) {
       renderItemEditorTransfer(index);
@@ -2911,7 +2712,7 @@ async function transferItem(index) {
     `Transferir "${item.name || "Item sem nome"}" para ${target.label}?`,
     {
       title: "Transferir item",
-      kicker: "// Inventário",
+      kicker: "// InventÃ¡rio",
       confirmLabel: "Transferir",
       cancelLabel: "Cancelar"
     }
@@ -3011,7 +2812,7 @@ function renderInv(list) {
           <button class="item-slot-btn" onclick="addItem()" ${used >= capacity ? "disabled" : ""}>
             <span class="item-slot-index">Slot ${index + 1}</span>
             <strong class="item-slot-plus">+</strong>
-            <span class="item-slot-copy">${used >= capacity ? "Inventário cheio" : "Slot vazio"}</span>
+            <span class="item-slot-copy">${used >= capacity ? "InventÃ¡rio cheio" : "Slot vazio"}</span>
           </button>
         </article>
       `;
@@ -3063,8 +2864,8 @@ async function addItem() {
     inv.length
   );
   if (inv.length >= capacity) {
-    await UI.alert("Todos os slots atuais do inventário já estão ocupados.", {
-      title: "Inventário cheio",
+    await UI.alert("Todos os slots atuais do inventÃ¡rio jÃ¡ estÃ£o ocupados.", {
+      title: "InventÃ¡rio cheio",
       kicker: "// Slots",
       confirmLabel: "Fechar"
     });
@@ -3121,10 +2922,10 @@ async function changeInventorySlots(direction) {
 
   if (direction < 0 && targetCapacity < minimumCapacity) {
     await UI.alert(
-      `Não é possível reduzir abaixo de ${minimumCapacity} slots porque a ficha usa ${inv.length} item(ns) e o mínimo padrão é ${DEFAULT_INVENTORY_SLOTS}.`,
+      `NÃ£o Ã© possÃ­vel reduzir abaixo de ${minimumCapacity} slots porque a ficha usa ${inv.length} item(ns) e o mÃ­nimo padrÃ£o Ã© ${DEFAULT_INVENTORY_SLOTS}.`,
       {
-        title: "Redução bloqueada",
-        kicker: "// Inventário",
+        title: "ReduÃ§Ã£o bloqueada",
+        kicker: "// InventÃ¡rio",
         confirmLabel: "Entendi"
       }
     );
@@ -3233,14 +3034,14 @@ function getSheetKindTitle() {
 }
 
 function getSheetSaveText() {
-  if (!currentSheetTarget) return "Toda alteração da ficha fica salva para o usuário correto.";
+  if (!currentSheetTarget) return "Toda alteraÃ§Ã£o da ficha fica salva para o usuÃ¡rio correto.";
   if (currentSheetTarget.kind === "npc") {
-    return "Toda alteração desta ficha de NPC fica salva neste navegador do mestre.";
+    return "Toda alteraÃ§Ã£o desta ficha de NPC fica salva neste navegador do mestre.";
   }
   if (currentSheetTarget.kind === "monster") {
-    return "Toda alteração desta ficha de monstro fica salva neste navegador do mestre.";
+    return "Toda alteraÃ§Ã£o desta ficha de monstro fica salva neste navegador do mestre.";
   }
-  return "Toda alteração da ficha fica salva para o usuário correto.";
+  return "Toda alteraÃ§Ã£o da ficha fica salva para o usuÃ¡rio correto.";
 }
 
 function syncDirectoryName(charName) {
@@ -3309,3 +3110,4 @@ setInterval(() => {
     saveSheetSilently();
   }
 }, 60000);
+
