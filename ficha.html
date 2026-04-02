@@ -548,6 +548,13 @@
                       <button type="button" class="dice-mode-btn" data-dice-mode="disadvantage" aria-pressed="false">Desvantagem</button>
                     </div>
                   </div>
+
+                  <div class="dice-result-card" id="diceResultCard">
+                    <span class="item-meta">Resultado</span>
+                    <span class="dice-result-state" id="diceResultState" hidden></span>
+                    <strong id="diceResultTotal">Pronto</strong>
+                    <p id="diceResultDetail">Selecione os dados e role para ver o resultado.</p>
+                  </div>
                 </div>
 
                 <div class="dice-tray-fields">
@@ -559,6 +566,11 @@
                   <div class="dice-tray-field">
                     <label class="form-label" for="diceTrayModifier">Modificador</label>
                     <input type="number" id="diceTrayModifier" class="form-input" min="-1000" max="1000" value="0" />
+                  </div>
+
+                  <div class="dice-tray-field dice-tray-expression">
+                    <label class="form-label" for="diceTrayExpression">Expressão livre</label>
+                    <input type="text" id="diceTrayExpression" class="form-input" maxlength="24" placeholder="Ex: 2d6+3" />
                   </div>
                 </div>
 

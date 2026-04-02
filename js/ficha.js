@@ -1764,21 +1764,11 @@ function applyDiceTraySpecialState(elements, special) {
 
   if (special === "critical") {
     if (resultCard) resultCard.classList.add("is-critical");
-    if (resultState) {
-      resultState.hidden = false;
-      resultState.textContent = "Crítico dourado";
-      resultState.classList.add("is-critical");
-    }
     return;
   }
 
   if (special === "fumble") {
     if (resultCard) resultCard.classList.add("is-fumble");
-    if (resultState) {
-      resultState.hidden = false;
-      resultState.textContent = "Falha rubra";
-      resultState.classList.add("is-fumble");
-    }
   }
 }
 
