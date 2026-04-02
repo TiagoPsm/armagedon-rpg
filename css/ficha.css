@@ -1064,7 +1064,7 @@
 
 .dice-tray-dialog {
   position: relative;
-  width: min(1220px, calc(100vw - 2rem));
+  width: min(1320px, calc(100vw - 1.2rem));
   max-height: min(90vh, 880px);
   margin: 0;
   padding: 2rem;
