@@ -217,7 +217,7 @@
 }
 
 .level-field-row.has-soul-core {
-  gap: 0.55rem;
+  gap: 0.45rem;
 }
 
 .level-field-row .form-input {
@@ -227,9 +227,9 @@
 .level-field-tools {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
+  gap: 0.45rem;
   align-items: stretch;
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 .soul-core-panel {
@@ -245,12 +245,14 @@
 }
 
 .soul-core-panel.is-compact {
-  min-height: 48px;
-  padding: 0.7rem 0.9rem;
+  min-height: 0;
+  height: 88px;
+  padding: 0.55rem 0.8rem;
   display: flex;
   align-items: center;
   justify-content: flex-start;
   gap: 0;
+  border-radius: 14px;
 }
 
 .soul-core-copy {
@@ -290,8 +292,8 @@
 }
 
 .soul-core-panel.is-compact .soul-core-copy strong {
-  font-size: 1.02rem;
-  line-height: 1.1;
+  font-size: 0.96rem;
+  line-height: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -321,14 +323,14 @@
 
 .soul-core-action,
 .dice-launcher-btn {
-  width: 48px;
-  min-width: 48px;
-  height: 48px;
-  min-height: 48px;
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  min-height: 42px;
   padding: 0;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid rgba(195, 170, 105, 0.12);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015)),
@@ -355,10 +357,10 @@
 .soul-core-action::before {
   content: "";
   position: absolute;
-  top: 14px;
+  top: 11px;
   left: 50%;
   width: 3px;
-  height: 18px;
+  height: 16px;
   background: currentColor;
   border-radius: 999px;
   transform: translateX(-50%);
@@ -367,10 +369,10 @@
 .soul-core-action::after {
   content: "";
   position: absolute;
-  top: 11px;
+  top: 9px;
   left: 50%;
-  width: 11px;
-  height: 11px;
+  width: 10px;
+  height: 10px;
   border-top: 3px solid currentColor;
   border-right: 3px solid currentColor;
   transform: translateX(-50%) rotate(-45deg);
@@ -393,20 +395,20 @@
 }
 
 .level-field-group.is-soul {
-  max-width: 360px;
+  max-width: 312px;
 }
 
 .dice-launcher-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   display: grid;
   place-items: center;
   color: currentColor;
 }
 
 .dice-launcher-svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   display: block;
 }
 
