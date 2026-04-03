@@ -3164,6 +3164,10 @@ function renderProgressionField(kind = currentSheetTarget?.kind || "player") {
     label.textContent = isPlayer ? "Núcleo da alma" : "Nível";
   }
 
+  if (label && isPlayer) {
+    label.textContent = "Nível";
+  }
+
   if (group) group.classList.toggle("is-soul", isPlayer);
   if (row) row.classList.toggle("has-soul-core", isPlayer);
 
@@ -3175,6 +3179,7 @@ function renderProgressionField(kind = currentSheetTarget?.kind || "player") {
   if (panel) {
     panel.hidden = !isPlayer;
     panel.style.display = isPlayer ? "" : "none";
+    panel.classList.toggle("is-compact", isPlayer);
   }
 
   if (actionButton) {
@@ -3194,6 +3199,10 @@ function renderProgressionField(kind = currentSheetTarget?.kind || "player") {
   const xpTextElement = document.getElementById("soulXpText");
   const nextRankElement = document.getElementById("soulNextRankText");
   const progressBar = document.getElementById("soulXpBar");
+  const progressLabel = buildSoulProgressLabel(normalized);
+  const nextRankLabel = requirement
+    ? `Próximo rank: ${getSoulRankName(normalized.rank + 1)}`
+    : "Rank máximo alcançado";
 
   soulCore = normalized;
   if (levelInput) levelInput.value = String(normalized.rank);
@@ -3207,6 +3216,12 @@ function renderProgressionField(kind = currentSheetTarget?.kind || "player") {
   }
   if (progressBar) {
     progressBar.style.width = `${progressPercent}%`;
+  }
+  if (xpTextElement) xpTextElement.textContent = progressLabel;
+  if (nextRankElement) nextRankElement.textContent = nextRankLabel;
+  if (panel) {
+    panel.title = `${rankName} | ${progressLabel} | ${nextRankLabel}`;
+    panel.setAttribute("aria-label", `Rank atual: ${rankName}. ${progressLabel}. ${nextRankLabel}.`);
   }
 }
 

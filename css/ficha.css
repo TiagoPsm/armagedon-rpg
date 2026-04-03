@@ -216,6 +216,10 @@
   align-items: stretch;
 }
 
+.level-field-row.has-soul-core {
+  gap: 0.55rem;
+}
+
 .level-field-row .form-input {
   min-width: 0;
 }
@@ -240,15 +244,35 @@
   gap: 0.8rem;
 }
 
+.soul-core-panel.is-compact {
+  min-height: 48px;
+  padding: 0.7rem 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+}
+
 .soul-core-copy {
   display: grid;
   gap: 0.2rem;
+}
+
+.soul-core-panel.is-compact .soul-core-copy {
+  width: 100%;
+  min-height: 0;
 }
 
 .soul-core-kicker,
 .soul-core-meta,
 .soul-core-progress-copy {
   font-family: var(--font-ui);
+}
+
+.soul-core-panel.is-compact .soul-core-kicker,
+.soul-core-panel.is-compact .soul-core-meta,
+.soul-core-panel.is-compact .soul-core-progress {
+  display: none;
 }
 
 .soul-core-kicker,
@@ -263,6 +287,14 @@
 .soul-core-copy strong {
   font-size: 1.1rem;
   color: var(--text-bright);
+}
+
+.soul-core-panel.is-compact .soul-core-copy strong {
+  font-size: 1.02rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .soul-core-progress {
@@ -361,7 +393,7 @@
 }
 
 .level-field-group.is-soul {
-  max-width: 590px;
+  max-width: 360px;
 }
 
 .dice-launcher-icon {
