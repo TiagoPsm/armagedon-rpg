@@ -42,7 +42,7 @@ async function signToken(payload, secret) {
 async function verifyToken(token, secret) {
   const [headerPart, payloadPart, signaturePart] = String(token || "").split(".");
   if (!headerPart || !payloadPart || !signaturePart) {
-    throw new Error("Token invalido.");
+    throw new Error("Token inválido.");
   }
 
   const encoder = new TextEncoder();
@@ -60,11 +60,11 @@ async function verifyToken(token, secret) {
     encoder.encode(`${headerPart}.${payloadPart}`)
   );
 
-  if (!valid) throw new Error("Assinatura invalida.");
+  if (!valid) throw new Error("Assinatura inválida.");
 
   const payload = JSON.parse(new TextDecoder().decode(base64UrlDecode(payloadPart)));
   if (payload.exp && Date.now() >= payload.exp * 1000) {
-    throw new Error("Sessao expirada.");
+    throw new Error("Sessão expirada.");
   }
 
   return payload;
@@ -140,13 +140,13 @@ async function requireAuth(request, env) {
   const authorization = request.headers.get("authorization") || "";
   const token = authorization.replace(/^Bearer\s+/i, "").trim();
   if (!token) {
-    throw new Response(JSON.stringify({ error: "Sessao ausente." }), { status: 401 });
+    throw new Response(JSON.stringify({ error: "Sessão ausente." }), { status: 401 });
   }
 
   try {
     return await verifyToken(token, env.JWT_SECRET);
   } catch {
-    throw new Response(JSON.stringify({ error: "Sessao invalida." }), { status: 401 });
+    throw new Response(JSON.stringify({ error: "Sessão inválida." }), { status: 401 });
   }
 }
 

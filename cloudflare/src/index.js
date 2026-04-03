@@ -10,6 +10,7 @@ import {
 } from "./auth.js";
 import {
   assertCharacterAccess,
+  awardSoulEssenceToPlayer,
   awardMonsterMemoryDrop,
   buildCharacterKey,
   createMonsterCharacter,
@@ -99,12 +100,12 @@ export default {
         const pepper = String(env.PASSWORD_PEPPER || "");
 
         if (!user || !user.is_active) {
-          return errorJson("Usuario ou senha invalidos.", 401, origin);
+          return errorJson("Usuário ou senha inválidos.", 401, origin);
         }
 
         const incomingHash = await hashPassword(body.password || "", pepper);
         if (incomingHash !== user.password_hash) {
-          return errorJson("Usuario ou senha invalidos.", 401, origin);
+          return errorJson("Usuário ou senha inválidos.", 401, origin);
         }
 
         const now = Math.floor(Date.now() / 1000);
@@ -163,12 +164,12 @@ export default {
         const charName = String(body.charname || body.charName || "").trim() || username;
 
         if (!username || !password) {
-          return errorJson("Usuario e senha sao obrigatorios.", 400, origin);
+          return errorJson("Usuário e senha são obrigatórios.", 400, origin);
         }
 
         const existingUser = await getUserByUsername(env, username);
         if (existingUser) {
-          return errorJson("Ja existe um jogador com esse usuario.", 409, origin);
+          return errorJson("Já existe um jogador com esse usuário.", 409, origin);
         }
 
         const now = new Date().toISOString();
@@ -207,7 +208,7 @@ export default {
 
         const username = decodePathParam(playerDeleteMatch[1]);
         const removed = await deletePlayerByUsername(env, username);
-        if (!removed) return errorJson("Jogador nao encontrado.", 404, origin);
+        if (!removed) return errorJson("Jogador não encontrado.", 404, origin);
 
         return withCors(json({ ok: true, username: removed.username }), origin);
       }
@@ -229,8 +230,12 @@ export default {
         const session = await requireAuth(request, env);
         if (session.role !== "master") return errorJson("Apenas o mestre pode remover NPCs.", 403, origin);
 
-        const deleted = await deleteCharacterByKey(env, buildCharacterKey("npc", decodePathParam(npcDeleteMatch[1])), "npc");
-        if (!deleted) return errorJson("NPC nao encontrado.", 404, origin);
+        const deleted = await deleteCharacterByKey(
+          env,
+          buildCharacterKey("npc", decodePathParam(npcDeleteMatch[1])),
+          "npc"
+        );
+        if (!deleted) return errorJson("NPC não encontrado.", 404, origin);
 
         return withCors(json({ ok: true, key: deleted.sheet_key }), origin);
       }
@@ -257,7 +262,7 @@ export default {
           buildCharacterKey("monster", decodePathParam(monsterDeleteMatch[1])),
           "monster"
         );
-        if (!deleted) return errorJson("Monstro nao encontrado.", 404, origin);
+        if (!deleted) return errorJson("Monstro não encontrado.", 404, origin);
 
         return withCors(json({ ok: true, key: deleted.sheet_key }), origin);
       }
@@ -267,7 +272,7 @@ export default {
         const session = await requireAuth(request, env);
         const key = decodePathParam(characterMatch[1]);
         const character = await getCharacterByKey(env, key);
-        if (!character) return errorJson("Ficha nao encontrada.", 404, origin);
+        if (!character) return errorJson("Ficha não encontrada.", 404, origin);
 
         assertCharacterAccess(session, character, "read");
         return withCors(json(await getCharacterBundleByKey(env, key)), origin);
@@ -277,12 +282,24 @@ export default {
         const session = await requireAuth(request, env);
         const key = decodePathParam(characterMatch[1]);
         const character = await getCharacterByKey(env, key);
-        if (!character) return errorJson("Ficha nao encontrada.", 404, origin);
+        if (!character) return errorJson("Ficha não encontrada.", 404, origin);
 
         assertCharacterAccess(session, character, "write");
         const body = await readJson(request);
         const saved = await saveCharacterBundle(env, character, body, session);
         return withCors(json(saved), origin);
+      }
+
+      const characterSoulMatch = path.match(/^\/api\/characters\/([^/]+)\/soul-essence$/);
+      if (characterSoulMatch && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        const key = decodePathParam(characterSoulMatch[1]);
+        const body = await readJson(request);
+
+        return withCors(
+          json(await awardSoulEssenceToPlayer(env, session, key, body.essenceRank, body.amount)),
+          origin
+        );
       }
 
       if (path === "/api/transfers/items/player-to-player" && request.method === "POST") {
@@ -293,7 +310,7 @@ export default {
         const itemIndex = body.itemIndex;
 
         if (!sourceKey || !targetKey) {
-          return errorJson("Origem e destino sao obrigatorios.", 400, origin);
+          return errorJson("Origem e destino são obrigatórios.", 400, origin);
         }
 
         return withCors(json(await transferItemBetweenPlayers(env, session, sourceKey, targetKey, itemIndex)), origin);
@@ -307,7 +324,7 @@ export default {
         const memoryIndex = body.memoryIndex;
 
         if (!sourceKey || !targetKey) {
-          return errorJson("Origem e destino sao obrigatorios.", 400, origin);
+          return errorJson("Origem e destino são obrigatórios.", 400, origin);
         }
 
         return withCors(
@@ -323,7 +340,7 @@ export default {
         const dropIndex = body.dropIndex;
 
         if (!monsterKey) {
-          return errorJson("Monstro obrigatorio.", 400, origin);
+          return errorJson("Monstro obrigatório.", 400, origin);
         }
 
         return withCors(json(await rollMonsterMemoryDrop(env, session, monsterKey, dropIndex)), origin);
@@ -337,7 +354,7 @@ export default {
         const dropIndex = body.dropIndex;
 
         if (!monsterKey || !targetKey) {
-          return errorJson("Monstro e destino sao obrigatorios.", 400, origin);
+          return errorJson("Monstro e destino são obrigatórios.", 400, origin);
         }
 
         return withCors(
@@ -359,7 +376,7 @@ export default {
         const title = String(body.title || "").trim();
         const tag = String(body.tag || "").trim();
         const content = String(body.content || "").trim();
-        if (!title || !content) return errorJson("Titulo e conteudo sao obrigatorios.", 400, origin);
+        if (!title || !content) return errorJson("Título e conteúdo são obrigatórios.", 400, origin);
 
         const id = crypto.randomUUID();
         const now = new Date().toISOString();
@@ -382,7 +399,7 @@ export default {
         const title = String(body.title || "").trim();
         const tag = String(body.tag || "").trim();
         const content = String(body.content || "").trim();
-        if (!title || !content) return errorJson("Titulo e conteudo sao obrigatorios.", 400, origin);
+        if (!title || !content) return errorJson("Título e conteúdo são obrigatórios.", 400, origin);
 
         const ruleId = ruleMatch[1];
         const now = new Date().toISOString();
@@ -394,7 +411,7 @@ export default {
           `
         ).bind(title, tag, content, session.sub, now, ruleId).run();
 
-        if (!result.meta?.changes) return errorJson("Postagem nao encontrada.", 404, origin);
+        if (!result.meta?.changes) return errorJson("Postagem não encontrada.", 404, origin);
         return withCors(json({ id: ruleId, title, tag, content, updatedAt: now }), origin);
       }
 
@@ -404,11 +421,11 @@ export default {
 
         const ruleId = ruleMatch[1];
         const result = await env.DB.prepare("delete from rules_posts where id = ?").bind(ruleId).run();
-        if (!result.meta?.changes) return errorJson("Postagem nao encontrada.", 404, origin);
+        if (!result.meta?.changes) return errorJson("Postagem não encontrada.", 404, origin);
         return withCors(json({ ok: true, id: ruleId }), origin);
       }
 
-      return errorJson("Rota ainda nao migrada para Cloudflare.", 404, origin);
+      return errorJson("Rota ainda não migrada para Cloudflare.", 404, origin);
     } catch (error) {
       if (error instanceof Response) {
         return withCors(error, origin);

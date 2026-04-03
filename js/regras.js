@@ -48,7 +48,7 @@ function setupRulesPage() {
 
   if (rulesIntro) {
     rulesIntro.textContent = isMaster
-      ? "Voce pode publicar, editar e manter organizadas as regras oficiais da campanha."
+      ? "Você pode publicar, editar e manter organizadas as regras oficiais da campanha."
       : "Aqui ficam as regras oficiais publicadas pelo mestre para consulta de todos os jogadores.";
   }
 
@@ -150,7 +150,7 @@ async function renderRules() {
           <div class="rule-card-head">
             <div class="rule-card-head-main">
               ${rule.tag ? `<span class="rule-tag">${esc(rule.tag)}</span>` : ""}
-              <h3 class="rule-card-title">${esc(rule.title || "Regra sem titulo")}</h3>
+              <h3 class="rule-card-title">${esc(rule.title || "Regra sem título")}</h3>
               <div class="rule-card-meta">
                 <span>Criada em ${esc(formatRuleDateTime(rule.createdAt))}</span>
                 <span>Atualizada em ${esc(formatRuleDateTime(rule.updatedAt))}</span>
@@ -168,7 +168,7 @@ async function renderRules() {
             }
           </div>
 
-          <p class="rule-card-content">${esc(rule.content || "Sem conteudo.")}</p>
+          <p class="rule-card-content">${esc(rule.content || "Sem conteúdo.")}</p>
         </article>
       `
     )
@@ -220,9 +220,9 @@ function editRule(ruleId) {
 
   if (cancelEditBtn) cancelEditBtn.hidden = false;
   if (ruleFormTitle) ruleFormTitle.textContent = "Editar postagem";
-  if (saveRuleBtn) saveRuleBtn.textContent = "Salvar alteracoes";
+  if (saveRuleBtn) saveRuleBtn.textContent = "Salvar alterações";
   if (ruleFormStatus) {
-    ruleFormStatus.textContent = "Modo de edicao ativo.";
+    ruleFormStatus.textContent = "Modo de edição ativo.";
     ruleFormStatus.className = "rules-form-status";
   }
   if (ruleContent instanceof HTMLTextAreaElement) autoGrowTextarea(ruleContent);
@@ -247,13 +247,13 @@ async function saveRule() {
   }
 
   if (!title) {
-    if (ruleFormError) ruleFormError.textContent = "Informe um titulo para a postagem.";
+    if (ruleFormError) ruleFormError.textContent = "Informe um título para a postagem.";
     document.getElementById("ruleTitle")?.focus();
     return;
   }
 
   if (!content) {
-    if (ruleFormError) ruleFormError.textContent = "Escreva o conteudo da regra.";
+    if (ruleFormError) ruleFormError.textContent = "Escreva o conteúdo da regra.";
     document.getElementById("ruleContent")?.focus();
     return;
   }
@@ -317,7 +317,7 @@ async function deleteRule(ruleId) {
   const rule = rulesCache.find(candidate => candidate.id === ruleId);
   if (!rule) return;
 
-  const confirmed = await UI.confirm(`Excluir a postagem "${rule.title || "Regra sem titulo"}"?`, {
+  const confirmed = await UI.confirm(`Excluir a postagem "${rule.title || "Regra sem título"}"?`, {
     title: "Excluir regra",
     kicker: "// Arquivo da campanha",
     confirmLabel: "Excluir",

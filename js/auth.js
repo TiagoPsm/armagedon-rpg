@@ -181,7 +181,7 @@ async function handleLogin() {
   passInput.classList.remove("error");
 
   if (!userRaw) {
-    errorEl.textContent = "Informe seu usuario.";
+    errorEl.textContent = "Informe seu usuário.";
     userInput.classList.add("error");
     userInput.focus();
     return;
@@ -205,10 +205,10 @@ async function handleLogin() {
       return;
     } catch (error) {
       const message = error?.message || "Falha ao autenticar no servidor.";
-      if (/senha|usuario/i.test(message)) {
+      if (/senha|usuário|usuario/i.test(message)) {
         errorEl.textContent = message;
       } else {
-        errorEl.textContent = "Falha ao conectar ao servidor de autenticacao.";
+        errorEl.textContent = "Falha ao conectar ao servidor de autenticação.";
       }
       passInput.classList.add("error");
       passInput.focus();
@@ -247,7 +247,7 @@ async function handleLogin() {
     return;
   }
 
-  errorEl.textContent = "Usuario nao encontrado.";
+  errorEl.textContent = "Usuário não encontrado.";
   userInput.classList.add("error");
   userInput.focus();
 }
@@ -280,11 +280,11 @@ async function onLoginSuccess(username, role = "player") {
     dashboardCopy.textContent =
       role === "master"
         ? AUTH.isBackendEnabled()
-          ? "Voce pode criar jogadores, abrir qualquer ficha e salvar tudo no servidor central."
-          : "Voce pode criar jogadores, abrir qualquer ficha e manter tudo salvo neste navegador."
+          ? "Você pode criar jogadores, abrir qualquer ficha e salvar tudo no servidor central."
+          : "Você pode criar jogadores, abrir qualquer ficha e manter tudo salvo neste navegador."
         : AUTH.isBackendEnabled()
-          ? "Voce acessa seus dados no servidor da campanha, com sincronizacao central."
-          : "Voce acessa somente seus dados, e tudo fica salvo automaticamente neste navegador.";
+          ? "Você acessa seus dados no servidor da campanha, com sincronização central."
+          : "Você acessa somente seus dados, e tudo fica salvo automaticamente neste navegador.";
   }
 }
 

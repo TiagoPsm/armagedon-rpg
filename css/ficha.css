@@ -206,7 +206,7 @@
 }
 
 .level-field-group {
-  max-width: 232px;
+  max-width: 430px;
 }
 
 .level-field-row {
@@ -218,6 +218,69 @@
 
 .level-field-row .form-input {
   min-width: 0;
+}
+
+.soul-core-panel {
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(195, 170, 105, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015)),
+    rgba(255, 255, 255, 0.02);
+  display: grid;
+  gap: 0.8rem;
+}
+
+.soul-core-copy {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.soul-core-kicker,
+.soul-core-meta,
+.soul-core-progress-copy {
+  font-family: var(--font-ui);
+}
+
+.soul-core-kicker,
+.soul-core-meta,
+.soul-core-progress-copy span {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.soul-core-copy strong {
+  font-size: 1.1rem;
+  color: var(--text-bright);
+}
+
+.soul-core-progress {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.soul-core-progress-copy {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.soul-core-track {
+  height: 8px;
+}
+
+.soul-core-fill {
+  width: 0;
+  background: linear-gradient(90deg, rgba(201, 93, 52, 0.82), rgba(235, 185, 120, 0.92));
+  box-shadow: 0 0 16px rgba(201, 93, 52, 0.22);
+}
+
+.soul-core-action {
+  justify-self: start;
 }
 
 .dice-launcher-btn {
@@ -271,6 +334,157 @@
   width: 20px;
   height: 20px;
   display: block;
+}
+
+.soul-award-root {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+}
+
+.soul-award-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.soul-award-dialog {
+  position: relative;
+  width: min(860px, calc(100vw - 2rem));
+  margin: min(10vh, 5rem) auto 0;
+  padding: 1.8rem;
+  border-radius: 28px;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(circle at top, rgba(201, 93, 52, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015)),
+    rgba(14, 15, 20, 0.96);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+  display: grid;
+  gap: 1.2rem;
+}
+
+.soul-award-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.soul-award-title {
+  margin: 0;
+}
+
+.soul-award-subtitle {
+  margin: -0.45rem 0 0;
+  max-width: 58ch;
+  color: var(--text-soft);
+}
+
+.soul-award-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr);
+  gap: 1rem;
+}
+
+.soul-award-block {
+  padding: 1.05rem;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  display: grid;
+  gap: 0.85rem;
+}
+
+.soul-award-side {
+  align-content: start;
+}
+
+.soul-rank-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.soul-rank-option {
+  padding: 0.85rem 0.95rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-bright);
+  text-align: left;
+  cursor: pointer;
+  display: grid;
+  gap: 0.18rem;
+  transition:
+    border-color var(--transition),
+    background var(--transition),
+    transform var(--transition);
+}
+
+.soul-rank-option:hover,
+.soul-rank-option:focus-visible,
+.soul-rank-option.is-active {
+  border-color: rgba(201, 93, 52, 0.36);
+  background: rgba(201, 93, 52, 0.1);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.soul-rank-option strong {
+  font-size: 0.95rem;
+}
+
+.soul-rank-option span {
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.soul-award-field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.soul-award-preview {
+  min-height: 170px;
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.16);
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+}
+
+.soul-award-preview strong {
+  font-size: 1.05rem;
+}
+
+.soul-award-preview p {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.soul-award-preview ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--text-soft);
+}
+
+.soul-award-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.9rem;
 }
 
 .resources-row {

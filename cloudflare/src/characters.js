@@ -6,6 +6,12 @@ import {
   sanitizeChance,
   normalizeSheetData
 } from "./sheet.js";
+import {
+  absorbSoulEssences,
+  clampAmount,
+  clampRank,
+  getRankName
+} from "./soul-progression.js";
 
 function normalizeUsername(username) {
   return String(username || "").trim().toLowerCase();
@@ -154,10 +160,14 @@ async function saveCharacterBundle(env, character, payload, actor) {
         : currentSlots;
     normalizedData.ownedMemories =
       actor?.role === "master" ? normalizedData.ownedMemories : currentData.ownedMemories;
+    normalizedData.soulCore =
+      actor?.role === "master" ? normalizedData.soulCore : currentData.soulCore;
+    normalizedData.charLevel = String(normalizedData.soulCore.rank);
   }
 
   if (character.kind === "npc") {
     normalizedData.inventorySlots = normalizeInventorySlots("npc", normalizedData.inventorySlots);
+    normalizedData.charLevel = String(normalizedData.soulCore.rank);
     if (normalizedData.inv.length > normalizedData.inventorySlots) {
       throw new Response(
         JSON.stringify({ error: "NPCs não podem ultrapassar o limite padrão de 20 slots." }),
@@ -166,7 +176,54 @@ async function saveCharacterBundle(env, character, payload, actor) {
     }
   }
 
+  if (character.kind === "monster") {
+    normalizedData.charLevel = String(normalizedData.soulCore.rank);
+  }
+
   return persistCharacterData(env, character, normalizedData);
+}
+
+async function awardSoulEssenceToPlayer(env, actor, targetKey, essenceRank, amount) {
+  if (actor.role !== "master") {
+    throw new Response(JSON.stringify({ error: "Apenas o mestre pode alimentar o núcleo de essência." }), {
+      status: 403
+    });
+  }
+
+  const target = await getCharacterByKey(env, targetKey);
+  if (!target) {
+    throw new Response(JSON.stringify({ error: "Ficha não encontrada." }), { status: 404 });
+  }
+  if (target.kind !== "player") {
+    throw new Response(JSON.stringify({ error: "Essências da alma só podem ser aplicadas a jogadores." }), {
+      status: 400
+    });
+  }
+
+  const normalizedEssenceRank = clampRank(essenceRank);
+  const normalizedAmount = clampAmount(amount);
+  const targetData = normalizeSheetData(target.data || {}, "player", target.name);
+  const beforeCore = { ...targetData.soulCore };
+  const result = absorbSoulEssences(targetData.soulCore, normalizedEssenceRank, normalizedAmount);
+
+  targetData.soulCore = result.core;
+  targetData.charLevel = String(result.core.rank);
+
+  const saved = await persistCharacterData(env, target, targetData);
+
+  return {
+    character: saved,
+    summary: {
+      targetKey: target.key,
+      amount: normalizedAmount,
+      essenceRank: normalizedEssenceRank,
+      essenceName: getRankName(normalizedEssenceRank),
+      totalExperience: result.totalExperience,
+      before: beforeCore,
+      after: result.core,
+      rankUps: result.rankUps
+    }
+  };
 }
 
 async function listDirectory(env, user) {
@@ -555,6 +612,7 @@ async function awardMonsterMemoryDrop(env, actor, monsterKey, dropIndex, targetK
 
 export {
   assertCharacterAccess,
+  awardSoulEssenceToPlayer,
   buildCharacterKey,
   createMonsterCharacter,
   createNpcCharacter,

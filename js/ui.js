@@ -30,8 +30,8 @@
         <button type="button" class="ui-modal-close" data-modal-close="button" aria-label="Fechar popup">
           <span>x</span>
         </button>
-        <p class="ui-modal-kicker" id="uiModalKicker">// Confirmacao</p>
-        <h2 class="ui-modal-title" id="uiModalTitle">Confirmar acao</h2>
+        <p class="ui-modal-kicker" id="uiModalKicker">// Confirmação</p>
+        <h2 class="ui-modal-title" id="uiModalTitle">Confirmar ação</h2>
         <p class="ui-modal-message" id="uiModalMessage"></p>
         <div class="ui-modal-option-list" id="uiModalOptionList" hidden></div>
         <div class="ui-modal-actions">
@@ -89,8 +89,8 @@
     state.type = options.type || "confirm";
     root.dataset.variant = options.variant || "default";
     root.dataset.type = state.type;
-    kicker.textContent = options.kicker || "// Confirmacao";
-    title.textContent = options.title || "Confirmar acao";
+    kicker.textContent = options.kicker || "// Confirmação";
+    title.textContent = options.title || "Confirmar ação";
     message.textContent = options.message || "";
     confirmButton.textContent = options.confirmLabel || "Confirmar";
     cancelButton.textContent = options.cancelLabel || "Cancelar";
@@ -167,8 +167,8 @@
     confirm(message, options = {}) {
       return open({
         type: "confirm",
-        title: options.title || "Confirmar acao",
-        kicker: options.kicker || "// Confirmacao",
+        title: options.title || "Confirmar ação",
+        kicker: options.kicker || "// Confirmação",
         message,
         confirmLabel: options.confirmLabel || "Confirmar",
         cancelLabel: options.cancelLabel || "Cancelar",

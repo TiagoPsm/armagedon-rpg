@@ -67,7 +67,7 @@
       const existing = document.querySelector("script[data-armagedon-socket='1']");
       if (existing) {
         existing.addEventListener("load", () => resolve(window.io), { once: true });
-        existing.addEventListener("error", () => reject(new Error("Falha ao carregar o cliente realtime.")), {
+    existing.addEventListener("error", () => reject(new Error("Falha ao carregar o cliente de tempo real.")), {
           once: true
         });
         return;
@@ -82,9 +82,9 @@
           resolve(window.io);
           return;
         }
-        reject(new Error("Cliente realtime indisponivel."));
+        reject(new Error("Cliente de tempo real indisponível."));
       };
-      script.onerror = () => reject(new Error("Falha ao carregar o cliente realtime."));
+    script.onerror = () => reject(new Error("Falha ao carregar o cliente de tempo real."));
       document.head.appendChild(script);
     }).catch(error => {
       state.scriptPromise = null;
@@ -117,7 +117,7 @@
         });
         socket.on("connect_error", error => {
           emitEvent("socket:error", {
-            message: error?.message || "Falha ao conectar no realtime."
+      message: error?.message || "Falha ao conectar ao tempo real."
           });
         });
 
@@ -129,7 +129,7 @@
         return socket;
       } catch (error) {
         emitEvent("socket:error", {
-          message: error?.message || "Falha ao iniciar sincronizacao em tempo real."
+      message: error?.message || "Falha ao iniciar a sincronização em tempo real."
         });
         return null;
       } finally {
@@ -214,7 +214,7 @@
     }
 
     if (!response.ok) {
-      const error = new Error(payload?.error || "Falha na comunicacao com o servidor.");
+    const error = new Error(payload?.error || "Falha na comunicação com o servidor.");
       error.status = response.status;
       error.payload = payload;
       throw error;
@@ -296,6 +296,12 @@
       return request(`/characters/${encodeURIComponent(key)}`, {
         method: "PUT",
         body: { data }
+      });
+    },
+    async awardSoulEssence(key, payload) {
+      return request(`/characters/${encodeURIComponent(key)}/soul-essence`, {
+        method: "POST",
+        body: payload
       });
     },
     async listRules() {

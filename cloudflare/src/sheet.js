@@ -1,3 +1,5 @@
+import { normalizeSoulCore } from "./soul-progression.js";
+
 const ATTRIBUTES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"];
 const DEFAULT_INVENTORY_SLOTS = 20;
 const ITEM_TYPES = new Set(["arma", "acessorio", "outro"]);
@@ -74,10 +76,12 @@ function normalizeMemoryDrop(drop) {
 function normalizeSheetData(data, kind = "player", charNameFallback = "") {
   const isMonster = kind === "monster";
   const inventory = isMonster ? [] : Array.isArray(data?.inv) ? data.inv.map(normalizeItem) : [];
+  const soulCore = normalizeSoulCore(data?.soulCore, data?.charLevel || 1);
   const normalized = {
     charName: String(data?.charName || charNameFallback || ""),
     charClass: String(data?.charClass || ""),
-    charLevel: String(data?.charLevel || ""),
+    charLevel: String(soulCore.rank),
+    soulCore,
     charRace: String(data?.charRace || ""),
     charFaction: isMonster ? "" : String(data?.charFaction || ""),
     avatar: String(data?.avatar || ""),
@@ -126,6 +130,10 @@ function buildDefaultSheet(kind, charName) {
     {
       charName,
       charLevel: "1",
+      soulCore: {
+        rank: 1,
+        xp: 0
+      },
       vidaAtual: "",
       vidaMax: "",
       integAtual: kind === "monster" ? "" : "",

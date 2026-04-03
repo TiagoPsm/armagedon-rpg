@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Armagedon | Fichas</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/ficha.css" />
-  <link rel="stylesheet" href="css/ui.css" />
+  <link rel="stylesheet" href="css/style.css?v=2026-04-03-utf8" />
+  <link rel="stylesheet" href="css/ficha.css?v=2026-04-03-utf8" />
+  <link rel="stylesheet" href="css/ui.css?v=2026-04-03-utf8" />
   <link
     href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap"
     rel="stylesheet"
@@ -252,6 +252,33 @@
                     max="99"
                     placeholder="1"
                   />
+                  <div class="soul-core-panel" id="soulCorePanel" hidden>
+                    <div class="soul-core-copy">
+                      <span class="soul-core-kicker">Essência da alma</span>
+                      <strong id="soulRankName">Adormecido</strong>
+                      <span class="soul-core-meta" id="soulRankMeta">Rank 1</span>
+                    </div>
+
+                    <div class="soul-core-progress">
+                      <div class="soul-core-progress-copy">
+                        <span id="soulXpText">0 / 100 XP</span>
+                        <span id="soulNextRankText">Próximo rank: Despertado</span>
+                      </div>
+                      <div class="bar-track soul-core-track">
+                        <div class="bar-fill soul-core-fill" id="soulXpBar"></div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      class="btn-inline soul-core-action"
+                      id="openSoulAwardBtn"
+                      hidden
+                    >
+                      + Essência
+                    </button>
+                  </div>
+
                   <button
                     type="button"
                     class="dice-launcher-btn"
@@ -509,6 +536,48 @@
         <button class="btn btn-primary" onclick="saveSheet()">Salvar ficha</button>
       </div>
 
+      <div class="soul-award-root" id="soulAwardRoot" hidden>
+        <div class="soul-award-backdrop" data-soul-award-close="backdrop"></div>
+        <section
+          class="soul-award-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="soulAwardTitle"
+          tabindex="-1"
+        >
+          <button type="button" class="soul-award-close" id="soulAwardCloseBtn" aria-label="Fechar concessão de essência">
+            <span>&times;</span>
+          </button>
+
+          <p class="section-label soul-award-kicker">// Essência da alma</p>
+          <h2 class="soul-award-title" id="soulAwardTitle">Alimentar núcleo</h2>
+          <p class="soul-award-subtitle">
+            O mestre define o rank da essência absorvida e a quantidade aplicada ao personagem.
+          </p>
+
+          <div class="soul-award-layout">
+            <div class="soul-award-block">
+              <span class="item-meta">Rank da essência</span>
+              <div class="soul-rank-grid" id="soulRankOptionGrid"></div>
+            </div>
+
+            <div class="soul-award-block soul-award-side">
+              <div class="soul-award-field">
+                <label class="form-label" for="soulAwardAmount">Quantidade</label>
+                <input type="number" id="soulAwardAmount" class="form-input" min="1" max="999" value="1" />
+              </div>
+
+              <div class="soul-award-preview" id="soulAwardPreview"></div>
+            </div>
+          </div>
+
+          <div class="soul-award-actions">
+            <button type="button" class="btn btn-ghost" id="soulAwardCancelBtn">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="soulAwardApplyBtn">Adicionar essência</button>
+          </div>
+        </section>
+      </div>
+
       <div class="dice-tray-root" id="diceTrayRoot" hidden>
         <div class="dice-tray-backdrop" data-dice-close="backdrop"></div>
         <section
@@ -680,10 +749,11 @@
     </main>
   </div>
 
-  <script src="js/ui.js"></script>
-  <script src="js/runtime-config.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/ficha.js"></script>
+  <script src="js/ui.js?v=2026-04-03-utf8"></script>
+  <script src="js/runtime-config.js?v=2026-04-03-utf8"></script>
+  <script src="js/api.js?v=2026-04-03-utf8"></script>
+  <script src="js/auth.js?v=2026-04-03-utf8"></script>
+  <script src="js/soul-essence.js?v=2026-04-03-utf8"></script>
+  <script src="js/ficha.js?v=2026-04-03-utf8"></script>
 </body>
 </html>
