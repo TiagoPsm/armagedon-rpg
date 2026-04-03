@@ -19,14 +19,16 @@
     7: 800
   };
 
-  const EXPERIENCE_TO_NEXT_RANK = {
-    1: 100,
-    2: 300,
-    3: 800,
-    4: 2000,
-    5: 5000,
-    6: 12000
-  };
+  // Regra de progressão:
+  // subir de rank exige o equivalente a absorver 100 essências/criaturas do mesmo rank do personagem.
+  // Ex.: um Adormecido precisa de 100 x 10 XP = 1000 XP para alcançar Despertado.
+  const SAME_RANK_ESSENCES_PER_RANK_UP = 100;
+
+  const EXPERIENCE_TO_NEXT_RANK = Object.fromEntries(
+    RANKS
+      .filter(entry => entry.rank < 7)
+      .map(entry => [entry.rank, getEssenceBaseExperience(entry.rank) * SAME_RANK_ESSENCES_PER_RANK_UP])
+  );
 
   function clampRank(value) {
     const numeric = Number.parseInt(value, 10);
@@ -174,6 +176,7 @@
     RANKS,
     ESSENCE_BASE_EXPERIENCE,
     EXPERIENCE_TO_NEXT_RANK,
+    SAME_RANK_ESSENCES_PER_RANK_UP,
     clampRank,
     clampAmount,
     getRankName,

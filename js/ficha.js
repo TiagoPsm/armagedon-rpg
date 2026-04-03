@@ -858,16 +858,22 @@ function getSoulNextRankRequirement(rank) {
     return SOUL.getNextRankRequirement(rank);
   }
 
-  const requirements = {
-    1: 100,
-    2: 300,
-    3: 800,
-    4: 2000,
-    5: 5000,
-    6: 12000
+  const normalizedRank = Math.min(7, Math.max(1, Number.parseInt(rank, 10) || 1));
+  const sameRankEssencesPerRankUp = 100;
+  const baseExperienceByRank = {
+    1: 10,
+    2: 25,
+    3: 50,
+    4: 100,
+    5: 200,
+    6: 400,
+    7: 800
   };
 
-  return requirements[Math.min(7, Math.max(1, Number.parseInt(rank, 10) || 1))] || 0;
+  // Fallback local: subir de rank exige o equivalente a 100 essências do mesmo rank.
+  return normalizedRank >= 7
+    ? 0
+    : (baseExperienceByRank[normalizedRank] || 0) * sameRankEssencesPerRankUp;
 }
 
 function calculateSoulEssenceExperience(characterRank, essenceRank) {
