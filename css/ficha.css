@@ -192,7 +192,7 @@
 }
 
 .identity-fields > .form-row:first-child {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.18fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: end;
   gap: 1rem;
 }
@@ -229,13 +229,13 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.7rem;
-  align-items: stretch;
+  align-items: center;
 }
 
 .level-field-row.has-soul-core {
-  gap: 0.45rem;
-  grid-template-columns: minmax(0, 1fr) 44px;
-  align-items: stretch;
+  gap: 0.5rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
 }
 
 .level-field-row .form-input {
@@ -244,11 +244,12 @@
 
 .level-field-tools {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 0.45rem;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
-  width: 44px;
+  width: auto;
+  min-height: 44px;
 }
 
 .soul-core-panel {
