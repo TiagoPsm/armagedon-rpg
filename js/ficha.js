@@ -241,6 +241,7 @@ function bindSheetRealtime() {
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(screen => screen.classList.remove("active"));
   document.getElementById(id)?.classList.add("active");
+  document.body?.setAttribute("data-active-screen", id);
 }
 
 async function openMasterPanel() {
