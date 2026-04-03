@@ -118,7 +118,7 @@
 
 .identity-block {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: 1fr;
   gap: 1.2rem;
   align-items: stretch;
 }
@@ -192,8 +192,9 @@
 }
 
 .identity-fields > .form-row:first-child {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.16fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.18fr);
   align-items: end;
+  gap: 1rem;
 }
 
 .identity-fields > .form-row:first-child > .form-group {
@@ -221,7 +222,7 @@
 }
 
 .level-field-group {
-  max-width: 430px;
+  max-width: none;
 }
 
 .level-field-row {
@@ -233,7 +234,8 @@
 
 .level-field-row.has-soul-core {
   gap: 0.45rem;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: stretch;
 }
 
 .level-field-row .form-input {
@@ -246,6 +248,7 @@
   gap: 0.45rem;
   align-items: stretch;
   justify-content: center;
+  width: 44px;
 }
 
 .soul-core-panel {
