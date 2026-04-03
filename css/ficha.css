@@ -191,6 +191,21 @@
   gap: 1rem;
 }
 
+.identity-fields > .form-row:first-child {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.16fr);
+  align-items: end;
+}
+
+.identity-fields > .form-row:first-child > .form-group {
+  max-width: none;
+}
+
+.identity-fields > .form-row:first-child .form-input {
+  min-height: 44px;
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
+}
+
 .form-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -218,6 +233,7 @@
 
 .level-field-row.has-soul-core {
   gap: 0.45rem;
+  align-items: center;
 }
 
 .level-field-row .form-input {
@@ -246,7 +262,7 @@
 
 .soul-core-panel.is-compact {
   min-height: 0;
-  height: 88px;
+  height: 44px;
   padding: 0.55rem 0.8rem;
   display: flex;
   align-items: center;
@@ -323,10 +339,10 @@
 
 .soul-core-action,
 .dice-launcher-btn {
-  width: 42px;
-  min-width: 42px;
-  height: 42px;
-  min-height: 42px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
   padding: 0;
   display: grid;
   place-items: center;
@@ -357,7 +373,7 @@
 .soul-core-action::before {
   content: "";
   position: absolute;
-  top: 11px;
+  top: 12px;
   left: 50%;
   width: 3px;
   height: 16px;
@@ -369,7 +385,7 @@
 .soul-core-action::after {
   content: "";
   position: absolute;
-  top: 9px;
+  top: 10px;
   left: 50%;
   width: 10px;
   height: 10px;
@@ -395,7 +411,7 @@
 }
 
 .level-field-group.is-soul {
-  max-width: 312px;
+  max-width: none;
 }
 
 .dice-launcher-icon {
