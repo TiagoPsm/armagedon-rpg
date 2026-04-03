@@ -220,6 +220,14 @@
   min-width: 0;
 }
 
+.level-field-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
 .soul-core-panel {
   min-width: 0;
   padding: 0.9rem 1rem;
@@ -279,13 +287,11 @@
   box-shadow: 0 0 16px rgba(201, 93, 52, 0.22);
 }
 
-.soul-core-action {
-  justify-self: start;
-}
-
+.soul-core-action,
 .dice-launcher-btn {
   width: 48px;
   min-width: 48px;
+  height: 48px;
   min-height: 48px;
   padding: 0;
   display: grid;
@@ -308,6 +314,38 @@
     color var(--transition);
 }
 
+.soul-core-action {
+  font-size: 0;
+  line-height: 0;
+  position: relative;
+}
+
+.soul-core-action::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  width: 3px;
+  height: 18px;
+  background: currentColor;
+  border-radius: 999px;
+  transform: translateX(-50%);
+}
+
+.soul-core-action::after {
+  content: "";
+  position: absolute;
+  top: 11px;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  border-top: 3px solid currentColor;
+  border-right: 3px solid currentColor;
+  transform: translateX(-50%) rotate(-45deg);
+}
+
+.soul-core-action:hover,
+.soul-core-action:focus-visible,
 .dice-launcher-btn:hover,
 .dice-launcher-btn:focus-visible {
   border-color: rgba(235, 135, 71, 0.22);
@@ -320,6 +358,10 @@
     0 0 16px rgba(201, 93, 52, 0.08);
   transform: translateY(-1px);
   outline: none;
+}
+
+.level-field-group.is-soul {
+  max-width: 590px;
 }
 
 .dice-launcher-icon {
@@ -2068,9 +2110,15 @@
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
+  .level-field-tools {
+    gap: 0.65rem;
+  }
+
+  .soul-core-action,
   .dice-launcher-btn {
     width: 46px;
     min-width: 46px;
+    height: 46px;
     min-height: 46px;
   }
 

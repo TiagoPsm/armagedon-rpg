@@ -268,40 +268,44 @@
                         <div class="bar-fill soul-core-fill" id="soulXpBar"></div>
                       </div>
                     </div>
+                  </div>
+
+                  <div class="level-field-tools">
+                    <button
+                      type="button"
+                      class="soul-core-action"
+                      id="openSoulAwardBtn"
+                      hidden
+                      aria-haspopup="dialog"
+                      aria-controls="soulAwardRoot"
+                      aria-label="Adicionar essência da alma"
+                      title="Adicionar essência da alma"
+                    ></button>
 
                     <button
                       type="button"
-                      class="btn-inline soul-core-action"
-                      id="openSoulAwardBtn"
-                      hidden
+                      class="dice-launcher-btn"
+                      id="openDiceTrayBtn"
+                      aria-haspopup="dialog"
+                      aria-controls="diceTrayRoot"
+                      aria-label="Abrir rolagem de dados"
+                      title="Abrir rolagem de dados"
                     >
-                      + Essência
+                      <span class="dice-launcher-icon" aria-hidden="true">
+                        <svg viewBox="0 0 64 64" class="dice-launcher-svg" focusable="false" aria-hidden="true">
+                          <path
+                            d="M32 9l18 11v24L32 55 14 44V20L32 9z"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="3"
+                            stroke-linejoin="round"
+                          ></path>
+                          <circle cx="26" cy="28" r="2.5" fill="currentColor"></circle>
+                          <circle cx="38" cy="36" r="2.5" fill="currentColor"></circle>
+                        </svg>
+                      </span>
                     </button>
                   </div>
-
-                  <button
-                    type="button"
-                    class="dice-launcher-btn"
-                    id="openDiceTrayBtn"
-                    aria-haspopup="dialog"
-                    aria-controls="diceTrayRoot"
-                    aria-label="Abrir rolagem de dados"
-                    title="Abrir rolagem de dados"
-                  >
-                    <span class="dice-launcher-icon" aria-hidden="true">
-                      <svg viewBox="0 0 64 64" class="dice-launcher-svg" focusable="false" aria-hidden="true">
-                        <path
-                          d="M32 9l18 11v24L32 55 14 44V20L32 9z"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="3"
-                          stroke-linejoin="round"
-                        ></path>
-                        <circle cx="26" cy="28" r="2.5" fill="currentColor"></circle>
-                        <circle cx="38" cy="36" r="2.5" fill="currentColor"></circle>
-                      </svg>
-                    </span>
-                  </button>
                 </div>
               </div>
             </div>
