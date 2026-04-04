@@ -5,7 +5,7 @@ const REMOTE_SHEETS_KEY = "tc_remote_sheets";
 const NPC_PREFIX = "npc:";
 const MONSTER_PREFIX = "monster:";
 const ATTRIBUTES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"];
-const DEFAULT_INVENTORY_SLOTS = 20;
+const DEFAULT_INVENTORY_SLOTS = 30;
 const ITEM_TYPES = {
   arma: "Arma",
   acessorio: "Acessório",
@@ -1270,7 +1270,7 @@ function sanitizeAttrValue(attr, value, fallback) {
   const numeric = Number.parseInt(value, 10);
   if (Number.isNaN(numeric)) return fallback;
 
-  const clamped = Math.max(1, Math.min(30, numeric));
+  const clamped = Math.max(1, numeric);
   return String(clamped);
 }
 
@@ -2972,29 +2972,29 @@ function renderInv(list) {
     }
 
     const itemType = normalizeItemType(item.type);
-    const rollState = itemRollStates[index];
     const primaryMeta = itemType === "arma" && item.damage
-      ? `Dano: ${item.damage}`
-      : `Quantidade: ${item.qty}`;
+      ? item.damage
+      : `Qtd. ${item.qty}`;
     const secondaryMeta = itemType === "arma"
-      ? `Quantidade: ${item.qty}`
-      : rollState?.text || "Clique para abrir os detalhes";
-    const secondaryClass = secondaryMeta === "Clique para abrir os detalhes" ? "item-summary-line is-muted" : "item-summary-line";
+      ? `Qtd. ${item.qty}`
+      : formatItemType(itemType);
 
     return `
-      <article class="item-card inv-row" data-index="${index}">
-        <div class="item-card-head">
-          <span class="item-slot-index">Slot ${index + 1}</span>
-          <button class="btn-remove" onclick="removeItem(${index})">x</button>
-        </div>
+      <article class="item-card item-card-compact" data-index="${index}">
+        <button
+          class="item-remove-compact"
+          type="button"
+          onclick="removeItem(${index})"
+          aria-label="Remover item"
+          title="Remover item"
+        >x</button>
 
-        <button class="item-summary-btn" onclick="openItemEditor(${index})">
-          <div class="item-summary-main">
-            <span class="${getItemTypeBadgeClass(itemType)}">${esc(formatItemType(itemType))}</span>
-            <h3 class="item-title">${esc(item.name || "Item sem nome")}</h3>
-            <span class="item-summary-line ${itemType === "arma" && item.damage ? "is-weapon" : ""}">${esc(primaryMeta)}</span>
-            <span class="${secondaryClass}">${esc(secondaryMeta)}</span>
-          </div>
+        <button class="item-summary-btn item-summary-btn-compact" type="button" onclick="openItemEditor(${index})">
+          <span class="item-slot-index">Slot ${index + 1}</span>
+          <span class="${getItemTypeBadgeClass(itemType)}">${esc(formatItemType(itemType))}</span>
+          <h3 class="item-title item-title-compact">${esc(item.name || "Item")}</h3>
+          <span class="item-summary-line ${itemType === "arma" && item.damage ? "is-weapon" : ""}">${esc(primaryMeta)}</span>
+          <span class="item-summary-line is-muted">${esc(secondaryMeta)}</span>
         </button>
       </article>
     `;
