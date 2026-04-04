@@ -1192,9 +1192,9 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
 
 .inventory-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
-  gap: 0.7rem;
-  align-items: start;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 0.58rem;
+  align-items: stretch;
 }
 
 .inventory-grid .empty-msg {
@@ -1202,14 +1202,14 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
 }
 
 .item-card {
-  min-height: 116px;
-  padding: 0.55rem;
+  min-height: 102px;
+  padding: 0.42rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.02);
   display: grid;
-  gap: 0.45rem;
-  align-content: start;
+  gap: 0.34rem;
+  align-content: stretch;
   position: relative;
 }
 
@@ -1224,11 +1224,11 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
 .item-slot-btn {
   width: 100%;
   min-height: 100%;
-  padding: 0.8rem 0.65rem;
+  padding: 0.58rem 0.52rem;
   border-radius: inherit;
   display: grid;
   place-items: center;
-  gap: 0.3rem;
+  gap: 0.22rem;
   text-align: center;
   color: var(--text-soft);
   cursor: pointer;
@@ -1259,20 +1259,20 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
 
 .item-slot-index {
   color: var(--text-muted);
-  font-size: 0.58rem;
+  font-size: 0.54rem;
 }
 
 .item-slot-plus {
   font-family: var(--font-display);
-  font-size: 1.7rem;
+  font-size: 1.48rem;
   line-height: 1;
   color: var(--accent-bright);
 }
 
 .item-slot-copy {
   color: var(--text-soft);
-  font-size: 0.58rem;
-  letter-spacing: 0.14em;
+  font-size: 0.54rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
@@ -1289,10 +1289,10 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
 
 .item-summary-btn-compact {
   min-height: 100%;
-  padding: 0.3rem 0.15rem 0.15rem;
+  padding: 0.24rem 0.12rem 0.12rem;
   justify-items: center;
   text-align: center;
-  gap: 0.28rem;
+  gap: 0.2rem;
 }
 
 .item-summary-btn:hover {
@@ -1308,15 +1308,15 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 26px;
-  padding: 0.2rem 0.65rem;
+  min-height: 22px;
+  padding: 0.16rem 0.52rem;
   border-radius: 999px;
   border: 1px solid rgba(195, 170, 105, 0.18);
   background: rgba(195, 170, 105, 0.08);
   color: var(--gold);
   font-family: var(--font-ui);
-  font-size: 0.58rem;
-  letter-spacing: 0.16em;
+  font-size: 0.52rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
@@ -1341,7 +1341,7 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
 
 .item-title-compact {
   width: 100%;
-  font-size: 0.94rem;
+  font-size: 0.84rem;
   line-height: 1.05;
   text-align: center;
   overflow: hidden;
@@ -1356,8 +1356,8 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
 }
 
 .item-summary-btn-compact .item-summary-line {
-  font-size: 0.66rem;
-  line-height: 1.2;
+  font-size: 0.6rem;
+  line-height: 1.12;
 }
 
 .item-summary-line.is-muted {
@@ -1370,18 +1370,18 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
 
 .item-remove-compact {
   position: absolute;
-  top: 0.32rem;
-  right: 0.32rem;
+  top: 0.24rem;
+  right: 0.24rem;
   z-index: 2;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 999px;
   display: grid;
   place-items: center;
   color: var(--text-muted);
   background: rgba(8, 10, 14, 0.9);
   border: 1px solid rgba(236, 223, 196, 0.08);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   line-height: 1;
   cursor: pointer;
   transition:
@@ -2175,6 +2175,10 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
     grid-template-columns: 1fr;
   }
 
+  .inventory-grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+
   .identity-side {
     order: -1;
   }
@@ -2184,6 +2188,10 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
   .resources-row,
   .attrs-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .inventory-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
   .attrs-grid {
@@ -2338,4 +2346,7 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
   .dice-option-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+.inventory-master-controls[hidden] {
+  display: none;
 }
