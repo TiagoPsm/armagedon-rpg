@@ -818,6 +818,19 @@ function normalizeSheetData(data, kind = "player") {
     normalized[`attr${attr}`] = sanitizeAttrValue(attr, data[`attr${attr}`], "");
   });
 
+  if (!isMonster) {
+    normalized.integMax = getIntegrityMaxFromSoul(normalized.attrAlma, normalized.integMax || "");
+
+    if (normalized.integMax !== "" && normalized.integAtual !== "") {
+      const currentIntegrity = Number.parseInt(normalized.integAtual, 10);
+      const maxIntegrity = Number.parseInt(normalized.integMax, 10);
+
+      if (!Number.isNaN(currentIntegrity) && !Number.isNaN(maxIntegrity)) {
+        normalized.integAtual = String(Math.max(0, Math.min(currentIntegrity, maxIntegrity)));
+      }
+    }
+  }
+
   if (kind === "player") {
     normalized.charLevel = String(normalized.soulCore.rank);
   }
@@ -1305,6 +1318,32 @@ function modScale(value) {
   return Math.floor((value - 1) / 3);
 }
 
+function getIntegrityMaxFromSoul(value, fallback = "") {
+  const numeric = Number.parseInt(value, 10);
+  if (Number.isNaN(numeric)) return fallback;
+  return String(Math.max(0, Math.floor(numeric / 3)));
+}
+
+function syncIntegrityFromSoul() {
+  const integrityMaxInput = document.getElementById("integMax");
+  const integrityCurrentInput = document.getElementById("integAtual");
+  if (!integrityMaxInput) return;
+
+  const nextIntegrityMax = getIntegrityMaxFromSoul(getValue("attrAlma"), "");
+  integrityMaxInput.value = nextIntegrityMax;
+
+  if (integrityCurrentInput && nextIntegrityMax !== "") {
+    const currentIntegrity = Number.parseInt(integrityCurrentInput.value, 10);
+    const maxIntegrity = Number.parseInt(nextIntegrityMax, 10);
+
+    if (!Number.isNaN(currentIntegrity) && !Number.isNaN(maxIntegrity)) {
+      integrityCurrentInput.value = String(Math.max(0, Math.min(currentIntegrity, maxIntegrity)));
+    }
+  }
+
+  updateBar("integ");
+}
+
 function calcMod(attr) {
   const input = document.getElementById(`attr${attr}`);
   const target = document.getElementById(`mod${attr}`);
@@ -1316,6 +1355,7 @@ function calcMod(attr) {
   if (Number.isNaN(value)) {
     target.textContent = "-";
     target.style.color = "";
+    if (attr === "Alma") syncIntegrityFromSoul();
     return;
   }
 
@@ -1335,6 +1375,10 @@ function calcModFromVal(attr, value) {
   const mod = modScale(value);
   target.textContent = `+${mod}`;
   target.style.color = mod >= 4 ? "var(--red-mid)" : mod >= 2 ? "var(--gold)" : "var(--text-secondary)";
+
+  if (attr === "Alma") {
+    syncIntegrityFromSoul();
+  }
 }
 
 function updateBar(type) {

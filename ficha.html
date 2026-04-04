@@ -390,7 +390,7 @@
             </div>
 
             <div class="resource-card" id="sanityCard">
-              <div class="resource-name">Sanidade</div>
+              <div class="resource-name">Integridade</div>
 
               <div class="resource-inputs">
                 <div class="resource-field">
@@ -409,14 +409,16 @@
 
                 <div class="resource-field">
                   <span class="resource-sublabel">Max</span>
-                  <input
-                    type="number"
-                    id="integMax"
-                    class="resource-input"
-                    min="0"
-                    placeholder="0"
-                    oninput="updateBar('integ')"
-                  />
+                    <input
+                      type="number"
+                      id="integMax"
+                      class="resource-input"
+                      min="0"
+                      placeholder="0"
+                      oninput="updateBar('integ')"
+                      readonly
+                      aria-readonly="true"
+                    />
                 </div>
               </div>
 
