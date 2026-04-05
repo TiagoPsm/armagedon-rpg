@@ -3522,3 +3522,196 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
     justify-content: flex-start;
   }
 }
+
+/* 2026-04 dark fantasy atmosphere pass */
+#sheetScreen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(255, 243, 220, 0.03), transparent 14%),
+    linear-gradient(180deg, rgba(1, 2, 4, 0.12), rgba(1, 2, 4, 0.38)),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.22), transparent 12%, transparent 88%, rgba(0, 0, 0, 0.26));
+  pointer-events: none;
+  z-index: -1;
+}
+
+#sheetScreen .page-main.page-main-sheet {
+  filter: saturate(0.96) contrast(1.03);
+}
+
+#sheetScreen .sheet-block {
+  border-color: rgba(214, 191, 156, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.006)),
+    linear-gradient(180deg, rgba(9, 11, 16, 0.99), rgba(3, 4, 7, 0.995));
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    inset 0 -24px 42px rgba(0, 0, 0, 0.18);
+}
+
+#sheetScreen .sheet-block::before {
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.025), transparent 18%),
+    radial-gradient(circle at 100% 0%, rgba(212, 132, 68, 0.06), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.01), transparent 24%);
+}
+
+#sheetScreen .sheet-block::after {
+  background:
+    linear-gradient(112deg, rgba(255, 255, 255, 0.014), transparent 20%),
+    radial-gradient(circle at top right, rgba(220, 111, 49, 0.07), transparent 24%),
+    radial-gradient(circle at bottom left, rgba(111, 22, 10, 0.06), transparent 28%);
+}
+
+#sheetScreen .sheet-hero {
+  background:
+    radial-gradient(circle at 14% 0%, rgba(217, 115, 58, 0.12), transparent 24%),
+    radial-gradient(circle at 82% 0%, rgba(255, 232, 201, 0.035), transparent 18%),
+    linear-gradient(180deg, rgba(13, 16, 22, 0.99), rgba(4, 5, 9, 0.995));
+}
+
+#sheetScreen .sheet-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(229, 138, 70, 0.08), transparent 16%),
+    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.1) 100%);
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+#sheetScreen .panel-block-title,
+#sheetScreen .section-label {
+  color: #ea8e4f;
+  text-shadow: 0 0 18px rgba(234, 142, 79, 0.08);
+}
+
+#sheetScreen .form-label,
+#sheetScreen .item-meta {
+  color: rgba(205, 190, 162, 0.74);
+}
+
+#sheetScreen .avatar-frame {
+  border-color: rgba(231, 135, 69, 0.16);
+  background:
+    radial-gradient(circle at 50% 20%, rgba(227, 118, 58, 0.12), transparent 44%),
+    linear-gradient(180deg, rgba(22, 25, 31, 0.98), rgba(6, 7, 12, 0.99));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 24px 52px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(231, 135, 69, 0.03);
+}
+
+#sheetScreen .avatar-btn,
+#sheetScreen .btn-inline,
+#sheetScreen .btn-ghost {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.006)),
+    rgba(9, 11, 17, 0.94);
+}
+
+#sheetScreen .btn-primary {
+  background:
+    linear-gradient(180deg, rgba(255, 180, 117, 0.08), rgba(255, 180, 117, 0)),
+    linear-gradient(135deg, #c96535, #e88e4f 58%, #f2b070);
+  box-shadow:
+    0 18px 34px rgba(157, 70, 29, 0.24),
+    inset 0 1px 0 rgba(255, 247, 238, 0.24);
+}
+
+#sheetScreen .btn-primary:hover,
+#sheetScreen .btn-primary:focus-visible {
+  background:
+    linear-gradient(180deg, rgba(255, 196, 138, 0.1), rgba(255, 196, 138, 0)),
+    linear-gradient(135deg, #d16c39, #ef9554 58%, #f3ba7e);
+}
+
+#sheetScreen .form-input,
+#sheetScreen .form-select,
+#sheetScreen .notes-input,
+#sheetScreen .item-editor-select {
+  border-color: rgba(226, 207, 176, 0.07);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.014), rgba(255, 255, 255, 0.004)),
+    rgba(8, 10, 15, 0.94);
+}
+
+#sheetScreen .soul-core-panel,
+#sheetScreen .resource-card,
+#sheetScreen .attr-card,
+#sheetScreen .owned-memory-card,
+#sheetScreen .memory-item,
+#sheetScreen .item-card,
+#sheetScreen .item-slot-btn,
+#sheetScreen .dice-tray-block,
+#sheetScreen .dice-result-card,
+#sheetScreen .item-editor-dialog,
+#sheetScreen .soul-award-dialog {
+  border-color: rgba(222, 203, 173, 0.07);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.005)),
+    rgba(7, 9, 14, 0.95);
+}
+
+#sheetScreen .attr-card:last-child,
+#sheetScreen .soul-core-panel {
+  background:
+    radial-gradient(circle at top center, rgba(226, 130, 68, 0.08), transparent 40%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.005)),
+    rgba(8, 10, 15, 0.96);
+}
+
+#sheetScreen .resource-bar {
+  opacity: 0.96;
+}
+
+#sheetScreen .item-slot-btn:hover,
+#sheetScreen .item-card:hover,
+#sheetScreen .owned-memory-card:hover {
+  border-color: rgba(233, 138, 74, 0.18);
+  box-shadow:
+    0 16px 28px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+#sheetScreen .dice-tray-dialog,
+#sheetScreen .item-editor-dialog,
+#sheetScreen .soul-award-dialog {
+  background:
+    radial-gradient(circle at top left, rgba(219, 108, 50, 0.1), transparent 22%),
+    radial-gradient(circle at 90% 8%, rgba(255, 231, 199, 0.03), transparent 12%),
+    linear-gradient(180deg, rgba(10, 12, 18, 0.995), rgba(3, 4, 8, 0.995));
+}
+
+#sheetScreen .dice-tray-title,
+#sheetScreen .item-editor-title,
+#sheetScreen .soul-award-title {
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.03),
+    0 0 28px rgba(236, 140, 74, 0.05);
+}
+
+#sheetScreen .dice-result-card.is-critical {
+  border-color: rgba(226, 187, 101, 0.42);
+  background:
+    radial-gradient(circle at top center, rgba(226, 187, 101, 0.1), transparent 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.005)),
+    rgba(10, 10, 14, 0.96);
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(226, 187, 101, 0.08) inset;
+}
+
+#sheetScreen .dice-result-card.is-fumble {
+  border-color: rgba(186, 61, 37, 0.42);
+  background:
+    radial-gradient(circle at top center, rgba(186, 61, 37, 0.12), transparent 40%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.005)),
+    rgba(10, 8, 11, 0.96);
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(186, 61, 37, 0.08) inset;
+}
