@@ -215,8 +215,8 @@
       </div>
     </header>
 
-    <main class="page-main">
-      <section class="sheet-block identity-block">
+    <main class="page-main page-main-sheet">
+      <section class="sheet-block identity-block sheet-hero">
         <div class="identity-main">
           <div class="avatar-col">
             <div class="avatar-frame">
@@ -348,8 +348,8 @@
 
       </section>
 
-      <section class="sheet-grid">
-        <section class="sheet-block">
+      <section class="sheet-grid sheet-grid-primary">
+        <section class="sheet-block sheet-section sheet-section-resources">
           <div class="block-title-bar">
             <span class="section-label" style="margin:0">// Recursos</span>
           </div>
@@ -427,7 +427,7 @@
           </div>
         </section>
 
-        <section class="sheet-block">
+        <section class="sheet-block sheet-section sheet-section-attributes">
           <div class="block-title-bar">
             <span class="section-label" style="margin:0">// Atributos</span>
             <span class="block-hint">A cada 3 pontos, o modificador aumenta em 1</span>
@@ -484,7 +484,7 @@
         </section>
       </section>
 
-      <section class="sheet-block">
+      <section class="sheet-block sheet-section sheet-section-skills">
         <div class="block-title-bar">
           <span class="section-label" style="margin:0">// Habilidades e poderes</span>
           <button class="btn-inline" onclick="addHabilidade()">+ Adicionar</button>
@@ -493,7 +493,7 @@
         <div id="habList"><p class="empty-msg">Nenhuma habilidade registrada.</p></div>
       </section>
 
-      <section class="sheet-block" id="ownedMemoriesSection">
+      <section class="sheet-block sheet-section sheet-section-owned-memories" id="ownedMemoriesSection">
         <div class="block-title-bar">
           <span class="section-label" style="margin:0">// Memórias possuídas</span>
         </div>
@@ -501,7 +501,7 @@
         <div id="ownedMemoryList"><p class="empty-msg">Nenhuma memória possuída.</p></div>
       </section>
 
-      <section class="sheet-block" id="memorySection" hidden>
+      <section class="sheet-block sheet-section sheet-section-memory-drops" id="memorySection" hidden>
         <div class="block-title-bar">
           <span class="section-label" style="margin:0">// Drop de memória</span>
           <button class="btn-inline" onclick="addMemoryDrop()">+ Memória</button>
@@ -510,7 +510,7 @@
         <div id="memoryList"><p class="empty-msg">Nenhuma memória definida.</p></div>
       </section>
 
-      <section class="sheet-block" id="inventorySection">
+      <section class="sheet-block sheet-section sheet-section-inventory" id="inventorySection">
         <div class="block-title-bar">
           <span class="section-label" style="margin:0">// Inventário</span>
           <div class="inventory-head-actions">
@@ -530,7 +530,7 @@
         </div>
       </section>
 
-      <section class="sheet-block">
+      <section class="sheet-block sheet-section sheet-section-notes">
         <div class="block-title-bar">
           <span class="section-label" style="margin:0">// Anotações</span>
         </div>
@@ -542,7 +542,7 @@
         ></textarea>
       </section>
 
-      <div class="save-row">
+      <div class="save-row save-row-sheet">
         <span id="saveMsg" class="save-msg"></span>
         <button class="btn btn-primary" onclick="saveSheet()">Salvar ficha</button>
       </div>
