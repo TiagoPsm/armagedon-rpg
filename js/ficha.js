@@ -104,20 +104,28 @@ function initSheetMouseGlow() {
   if (!sheetScreen || !pageMain) return;
   if (typeof window.matchMedia === "function" && !window.matchMedia("(pointer: fine)").matches) return;
 
-  pageMain.style.setProperty("--sheet-glow-x", "52%");
-  pageMain.style.setProperty("--sheet-glow-y", "18%");
+  const setGlowVars = (x, y) => {
+    sheetScreen.style.setProperty("--sheet-glow-x", x);
+    sheetScreen.style.setProperty("--sheet-glow-y", y);
+    pageMain.style.setProperty("--sheet-glow-x", x);
+    pageMain.style.setProperty("--sheet-glow-y", y);
+  };
+
+  setGlowVars("50%", "18%");
 
   let frameId = 0;
 
   const updateGlow = (clientX, clientY) => {
-    const rect = pageMain.getBoundingClientRect();
+    const rect = sheetScreen.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
 
     const x = ((clientX - rect.left) / rect.width) * 100;
     const y = ((clientY - rect.top) / rect.height) * 100;
 
-    pageMain.style.setProperty("--sheet-glow-x", `${Math.max(0, Math.min(100, x)).toFixed(2)}%`);
-    pageMain.style.setProperty("--sheet-glow-y", `${Math.max(0, Math.min(100, y)).toFixed(2)}%`);
+    setGlowVars(
+      `${Math.max(0, Math.min(100, x)).toFixed(2)}%`,
+      `${Math.max(0, Math.min(100, y)).toFixed(2)}%`
+    );
   };
 
   const handlePointerMove = event => {
@@ -127,8 +135,7 @@ function initSheetMouseGlow() {
   };
 
   const resetGlow = () => {
-    pageMain.style.setProperty("--sheet-glow-x", "52%");
-    pageMain.style.setProperty("--sheet-glow-y", "18%");
+    setGlowVars("50%", "18%");
   };
 
   sheetScreen.addEventListener("pointermove", handlePointerMove);
