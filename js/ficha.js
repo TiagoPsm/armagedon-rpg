@@ -8,7 +8,7 @@ const ATTRIBUTES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"]
 const DEFAULT_INVENTORY_SLOTS = 30;
 const ITEM_TYPES = {
   arma: "Arma",
-  acessorio: "AcessÃ³rio",
+  acessorio: "Acessório",
   outro: "Outro"
 };
 const DICE_PRESETS = [
@@ -310,7 +310,7 @@ async function addPlayer() {
   errEl.textContent = "";
 
   if (!username || !password) {
-    errEl.textContent = "UsuÃ¡rio e senha sÃ£o obrigatÃ³rios.";
+    errEl.textContent = "Usuário e senha são obrigatórios.";
     return;
   }
 
@@ -334,7 +334,7 @@ async function addPlayer() {
   } else {
     const players = AUTH.getPlayers();
     if (players.find(player => player.username.toLowerCase() === username.toLowerCase())) {
-      errEl.textContent = "JÃ¡ existe um jogador com esse nome.";
+      errEl.textContent = "Já existe um jogador com esse nome.";
       return;
     }
 
@@ -369,7 +369,7 @@ async function addNpc() {
   } else {
     const npcs = readNpcs();
     if (npcs.some(npc => npc.name.toLowerCase() === name.toLowerCase())) {
-      errEl.textContent = "JÃ¡ existe um NPC com esse nome.";
+      errEl.textContent = "Já existe um NPC com esse nome.";
       return;
     }
 
@@ -415,7 +415,7 @@ async function addMonster() {
   } else {
     const monsters = readMonsters();
     if (monsters.some(monster => monster.name.toLowerCase() === name.toLowerCase())) {
-      errEl.textContent = "JÃ¡ existe um monstro com esse nome.";
+      errEl.textContent = "Já existe um monstro com esse nome.";
       return;
     }
 
@@ -482,9 +482,9 @@ function resetMonsterForm() {
 }
 
 async function removePlayer(username) {
-  const confirmed = await UI.confirm(`Remover "${username}" A ficha serÃ¡ apagada.`, {
+  const confirmed = await UI.confirm(`Remover "${username}"? A ficha será apagada.`, {
     title: "Excluir jogador",
-    kicker: "// ConfirmaÃ§Ã£o",
+    kicker: "// Confirmação",
     confirmLabel: "Remover",
     cancelLabel: "Cancelar",
     variant: "danger"
@@ -539,7 +539,7 @@ function openSheetLegacy(target, fromMaster) {
     sheetSaveText.textContent =
       resolvedTarget.kind === "npc"
         ? "Toda alteração desta ficha de NPC fica salva neste navegador do mestre."
-        : "Toda alteraÃ§Ã£o da ficha fica salva para o usuÃ¡rio correto.";
+        : "Toda alteração da ficha fica salva para o usuário correto.";
   }
 
   loadSheet(resolvedTarget.key);
@@ -885,7 +885,7 @@ function getSoulNextRankRequirement(rank) {
     7: 800
   };
 
-  // Fallback local: subir de rank exige o equivalente a 100 essÃªncias do mesmo rank.
+// Fallback local: subir de rank exige o equivalente a 100 essências do mesmo rank.
   return normalizedRank >= 7
     ? 0
     : (baseExperienceByRank[normalizedRank] || 0) * sameRankEssencesPerRankUp;
@@ -1186,9 +1186,9 @@ async function removeNpc(npcId) {
   const npc = npcs.find(candidate => candidate.id === npcId);
   if (!npc) return;
 
-  const confirmed = await UI.confirm(`Apagar o NPC "${npc.name}" A ficha serÃ¡ apagada.`, {
+  const confirmed = await UI.confirm(`Apagar o NPC "${npc.name}"? A ficha será apagada.`, {
     title: "Excluir NPC",
-    kicker: "// ConfirmaÃ§Ã£o",
+    kicker: "// Confirmação",
     confirmLabel: "Excluir",
     cancelLabel: "Cancelar",
     variant: "danger"
@@ -1217,9 +1217,9 @@ async function removeMonster(monsterId) {
   const monster = monsters.find(candidate => candidate.id === monsterId);
   if (!monster) return;
 
-  const confirmed = await UI.confirm(`Apagar o monstro "${monster.name}" A ficha serÃ¡ apagada.`, {
+  const confirmed = await UI.confirm(`Apagar o monstro "${monster.name}"? A ficha será apagada.`, {
     title: "Excluir monstro",
-    kicker: "// ConfirmaÃ§Ã£o",
+    kicker: "// Confirmação",
     confirmLabel: "Excluir",
     cancelLabel: "Cancelar",
     variant: "danger"
@@ -1511,12 +1511,12 @@ async function openItemTypePicker() {
   const selectedType = await UI.pickOption({
     title: "Escolher categoria",
     kicker: "// Item",
-    message: "Defina o tipo do item para habilitar os campos especÃ­ficos.",
+    message: "Defina o tipo do item para habilitar os campos específicos.",
     cancelLabel: "Fechar",
     options: [
       { value: "outro", label: "Outro", meta: "Item geral", selected: currentType === "outro" },
       { value: "arma", label: "Arma", meta: "Permite rolagem de dano", selected: currentType === "arma" },
-      { value: "acessorio", label: "AcessÃ³rio", meta: "EquipÃ¡vel ou passivo", selected: currentType === "acessorio" }
+      { value: "acessorio", label: "Acessório", meta: "Equipável ou passivo", selected: currentType === "acessorio" }
     ]
   });
 
@@ -1657,11 +1657,11 @@ async function rollItemDamage(index, options = {}) {
   if (!result) {
     itemRollStates[index] = {
       tone: "fail",
-      text: "Defina um dano vÃ¡lido, como 1d10 ou 2d6+3."
+      text: "Defina um dano válido, como 1d10 ou 2d6+3."
     };
     renderInv(inv);
-    await UI.alert("Defina um dano vÃ¡lido para a arma, por exemplo 1d10 ou 2d6+3.", {
-      title: "Dano invÃ¡lido",
+    await UI.alert("Defina um dano válido para a arma, por exemplo 1d10 ou 2d6+3.", {
+      title: "Dano inválido",
       kicker: "// Inventário"
     });
     if (options.preserveModal) openItemEditor(index, { isNew: itemEditorIsNew });
@@ -1818,14 +1818,14 @@ function initDiceTray() {
   const previewNote = root.querySelector(".dice-tray-preview-note");
 
   if (trayKicker) trayKicker.textContent = "// Rolagem";
-  if (trayTitle) trayTitle.textContent = "LanÃ§ar dados";
+  if (trayTitle) trayTitle.textContent = "Lançar dados";
   if (traySubtitle) {
     traySubtitle.textContent = "Escolha o dado, ajuste a rolagem e veja o resultado em um painel limpo e direto.";
   }
-  if (expressionLabel) expressionLabel.textContent = "ExpressÃ£o livre";
+  if (expressionLabel) expressionLabel.textContent = "Expressão livre";
   if (previewLabel) previewLabel.textContent = "Resumo";
   if (previewNote) {
-    previewNote.textContent = "A expressÃ£o livre substitui a quantidade, o dado e o modificador.";
+    previewNote.textContent = "A expressão livre substitui a quantidade, o dado e o modificador.";
   }
 
   openButton.addEventListener("click", openDiceTray);
@@ -1904,7 +1904,7 @@ function buildDiceTrayResultDetail(result) {
 
   if (result.mode === "advantage" || result.mode === "disadvantage") {
     const modeLabel = DICE_TRAY_MODES[result.mode];
-    return `${modeLabel} | 1Âª: ${result.first.total} | 2Âª: ${result.second.total} | Escolhido: ${result.chosen.total}`;
+    return `${modeLabel} | 1ª: ${result.first.total} | 2ª: ${result.second.total} | Escolhido: ${result.chosen.total}`;
   }
 
   return `Rolagens: ${result.chosen.rolls.join(" + ")}${
@@ -2034,8 +2034,8 @@ async function rollDiceTray() {
   const result = rollDiceExpressionWithMode(expression, diceTrayState.mode);
 
   if (!result) {
-    await UI.alert("NÃ£o foi possÃ­vel interpretar essa rolagem.", {
-      title: "Rolagem invÃ¡lida",
+    await UI.alert("Não foi possível interpretar essa rolagem.", {
+      title: "Rolagem inválida",
       kicker: "// Dados"
     });
     return;
@@ -2062,7 +2062,7 @@ function renderHabs(list) {
       (hab, index) => `
         <div class="hab-row">
           <input class="hab-name" type="text" placeholder="Nome..." value="${esc(hab.name)}" oninput="updateHab(${index}, 'name', this.value)"/>
-          <textarea class="hab-desc auto-grow" rows="3" placeholder="Efeito, custo, descriÃ§Ã£o..." oninput="updateHab(${index}, 'desc', this.value)">${esc(hab.desc)}</textarea>
+        <textarea class="hab-desc auto-grow" rows="3" placeholder="Efeito, custo, descrição..." oninput="updateHab(${index}, 'desc', this.value)">${esc(hab.desc)}</textarea>
           <button class="btn-remove" onclick="removeHab(${index})">x</button>
         </div>
       `
@@ -2107,7 +2107,7 @@ function renderOwnedMemories(list) {
 
   if (!ownedMemories.length) {
     element.className = "";
-    element.innerHTML = '<p class="empty-msg">Nenhuma memÃ³ria possuÃ­da.</p>';
+    element.innerHTML = '<p class="empty-msg">Nenhuma memória possuída.</p>';
     return;
   }
 
@@ -2122,9 +2122,9 @@ function renderOwnedMemories(list) {
           data-source="${esc(memory.source)}"
         >
           <div class="owned-memory-body">
-            <span class="item-meta">MemÃ³ria</span>
-            <h3 class="owned-memory-title">${esc(memory.name || "MemÃ³ria sem nome")}</h3>
-            <p class="owned-memory-desc">${esc(memory.desc || "Sem descriÃ§Ã£o.")}</p>
+            <span class="item-meta">Memória</span>
+            <h3 class="owned-memory-title">${esc(memory.name || "Memória sem nome")}</h3>
+            <p class="owned-memory-desc">${esc(memory.desc || "Sem descrição.")}</p>
             ${
               memory.source
                 ? `<span class="owned-memory-source">Origem: ${esc(memory.source)}</span>`
@@ -2179,8 +2179,8 @@ function renderOwnedMemoryTransferBlock(index, targets) {
   if (!targets.length) {
     return `
       <div class="owned-memory-transfer">
-        <span class="item-meta">TransferÃªncia</span>
-        <div class="memory-award-status">NÃ£o hÃ¡ outro jogador disponÃ­vel para receber esta memÃ³ria.</div>
+        <span class="item-meta">Transferência</span>
+        <div class="memory-award-status">Não há outro jogador disponível para receber esta memória.</div>
       </div>
     `;
   }
@@ -2211,7 +2211,7 @@ function renderOwnedMemoryTransferBlock(index, targets) {
         </button>
         <button class="btn-inline owned-memory-transfer-send" onclick="transferOwnedMemory(${index})">Enviar</button>
       </div>
-          <div class="${statusClass}">${esc(state.text || "Selecione o jogador de destino para transferir esta memÃ³ria.")}</div>
+          <div class="${statusClass}">${esc(state.text || "Selecione o jogador de destino para transferir esta memória.")}</div>
     </div>
   `;
 }
@@ -2226,9 +2226,9 @@ async function pickOwnedMemoryTransferTarget(index) {
     : targets[0].value;
 
   const selected = await UI.pickOption({
-    title: "Transferir memÃ³ria",
+    title: "Transferir memória",
     kicker: "// Jogadores",
-    message: "Escolha qual jogador vai receber esta memÃ³ria.",
+    message: "Escolha qual jogador vai receber esta memória.",
     options: targets.map(target => ({
       value: target.value,
       label: target.label,
@@ -2243,7 +2243,7 @@ async function pickOwnedMemoryTransferTarget(index) {
     ...state,
     target: selected,
     tone: "",
-    text: "Destino definido. Clique em Enviar para concluir a transferÃªncia."
+    text: "Destino definido. Clique em Enviar para concluir a transferência."
   };
 
   renderOwnedMemories(ownedMemories);
@@ -2259,10 +2259,10 @@ async function transferOwnedMemory(index) {
 
   const target = createPlayerTarget(targetUsername);
   const confirmed = await UI.confirm(
-      `Transferir "${memory.name || "MemÃ³ria sem nome"}" para ${target.label}`,
+      `Transferir "${memory.name || "Memória sem nome"}" para ${target.label}`,
     {
-        title: "Transferir memÃ³ria",
-        kicker: "// MemÃ³rias possuÃ­das",
+        title: "Transferir memória",
+        kicker: "// Memórias possuídas",
       confirmLabel: "Transferir",
       cancelLabel: "Cancelar"
     }
@@ -2282,7 +2282,7 @@ async function transferOwnedMemory(index) {
       ownedMemoryTransferStates[index] = {
         ...state,
         tone: "fail",
-      text: error.message || "Falha ao transferir a memÃ³ria."
+      text: error.message || "Falha ao transferir a memória."
       };
       renderOwnedMemories(ownedMemories);
       return;
@@ -2345,7 +2345,7 @@ function parseMemoryAwardTarget(value) {
 
 function buildOwnedMemoryEntry(drop) {
   return normalizeOwnedMemory({
-    name: String(drop.name || "").trim() || "MemÃ³ria sem nome",
+    name: String(drop.name || "").trim() || "Memória sem nome",
     desc: String(drop.desc || "").trim(),
     source: currentSheetTarget.label || "Origem desconhecida"
   });
@@ -2372,7 +2372,7 @@ function applyMemoryRollState(index) {
     result.className = "memory-roll-result";
     if (state.status) result.classList.add(`is-${state.status}`);
     if (state.isRolling) result.classList.add("is-rolling");
-    result.textContent = state.resultText || "Defina a chance e role para descobrir se a memÃ³ria caiu.";
+    result.textContent = state.resultText || "Defina a chance e role para descobrir se a memória caiu.";
   }
 
   renderMemoryAwardControls(index);
@@ -2402,16 +2402,16 @@ function renderMemoryAwardControls(index) {
 
   if (state.awarded) {
     award.innerHTML = `
-      <span class="item-meta">MemÃ³ria enviada</span>
-      <div class="${statusClass}">${esc(state.awardText || "MemÃ³ria enviada para a ficha escolhida.")}</div>
+      <span class="item-meta">Memória enviada</span>
+      <div class="${statusClass}">${esc(state.awardText || "Memória enviada para a ficha escolhida.")}</div>
     `;
     return;
   }
 
   if (!targets.length) {
     award.innerHTML = `
-      <span class="item-meta">Enviar memÃ³ria</span>
-      <div class="memory-award-status is-fail">NÃ£o hÃ¡ jogadores ou NPCs disponÃ­veis para receber esta memÃ³ria.</div>
+      <span class="item-meta">Enviar memória</span>
+      <div class="memory-award-status is-fail">Não há jogadores ou NPCs disponíveis para receber esta memória.</div>
     `;
     return;
   }
@@ -2426,13 +2426,13 @@ function renderMemoryAwardControls(index) {
   };
 
   award.innerHTML = `
-    <span class="item-meta">Enviar memÃ³ria para</span>
+    <span class="item-meta">Enviar memória para</span>
     <button class="btn-inline memory-picker-btn" onclick="pickMemoryAwardTarget(${index})">
       <span class="memory-picker-label">${esc(formatMemoryTargetLabel(selectedTarget, targets, "Escolher destino"))}</span>
       <span class="memory-picker-hint">Alterar</span>
     </button>
     <button class="btn-inline memory-award-btn" onclick="awardMemoryDrop(${index})">Enviar para ficha</button>
-    <div class="${statusClass}">${esc(state.awardText || "A memÃ³ria caiu. Escolha quem vai recebÃª-la.")}</div>
+    <div class="${statusClass}">${esc(state.awardText || "A memória caiu. Escolha quem vai recebê-la.")}</div>
   `;
 }
 
@@ -2448,9 +2448,9 @@ async function pickMemoryAwardTarget(index) {
     : targets[0].value;
 
   const selected = await UI.pickOption({
-    title: "Enviar memÃ³ria",
+    title: "Enviar memória",
     kicker: "// Destino",
-    message: "Escolha quem vai receber esta memÃ³ria.",
+    message: "Escolha quem vai receber esta memória.",
     options: targets.map(target => ({
       value: target.value,
       label: target.label,
@@ -2478,7 +2478,7 @@ function renderMemoryDrops(list) {
 
   if (!memoryDrops.length) {
     element.className = "";
-    element.innerHTML = '<p class="empty-msg">Nenhuma memÃ³ria definida.</p>';
+    element.innerHTML = '<p class="empty-msg">Nenhuma memória definida.</p>';
     return;
   }
 
@@ -2489,13 +2489,13 @@ function renderMemoryDrops(list) {
         <div class="memory-row">
           <div class="memory-main">
             <div class="memory-field">
-              <span class="item-meta">MemÃ³ria</span>
-              <input class="memory-name" type="text" placeholder="Nome da memÃ³ria..." value="${esc(drop.name)}" oninput="updateMemoryDrop(${index}, 'name', this.value)" />
+              <span class="item-meta">Memória</span>
+              <input class="memory-name" type="text" placeholder="Nome da memória..." value="${esc(drop.name)}" oninput="updateMemoryDrop(${index}, 'name', this.value)" />
             </div>
 
             <div class="memory-field">
-              <span class="item-meta">DescriÃ§Ã£o e efeito</span>
-              <textarea class="memory-desc auto-grow" rows="3" placeholder="DescriÃ§Ã£o do drop, raridade, condiÃ§Ã£o ou efeito..." oninput="updateMemoryDrop(${index}, 'desc', this.value)">${esc(drop.desc)}</textarea>
+              <span class="item-meta">Descrição e efeito</span>
+              <textarea class="memory-desc auto-grow" rows="3" placeholder="Descrição do drop, raridade, condição ou efeito..." oninput="updateMemoryDrop(${index}, 'desc', this.value)">${esc(drop.desc)}</textarea>
             </div>
           </div>
 
@@ -2516,7 +2516,7 @@ function renderMemoryDrops(list) {
                 <div class="memory-roll-threshold" id="memoryThreshold${index}" style="left:${formatChancePercent(drop.chance)}%"></div>
                 <div class="memory-roll-fill" id="memoryRollFill${index}"></div>
               </div>
-          <div class="memory-roll-result" id="memoryRollResult${index}">Defina a chance e role para descobrir se a memÃ³ria caiu.</div>
+          <div class="memory-roll-result" id="memoryRollResult${index}">Defina a chance e role para descobrir se a memória caiu.</div>
             </div>
 
             <div class="memory-award" id="memoryAward${index}" hidden></div>
@@ -2582,7 +2582,7 @@ async function rollMemoryDrop(index) {
   delete memoryRollStates[index];
   renderMemoryAwardControls(index);
   result.className = "memory-roll-result is-rolling";
-  result.textContent = "Rolando o destino da memÃ³ria...";
+  result.textContent = "Rolando o destino da memória...";
 
   let chance = formatChancePercent(drop.chance);
   let rolled = Number((Math.random() * 100).toFixed(1));
@@ -2599,7 +2599,7 @@ async function rollMemoryDrop(index) {
       success = Boolean(remoteResult.success);
     } catch (error) {
       result.className = "memory-roll-result is-fail";
-    result.textContent = error.message || "Falha ao rolar o drop da memÃ³ria.";
+    result.textContent = error.message || "Falha ao rolar o drop da memória.";
       return;
     }
   }
@@ -2622,7 +2622,7 @@ async function rollMemoryDrop(index) {
       awardText: "",
       resultText: success
         ? `Memória obtida. Rolagem ${rolled}% dentro da chance de ${chance}%.`
-        : `Sem memÃ³ria. Rolagem ${rolled}% acima da chance de ${chance}%.`
+        : `Sem memória. Rolagem ${rolled}% acima da chance de ${chance}%.`
     };
     applyMemoryRollState(index);
   }, 1250);
@@ -2632,14 +2632,14 @@ async function awardMemoryDrop(index) {
   const drop = memoryDrops[index];
   const state = memoryRollStates[index];
   if (!drop || !state.success || state.awarded) return;
-  const awardedMemoryName = String(drop.name || "").trim() || "MemÃ³ria sem nome";
+  const awardedMemoryName = String(drop.name || "").trim() || "Memória sem nome";
 
   const target = parseMemoryAwardTarget(state.target);
   if (!target || target.kind === "monster") {
     memoryRollStates[index] = {
       ...state,
       awardTone: "fail",
-      awardText: "Escolha um jogador ou NPC vÃ¡lido para receber a memÃ³ria."
+      awardText: "Escolha um jogador ou NPC válido para receber a memória."
     };
     renderMemoryAwardControls(index);
     return;
@@ -2656,7 +2656,7 @@ async function awardMemoryDrop(index) {
       memoryRollStates[index] = {
         ...state,
         awardTone: "fail",
-      awardText: error.message || "Falha ao enviar a memÃ³ria."
+      awardText: error.message || "Falha ao enviar a memória."
       };
       renderMemoryAwardControls(index);
       return;
@@ -2735,7 +2735,7 @@ function renderItemTransferBlock(index, targets) {
     return `
       <div class="item-transfer">
         <span class="item-meta">Troca de item</span>
-        <div class="memory-award-status">Nenhum jogador disponÃ­vel com slot livre para receber este item.</div>
+        <div class="memory-award-status">Nenhum jogador disponível com slot livre para receber este item.</div>
       </div>
     `;
   }
@@ -2766,7 +2766,7 @@ function renderItemTransferBlock(index, targets) {
         </button>
         <button class="btn-inline item-transfer-send" onclick="transferItem(${index})">Enviar</button>
       </div>
-      <div class="${statusClass}">${esc(state.text || "O item sÃ³ pode ser enviado para jogadores com slot livre no Inventário.")}</div>
+      <div class="${statusClass}">${esc(state.text || "O item só pode ser enviado para jogadores com slot livre no Inventário.")}</div>
     </div>
   `;
 }
@@ -2812,7 +2812,7 @@ async function pickItemTransferTarget(index) {
     ...state,
     target: selected,
     tone: "",
-    text: "Destino definido. Clique em Enviar para concluir a transferÃªncia."
+    text: "Destino definido. Clique em Enviar para concluir a transferência."
   };
 
   if (itemEditorIndex === index) {
@@ -2838,7 +2838,7 @@ async function transferItem(index) {
     itemTransferStates[index] = {
       ...state,
       tone: "fail",
-      text: "Nenhum jogador com slot livre estÃ¡ disponÃ­vel para receber este item."
+      text: "Nenhum jogador com slot livre está disponível para receber este item."
     };
     if (itemEditorIndex === index) {
       renderItemEditorTransfer(index);
@@ -2853,7 +2853,7 @@ async function transferItem(index) {
     itemTransferStates[index] = {
       ...state,
       tone: "fail",
-      text: `${target.label} estÃ¡ com a mochila cheia.`
+      text: `${target.label} está com a mochila cheia.`
     };
     if (itemEditorIndex === index) {
       renderItemEditorTransfer(index);
@@ -3077,9 +3077,9 @@ async function changeInventorySlots(direction) {
 
   if (direction < 0 && targetCapacity < minimumCapacity) {
     await UI.alert(
-      `NÃ£o Ã© possÃ­vel reduzir abaixo de ${minimumCapacity} slots porque a ficha usa ${inv.length} item(ns) e o mÃ­nimo padrÃ£o Ã© ${DEFAULT_INVENTORY_SLOTS}.`,
+      `Não é possível reduzir abaixo de ${minimumCapacity} slots porque a ficha usa ${inv.length} item(ns) e o mínimo padrão é ${DEFAULT_INVENTORY_SLOTS}.`,
       {
-        title: "ReduÃ§Ã£o bloqueada",
+        title: "Redução bloqueada",
         kicker: "// Inventário",
         confirmLabel: "Entendi"
       }
@@ -3218,7 +3218,7 @@ function renderProgressionField(kind = currentSheetTarget.kind || "player") {
   }
 
   if (label && isPlayer) {
-    label.textContent = "NÃ­vel";
+    label.textContent = "Nível";
   }
 
   if (group) group.classList.toggle("is-soul", isPlayer);
@@ -3255,7 +3255,7 @@ function renderProgressionField(kind = currentSheetTarget.kind || "player") {
   const progressLabel = buildSoulProgressLabel(normalized);
   const nextRankLabel = requirement
     ? `Próximo rank: ${getSoulRankName(normalized.rank + 1)}`
-    : "Rank mÃ¡ximo alcanÃ§ado";
+    : "Rank máximo alcançado";
 
   soulCore = normalized;
   if (levelInput) levelInput.value = String(normalized.rank);
@@ -3265,7 +3265,7 @@ function renderProgressionField(kind = currentSheetTarget.kind || "player") {
   if (nextRankElement) {
     nextRankElement.textContent = requirement
       ? `Próximo rank: ${getSoulRankName(normalized.rank + 1)}`
-      : "Rank mÃ¡ximo alcanÃ§ado";
+      : "Rank máximo alcançado";
   }
   if (progressBar) {
     progressBar.style.width = `${progressPercent}%`;
@@ -3315,21 +3315,21 @@ function renderSoulAwardPreview() {
 
   if (amount) amount.value = String(normalizedAmount);
   if (title) {
-    title.textContent = `Alimentar nÃºcleo de ${currentSheetTarget.label || "personagem"}`;
+    title.textContent = `Alimentar núcleo de ${currentSheetTarget.label || "personagem"}`;
   }
 
   preview.innerHTML = `
-    <span class="item-meta">PrÃ©via</span>
-    <strong>${normalizedAmount} essÃªncia(s) de rank ${selectedRank}</strong>
-    <p>${getSoulRankName(currentCore.rank)} recebe ${perEssenceExperience} XP por absorÃ§Ã£o nesta etapa.</p>
+    <span class="item-meta">Prévia</span>
+    <strong>${normalizedAmount} essência(s) de rank ${selectedRank}</strong>
+    <p>${getSoulRankName(currentCore.rank)} recebe ${perEssenceExperience} XP por absorção nesta etapa.</p>
     <ul>
-      <li>ExperiÃªncia total: ${totalExperience} XP</li>
+      <li>Experiência total: ${totalExperience} XP</li>
       <li>Estado final: ${getSoulRankName(result.core.rank)} (Rank ${result.core.rank})</li>
       <li>Progresso final: ${buildSoulProgressLabel(result.core)}</li>
       ${
         result.rankUps.length
           ? `<li>Subidas: ${result.rankUps.map(entry => `${entry.from}→${entry.to}`).join(", ")}</li>`
-          : "<li>Nenhuma subida de rank nesta absorÃ§Ã£o.</li>"
+          : "<li>Nenhuma subida de rank nesta absorção.</li>"
       }
     </ul>
   `;
@@ -3362,7 +3362,7 @@ function closeSoulAwardModal() {
 
 function buildSoulAwardSummary(summary) {
   if (!summary) {
-    return "A essÃªncia da alma foi aplicada ao nÃºcleo do personagem.";
+    return "A essência da alma foi aplicada ao núcleo do personagem.";
   }
 
   const beforeName = getSoulRankName(summary.before.rank || 1);
@@ -3370,7 +3370,7 @@ function buildSoulAwardSummary(summary) {
   const rankUps = Array.isArray(summary.rankUps) ? summary.rankUps : [];
 
   if (!summary.totalExperience) {
-    return `${currentSheetTarget.label || "O personagem"} nÃ£o absorveu experiÃªncia desta essÃªncia por causa da diferenÃ§a de ranks.`;
+    return `${currentSheetTarget.label || "O personagem"} não absorveu experiência desta essência por causa da diferença de ranks.`;
   }
 
   return `${currentSheetTarget.label || "O personagem"} recebeu ${summary.totalExperience} XP em essência da alma. ${beforeName} → ${afterName}.${rankUps.length ? ` Subidas: ${rankUps.map(entry => `${entry.from}→${entry.to}`).join(", ")}.` : ""}`;
@@ -3398,13 +3398,13 @@ async function applySoulAward() {
       renderProgressionField("player");
       closeSoulAwardModal();
       await UI.alert(buildSoulAwardSummary(response.summary), {
-        title: "NÃºcleo fortalecido",
-        kicker: "// EssÃªncia da alma"
+        title: "Núcleo fortalecido",
+        kicker: "// Essência da alma"
       });
       return;
     }
 
-    // No modo local, a mesma lÃ³gica pura Ã© reaproveitada para manter a integraÃ§Ã£o simples.
+    // No modo local, a mesma lógica pura é reaproveitada para manter a integração simples.
     const result = absorbSoulEssencesState(soulCore, essenceRank, amount);
     soulCore = normalizeSoulCoreState(result.core, result.core.rank);
     renderProgressionField("player");
@@ -3418,14 +3418,14 @@ async function applySoulAward() {
         rankUps: result.rankUps
       }),
       {
-        title: "NÃºcleo fortalecido",
-        kicker: "// EssÃªncia da alma"
+        title: "Núcleo fortalecido",
+        kicker: "// Essência da alma"
       }
     );
   } catch (error) {
-    await UI.alert(error.message || "Falha ao aplicar a essÃªncia da alma.", {
-      title: "Falha na absorÃ§Ã£o",
-      kicker: "// EssÃªncia da alma"
+    await UI.alert(error.message || "Falha ao aplicar a essência da alma.", {
+      title: "Falha na absorção",
+      kicker: "// Essência da alma"
     });
   } finally {
     if (apply) apply.disabled = false;
@@ -3496,14 +3496,14 @@ function getSheetKindTitle() {
 }
 
 function getSheetSaveText() {
-  if (!currentSheetTarget) return "Toda alteraÃ§Ã£o da ficha fica salva para o usuÃ¡rio correto.";
+  if (!currentSheetTarget) return "Toda alteração da ficha fica salva para o usuário correto.";
   if (currentSheetTarget.kind === "npc") {
-    return "Toda alteraÃ§Ã£o desta ficha de NPC fica salva neste navegador do mestre.";
+    return "Toda alteração desta ficha de NPC fica salva neste navegador do mestre.";
   }
   if (currentSheetTarget.kind === "monster") {
-    return "Toda alteraÃ§Ã£o desta ficha de monstro fica salva neste navegador do mestre.";
+    return "Toda alteração desta ficha de monstro fica salva neste navegador do mestre.";
   }
-  return "Toda alteraÃ§Ã£o da ficha fica salva para o usuÃ¡rio correto.";
+  return "Toda alteração da ficha fica salva para o usuário correto.";
 }
 
 function syncDirectoryName(charName) {
