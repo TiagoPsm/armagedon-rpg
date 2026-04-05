@@ -523,22 +523,22 @@ function openSheetLegacy(target, fromMaster) {
   const backButton = document.getElementById("btnBackMaster");
   const sheetKindLabel = document.getElementById("sheetKindLabel");
   const sheetSaveText = document.getElementById("sheetSaveText");
-  const resolvedTarget = typeof target === "string"  createPlayerTarget(target) : target;
+  const resolvedTarget = typeof target === "string" ? createPlayerTarget(target) : target;
 
   currentSheetTarget = resolvedTarget;
 
   if (sheetUser) {
     sheetUser.textContent =
-      resolvedTarget.kind === "npc"  `${resolvedTarget.label} Â· NPC` : resolvedTarget.label;
+      resolvedTarget.kind === "npc" ? `${resolvedTarget.label} · NPC` : resolvedTarget.label;
   }
-  if (backButton) backButton.style.display = fromMaster  "inline-block" : "none";
+  if (backButton) backButton.style.display = fromMaster ? "inline-block" : "none";
   if (sheetKindLabel) {
-    sheetKindLabel.textContent = resolvedTarget.kind === "npc"  "Ficha do NPC" : "Ficha do personagem";
+    sheetKindLabel.textContent = resolvedTarget.kind === "npc" ? "Ficha do NPC" : "Ficha do personagem";
   }
   if (sheetSaveText) {
     sheetSaveText.textContent =
       resolvedTarget.kind === "npc"
-         "Toda alteraÃ§Ã£o desta ficha de NPC fica salva neste navegador do mestre."
+        ? "Toda alteração desta ficha de NPC fica salva neste navegador do mestre."
         : "Toda alteraÃ§Ã£o da ficha fica salva para o usuÃ¡rio correto.";
   }
 
@@ -692,7 +692,7 @@ function collectSheetData(kind = "player") {
   const isPlayer = kind === "player";
   const nextSoulCore = normalizeSoulCoreState(
     isPlayer
-       soulCore
+      ? soulCore
       : {
           rank: getValue("charLevel") || 1,
           xp: 0
@@ -708,22 +708,22 @@ function collectSheetData(kind = "player") {
     {
       charName: getValue("charName"),
       charClass: getValue("charClass"),
-      charLevel: isPlayer  String(nextSoulCore.rank) : getValue("charLevel"),
+      charLevel: isPlayer ? String(nextSoulCore.rank) : getValue("charLevel"),
       soulCore: nextSoulCore,
       charRace: getValue("charRace"),
-      charFaction: isMonster  "" : getValue("charFaction"),
-      avatar: avatarImg && avatarImg.style.display !== "none"  avatarImg.src : "",
+      charFaction: isMonster ? "" : getValue("charFaction"),
+      avatar: avatarImg && avatarImg.style.display !== "none" ? avatarImg.src : "",
       vidaAtual: getValue("vidaAtual"),
       vidaMax: getValue("vidaMax"),
-      integAtual: isMonster  "" : getValue("integAtual"),
-      integMax: isMonster  "" : getValue("integMax"),
+      integAtual: isMonster ? "" : getValue("integAtual"),
+      integMax: isMonster ? "" : getValue("integMax"),
       charNotes: getValue("charNotes"),
       ...attrData,
       habs: collectHabs(),
-      ownedMemories: isMonster  [] : collectOwnedMemories(),
-      inventorySlots: isMonster  0 : inventorySlots,
-      inv: isMonster  [] : collectInv(),
-      memoryDrops: isMonster  collectMemoryDrops() : []
+      ownedMemories: isMonster ? [] : collectOwnedMemories(),
+      inventorySlots: isMonster ? 0 : inventorySlots,
+      inv: isMonster ? [] : collectInv(),
+      memoryDrops: isMonster ? collectMemoryDrops() : []
     },
     kind
   );
@@ -800,18 +800,18 @@ function normalizeSheetData(data, kind = "player") {
     charLevel: String(data.charLevel || nextSoulCore.rank || ""),
     soulCore: nextSoulCore,
     charRace: data.charRace || "",
-    charFaction: isMonster  "" : data.charFaction || "",
+    charFaction: isMonster ? "" : data.charFaction || "",
     avatar: data.avatar || "",
     vidaAtual: data.vidaAtual || "",
     vidaMax: data.vidaMax || "",
-    integAtual: isMonster  "" : data.integAtual || "",
-    integMax: isMonster  "" : data.integMax || "",
+    integAtual: isMonster ? "" : data.integAtual || "",
+    integMax: isMonster ? "" : data.integMax || "",
     charNotes: data.charNotes || "",
-    habs: Array.isArray(data.habs)  data.habs.map(normalizeHab) : [],
-    ownedMemories: isMonster  [] : Array.isArray(data.ownedMemories)  data.ownedMemories.map(normalizeOwnedMemory) : [],
-    inventorySlots: isMonster  0 : normalizeInventorySlots(kind, data.inventorySlots),
-    inv: isMonster  [] : Array.isArray(data.inv)  data.inv.map(normalizeItem) : [],
-    memoryDrops: isMonster  (Array.isArray(data.memoryDrops)  data.memoryDrops.map(normalizeMemoryDrop) : []) : []
+    habs: Array.isArray(data.habs) ? data.habs.map(normalizeHab) : [],
+    ownedMemories: isMonster ? [] : Array.isArray(data.ownedMemories) ? data.ownedMemories.map(normalizeOwnedMemory) : [],
+    inventorySlots: isMonster ? 0 : normalizeInventorySlots(kind, data.inventorySlots),
+    inv: isMonster ? [] : Array.isArray(data.inv) ? data.inv.map(normalizeItem) : [],
+    memoryDrops: isMonster ? (Array.isArray(data.memoryDrops) ? data.memoryDrops.map(normalizeMemoryDrop) : []) : []
   };
 
   ATTRIBUTES.forEach(attr => {
@@ -843,8 +843,10 @@ function normalizeSoulCoreState(value, legacyRank = 1) {
     return SOUL.normalizeSoulCore(value, legacyRank);
   }
 
-  const rank = Math.min(7, Math.max(1, Number.parseInt(value.rank  legacyRank, 10) || 1));
-  const xp = Math.max(0, Number.parseInt(value.xp, 10) || 0);
+  const rankSource = value && typeof value === "object" ? (value.rank ?? legacyRank) : legacyRank;
+  const xpSource = value && typeof value === "object" ? value.xp : 0;
+  const rank = Math.min(7, Math.max(1, Number.parseInt(rankSource, 10) || 1));
+  const xp = Math.max(0, Number.parseInt(xpSource, 10) || 0);
   return { rank, xp };
 }
 
@@ -885,7 +887,7 @@ function getSoulNextRankRequirement(rank) {
 
   // Fallback local: subir de rank exige o equivalente a 100 essÃªncias do mesmo rank.
   return normalizedRank >= 7
-     0
+    ? 0
     : (baseExperienceByRank[normalizedRank] || 0) * sameRankEssencesPerRankUp;
 }
 
@@ -919,7 +921,7 @@ function buildSoulProgressLabel(core) {
 
   const normalized = normalizeSoulCoreState(core);
   const requirement = getSoulNextRankRequirement(normalized.rank);
-  return requirement  `${normalized.xp} / ${requirement} XP` : "Rank maximo alcancado";
+  return requirement ? `${normalized.xp} / ${requirement} XP` : "Rank máximo alcançado";
 }
 
 function normalizeHab(hab) {
@@ -936,13 +938,13 @@ function normalizeItem(item) {
     qty: String(Math.max(0, Number.parseInt(item.qty || "1", 10) || 0)),
     desc: String(item.desc || ""),
     type,
-    damage: type === "arma"  normalizeDamageExpression(item.damage) : ""
+    damage: type === "arma" ? normalizeDamageExpression(item.damage) : ""
   };
 }
 
 function normalizeItemType(value) {
   const normalized = String(value || "outro").trim().toLowerCase();
-  return Object.prototype.hasOwnProperty.call(ITEM_TYPES, normalized)  normalized : "outro";
+  return Object.prototype.hasOwnProperty.call(ITEM_TYPES, normalized) ? normalized : "outro";
 }
 
 function normalizeDamageExpression(value) {
@@ -1374,7 +1376,7 @@ function calcModFromVal(attr, value) {
 
   const mod = modScale(value);
   target.textContent = `+${mod}`;
-  target.style.color = mod >= 4  "var(--red-mid)" : mod >= 2  "var(--gold)" : "var(--text-secondary)";
+  target.style.color = mod >= 4 ? "var(--red-mid)" : mod >= 2 ? "var(--gold)" : "var(--text-secondary)";
 
   if (attr === "Alma") {
     syncIntegrityFromSoul();
@@ -1383,9 +1385,9 @@ function calcModFromVal(attr, value) {
 
 function updateBar(type) {
   const isVida = type === "vida";
-  const current = parseFloat(getValue(isVida  "vidaAtual" : "integAtual")) || 0;
-  const max = parseFloat(getValue(isVida  "vidaMax" : "integMax")) || 1;
-  const bar = document.getElementById(isVida  "barVida" : "barInteg");
+  const current = parseFloat(getValue(isVida ? "vidaAtual" : "integAtual")) || 0;
+  const max = parseFloat(getValue(isVida ? "vidaMax" : "integMax")) || 1;
+  const bar = document.getElementById(isVida ? "barVida" : "barInteg");
   if (!bar) return;
 
   const percent = Math.min(100, Math.max(0, (current / max) * 100));
@@ -1405,7 +1407,7 @@ function updateBar(type) {
 }
 
 function handleAvatar(event) {
-  const file = event.target.files.[0];
+  const file = event.target.files?.[0];
   if (!file) return;
 
   const reader = new FileReader();
@@ -1478,7 +1480,7 @@ function updateItemEditorDamageUI(type = "outro", damage = "") {
   if (damageWrap) damageWrap.hidden = !isWeapon;
   if (rollBox) rollBox.hidden = !isWeapon;
   if (damageLabel) {
-    damageLabel.textContent = cleanDamage  `Dano: ${cleanDamage}` : "Dano: definir";
+    damageLabel.textContent = cleanDamage ? `Dano: ${cleanDamage}` : "Dano: definir";
   }
 }
 
@@ -1667,7 +1669,7 @@ async function rollItemDamage(index, options = {}) {
   }
 
   const modifierText = result.modifier
-     ` ${result.modifier > 0  "+" : "-"} ${Math.abs(result.modifier)}`
+    ? ` ${result.modifier > 0 ? "+" : "-"} ${Math.abs(result.modifier)}`
     : "";
   itemRollStates[index] = {
     tone: "success",
@@ -1728,13 +1730,13 @@ function clampDiceTrayModifier(value) {
 }
 
 function normalizeDiceTrayMode(value) {
-  return Object.prototype.hasOwnProperty.call(DICE_TRAY_MODES, value)  value : "normal";
+  return Object.prototype.hasOwnProperty.call(DICE_TRAY_MODES, value) ? value : "normal";
 }
 
 function buildDiceTrayExpression() {
   const preset = getDicePreset(diceTrayState.preset);
   const modifier = clampDiceTrayModifier(diceTrayState.modifier);
-  const modifierSuffix = modifier > 0  `+${modifier}` : modifier < 0  `${modifier}` : "";
+  const modifierSuffix = modifier > 0 ? `+${modifier}` : modifier < 0 ? `${modifier}` : "";
   return `${clampDiceTrayQuantity(diceTrayState.qty)}d${preset.sides}${modifierSuffix}`;
 }
 
@@ -1750,9 +1752,9 @@ function renderDiceOptions() {
   optionGrid.innerHTML = DICE_PRESETS.map(preset => `
     <button
       type="button"
-      class="dice-option-btn ${diceTrayState.preset === preset.key  "is-active" : ""}"
+      class="dice-option-btn ${diceTrayState.preset === preset.key ? "is-active" : ""}"
       data-dice-option="${preset.key}"
-      aria-pressed="${diceTrayState.preset === preset.key  "true" : "false"}"
+      aria-pressed="${diceTrayState.preset === preset.key ? "true" : "false"}"
       title="${preset.label}"
     >
       <span class="dice-option-value">${preset.sides}</span>
@@ -1768,13 +1770,13 @@ function renderDiceModeButtons() {
     if (!(button instanceof HTMLButtonElement)) return;
     const isActive = button.dataset.diceMode === diceTrayState.mode;
     button.classList.toggle("is-active", isActive);
-    button.setAttribute("aria-pressed", isActive  "true" : "false");
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
 }
 
 function formatDiceTrayRollSummary(result) {
   const modifierText = result.modifier
-     ` | Modificador: ${result.modifier > 0  "+" : ""}${result.modifier}`
+    ? ` | Modificador: ${result.modifier > 0 ? "+" : ""}${result.modifier}`
     : "";
   return `${result.total} (${result.rolls.join(" + ")}${modifierText})`;
 }
@@ -1907,7 +1909,7 @@ function buildDiceTrayResultDetail(result) {
 
   return `Rolagens: ${result.chosen.rolls.join(" + ")}${
     result.chosen.modifier
-       ` | Modificador: ${result.chosen.modifier > 0  "+" : ""}${result.chosen.modifier}`
+      ? ` | Modificador: ${result.chosen.modifier > 0 ? "+" : ""}${result.chosen.modifier}`
       : ""
   }`;
 }
@@ -1964,8 +1966,8 @@ function rollDiceExpressionWithMode(expression, mode) {
   if (!second) return null;
 
   const chosen = normalizedMode === "advantage"
-     (second.total > first.total  second : first)
-    : (second.total < first.total  second : first);
+    ? (second.total > first.total ? second : first)
+    : (second.total < first.total ? second : first);
 
   return {
     mode: normalizedMode,
@@ -1991,7 +1993,7 @@ function renderDiceTray() {
   if (elements.badge) elements.badge.textContent = preset.label;
   if (elements.roll) {
     elements.roll.disabled = diceTrayState.rolling;
-    elements.roll.textContent = diceTrayState.rolling  "Rolando..." : "Rolar agora";
+    elements.roll.textContent = diceTrayState.rolling ? "Rolando..." : "Rolar agora";
   }
 
   applyDiceTraySpecialState(elements, "");
@@ -2010,7 +2012,7 @@ function renderDiceTray() {
       const modeLabel = DICE_TRAY_MODES[diceTrayState.mode].toLowerCase();
       const isCustom = Boolean(customExpression);
       elements.resultDetail.textContent = isCustom
-         `ExpressÃ£o pronta: ${expression}. Modo ${modeLabel}.`
+        ? `Expressão pronta: ${expression}. Modo ${modeLabel}.`
         : `Selecione os dados e role em modo ${modeLabel}.`;
     }
   }
@@ -2023,9 +2025,9 @@ async function rollDiceTray() {
   if (diceTrayState.rolling) return;
 
   const elements = getDiceTrayElements();
-  diceTrayState.qty = clampDiceTrayQuantity(elements.qty.value  diceTrayState.qty);
-  diceTrayState.modifier = clampDiceTrayModifier(elements.modifier.value  diceTrayState.modifier);
-  diceTrayState.customExpression = normalizeDamageExpression(elements.expression.value  diceTrayState.customExpression);
+  diceTrayState.qty = clampDiceTrayQuantity(elements.qty.value || diceTrayState.qty);
+  diceTrayState.modifier = clampDiceTrayModifier(elements.modifier.value || diceTrayState.modifier);
+  diceTrayState.customExpression = normalizeDamageExpression(elements.expression.value || diceTrayState.customExpression);
   diceTrayState.mode = normalizeDiceTrayMode(diceTrayState.mode);
 
   const expression = getActiveDiceTrayExpression();
@@ -2101,7 +2103,7 @@ function renderOwnedMemories(list) {
   if (!element) return;
 
   const canTransfer = currentSheetTarget.kind === "player";
-  const transferTargets = canTransfer  getOwnedMemoryTransferTargets() : [];
+  const transferTargets = canTransfer ? getOwnedMemoryTransferTargets() : [];
 
   if (!ownedMemories.length) {
     element.className = "";
@@ -2125,12 +2127,12 @@ function renderOwnedMemories(list) {
             <p class="owned-memory-desc">${esc(memory.desc || "Sem descriÃ§Ã£o.")}</p>
             ${
               memory.source
-                 `<span class="owned-memory-source">Origem: ${esc(memory.source)}</span>`
+                ? `<span class="owned-memory-source">Origem: ${esc(memory.source)}</span>`
                 : ""
             }
             ${
               canTransfer
-                 renderOwnedMemoryTransferBlock(index, transferTargets)
+                ? renderOwnedMemoryTransferBlock(index, transferTargets)
                 : ""
             }
           </div>
@@ -2170,7 +2172,7 @@ function getOwnedMemoryTransferTargets() {
 
 function formatMemoryTargetLabel(value, targets, fallback) {
   const target = targets.find(candidate => candidate.value === value);
-  return target  `${target.label} (${target.meta})` : fallback;
+  return target ? `${target.label} (${target.meta})` : fallback;
 }
 
 function renderOwnedMemoryTransferBlock(index, targets) {
@@ -2185,13 +2187,13 @@ function renderOwnedMemoryTransferBlock(index, targets) {
 
   const state = ownedMemoryTransferStates[index] || {};
   const selectedTarget = targets.some(target => target.value === state.target)
-     state.target
+    ? state.target
     : targets[0].value;
   const statusClass =
     state.tone === "success"
-       "memory-award-status is-success"
+      ? "memory-award-status is-success"
       : state.tone === "fail"
-         "memory-award-status is-fail"
+        ? "memory-award-status is-fail"
         : "memory-award-status";
 
   ownedMemoryTransferStates[index] = {
@@ -2220,7 +2222,7 @@ async function pickOwnedMemoryTransferTarget(index) {
 
   const state = ownedMemoryTransferStates[index] || {};
   const currentTarget = targets.some(target => target.value === state.target)
-     state.target
+    ? state.target
     : targets[0].value;
 
   const selected = await UI.pickOption({
@@ -2335,7 +2337,7 @@ function parseMemoryAwardTarget(value) {
 
   if (kind === "npc") {
     const npc = readNpcs().find(candidate => candidate.id === rawId);
-    return npc  createNpcTarget(npc) : null;
+    return npc ? createNpcTarget(npc) : null;
   }
 
   return null;
@@ -2362,7 +2364,7 @@ function applyMemoryRollState(index) {
   if (fill) {
     fill.classList.remove("success", "fail");
     fill.style.transition = "none";
-    fill.style.width = state.rolled !== undefined  `${state.rolled}%` : "0%";
+    fill.style.width = state.rolled !== undefined ? `${state.rolled}%` : "0%";
     if (state.status) fill.classList.add(state.status);
   }
 
@@ -2391,9 +2393,9 @@ function renderMemoryAwardControls(index) {
   const targets = getMemoryAwardTargets();
   const statusClass =
     state.awardTone === "success"
-       "memory-award-status is-success"
+      ? "memory-award-status is-success"
       : state.awardTone === "fail"
-         "memory-award-status is-fail"
+        ? "memory-award-status is-fail"
         : "memory-award-status";
 
   award.hidden = false;
@@ -2415,7 +2417,7 @@ function renderMemoryAwardControls(index) {
   }
 
   const selectedTarget = targets.some(target => target.value === state.target)
-     state.target
+    ? state.target
     : targets[0].value;
 
   memoryRollStates[index] = {
@@ -2442,7 +2444,7 @@ async function pickMemoryAwardTarget(index) {
   if (!targets.length) return;
 
   const currentTarget = targets.some(target => target.value === state.target)
-     state.target
+    ? state.target
     : targets[0].value;
 
   const selected = await UI.pickOption({
@@ -2532,7 +2534,7 @@ function renderMemoryDrops(list) {
 
 function updateMemoryDrop(index, field, value) {
   if (!memoryDrops[index]) return;
-  memoryDrops[index][field] = field === "chance"  sanitizeChance(value, "0") : value;
+  memoryDrops[index][field] = field === "chance" ? sanitizeChance(value, "0") : value;
 
   if (field === "chance") {
     delete memoryRollStates[index];
@@ -2612,14 +2614,14 @@ async function rollMemoryDrop(index) {
   window.setTimeout(() => {
     memoryRollStates[index] = {
       rolled,
-      status: success  "success" : "fail",
+      status: success ? "success" : "fail",
       success,
       awarded: false,
       target: getMemoryAwardTargets()[0].value || "",
       awardTone: "",
       awardText: "",
       resultText: success
-         `MemÃ³ria obtida. Rolagem ${rolled}% dentro da chance de ${chance}%.`
+        ? `Memória obtida. Rolagem ${rolled}% dentro da chance de ${chance}%.`
         : `Sem memÃ³ria. Rolagem ${rolled}% acima da chance de ${chance}%.`
     };
     applyMemoryRollState(index);
@@ -2723,7 +2725,7 @@ function getItemTransferTargets() {
 
 function formatItemTransferLabel(value, targets, fallback) {
   const target = targets.find(candidate => candidate.value === value);
-  return target  `${target.label} (${target.meta})` : fallback;
+  return target ? `${target.label} (${target.meta})` : fallback;
 }
 
 function renderItemTransferBlock(index, targets) {
@@ -2740,13 +2742,13 @@ function renderItemTransferBlock(index, targets) {
 
   const state = itemTransferStates[index] || {};
   const selectedTarget = availableTargets.some(target => target.value === state.target)
-     state.target
+    ? state.target
     : availableTargets[0].value;
   const statusClass =
     state.tone === "success"
-       "memory-award-status is-success"
+      ? "memory-award-status is-success"
       : state.tone === "fail"
-         "memory-award-status is-fail"
+        ? "memory-award-status is-fail"
         : "memory-award-status";
 
   itemTransferStates[index] = {
@@ -2789,7 +2791,7 @@ async function pickItemTransferTarget(index) {
 
   const state = itemTransferStates[index] || {};
   const currentTarget = targets.some(target => target.value === state.target)
-     state.target
+    ? state.target
     : targets[0].value;
 
   const selected = await UI.pickOption({
@@ -2953,7 +2955,7 @@ function renderInv(list) {
   }
   if (inventoryAddBtn) {
     inventoryAddBtn.disabled = used >= capacity;
-    inventoryAddBtn.textContent = used >= capacity  "Lotado" : "+ Item";
+    inventoryAddBtn.textContent = used >= capacity ? "Lotado" : "+ Item";
   }
 
   grid.innerHTML = Array.from({ length: capacity }, (_slot, index) => {
@@ -2962,10 +2964,10 @@ function renderInv(list) {
     if (!item) {
       return `
         <article class="item-card item-card-empty">
-          <button class="item-slot-btn" onclick="addItem()" ${used >= capacity  "disabled" : ""}>
+          <button class="item-slot-btn" onclick="addItem()" ${used >= capacity ? "disabled" : ""}>
             <span class="item-slot-index">Slot ${index + 1}</span>
             <strong class="item-slot-plus">+</strong>
-            <span class="item-slot-copy">${used >= capacity  "Inventário cheio" : "Slot vazio"}</span>
+            <span class="item-slot-copy">${used >= capacity ? "Inventário cheio" : "Slot vazio"}</span>
           </button>
         </article>
       `;
@@ -2973,10 +2975,10 @@ function renderInv(list) {
 
     const itemType = normalizeItemType(item.type);
     const primaryMeta = itemType === "arma" && item.damage
-       item.damage
+      ? item.damage
       : `Qtd. ${item.qty}`;
     const secondaryMeta = itemType === "arma"
-       `Qtd. ${item.qty}`
+      ? `Qtd. ${item.qty}`
       : formatItemType(itemType);
 
     return `
@@ -2993,7 +2995,7 @@ function renderInv(list) {
           <span class="item-slot-index">Slot ${index + 1}</span>
           <span class="${getItemTypeBadgeClass(itemType)}">${esc(formatItemType(itemType))}</span>
           <h3 class="item-title item-title-compact">${esc(item.name || "Item")}</h3>
-          <span class="item-summary-line ${itemType === "arma" && item.damage  "is-weapon" : ""}">${esc(primaryMeta)}</span>
+          <span class="item-summary-line ${itemType === "arma" && item.damage ? "is-weapon" : ""}">${esc(primaryMeta)}</span>
           <span class="item-summary-line is-muted">${esc(secondaryMeta)}</span>
         </button>
       </article>
@@ -3056,7 +3058,7 @@ function collectInv() {
 function getInventorySlotDelta() {
   const input = document.getElementById("inventorySlotDelta");
   const numeric = Number.parseInt(input.value || "1", 10);
-  const safeValue = Number.isNaN(numeric)  1 : Math.max(1, Math.min(100, numeric));
+  const safeValue = Number.isNaN(numeric) ? 1 : Math.max(1, Math.min(100, numeric));
 
   if (input) input.value = String(safeValue);
   return safeValue;
@@ -3091,7 +3093,7 @@ async function changeInventorySlots(direction) {
 }
 
 function syncAutoGrowTextareas(scope = document) {
-  scope.querySelectorAll.("textarea.auto-grow").forEach(autoGrowTextarea);
+  scope.querySelectorAll("textarea.auto-grow").forEach(autoGrowTextarea);
 }
 
 function autoGrowTextarea(textarea) {
@@ -3112,7 +3114,7 @@ function jsEsc(value) {
 }
 
 async function openSheet(target, fromMaster) {
-  const resolvedTarget = typeof target === "string"  createPlayerTarget(target) : target;
+  const resolvedTarget = typeof target === "string" ? createPlayerTarget(target) : target;
 
   pendingRealtimeSheetKey = "";
   currentSheetTarget = resolvedTarget;
@@ -3129,7 +3131,7 @@ function updateSheetHeader(fromMaster) {
   const sheetSaveText = document.getElementById("sheetSaveText");
 
   if (sheetUser) sheetUser.textContent = formatCurrentSheetTarget();
-  if (backButton) backButton.style.display = fromMaster  "inline-block" : "none";
+  if (backButton) backButton.style.display = fromMaster ? "inline-block" : "none";
   if (sheetKindLabel) sheetKindLabel.textContent = getSheetKindTitle();
   if (sheetSaveText) sheetSaveText.textContent = getSheetSaveText();
 }
@@ -3149,25 +3151,25 @@ function applySheetKindUI(kind) {
   if (resourcesRow) resourcesRow.classList.toggle("resources-single", isMonster);
   if (sanityCard) {
     sanityCard.hidden = isMonster;
-    sanityCard.style.display = isMonster  "none" : "";
+    sanityCard.style.display = isMonster ? "none" : "";
   }
   if (charFactionGroup) {
     charFactionGroup.hidden = isMonster;
-    charFactionGroup.style.display = isMonster  "none" : "";
+    charFactionGroup.style.display = isMonster ? "none" : "";
   }
   if (charRaceGroup) charRaceGroup.classList.toggle("form-group-full", isMonster);
   if (charFaction && isMonster) charFaction.value = "";
   if (ownedMemoriesSection) {
     ownedMemoriesSection.hidden = isMonster;
-    ownedMemoriesSection.style.display = isMonster  "none" : "";
+    ownedMemoriesSection.style.display = isMonster ? "none" : "";
   }
   if (inventorySection) {
     inventorySection.hidden = isMonster;
-    inventorySection.style.display = isMonster  "none" : "";
+    inventorySection.style.display = isMonster ? "none" : "";
   }
   if (memorySection) {
     memorySection.hidden = !isMonster;
-    memorySection.style.display = isMonster  "" : "none";
+    memorySection.style.display = isMonster ? "" : "none";
   }
   if (vidaCard) vidaCard.classList.toggle("resource-card-wide", isMonster);
   renderProgressionField(kind);
@@ -3175,7 +3177,7 @@ function applySheetKindUI(kind) {
 
 function getSoulRanks() {
   return Array.isArray(SOUL.RANKS) && SOUL.RANKS.length
-     SOUL.RANKS
+    ? SOUL.RANKS
     : [
         { rank: 1, name: "Adormecido" },
         { rank: 2, name: "Despertado" },
@@ -3212,7 +3214,7 @@ function renderProgressionField(kind = currentSheetTarget.kind || "player") {
   const isPlayer = kind === "player";
 
   if (label) {
-    label.textContent = isPlayer  "NÃºcleo da alma" : "NÃ­vel";
+    label.textContent = isPlayer ? "Núcleo da alma" : "Nível";
   }
 
   if (label && isPlayer) {
@@ -3224,19 +3226,19 @@ function renderProgressionField(kind = currentSheetTarget.kind || "player") {
 
   if (levelInput) {
     levelInput.hidden = isPlayer;
-    levelInput.style.display = isPlayer  "none" : "";
+    levelInput.style.display = isPlayer ? "none" : "";
   }
 
   if (panel) {
     panel.hidden = !isPlayer;
-    panel.style.display = isPlayer  "" : "none";
+    panel.style.display = isPlayer ? "" : "none";
     panel.classList.toggle("is-compact", isPlayer);
   }
 
   if (actionButton) {
     const canAward = isPlayer && currentRole === "master";
     actionButton.hidden = !canAward;
-    actionButton.style.display = canAward  "" : "none";
+    actionButton.style.display = canAward ? "" : "none";
   }
 
   if (!isPlayer) return;
@@ -3244,7 +3246,7 @@ function renderProgressionField(kind = currentSheetTarget.kind || "player") {
   const normalized = normalizeSoulCoreState(soulCore, getValue("charLevel") || 1);
   const rankName = getSoulRankName(normalized.rank);
   const requirement = getSoulNextRankRequirement(normalized.rank);
-  const progressPercent = requirement  Math.min(100, (normalized.xp / requirement) * 100) : 100;
+  const progressPercent = requirement ? Math.min(100, (normalized.xp / requirement) * 100) : 100;
   const rankNameElement = document.getElementById("soulRankName");
   const rankMetaElement = document.getElementById("soulRankMeta");
   const xpTextElement = document.getElementById("soulXpText");
@@ -3252,7 +3254,7 @@ function renderProgressionField(kind = currentSheetTarget.kind || "player") {
   const progressBar = document.getElementById("soulXpBar");
   const progressLabel = buildSoulProgressLabel(normalized);
   const nextRankLabel = requirement
-     `PrÃ³ximo rank: ${getSoulRankName(normalized.rank + 1)}`
+    ? `Próximo rank: ${getSoulRankName(normalized.rank + 1)}`
     : "Rank mÃ¡ximo alcanÃ§ado";
 
   soulCore = normalized;
@@ -3262,7 +3264,7 @@ function renderProgressionField(kind = currentSheetTarget.kind || "player") {
   if (xpTextElement) xpTextElement.textContent = buildSoulProgressLabel(normalized);
   if (nextRankElement) {
     nextRankElement.textContent = requirement
-       `PrÃ³ximo rank: ${getSoulRankName(normalized.rank + 1)}`
+      ? `Próximo rank: ${getSoulRankName(normalized.rank + 1)}`
       : "Rank mÃ¡ximo alcanÃ§ado";
   }
   if (progressBar) {
@@ -3285,9 +3287,9 @@ function renderSoulAwardOptions() {
       option => `
         <button
           type="button"
-          class="soul-rank-option${option.rank === soulAwardState.essenceRank  " is-active" : ""}"
+          class="soul-rank-option${option.rank === soulAwardState.essenceRank ? " is-active" : ""}"
           data-soul-rank="${option.rank}"
-          aria-pressed="${option.rank === soulAwardState.essenceRank  "true" : "false"}"
+          aria-pressed="${option.rank === soulAwardState.essenceRank ? "true" : "false"}"
         >
           <span class="item-meta">Rank ${option.rank}</span>
           <strong>${esc(option.name)}</strong>
@@ -3326,7 +3328,7 @@ function renderSoulAwardPreview() {
       <li>Progresso final: ${buildSoulProgressLabel(result.core)}</li>
       ${
         result.rankUps.length
-           `<li>Subidas: ${result.rankUps.map(entry => `${entry.from}â†’${entry.to}`).join(", ")}</li>`
+          ? `<li>Subidas: ${result.rankUps.map(entry => `${entry.from}→${entry.to}`).join(", ")}</li>`
           : "<li>Nenhuma subida de rank nesta absorÃ§Ã£o.</li>"
       }
     </ul>
@@ -3365,13 +3367,13 @@ function buildSoulAwardSummary(summary) {
 
   const beforeName = getSoulRankName(summary.before.rank || 1);
   const afterName = getSoulRankName(summary.after.rank || 1);
-  const rankUps = Array.isArray(summary.rankUps)  summary.rankUps : [];
+  const rankUps = Array.isArray(summary.rankUps) ? summary.rankUps : [];
 
   if (!summary.totalExperience) {
     return `${currentSheetTarget.label || "O personagem"} nÃ£o absorveu experiÃªncia desta essÃªncia por causa da diferenÃ§a de ranks.`;
   }
 
-  return `${currentSheetTarget.label || "O personagem"} recebeu ${summary.totalExperience} XP em essÃªncia da alma. ${beforeName} â†’ ${afterName}.${rankUps.length  ` Subidas: ${rankUps.map(entry => `${entry.from}â†’${entry.to}`).join(", ")}.` : ""}`;
+  return `${currentSheetTarget.label || "O personagem"} recebeu ${summary.totalExperience} XP em essência da alma. ${beforeName} → ${afterName}.${rankUps.length ? ` Subidas: ${rankUps.map(entry => `${entry.from}→${entry.to}`).join(", ")}.` : ""}`;
 }
 
 async function applySoulAward() {
@@ -3525,7 +3527,7 @@ function syncDirectoryName(charName) {
       const directory = AUTH.getDirectoryCache();
       const directoryPlayers = directory.players.map(player =>
         player.username === currentSheetTarget.owner
-           {
+          ? {
               ...player,
               charname: cleanName,
               inventorySlots,
@@ -3570,6 +3572,3 @@ setInterval(() => {
     saveSheetSilently();
   }
 }, 60000);
-
-
-
