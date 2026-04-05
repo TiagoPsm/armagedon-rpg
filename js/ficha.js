@@ -94,8 +94,46 @@ document.addEventListener("DOMContentLoaded", async () => {
   initItemEditor();
   initSoulAwardModal();
   initDiceTray();
+  initSheetMouseGlow();
   syncAutoGrowTextareas();
 });
+
+function initSheetMouseGlow() {
+  const sheetScreen = document.getElementById("sheetScreen");
+  const pageMain = sheetScreen?.querySelector(".page-main.page-main-sheet");
+  if (!sheetScreen || !pageMain) return;
+  if (typeof window.matchMedia === "function" && !window.matchMedia("(pointer: fine)").matches) return;
+
+  pageMain.style.setProperty("--sheet-glow-x", "52%");
+  pageMain.style.setProperty("--sheet-glow-y", "18%");
+
+  let frameId = 0;
+
+  const updateGlow = (clientX, clientY) => {
+    const rect = pageMain.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+
+    pageMain.style.setProperty("--sheet-glow-x", `${Math.max(0, Math.min(100, x)).toFixed(2)}%`);
+    pageMain.style.setProperty("--sheet-glow-y", `${Math.max(0, Math.min(100, y)).toFixed(2)}%`);
+  };
+
+  const handlePointerMove = event => {
+    const { clientX, clientY } = event;
+    if (frameId) cancelAnimationFrame(frameId);
+    frameId = requestAnimationFrame(() => updateGlow(clientX, clientY));
+  };
+
+  const resetGlow = () => {
+    pageMain.style.setProperty("--sheet-glow-x", "52%");
+    pageMain.style.setProperty("--sheet-glow-y", "18%");
+  };
+
+  sheetScreen.addEventListener("pointermove", handlePointerMove);
+  sheetScreen.addEventListener("pointerleave", resetGlow);
+}
 
 function isBackendMode() {
   return AUTH.isBackendEnabled();
