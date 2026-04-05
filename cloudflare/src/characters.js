@@ -3,22 +3,29 @@ import {
   normalizeItem,
   normalizeInventorySlots,
   normalizeOwnedMemory,
-  sanitizeChance,
-  normalizeSheetData
+  normalizeSheetData,
+  sanitizeChance
 } from "./sheet.js";
-import {
-  absorbSoulEssences,
-  clampAmount,
-  clampRank,
-  getRankName
-} from "./soul-progression.js";
+import { absorbSoulEssences, clampAmount, clampRank, getRankName } from "./soul-progression.js";
+
+function jsonError(message, status) {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: {
+      "content-type": "application/json; charset=utf-8"
+    }
+  });
+}
 
 function normalizeUsername(username) {
   return String(username || "").trim().toLowerCase();
 }
 
 function buildCharacterKey(kind, idOrUsername) {
-  if (kind === "player") return normalizeUsername(idOrUsername);
+  if (kind === "player") {
+    return normalizeUsername(idOrUsername);
+  }
+
   return `${kind}:${String(idOrUsername || "").trim().toLowerCase()}`;
 }
 
@@ -64,20 +71,20 @@ function serializeCharacter(character) {
 
 function assertCharacterAccess(user, character, mode = "read") {
   if (!user || !character) {
-    throw new Response(JSON.stringify({ error: "Sessão inválida." }), { status: 401 });
+    throw jsonError("Sessão inválida.", 401);
   }
 
-  if (user.role === "master") return true;
+  if (user.role === "master") {
+    return true;
+  }
 
   if (character.kind === "player" && character.ownerUserId === user.sub) {
     return true;
   }
 
-  throw new Response(
-    JSON.stringify({
-      error: mode === "write" ? "Você não pode alterar esta ficha." : "Você não pode acessar esta ficha."
-    }),
-    { status: 403 }
+  throw jsonError(
+    mode === "write" ? "Você não pode alterar esta ficha." : "Você não pode acessar esta ficha.",
+    403
   );
 }
 
@@ -101,7 +108,9 @@ async function getCharacterByKey(env, key) {
       where lower(c.sheet_key) = lower(?)
       limit 1
     `
-  ).bind(normalizedKey).first();
+  )
+    .bind(normalizedKey)
+    .first();
 
   return mapCharacterRow(row);
 }
@@ -119,6 +128,10 @@ function persistNameFromData(currentName, normalizedData) {
 async function persistCharacterData(env, character, normalizedData) {
   const name = persistNameFromData(character.name, normalizedData);
   const now = new Date().toISOString();
+  const payload = JSON.stringify({
+    ...normalizedData,
+    charName: name
+  });
 
   await env.DB.prepare(
     `
@@ -126,7 +139,9 @@ async function persistCharacterData(env, character, normalizedData) {
       set name = ?, data_json = ?, updated_at = ?
       where id = ?
     `
-  ).bind(name, JSON.stringify({ ...normalizedData, charName: name }), now, character.id).run();
+  )
+    .bind(name, payload, now, character.id)
+    .run();
 
   return getCharacterBundleByKey(env, character.key);
 }
@@ -141,42 +156,37 @@ async function saveCharacterBundle(env, character, payload, actor) {
   const normalizedData = normalizeSheetData(
     baseData || {},
     character.kind,
-    String(baseData?.charName || character.name || "")
+    String((baseData || {}).charName || character.name || "")
   );
 
   if (character.kind === "player") {
     const currentSlots = normalizeInventorySlots("player", currentData.inventorySlots, currentData.inv.length);
 
-    if (actor?.role !== "master" && normalizedData.inv.length > currentSlots) {
-      throw new Response(
-        JSON.stringify({ error: "O inventário enviado ultrapassa a capacidade atual da mochila." }),
-        { status: 409 }
-      );
+    if (actor.role !== "master" && normalizedData.inv.length > currentSlots) {
+      throw jsonError("O inventário enviado ultrapassa a capacidade atual da mochila.", 409);
     }
 
     normalizedData.inventorySlots =
-      actor?.role === "master"
+      actor.role === "master"
         ? normalizeInventorySlots("player", normalizedData.inventorySlots, normalizedData.inv.length)
         : currentSlots;
     normalizedData.ownedMemories =
-      actor?.role === "master" ? normalizedData.ownedMemories : currentData.ownedMemories;
-    normalizedData.soulCore =
-      actor?.role === "master" ? normalizedData.soulCore : currentData.soulCore;
+      actor.role === "master" ? normalizedData.ownedMemories : currentData.ownedMemories;
+    normalizedData.soulCore = actor.role === "master" ? normalizedData.soulCore : currentData.soulCore;
     normalizedData.charLevel = String(normalizedData.soulCore.rank);
   }
 
   if (character.kind === "npc") {
     normalizedData.inventorySlots = normalizeInventorySlots("npc", normalizedData.inventorySlots);
     normalizedData.charLevel = String(normalizedData.soulCore.rank);
+
     if (normalizedData.inv.length > normalizedData.inventorySlots) {
-      throw new Response(
-        JSON.stringify({ error: "NPCs não podem ultrapassar o limite padrão de 20 slots." }),
-        { status: 409 }
-      );
+      throw jsonError("NPCs não podem ultrapassar o limite padrão de 30 slots.", 409);
     }
   }
 
   if (character.kind === "monster") {
+    normalizedData.inventorySlots = 0;
     normalizedData.charLevel = String(normalizedData.soulCore.rank);
   }
 
@@ -185,19 +195,16 @@ async function saveCharacterBundle(env, character, payload, actor) {
 
 async function awardSoulEssenceToPlayer(env, actor, targetKey, essenceRank, amount) {
   if (actor.role !== "master") {
-    throw new Response(JSON.stringify({ error: "Apenas o mestre pode alimentar o núcleo de essência." }), {
-      status: 403
-    });
+    throw jsonError("Apenas o mestre pode alimentar o núcleo de essência.", 403);
   }
 
   const target = await getCharacterByKey(env, targetKey);
   if (!target) {
-    throw new Response(JSON.stringify({ error: "Ficha não encontrada." }), { status: 404 });
+    throw jsonError("Ficha não encontrada.", 404);
   }
+
   if (target.kind !== "player") {
-    throw new Response(JSON.stringify({ error: "Essências da alma só podem ser aplicadas a jogadores." }), {
-      status: 400
-    });
+    throw jsonError("Essências da alma só podem ser aplicadas a jogadores.", 400);
   }
 
   const normalizedEssenceRank = clampRank(essenceRank);
@@ -271,7 +278,9 @@ async function listDirectory(env, user) {
       return;
     }
 
-    if (user.role !== "master") return;
+    if (user.role !== "master") {
+      return;
+    }
 
     if (character.kind === "npc") {
       npcs.push({
@@ -306,7 +315,9 @@ async function createPlayerCharacter(env, userId, username, charName, createdByU
       )
       values (?, ?, ?, 'player', ?, ?, ?, ?, ?)
     `
-  ).bind(id, key, userId, name, JSON.stringify(data), createdByUserId, now, now).run();
+  )
+    .bind(id, key, userId, name, JSON.stringify(data), createdByUserId, now, now)
+    .run();
 
   return {
     id,
@@ -333,7 +344,9 @@ async function createNpcCharacter(env, name, createdByUserId) {
       )
       values (?, ?, 'npc', ?, ?, ?, ?, ?)
     `
-  ).bind(id, key, cleanName, JSON.stringify(data), createdByUserId, now, now).run();
+  )
+    .bind(id, key, cleanName, JSON.stringify(data), createdByUserId, now, now)
+    .run();
 
   return {
     id,
@@ -360,7 +373,9 @@ async function createMonsterCharacter(env, name, createdByUserId) {
       )
       values (?, ?, 'monster', ?, ?, ?, ?, ?)
     `
-  ).bind(id, key, cleanName, JSON.stringify(data), createdByUserId, now, now).run();
+  )
+    .bind(id, key, cleanName, JSON.stringify(data), createdByUserId, now, now)
+    .run();
 
   return {
     id,
@@ -385,7 +400,9 @@ async function deletePlayerByUsername(env, username) {
         and role = 'player'
       limit 1
     `
-  ).bind(normalized).first();
+  )
+    .bind(normalized)
+    .first();
 
   if (!existing) return null;
 
@@ -403,7 +420,9 @@ async function deleteCharacterByKey(env, key, kind) {
         and kind = ?
       limit 1
     `
-  ).bind(normalizedKey, kind).first();
+  )
+    .bind(normalizedKey, kind)
+    .first();
 
   if (!existing) return null;
 
@@ -422,15 +441,17 @@ async function insertTransferAudit(env, transferType, actorUserId, sourceCharact
       )
       values (?, ?, ?, ?, ?, ?, ?)
     `
-  ).bind(
-    id,
-    transferType,
-    actorUserId || null,
-    sourceCharacterId || null,
-    targetCharacterId || null,
-    JSON.stringify(payload || {}),
-    now
-  ).run();
+  )
+    .bind(
+      id,
+      transferType,
+      actorUserId || null,
+      sourceCharacterId || null,
+      targetCharacterId || null,
+      JSON.stringify(payload || {}),
+      now
+    )
+    .run();
 }
 
 async function transferItemBetweenPlayers(env, actor, sourceKey, targetKey, itemIndex) {
@@ -438,13 +459,15 @@ async function transferItemBetweenPlayers(env, actor, sourceKey, targetKey, item
   const target = await getCharacterByKey(env, targetKey);
 
   if (!source || !target) {
-    throw new Response(JSON.stringify({ error: "Ficha de origem ou destino não encontrada." }), { status: 404 });
+    throw jsonError("Ficha de origem ou destino não encontrada.", 404);
   }
+
   if (source.kind !== "player" || target.kind !== "player") {
-    throw new Response(JSON.stringify({ error: "A troca de item só pode acontecer entre jogadores." }), { status: 400 });
+    throw jsonError("A troca de item só pode acontecer entre jogadores.", 400);
   }
+
   if (source.id === target.id) {
-    throw new Response(JSON.stringify({ error: "A origem e o destino não podem ser a mesma ficha." }), { status: 400 });
+    throw jsonError("A origem e o destino não podem ser a mesma ficha.", 400);
   }
 
   assertCharacterAccess(actor, source, "write");
@@ -454,7 +477,7 @@ async function transferItemBetweenPlayers(env, actor, sourceKey, targetKey, item
   const index = Number.parseInt(itemIndex, 10);
 
   if (Number.isNaN(index) || index < 0 || index >= sourceData.inv.length) {
-    throw new Response(JSON.stringify({ error: "Item de origem não encontrado." }), { status: 404 });
+    throw jsonError("Item de origem não encontrado.", 404);
   }
 
   const targetCapacity = Math.max(
@@ -463,7 +486,7 @@ async function transferItemBetweenPlayers(env, actor, sourceKey, targetKey, item
   );
 
   if (targetData.inv.length >= targetCapacity) {
-    throw new Response(JSON.stringify({ error: "O jogador de destino está com a mochila cheia." }), { status: 409 });
+    throw jsonError("O jogador de destino está com a mochila cheia.", 409);
   }
 
   const transferredItem = normalizeItem(sourceData.inv[index]);
@@ -491,13 +514,15 @@ async function transferMemoryBetweenPlayers(env, actor, sourceKey, targetKey, me
   const target = await getCharacterByKey(env, targetKey);
 
   if (!source || !target) {
-    throw new Response(JSON.stringify({ error: "Ficha de origem ou destino não encontrada." }), { status: 404 });
+    throw jsonError("Ficha de origem ou destino não encontrada.", 404);
   }
+
   if (source.kind !== "player" || target.kind !== "player") {
-    throw new Response(JSON.stringify({ error: "A transferência só pode acontecer entre jogadores." }), { status: 400 });
+    throw jsonError("A transferência só pode acontecer entre jogadores.", 400);
   }
+
   if (source.id === target.id) {
-    throw new Response(JSON.stringify({ error: "A origem e o destino não podem ser a mesma ficha." }), { status: 400 });
+    throw jsonError("A origem e o destino não podem ser a mesma ficha.", 400);
   }
 
   assertCharacterAccess(actor, source, "write");
@@ -507,7 +532,7 @@ async function transferMemoryBetweenPlayers(env, actor, sourceKey, targetKey, me
   const index = Number.parseInt(memoryIndex, 10);
 
   if (Number.isNaN(index) || index < 0 || index >= sourceData.ownedMemories.length) {
-    throw new Response(JSON.stringify({ error: "Memória não encontrada." }), { status: 404 });
+    throw jsonError("Memória não encontrada.", 404);
   }
 
   const transferredMemory = normalizeOwnedMemory(sourceData.ownedMemories[index]);
@@ -532,17 +557,25 @@ async function transferMemoryBetweenPlayers(env, actor, sourceKey, targetKey, me
 
 async function rollMonsterMemoryDrop(env, actor, monsterKey, dropIndex) {
   const monster = await getCharacterByKey(env, monsterKey);
-  if (!monster) throw new Response(JSON.stringify({ error: "Monstro não encontrado." }), { status: 404 });
-  if (monster.kind !== "monster") throw new Response(JSON.stringify({ error: "A rolagem só vale para monstros." }), { status: 400 });
+  if (!monster) {
+    throw jsonError("Monstro não encontrado.", 404);
+  }
+
+  if (monster.kind !== "monster") {
+    throw jsonError("A rolagem só vale para monstros.", 400);
+  }
+
   if (actor.role !== "master") {
-    throw new Response(JSON.stringify({ error: "Apenas o mestre pode rolar drops de memória." }), { status: 403 });
+    throw jsonError("Apenas o mestre pode rolar drops de memória.", 403);
   }
 
   const monsterData = normalizeSheetData(monster.data || {}, "monster", monster.name);
   const index = Number.parseInt(dropIndex, 10);
   const drop = monsterData.memoryDrops[index];
 
-  if (!drop) throw new Response(JSON.stringify({ error: "Drop de memória não encontrado." }), { status: 404 });
+  if (!drop) {
+    throw jsonError("Drop de memória não encontrado.", 404);
+  }
 
   const chance = Number.parseFloat(sanitizeChance(drop.chance, "0")) || 0;
   const rolled = Number((Math.random() * 100).toFixed(1));
@@ -562,23 +595,22 @@ async function rollMonsterMemoryDrop(env, actor, monsterKey, dropIndex) {
 
 async function awardMonsterMemoryDrop(env, actor, monsterKey, dropIndex, targetKey) {
   if (actor.role !== "master") {
-    throw new Response(JSON.stringify({ error: "Apenas o mestre pode enviar memórias de monstros." }), { status: 403 });
+    throw jsonError("Apenas o mestre pode enviar memórias de monstros.", 403);
   }
 
   const monster = await getCharacterByKey(env, monsterKey);
   const target = await getCharacterByKey(env, targetKey);
 
   if (!monster || !target) {
-    throw new Response(JSON.stringify({ error: "Monstro ou destino não encontrado." }), { status: 404 });
+    throw jsonError("Monstro ou destino não encontrado.", 404);
   }
+
   if (monster.kind !== "monster") {
-    throw new Response(JSON.stringify({ error: "A origem precisa ser um monstro." }), { status: 400 });
+    throw jsonError("A origem precisa ser um monstro.", 400);
   }
+
   if (!["player", "npc"].includes(target.kind)) {
-    throw new Response(
-      JSON.stringify({ error: "Memórias de monstro só podem ser enviadas para jogadores ou NPCs." }),
-      { status: 400 }
-    );
+    throw jsonError("Memórias de monstro só podem ser enviadas para jogadores ou NPCs.", 400);
   }
 
   const monsterData = normalizeSheetData(monster.data || {}, "monster", monster.name);
@@ -586,7 +618,9 @@ async function awardMonsterMemoryDrop(env, actor, monsterKey, dropIndex, targetK
   const index = Number.parseInt(dropIndex, 10);
   const drop = monsterData.memoryDrops[index];
 
-  if (!drop) throw new Response(JSON.stringify({ error: "Drop de memória não encontrado." }), { status: 404 });
+  if (!drop) {
+    throw jsonError("Drop de memória não encontrado.", 404);
+  }
 
   const memory = normalizeOwnedMemory({
     name: drop.name,
@@ -612,6 +646,7 @@ async function awardMonsterMemoryDrop(env, actor, monsterKey, dropIndex, targetK
 
 export {
   assertCharacterAccess,
+  awardMonsterMemoryDrop,
   awardSoulEssenceToPlayer,
   buildCharacterKey,
   createMonsterCharacter,
@@ -626,6 +661,5 @@ export {
   rollMonsterMemoryDrop,
   saveCharacterBundle,
   transferItemBetweenPlayers,
-  transferMemoryBetweenPlayers,
-  awardMonsterMemoryDrop
+  transferMemoryBetweenPlayers
 };

@@ -411,7 +411,7 @@ export default {
           `
         ).bind(title, tag, content, session.sub, now, ruleId).run();
 
-        if (!result.meta?.changes) return errorJson("Postagem não encontrada.", 404, origin);
+        if (!result.meta.changes) return errorJson("Postagem não encontrada.", 404, origin);
         return withCors(json({ id: ruleId, title, tag, content, updatedAt: now }), origin);
       }
 
@@ -421,7 +421,7 @@ export default {
 
         const ruleId = ruleMatch[1];
         const result = await env.DB.prepare("delete from rules_posts where id = ?").bind(ruleId).run();
-        if (!result.meta?.changes) return errorJson("Postagem não encontrada.", 404, origin);
+        if (!result.meta.changes) return errorJson("Postagem não encontrada.", 404, origin);
         return withCors(json({ ok: true, id: ruleId }), origin);
       }
 

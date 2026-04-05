@@ -18,9 +18,6 @@ const ESSENCE_BASE_EXPERIENCE = {
   7: 800
 };
 
-// Regra de progressão:
-// subir de rank exige o equivalente a absorver 100 essências/criaturas do mesmo rank do personagem.
-// Ex.: um Adormecido precisa de 100 x 10 XP = 1000 XP para alcançar Despertado.
 const SAME_RANK_ESSENCES_PER_RANK_UP = 100;
 
 const EXPERIENCE_TO_NEXT_RANK = Object.fromEntries(
@@ -64,13 +61,12 @@ function getExperienceMultiplier(characterRank, essenceRank) {
   return 0;
 }
 
-function normalizeSoulCore(value, legacyRank = 1) {
-  const rank = clampRank(value?.rank ?? legacyRank);
+function normalizeSoulCore(value = {}, legacyRank = 1) {
+  const rank = clampRank(value.rank ?? legacyRank);
   const requirement = getNextRankRequirement(rank);
-  const numericXp = Number.parseInt(value?.xp, 10);
-  const xp = rank >= 7
-    ? 0
-    : Math.max(0, Math.min(Number.isNaN(numericXp) ? 0 : numericXp, Math.max(requirement - 1, 0)));
+  const numericXp = Number.parseInt(value.xp, 10);
+  const safeXp = Number.isNaN(numericXp) ? 0 : numericXp;
+  const xp = rank >= 7 ? 0 : Math.max(0, Math.min(safeXp, Math.max(requirement - 1, 0)));
 
   return { rank, xp };
 }
@@ -78,7 +74,6 @@ function normalizeSoulCore(value, legacyRank = 1) {
 function calculateEssenceExperience(characterRank, essenceRank) {
   const baseExperience = getEssenceBaseExperience(essenceRank);
   const multiplier = getExperienceMultiplier(characterRank, essenceRank);
-
   return Math.floor(baseExperience * multiplier);
 }
 

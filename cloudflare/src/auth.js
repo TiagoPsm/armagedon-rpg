@@ -28,6 +28,7 @@ async function signToken(payload, secret) {
   const encoder = new TextEncoder();
   const header = { alg: "HS256", typ: "JWT" };
   const unsignedToken = `${base64UrlEncode(JSON.stringify(header))}.${base64UrlEncode(JSON.stringify(payload))}`;
+
   const key = await crypto.subtle.importKey(
     "raw",
     encoder.encode(secret),
@@ -35,6 +36,7 @@ async function signToken(payload, secret) {
     false,
     ["sign"]
   );
+
   const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(unsignedToken));
   return `${unsignedToken}.${base64UrlEncode(new Uint8Array(signature))}`;
 }
@@ -53,6 +55,7 @@ async function verifyToken(token, secret) {
     false,
     ["verify"]
   );
+
   const valid = await crypto.subtle.verify(
     "HMAC",
     key,
@@ -60,7 +63,9 @@ async function verifyToken(token, secret) {
     encoder.encode(`${headerPart}.${payloadPart}`)
   );
 
-  if (!valid) throw new Error("Assinatura inválida.");
+  if (!valid) {
+    throw new Error("Assinatura inválida.");
+  }
 
   const payload = JSON.parse(new TextDecoder().decode(base64UrlDecode(payloadPart)));
   if (payload.exp && Date.now() >= payload.exp * 1000) {
@@ -102,24 +107,42 @@ async function ensureMasterUser(env) {
   const password = String(env.MASTER_BOOTSTRAP_PASSWORD || "").trim();
   const pepper = String(env.PASSWORD_PEPPER || "");
 
-  if (!username || !password) return;
+  if (!username || !password) {
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const passwordHash = await hashPassword(password, pepper);
 
   const existing = await env.DB.prepare(
     "select id from users where lower(username) = lower(?) limit 1"
-  ).bind(username).first();
+  )
+    .bind(username)
+    .first();
 
-  if (existing) return;
+  if (existing) {
+    await env.DB.prepare(
+      `
+        update users
+        set password_hash = ?, role = 'master', is_active = 1, updated_at = ?
+        where id = ?
+      `
+    )
+      .bind(passwordHash, now, existing.id)
+      .run();
+    return;
+  }
 
-  const now = new Date().toISOString();
   const userId = crypto.randomUUID();
-  const passwordHash = await hashPassword(password, pepper);
 
   await env.DB.prepare(
     `
       insert into users (id, username, password_hash, role, is_active, created_at, updated_at)
       values (?, ?, ?, 'master', 1, ?, ?)
     `
-  ).bind(userId, username, passwordHash, now, now).run();
+  )
+    .bind(userId, username, passwordHash, now, now)
+    .run();
 }
 
 async function getUserByUsername(env, username) {
@@ -133,12 +156,15 @@ async function getUserByUsername(env, username) {
       where lower(username) = lower(?)
       limit 1
     `
-  ).bind(normalized).first();
+  )
+    .bind(normalized)
+    .first();
 }
 
 async function requireAuth(request, env) {
   const authorization = request.headers.get("authorization") || "";
   const token = authorization.replace(/^Bearer\s+/i, "").trim();
+
   if (!token) {
     throw new Response(JSON.stringify({ error: "Sessão ausente." }), { status: 401 });
   }
@@ -150,13 +176,4 @@ async function requireAuth(request, env) {
   }
 }
 
-export {
-  createCorsHeaders,
-  ensureMasterUser,
-  getUserByUsername,
-  hashPassword,
-  json,
-  readJson,
-  requireAuth,
-  signToken
-};
+export { createCorsHeaders, ensureMasterUser, getUserByUsername, hashPassword, json, readJson, requireAuth, signToken };
