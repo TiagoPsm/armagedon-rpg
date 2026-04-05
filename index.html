@@ -10,13 +10,14 @@
     href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:wght@400;600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="css/index.css?v=2026-04-03-utf8" />
-  <link rel="stylesheet" href="css/ui.css?v=2026-04-03-utf8" />
+  <link rel="stylesheet" href="css/index.css?v=2026-04-05-polish" />
+  <link rel="stylesheet" href="css/ui.css?v=2026-04-05-polish" />
 </head>
 <body>
   <div class="bg-layer bg-noise"></div>
   <div class="bg-layer bg-vignette"></div>
   <div class="bg-layer bg-scar"></div>
+  <div class="bg-layer bg-orbit"></div>
 
   <section id="loginScreen" class="screen active">
     <div class="shell login-shell">
@@ -24,16 +25,31 @@
         <p class="eyebrow">Portal da campanha</p>
         <h1 class="title-display">
           Armagedon
-          <span>acesso simples para mestre e jogadores</span>
+          <span>Acesso simples para mestre e jogadores</span>
         </h1>
         <p class="lead">
           Entre com seu usuário para abrir sua área da campanha.
         </p>
+
+        <div class="intro-omens">
+          <article class="intro-omen">
+            <span class="intro-omen-label">Arquivo vivo</span>
+            <strong>Fichas persistentes</strong>
+            <p>Personagens, NPCs, monstros, memórias e inventários ficam organizados em um único portal.</p>
+          </article>
+
+          <article class="intro-omen">
+            <span class="intro-omen-label">Controle do mestre</span>
+            <strong>Gestão central</strong>
+            <p>O mestre administra usuários, progressão, regras e conteúdo sem perder a leitura clara da campanha.</p>
+          </article>
+        </div>
       </div>
 
       <aside class="login-card">
         <p class="eyebrow">Entrar</p>
         <h2>Acessar conta</h2>
+        <p class="login-card-copy">Use seu login para abrir sua área da campanha com os dados corretos.</p>
 
         <div class="form-group">
           <label class="form-label" for="loginUser">Usuário</label>
@@ -105,11 +121,13 @@
 
     <main class="shell dashboard-shell">
       <section class="dashboard-card">
-        <p class="eyebrow">Sessão ativa</p>
-        <h2 class="dashboard-title">Bem-vindo, <span id="heroUser">Convidado</span></h2>
-        <p class="dashboard-copy" id="dashboardCopy">
-          Sua sessão e seus dados ficam salvos no navegador deste dispositivo.
-        </p>
+        <div class="dashboard-copy-block">
+          <p class="eyebrow">Sessão ativa</p>
+          <h2 class="dashboard-title">Bem-vindo, <span id="heroUser">Convidado</span></h2>
+          <p class="dashboard-copy" id="dashboardCopy">
+            Sua sessão e seus dados ficam salvos no navegador deste dispositivo.
+          </p>
+        </div>
 
         <div class="status-grid">
           <article class="status-card">
@@ -131,9 +149,9 @@
     </main>
   </div>
 
-  <script src="js/ui.js?v=2026-04-03-utf8"></script>
-  <script src="js/runtime-config.js?v=2026-04-03-utf8"></script>
-  <script src="js/api.js?v=2026-04-03-utf8"></script>
-  <script src="js/auth.js?v=2026-04-03-utf8"></script>
+  <script src="js/ui.js?v=2026-04-05-polish"></script>
+  <script src="js/runtime-config.js?v=2026-04-05-polish"></script>
+  <script src="js/api.js?v=2026-04-05-polish"></script>
+  <script src="js/auth.js?v=2026-04-05-polish"></script>
 </body>
 </html>

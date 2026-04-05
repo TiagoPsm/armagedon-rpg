@@ -1,12 +1,12 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Armagedon | Fichas</title>
-  <link rel="stylesheet" href="css/style.css?v=2026-04-03-utf8" />
-  <link rel="stylesheet" href="css/ficha.css?v=2026-04-03-firebg" />
-  <link rel="stylesheet" href="css/ui.css?v=2026-04-03-utf8" />
+  <link rel="stylesheet" href="css/style.css?v=2026-04-05-polish" />
+  <link rel="stylesheet" href="css/ficha.css?v=2026-04-05-polish" />
+  <link rel="stylesheet" href="css/ui.css?v=2026-04-05-polish" />
   <link
     href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap"
     rel="stylesheet"
@@ -155,7 +155,7 @@
 
       <section class="panel-block">
         <h2 class="panel-block-title">Monstros do mestre</h2>
-        <p class="panel-block-sub">Crie e gerencie monstros com uma ficha própria: sem sanidade, sem inventário e com área de drop de memória.</p>
+        <p class="panel-block-sub">Crie e gerencie monstros com uma ficha própria: sem integridade, sem inventário e com área de drop de memória.</p>
 
         <div class="form-row">
           <div class="form-group">
@@ -613,79 +613,52 @@
           </div>
 
           <div class="dice-tray-layout">
-              <div class="dice-tray-controls">
-                <div class="dice-tray-top-grid">
-                  <div class="dice-tray-block">
-                    <span class="item-meta">Dado</span>
-                    <div class="dice-option-grid" id="diceOptionGrid"></div>
-                  </div>
+            <div class="dice-tray-controls">
+              <div class="dice-tray-top-grid">
+                <div class="dice-tray-block">
+                  <span class="item-meta">Dado</span>
+                  <div class="dice-option-grid" id="diceOptionGrid"></div>
+                </div>
 
-                  <div class="dice-tray-block">
-                    <span class="item-meta">Modo</span>
-                    <div class="dice-mode-grid" id="diceModeGrid">
-                      <button type="button" class="dice-mode-btn is-active" data-dice-mode="normal" aria-pressed="true">Normal</button>
-                      <button type="button" class="dice-mode-btn" data-dice-mode="advantage" aria-pressed="false">Vantagem</button>
-                      <button type="button" class="dice-mode-btn" data-dice-mode="disadvantage" aria-pressed="false">Desvantagem</button>
-                    </div>
-                  </div>
-
-                  <div class="dice-result-card" id="diceResultCard">
-                    <span class="item-meta">Resultado</span>
-                    <span class="dice-result-state" id="diceResultState" hidden></span>
-                    <strong id="diceResultTotal">Pronto</strong>
-                    <p id="diceResultDetail">Selecione os dados e role para ver o resultado.</p>
+                <div class="dice-tray-block">
+                  <span class="item-meta">Modo</span>
+                  <div class="dice-mode-grid" id="diceModeGrid">
+                    <button type="button" class="dice-mode-btn is-active" data-dice-mode="normal" aria-pressed="true">Normal</button>
+                    <button type="button" class="dice-mode-btn" data-dice-mode="advantage" aria-pressed="false">Vantagem</button>
+                    <button type="button" class="dice-mode-btn" data-dice-mode="disadvantage" aria-pressed="false">Desvantagem</button>
                   </div>
                 </div>
 
-                <div class="dice-tray-fields">
-                  <div class="dice-tray-field">
-                    <label class="form-label" for="diceTrayQty">Quantidade</label>
-                    <input type="number" id="diceTrayQty" class="form-input" min="1" max="20" value="1" />
-                  </div>
+                <div class="dice-result-card" id="diceResultCard">
+                  <span class="item-meta">Resultado</span>
+                  <span class="dice-result-state" id="diceResultState" hidden></span>
+                  <strong id="diceResultTotal">Pronto</strong>
+                  <p id="diceResultDetail">Selecione os dados e role para ver o resultado.</p>
+                </div>
+              </div>
 
-                  <div class="dice-tray-field">
-                    <label class="form-label" for="diceTrayModifier">Modificador</label>
-                    <input type="number" id="diceTrayModifier" class="form-input" min="-1000" max="1000" value="0" />
-                  </div>
+              <div class="dice-tray-fields">
+                <div class="dice-tray-field">
+                  <label class="form-label" for="diceTrayQty">Quantidade</label>
+                  <input type="number" id="diceTrayQty" class="form-input" min="1" max="20" value="1" />
+                </div>
 
-                  <div class="dice-tray-field dice-tray-expression">
-                    <label class="form-label" for="diceTrayExpression">Expressão livre</label>
-                    <input type="text" id="diceTrayExpression" class="form-input" maxlength="24" placeholder="Ex: 2d6+3" />
-                  </div>
+                <div class="dice-tray-field">
+                  <label class="form-label" for="diceTrayModifier">Modificador</label>
+                  <input type="number" id="diceTrayModifier" class="form-input" min="-1000" max="1000" value="0" />
                 </div>
 
                 <div class="dice-tray-field dice-tray-expression">
                   <label class="form-label" for="diceTrayExpression">Expressão livre</label>
                   <input type="text" id="diceTrayExpression" class="form-input" maxlength="24" placeholder="Ex: 2d6+3" />
                 </div>
-
-                <div class="dice-tray-preview dice-tray-preview-legacy" hidden>
-                  <span class="item-meta">Expressão atual</span>
-                  <strong>1d20</strong>
-                </div>
-
-                <div class="dice-tray-actions">
-                  <button type="button" class="btn btn-ghost" id="diceTrayCancelBtn">Cancelar</button>
-                  <button type="button" class="btn btn-primary" id="diceTrayRollBtn">Rolar agora</button>
-                </div>
               </div>
 
-              <aside class="dice-tray-side">
-                <div class="dice-tray-preview">
-                  <span class="item-meta">Resumo</span>
-                  <strong id="diceExpressionPreview">1d20</strong>
-                  <p class="dice-tray-preview-note">
-                    A expressão livre substitui a quantidade, o dado e o modificador.
-                  </p>
-                </div>
-
-                <div class="dice-result-card" id="diceResultCard">
-                  <span class="item-meta">Resultado</span>
-                  <span class="dice-result-state" id="diceResultState" hidden></span>
-                  <strong id="diceResultTotal">Pronto para rolar</strong>
-                  <p id="diceResultDetail">Selecione um dado para iniciar a rolagem.</p>
-                </div>
-              </aside>
+              <div class="dice-tray-actions">
+                <button type="button" class="btn btn-ghost" id="diceTrayCancelBtn">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="diceTrayRollBtn">Rolar agora</button>
+              </div>
+            </div>
           </div>
         </section>
       </div>
@@ -760,11 +733,11 @@
     </main>
   </div>
 
-  <script src="js/ui.js?v=2026-04-03-utf8"></script>
-  <script src="js/runtime-config.js?v=2026-04-03-utf8"></script>
-  <script src="js/api.js?v=2026-04-03-utf8"></script>
-  <script src="js/auth.js?v=2026-04-03-utf8"></script>
-  <script src="js/soul-essence.js?v=2026-04-03-utf8"></script>
-  <script src="js/ficha.js?v=2026-04-03-firebg"></script>
+  <script src="js/ui.js?v=2026-04-05-polish"></script>
+  <script src="js/runtime-config.js?v=2026-04-05-polish"></script>
+  <script src="js/api.js?v=2026-04-05-polish"></script>
+  <script src="js/auth.js?v=2026-04-05-polish"></script>
+  <script src="js/soul-essence.js?v=2026-04-05-polish"></script>
+  <script src="js/ficha.js?v=2026-04-05-polish"></script>
 </body>
 </html>

@@ -15,7 +15,7 @@ const AUTH = {
       this._backendReady = await APP.init();
       const session = this.getSession();
 
-      if (this._backendReady && session?.token) {
+      if (this._backendReady && session.token) {
         APP.setToken(session.token);
         try {
           const payload = await APP.getSession();
@@ -41,7 +41,7 @@ const AUTH = {
 
   isBackendEnabled() {
     const session = this.getSession();
-    return Boolean(this._backendReady && session?.backend);
+    return Boolean(this._backendReady && session.backend);
   },
 
   getSession() {
@@ -109,9 +109,9 @@ const AUTH = {
 
   setDirectoryCache(directory) {
     const safeDirectory = {
-      players: Array.isArray(directory?.players) ? directory.players : [],
-      npcs: Array.isArray(directory?.npcs) ? directory.npcs : [],
-      monsters: Array.isArray(directory?.monsters) ? directory.monsters : []
+      players: Array.isArray(directory.players)  directory.players : [],
+      npcs: Array.isArray(directory.npcs)  directory.npcs : [],
+      monsters: Array.isArray(directory.monsters)  directory.monsters : []
     };
 
     localStorage.setItem(this.DIRECTORY_KEY, JSON.stringify(safeDirectory));
@@ -168,8 +168,8 @@ function bindHomeRealtime() {
 }
 
 async function handleLogin() {
-  const userRaw = document.getElementById("loginUser")?.value.trim() || "";
-  const pass = document.getElementById("loginPass")?.value || "";
+  const userRaw = document.getElementById("loginUser").value.trim() || "";
+  const pass = document.getElementById("loginPass").value || "";
   const errorEl = document.getElementById("loginError");
   const userInput = document.getElementById("loginUser");
   const passInput = document.getElementById("loginPass");
@@ -204,7 +204,7 @@ async function handleLogin() {
       await onLoginSuccess(payload.user.username, payload.user.role);
       return;
     } catch (error) {
-      const message = error?.message || "Falha ao autenticar no servidor.";
+      const message = error.message || "Falha ao autenticar no servidor.";
       if (/senha|usuário|usuario/i.test(message)) {
         errorEl.textContent = message;
       } else {
@@ -267,23 +267,23 @@ async function onLoginSuccess(username, role = "player") {
     bindHomeRealtime();
   }
 
-  loginScreen?.classList.remove("active");
-  homeScreen?.classList.add("active");
+  loginScreen.classList.remove("active");
+  homeScreen.classList.add("active");
 
   if (headerUser) headerUser.textContent = username;
   if (heroUser) heroUser.textContent = username;
   if (playerCount) playerCount.textContent = String(AUTH.getPlayers().length);
-  if (headerRole) headerRole.textContent = role === "master" ? "Mestre" : "Jogador";
-  if (roleLabel) roleLabel.textContent = role === "master" ? "Mestre" : "Jogador";
+  if (headerRole) headerRole.textContent = role === "master"  "Mestre" : "Jogador";
+  if (roleLabel) roleLabel.textContent = role === "master"  "Mestre" : "Jogador";
 
   if (dashboardCopy) {
     dashboardCopy.textContent =
       role === "master"
-        ? AUTH.isBackendEnabled()
-          ? "Você pode criar jogadores, abrir qualquer ficha e salvar tudo no servidor central."
+         AUTH.isBackendEnabled()
+           "Você pode criar jogadores, abrir qualquer ficha e salvar tudo no servidor central."
           : "Você pode criar jogadores, abrir qualquer ficha e manter tudo salvo neste navegador."
         : AUTH.isBackendEnabled()
-          ? "Você acessa seus dados no servidor da campanha, com sincronização central."
+           "Você acessa seus dados no servidor da campanha, com sincronização central."
           : "Você acessa somente seus dados, e tudo fica salvo automaticamente neste navegador.";
   }
 }
@@ -300,20 +300,20 @@ function togglePassword() {
   if (!input || !eyeOpen || !eyeClosed) return;
 
   const showing = input.type === "text";
-  input.type = showing ? "password" : "text";
-  eyeOpen.style.display = showing ? "inline" : "none";
-  eyeClosed.style.display = showing ? "none" : "inline";
+  input.type = showing  "password" : "text";
+  eyeOpen.style.display = showing  "inline" : "none";
+  eyeClosed.style.display = showing  "none" : "inline";
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
   const loginUser = document.getElementById("loginUser");
   const loginPass = document.getElementById("loginPass");
 
-  loginUser?.addEventListener("keydown", event => {
-    if (event.key === "Enter") loginPass?.focus();
+  loginUser.addEventListener("keydown", event => {
+    if (event.key === "Enter") loginPass.focus();
   });
 
-  loginPass?.addEventListener("keydown", event => {
+  loginPass.addEventListener("keydown", event => {
     if (event.key === "Enter") handleLogin();
   });
 

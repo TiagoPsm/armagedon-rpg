@@ -1,4 +1,4 @@
-const SHEETS_KEY = "tc_sheets";
+﻿const SHEETS_KEY = "tc_sheets";
 const NPCS_KEY = "tc_npcs";
 const MONSTERS_KEY = "tc_monsters";
 const REMOTE_SHEETS_KEY = "tc_remote_sheets";
@@ -8,7 +8,7 @@ const ATTRIBUTES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"]
 const DEFAULT_INVENTORY_SLOTS = 30;
 const ITEM_TYPES = {
   arma: "Arma",
-  acessorio: "Acessório",
+  acessorio: "AcessÃ³rio",
   outro: "Outro"
 };
 const DICE_PRESETS = [
@@ -114,11 +114,11 @@ function persistRemoteSheetsCache() {
 }
 
 function isMasterScreenActive() {
-  return document.getElementById("masterScreen")?.classList.contains("active");
+  return document.getElementById("masterScreen").classList.contains("active");
 }
 
 function isSheetScreenActive() {
-  return document.getElementById("sheetScreen")?.classList.contains("active");
+  return document.getElementById("sheetScreen").classList.contains("active");
 }
 
 function hasEditableFocus() {
@@ -160,7 +160,7 @@ function scheduleDirectoryRefresh(delay = 140) {
 }
 
 function scheduleRealtimeSheetReload(key, delay = 180) {
-  if (!key || !currentSheetTarget?.key || currentSheetTarget.key !== key) return;
+  if (!key || !currentSheetTarget.key || currentSheetTarget.key !== key) return;
   if (isRecentLocalSave(key)) return;
 
   if (hasEditableFocus()) {
@@ -171,7 +171,7 @@ function scheduleRealtimeSheetReload(key, delay = 180) {
   if (sheetRefreshTimer) window.clearTimeout(sheetRefreshTimer);
   sheetRefreshTimer = window.setTimeout(async () => {
     if (!isSheetScreenActive()) return;
-    if (!currentSheetTarget?.key || currentSheetTarget.key !== key) return;
+    if (!currentSheetTarget.key || currentSheetTarget.key !== key) return;
 
     try {
       await loadSheet(key, currentSheetTarget.kind);
@@ -198,7 +198,7 @@ function bindSheetRealtime() {
   });
 
   APP.on("sheet:changed", detail => {
-    const key = String(detail?.key || "").trim().toLowerCase();
+    const key = String(detail.key || "").trim().toLowerCase();
     if (!key) return;
 
     scheduleDirectoryRefresh();
@@ -206,23 +206,23 @@ function bindSheetRealtime() {
   });
 
   APP.on("inventory:changed", detail => {
-    const sourceKey = String(detail?.sourceKey || "").trim().toLowerCase();
-    const targetKey = String(detail?.targetKey || "").trim().toLowerCase();
+    const sourceKey = String(detail.sourceKey || "").trim().toLowerCase();
+    const targetKey = String(detail.targetKey || "").trim().toLowerCase();
 
     scheduleDirectoryRefresh();
 
-    if (currentSheetTarget?.key === sourceKey || currentSheetTarget?.key === targetKey) {
+    if (currentSheetTarget.key === sourceKey || currentSheetTarget.key === targetKey) {
       scheduleRealtimeSheetReload(currentSheetTarget.key);
     }
   });
 
   APP.on("memory:changed", detail => {
-    const sourceKey = String(detail?.sourceKey || "").trim().toLowerCase();
-    const targetKey = String(detail?.targetKey || "").trim().toLowerCase();
+    const sourceKey = String(detail.sourceKey || "").trim().toLowerCase();
+    const targetKey = String(detail.targetKey || "").trim().toLowerCase();
 
     scheduleDirectoryRefresh();
 
-    if (currentSheetTarget?.key === sourceKey || currentSheetTarget?.key === targetKey) {
+    if (currentSheetTarget.key === sourceKey || currentSheetTarget.key === targetKey) {
       scheduleRealtimeSheetReload(currentSheetTarget.key);
     }
   });
@@ -240,8 +240,8 @@ function bindSheetRealtime() {
 
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(screen => screen.classList.remove("active"));
-  document.getElementById(id)?.classList.add("active");
-  document.body?.setAttribute("data-active-screen", id);
+  document.getElementById(id).classList.add("active");
+  document.body.setAttribute("data-active-screen", id);
 }
 
 async function openMasterPanel() {
@@ -301,16 +301,16 @@ function renderPlayers() {
 }
 
 async function addPlayer() {
-  const username = document.getElementById("newUser")?.value.trim() || "";
-  const password = document.getElementById("newPass")?.value || "";
-  const charname = document.getElementById("newChar")?.value.trim() || "";
+  const username = document.getElementById("newUser").value.trim() || "";
+  const password = document.getElementById("newPass").value || "";
+  const charname = document.getElementById("newChar").value.trim() || "";
   const errEl = document.getElementById("addError");
   if (!errEl) return;
 
   errEl.textContent = "";
 
   if (!username || !password) {
-    errEl.textContent = "Usuário e senha são obrigatórios.";
+    errEl.textContent = "UsuÃ¡rio e senha sÃ£o obrigatÃ³rios.";
     return;
   }
 
@@ -328,13 +328,13 @@ async function addPlayer() {
       });
       await AUTH.refreshDirectory();
     } catch (error) {
-      errEl.textContent = error?.message || "Falha ao criar o jogador.";
+      errEl.textContent = error.message || "Falha ao criar o jogador.";
       return;
     }
   } else {
     const players = AUTH.getPlayers();
     if (players.find(player => player.username.toLowerCase() === username.toLowerCase())) {
-      errEl.textContent = "Já existe um jogador com esse nome.";
+      errEl.textContent = "JÃ¡ existe um jogador com esse nome.";
       return;
     }
 
@@ -347,7 +347,7 @@ async function addPlayer() {
 }
 
 async function addNpc() {
-  const name = document.getElementById("newNpcName")?.value.trim() || "";
+  const name = document.getElementById("newNpcName").value.trim() || "";
   const errEl = document.getElementById("npcError");
   if (!errEl) return;
 
@@ -363,13 +363,13 @@ async function addNpc() {
       await APP.createNpc({ name });
       await AUTH.refreshDirectory();
     } catch (error) {
-      errEl.textContent = error?.message || "Falha ao criar o NPC.";
+      errEl.textContent = error.message || "Falha ao criar o NPC.";
       return;
     }
   } else {
     const npcs = readNpcs();
     if (npcs.some(npc => npc.name.toLowerCase() === name.toLowerCase())) {
-      errEl.textContent = "Já existe um NPC com esse nome.";
+      errEl.textContent = "JÃ¡ existe um NPC com esse nome.";
       return;
     }
 
@@ -393,7 +393,7 @@ async function addNpc() {
 }
 
 async function addMonster() {
-  const name = document.getElementById("newMonsterName")?.value.trim() || "";
+  const name = document.getElementById("newMonsterName").value.trim() || "";
   const errEl = document.getElementById("monsterError");
   if (!errEl) return;
 
@@ -409,13 +409,13 @@ async function addMonster() {
       await APP.createMonster({ name });
       await AUTH.refreshDirectory();
     } catch (error) {
-      errEl.textContent = error?.message || "Falha ao criar o monstro.";
+      errEl.textContent = error.message || "Falha ao criar o monstro.";
       return;
     }
   } else {
     const monsters = readMonsters();
     if (monsters.some(monster => monster.name.toLowerCase() === name.toLowerCase())) {
-      errEl.textContent = "Já existe um monstro com esse nome.";
+      errEl.textContent = "JÃ¡ existe um monstro com esse nome.";
       return;
     }
 
@@ -482,9 +482,9 @@ function resetMonsterForm() {
 }
 
 async function removePlayer(username) {
-  const confirmed = await UI.confirm(`Remover "${username}"? A ficha será apagada.`, {
+  const confirmed = await UI.confirm(`Remover "${username}" A ficha serÃ¡ apagada.`, {
     title: "Excluir jogador",
-    kicker: "// Confirmação",
+    kicker: "// ConfirmaÃ§Ã£o",
     confirmLabel: "Remover",
     cancelLabel: "Cancelar",
     variant: "danger"
@@ -523,23 +523,23 @@ function openSheetLegacy(target, fromMaster) {
   const backButton = document.getElementById("btnBackMaster");
   const sheetKindLabel = document.getElementById("sheetKindLabel");
   const sheetSaveText = document.getElementById("sheetSaveText");
-  const resolvedTarget = typeof target === "string" ? createPlayerTarget(target) : target;
+  const resolvedTarget = typeof target === "string"  createPlayerTarget(target) : target;
 
   currentSheetTarget = resolvedTarget;
 
   if (sheetUser) {
     sheetUser.textContent =
-      resolvedTarget.kind === "npc" ? `${resolvedTarget.label} · NPC` : resolvedTarget.label;
+      resolvedTarget.kind === "npc"  `${resolvedTarget.label} Â· NPC` : resolvedTarget.label;
   }
-  if (backButton) backButton.style.display = fromMaster ? "inline-block" : "none";
+  if (backButton) backButton.style.display = fromMaster  "inline-block" : "none";
   if (sheetKindLabel) {
-    sheetKindLabel.textContent = resolvedTarget.kind === "npc" ? "Ficha do NPC" : "Ficha do personagem";
+    sheetKindLabel.textContent = resolvedTarget.kind === "npc"  "Ficha do NPC" : "Ficha do personagem";
   }
   if (sheetSaveText) {
     sheetSaveText.textContent =
       resolvedTarget.kind === "npc"
-        ? "Toda alteração desta ficha de NPC fica salva neste navegador do mestre."
-        : "Toda alteração da ficha fica salva para o usuário correto.";
+         "Toda alteraÃ§Ã£o desta ficha de NPC fica salva neste navegador do mestre."
+        : "Toda alteraÃ§Ã£o da ficha fica salva para o usuÃ¡rio correto.";
   }
 
   loadSheet(resolvedTarget.key);
@@ -552,10 +552,10 @@ async function loadSheet(username, kind = "player") {
   if (isBackendMode()) {
     try {
       const character = await APP.getCharacter(username);
-      remoteSheetsCache[username] = normalizeSheetData(character?.data || {}, kind);
+      remoteSheetsCache[username] = normalizeSheetData(character.data || {}, kind);
       persistRemoteSheetsCache();
     } catch (error) {
-      await UI.alert(error?.message || "Falha ao carregar a ficha no servidor.", {
+      await UI.alert(error.message || "Falha ao carregar a ficha no servidor.", {
         title: "Falha ao carregar ficha",
         kicker: "// Servidor"
       });
@@ -644,8 +644,8 @@ function saveSheetSilently() {
 }
 
 async function saveCurrentSheet() {
-  if (!currentSheetTarget?.key) return;
-  if (!document.getElementById("sheetScreen")?.classList.contains("active")) return;
+  if (!currentSheetTarget.key) return;
+  if (!document.getElementById("sheetScreen").classList.contains("active")) return;
 
   enforceSheetRules();
   const data = collectSheetData(currentSheetTarget.kind);
@@ -657,20 +657,20 @@ async function saveCurrentSheet() {
     try {
       const saved = await APP.saveCharacter(currentSheetTarget.key, data);
       if (requestId !== saveRequestId) return;
-      remoteSheetsCache[currentSheetTarget.key] = normalizeSheetData(saved?.data || data, currentSheetTarget.kind);
+      remoteSheetsCache[currentSheetTarget.key] = normalizeSheetData(saved.data || data, currentSheetTarget.kind);
       persistRemoteSheetsCache();
       soulCore = normalizeSoulCoreState(
-        remoteSheetsCache[currentSheetTarget.key]?.soulCore,
-        remoteSheetsCache[currentSheetTarget.key]?.charLevel || 1
+        remoteSheetsCache[currentSheetTarget.key].soulCore,
+        remoteSheetsCache[currentSheetTarget.key].charLevel || 1
       );
       renderProgressionField(currentSheetTarget.kind);
       if (currentSheetTarget.kind === "player" || currentSheetTarget.kind === "npc" || currentSheetTarget.kind === "monster") {
-        syncDirectoryName((saved?.data || data).charName);
+        syncDirectoryName((saved.data || data).charName);
       }
     } catch (error) {
       const saveMsg = document.getElementById("saveMsg");
       if (saveMsg) {
-        saveMsg.textContent = error?.message || "Falha ao salvar no servidor.";
+        saveMsg.textContent = error.message || "Falha ao salvar no servidor.";
         saveMsg.className = "save-msg";
       }
       return;
@@ -692,7 +692,7 @@ function collectSheetData(kind = "player") {
   const isPlayer = kind === "player";
   const nextSoulCore = normalizeSoulCoreState(
     isPlayer
-      ? soulCore
+       soulCore
       : {
           rank: getValue("charLevel") || 1,
           xp: 0
@@ -708,22 +708,22 @@ function collectSheetData(kind = "player") {
     {
       charName: getValue("charName"),
       charClass: getValue("charClass"),
-      charLevel: isPlayer ? String(nextSoulCore.rank) : getValue("charLevel"),
+      charLevel: isPlayer  String(nextSoulCore.rank) : getValue("charLevel"),
       soulCore: nextSoulCore,
       charRace: getValue("charRace"),
-      charFaction: isMonster ? "" : getValue("charFaction"),
-      avatar: avatarImg && avatarImg.style.display !== "none" ? avatarImg.src : "",
+      charFaction: isMonster  "" : getValue("charFaction"),
+      avatar: avatarImg && avatarImg.style.display !== "none"  avatarImg.src : "",
       vidaAtual: getValue("vidaAtual"),
       vidaMax: getValue("vidaMax"),
-      integAtual: isMonster ? "" : getValue("integAtual"),
-      integMax: isMonster ? "" : getValue("integMax"),
+      integAtual: isMonster  "" : getValue("integAtual"),
+      integMax: isMonster  "" : getValue("integMax"),
       charNotes: getValue("charNotes"),
       ...attrData,
       habs: collectHabs(),
-      ownedMemories: isMonster ? [] : collectOwnedMemories(),
-      inventorySlots: isMonster ? 0 : inventorySlots,
-      inv: isMonster ? [] : collectInv(),
-      memoryDrops: isMonster ? collectMemoryDrops() : []
+      ownedMemories: isMonster  [] : collectOwnedMemories(),
+      inventorySlots: isMonster  0 : inventorySlots,
+      inv: isMonster  [] : collectInv(),
+      memoryDrops: isMonster  collectMemoryDrops() : []
     },
     kind
   );
@@ -793,25 +793,25 @@ function writeMonsters(monsters) {
 
 function normalizeSheetData(data, kind = "player") {
   const isMonster = kind === "monster";
-  const nextSoulCore = normalizeSoulCoreState(data?.soulCore, data?.charLevel || 1);
+  const nextSoulCore = normalizeSoulCoreState(data.soulCore, data.charLevel || 1);
   const normalized = {
     charName: data.charName || "",
     charClass: data.charClass || "",
-    charLevel: String(data?.charLevel || nextSoulCore.rank || ""),
+    charLevel: String(data.charLevel || nextSoulCore.rank || ""),
     soulCore: nextSoulCore,
     charRace: data.charRace || "",
-    charFaction: isMonster ? "" : data.charFaction || "",
+    charFaction: isMonster  "" : data.charFaction || "",
     avatar: data.avatar || "",
     vidaAtual: data.vidaAtual || "",
     vidaMax: data.vidaMax || "",
-    integAtual: isMonster ? "" : data.integAtual || "",
-    integMax: isMonster ? "" : data.integMax || "",
+    integAtual: isMonster  "" : data.integAtual || "",
+    integMax: isMonster  "" : data.integMax || "",
     charNotes: data.charNotes || "",
-    habs: Array.isArray(data.habs) ? data.habs.map(normalizeHab) : [],
-    ownedMemories: isMonster ? [] : Array.isArray(data.ownedMemories) ? data.ownedMemories.map(normalizeOwnedMemory) : [],
-    inventorySlots: isMonster ? 0 : normalizeInventorySlots(kind, data.inventorySlots),
-    inv: isMonster ? [] : Array.isArray(data.inv) ? data.inv.map(normalizeItem) : [],
-    memoryDrops: isMonster ? (Array.isArray(data.memoryDrops) ? data.memoryDrops.map(normalizeMemoryDrop) : []) : []
+    habs: Array.isArray(data.habs)  data.habs.map(normalizeHab) : [],
+    ownedMemories: isMonster  [] : Array.isArray(data.ownedMemories)  data.ownedMemories.map(normalizeOwnedMemory) : [],
+    inventorySlots: isMonster  0 : normalizeInventorySlots(kind, data.inventorySlots),
+    inv: isMonster  [] : Array.isArray(data.inv)  data.inv.map(normalizeItem) : [],
+    memoryDrops: isMonster  (Array.isArray(data.memoryDrops)  data.memoryDrops.map(normalizeMemoryDrop) : []) : []
   };
 
   ATTRIBUTES.forEach(attr => {
@@ -839,17 +839,17 @@ function normalizeSheetData(data, kind = "player") {
 }
 
 function normalizeSoulCoreState(value, legacyRank = 1) {
-  if (SOUL?.normalizeSoulCore) {
+  if (SOUL.normalizeSoulCore) {
     return SOUL.normalizeSoulCore(value, legacyRank);
   }
 
-  const rank = Math.min(7, Math.max(1, Number.parseInt(value?.rank ?? legacyRank, 10) || 1));
-  const xp = Math.max(0, Number.parseInt(value?.xp, 10) || 0);
+  const rank = Math.min(7, Math.max(1, Number.parseInt(value.rank  legacyRank, 10) || 1));
+  const xp = Math.max(0, Number.parseInt(value.xp, 10) || 0);
   return { rank, xp };
 }
 
 function getSoulRankName(rank) {
-  if (SOUL?.getRankName) {
+  if (SOUL.getRankName) {
     return SOUL.getRankName(rank);
   }
 
@@ -867,7 +867,7 @@ function getSoulRankName(rank) {
 }
 
 function getSoulNextRankRequirement(rank) {
-  if (SOUL?.getNextRankRequirement) {
+  if (SOUL.getNextRankRequirement) {
     return SOUL.getNextRankRequirement(rank);
   }
 
@@ -883,14 +883,14 @@ function getSoulNextRankRequirement(rank) {
     7: 800
   };
 
-  // Fallback local: subir de rank exige o equivalente a 100 essências do mesmo rank.
+  // Fallback local: subir de rank exige o equivalente a 100 essÃªncias do mesmo rank.
   return normalizedRank >= 7
-    ? 0
+     0
     : (baseExperienceByRank[normalizedRank] || 0) * sameRankEssencesPerRankUp;
 }
 
 function calculateSoulEssenceExperience(characterRank, essenceRank) {
-  if (SOUL?.calculateEssenceExperience) {
+  if (SOUL.calculateEssenceExperience) {
     return SOUL.calculateEssenceExperience(characterRank, essenceRank);
   }
 
@@ -898,7 +898,7 @@ function calculateSoulEssenceExperience(characterRank, essenceRank) {
 }
 
 function absorbSoulEssencesState(core, essenceRank, amount = 1) {
-  if (SOUL?.absorbSoulEssences) {
+  if (SOUL.absorbSoulEssences) {
     return SOUL.absorbSoulEssences(core, essenceRank, amount);
   }
 
@@ -913,36 +913,36 @@ function absorbSoulEssencesState(core, essenceRank, amount = 1) {
 }
 
 function buildSoulProgressLabel(core) {
-  if (SOUL?.buildProgressLabel) {
+  if (SOUL.buildProgressLabel) {
     return SOUL.buildProgressLabel(core);
   }
 
   const normalized = normalizeSoulCoreState(core);
   const requirement = getSoulNextRankRequirement(normalized.rank);
-  return requirement ? `${normalized.xp} / ${requirement} XP` : "Rank maximo alcancado";
+  return requirement  `${normalized.xp} / ${requirement} XP` : "Rank maximo alcancado";
 }
 
 function normalizeHab(hab) {
   return {
-    name: hab?.name || "",
-    desc: hab?.desc || ""
+    name: hab.name || "",
+    desc: hab.desc || ""
   };
 }
 
 function normalizeItem(item) {
-  const type = normalizeItemType(item?.type);
+  const type = normalizeItemType(item.type);
   return {
-    name: String(item?.name || ""),
-    qty: String(Math.max(0, Number.parseInt(item?.qty || "1", 10) || 0)),
-    desc: String(item?.desc || ""),
+    name: String(item.name || ""),
+    qty: String(Math.max(0, Number.parseInt(item.qty || "1", 10) || 0)),
+    desc: String(item.desc || ""),
     type,
-    damage: type === "arma" ? normalizeDamageExpression(item?.damage) : ""
+    damage: type === "arma"  normalizeDamageExpression(item.damage) : ""
   };
 }
 
 function normalizeItemType(value) {
   const normalized = String(value || "outro").trim().toLowerCase();
-  return Object.prototype.hasOwnProperty.call(ITEM_TYPES, normalized) ? normalized : "outro";
+  return Object.prototype.hasOwnProperty.call(ITEM_TYPES, normalized)  normalized : "outro";
 }
 
 function normalizeDamageExpression(value) {
@@ -963,26 +963,26 @@ function normalizeInventorySlots(kind, value) {
 
 function normalizeOwnedMemory(memory) {
   return {
-    name: memory?.name || "",
-    desc: memory?.desc || "",
-    source: memory?.source || ""
+    name: memory.name || "",
+    desc: memory.desc || "",
+    source: memory.source || ""
   };
 }
 
 function normalizeMemoryDrop(drop) {
   return {
-    name: drop?.name || "",
-    desc: drop?.desc || "",
-    chance: sanitizeChance(drop?.chance, "0")
+    name: drop.name || "",
+    desc: drop.desc || "",
+    chance: sanitizeChance(drop.chance, "0")
   };
 }
 
 function itemHasContent(item) {
   return Boolean(
-    String(item?.name || "").trim() ||
-      String(item?.desc || "").trim() ||
-      (normalizeItemType(item?.type) === "arma" && String(item?.damage || "").trim()) ||
-      Number.parseInt(item?.qty || "0", 10) > 1
+    String(item.name || "").trim() ||
+      String(item.desc || "").trim() ||
+      (normalizeItemType(item.type) === "arma" && String(item.damage || "").trim()) ||
+      Number.parseInt(item.qty || "0", 10) > 1
   );
 }
 
@@ -998,7 +998,7 @@ function getItemTypeBadgeClass(type) {
 
 function parseDamageExpression(expression) {
   const sanitized = normalizeDamageExpression(expression);
-  const match = sanitized.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
+  const match = sanitized.match(/^(\d+)d(\d+)([+-]\d+)$/i);
   if (!match) return null;
 
   const diceCount = Number.parseInt(match[1], 10);
@@ -1053,15 +1053,15 @@ function sanitizeChance(value, fallback = "0") {
 
 function normalizeNpc(npc) {
   return {
-    id: String(npc?.id || createNpcId()),
-    name: String(npc?.name || "NPC").trim() || "NPC"
+    id: String(npc.id || createNpcId()),
+    name: String(npc.name || "NPC").trim() || "NPC"
   };
 }
 
 function normalizeMonster(monster) {
   return {
-    id: String(monster?.id || createMonsterId()),
-    name: String(monster?.name || "Monstro").trim() || "Monstro"
+    id: String(monster.id || createMonsterId()),
+    name: String(monster.name || "Monstro").trim() || "Monstro"
   };
 }
 
@@ -1087,7 +1087,7 @@ function createPlayerTarget(username) {
     kind: "player",
     key: username,
     owner: username,
-    label: player?.charname || username
+    label: player.charname || username
   };
 }
 
@@ -1184,9 +1184,9 @@ async function removeNpc(npcId) {
   const npc = npcs.find(candidate => candidate.id === npcId);
   if (!npc) return;
 
-  const confirmed = await UI.confirm(`Apagar o NPC "${npc.name}"? A ficha será apagada.`, {
+  const confirmed = await UI.confirm(`Apagar o NPC "${npc.name}" A ficha serÃ¡ apagada.`, {
     title: "Excluir NPC",
-    kicker: "// Confirmação",
+    kicker: "// ConfirmaÃ§Ã£o",
     confirmLabel: "Excluir",
     cancelLabel: "Cancelar",
     variant: "danger"
@@ -1215,9 +1215,9 @@ async function removeMonster(monsterId) {
   const monster = monsters.find(candidate => candidate.id === monsterId);
   if (!monster) return;
 
-  const confirmed = await UI.confirm(`Apagar o monstro "${monster.name}"? A ficha será apagada.`, {
+  const confirmed = await UI.confirm(`Apagar o monstro "${monster.name}" A ficha serÃ¡ apagada.`, {
     title: "Excluir monstro",
-    kicker: "// Confirmação",
+    kicker: "// ConfirmaÃ§Ã£o",
     confirmLabel: "Excluir",
     cancelLabel: "Cancelar",
     variant: "danger"
@@ -1305,7 +1305,7 @@ function initAutoSave() {
 }
 
 function getValue(id) {
-  return document.getElementById(id)?.value || "";
+  return document.getElementById(id).value || "";
 }
 
 function setValue(id, value) {
@@ -1374,7 +1374,7 @@ function calcModFromVal(attr, value) {
 
   const mod = modScale(value);
   target.textContent = `+${mod}`;
-  target.style.color = mod >= 4 ? "var(--red-mid)" : mod >= 2 ? "var(--gold)" : "var(--text-secondary)";
+  target.style.color = mod >= 4  "var(--red-mid)" : mod >= 2  "var(--gold)" : "var(--text-secondary)";
 
   if (attr === "Alma") {
     syncIntegrityFromSoul();
@@ -1383,9 +1383,9 @@ function calcModFromVal(attr, value) {
 
 function updateBar(type) {
   const isVida = type === "vida";
-  const current = parseFloat(getValue(isVida ? "vidaAtual" : "integAtual")) || 0;
-  const max = parseFloat(getValue(isVida ? "vidaMax" : "integMax")) || 1;
-  const bar = document.getElementById(isVida ? "barVida" : "barInteg");
+  const current = parseFloat(getValue(isVida  "vidaAtual" : "integAtual")) || 0;
+  const max = parseFloat(getValue(isVida  "vidaMax" : "integMax")) || 1;
+  const bar = document.getElementById(isVida  "barVida" : "barInteg");
   if (!bar) return;
 
   const percent = Math.min(100, Math.max(0, (current / max) * 100));
@@ -1405,7 +1405,7 @@ function updateBar(type) {
 }
 
 function handleAvatar(event) {
-  const file = event.target.files?.[0];
+  const file = event.target.files.[0];
   if (!file) return;
 
   const reader = new FileReader();
@@ -1414,7 +1414,7 @@ function handleAvatar(event) {
     const avatarPlaceholder = document.getElementById("avatarPlaceholder");
     if (!avatarImg || !avatarPlaceholder) return;
 
-    avatarImg.src = loadEvent.target?.result || "";
+    avatarImg.src = loadEvent.target.result || "";
     avatarImg.style.display = "block";
     avatarPlaceholder.style.display = "none";
     saveSheetSilently();
@@ -1478,7 +1478,7 @@ function updateItemEditorDamageUI(type = "outro", damage = "") {
   if (damageWrap) damageWrap.hidden = !isWeapon;
   if (rollBox) rollBox.hidden = !isWeapon;
   if (damageLabel) {
-    damageLabel.textContent = cleanDamage ? `Dano: ${cleanDamage}` : "Dano: definir";
+    damageLabel.textContent = cleanDamage  `Dano: ${cleanDamage}` : "Dano: definir";
   }
 }
 
@@ -1487,11 +1487,11 @@ function syncItemFromEditor() {
 
   const { name, qty, type, damage, desc } = getItemEditorElements();
   const nextItem = normalizeItem({
-    name: name?.value || "",
-    qty: qty?.value || "1",
-    type: type?.value || "outro",
-    damage: damage?.value || "",
-    desc: desc?.value || ""
+    name: name.value || "",
+    qty: qty.value || "1",
+    type: type.value || "outro",
+    damage: damage.value || "",
+    desc: desc.value || ""
   });
 
   inv[itemEditorIndex] = nextItem;
@@ -1509,17 +1509,17 @@ async function openItemTypePicker() {
   const selectedType = await UI.pickOption({
     title: "Escolher categoria",
     kicker: "// Item",
-    message: "Defina o tipo do item para habilitar os campos específicos.",
+    message: "Defina o tipo do item para habilitar os campos especÃ­ficos.",
     cancelLabel: "Fechar",
     options: [
       { value: "outro", label: "Outro", meta: "Item geral", selected: currentType === "outro" },
       { value: "arma", label: "Arma", meta: "Permite rolagem de dano", selected: currentType === "arma" },
-      { value: "acessorio", label: "Acessório", meta: "Equipável ou passivo", selected: currentType === "acessorio" }
+      { value: "acessorio", label: "AcessÃ³rio", meta: "EquipÃ¡vel ou passivo", selected: currentType === "acessorio" }
     ]
   });
 
   if (!selectedType) {
-    typeBtn?.focus();
+    typeBtn.focus();
     return;
   }
 
@@ -1529,7 +1529,7 @@ async function openItemTypePicker() {
   }
 
   syncItemFromEditor();
-  typeBtn?.focus();
+  typeBtn.focus();
 }
 
 function initItemEditor() {
@@ -1555,16 +1555,16 @@ function initItemEditor() {
     }
   });
 
-  document.getElementById("itemEditorCloseBtn")?.addEventListener("click", () => closeEditor(false));
-  document.getElementById("itemEditorCancelBtn")?.addEventListener("click", () => closeEditor(false));
-  document.getElementById("itemEditorSaveBtn")?.addEventListener("click", () => closeEditor(true));
-  document.getElementById("itemEditorRollBtn")?.addEventListener("click", () => rollCurrentEditorDamage());
-  document.getElementById("itemEditorTypeBtn")?.addEventListener("click", () => {
+  document.getElementById("itemEditorCloseBtn").addEventListener("click", () => closeEditor(false));
+  document.getElementById("itemEditorCancelBtn").addEventListener("click", () => closeEditor(false));
+  document.getElementById("itemEditorSaveBtn").addEventListener("click", () => closeEditor(true));
+  document.getElementById("itemEditorRollBtn").addEventListener("click", () => rollCurrentEditorDamage());
+  document.getElementById("itemEditorTypeBtn").addEventListener("click", () => {
     openItemTypePicker();
   });
 
   ["itemEditorName", "itemEditorQty", "itemEditorDamage", "itemEditorDesc"].forEach(id => {
-    document.getElementById(id)?.addEventListener("input", () => {
+    document.getElementById(id).addEventListener("input", () => {
       syncItemFromEditor();
       if (id === "itemEditorDesc") {
         const textarea = document.getElementById(id);
@@ -1655,11 +1655,11 @@ async function rollItemDamage(index, options = {}) {
   if (!result) {
     itemRollStates[index] = {
       tone: "fail",
-      text: "Defina um dano válido, como 1d10 ou 2d6+3."
+      text: "Defina um dano vÃ¡lido, como 1d10 ou 2d6+3."
     };
     renderInv(inv);
-    await UI.alert("Defina um dano válido para a arma, por exemplo 1d10 ou 2d6+3.", {
-      title: "Dano inválido",
+    await UI.alert("Defina um dano vÃ¡lido para a arma, por exemplo 1d10 ou 2d6+3.", {
+      title: "Dano invÃ¡lido",
       kicker: "// Inventário"
     });
     if (options.preserveModal) openItemEditor(index, { isNew: itemEditorIsNew });
@@ -1667,7 +1667,7 @@ async function rollItemDamage(index, options = {}) {
   }
 
   const modifierText = result.modifier
-    ? ` ${result.modifier > 0 ? "+" : "-"} ${Math.abs(result.modifier)}`
+     ` ${result.modifier > 0  "+" : "-"} ${Math.abs(result.modifier)}`
     : "";
   itemRollStates[index] = {
     tone: "success",
@@ -1728,13 +1728,13 @@ function clampDiceTrayModifier(value) {
 }
 
 function normalizeDiceTrayMode(value) {
-  return Object.prototype.hasOwnProperty.call(DICE_TRAY_MODES, value) ? value : "normal";
+  return Object.prototype.hasOwnProperty.call(DICE_TRAY_MODES, value)  value : "normal";
 }
 
 function buildDiceTrayExpression() {
   const preset = getDicePreset(diceTrayState.preset);
   const modifier = clampDiceTrayModifier(diceTrayState.modifier);
-  const modifierSuffix = modifier > 0 ? `+${modifier}` : modifier < 0 ? `${modifier}` : "";
+  const modifierSuffix = modifier > 0  `+${modifier}` : modifier < 0  `${modifier}` : "";
   return `${clampDiceTrayQuantity(diceTrayState.qty)}d${preset.sides}${modifierSuffix}`;
 }
 
@@ -1750,9 +1750,9 @@ function renderDiceOptions() {
   optionGrid.innerHTML = DICE_PRESETS.map(preset => `
     <button
       type="button"
-      class="dice-option-btn ${diceTrayState.preset === preset.key ? "is-active" : ""}"
+      class="dice-option-btn ${diceTrayState.preset === preset.key  "is-active" : ""}"
       data-dice-option="${preset.key}"
-      aria-pressed="${diceTrayState.preset === preset.key ? "true" : "false"}"
+      aria-pressed="${diceTrayState.preset === preset.key  "true" : "false"}"
       title="${preset.label}"
     >
       <span class="dice-option-value">${preset.sides}</span>
@@ -1768,13 +1768,13 @@ function renderDiceModeButtons() {
     if (!(button instanceof HTMLButtonElement)) return;
     const isActive = button.dataset.diceMode === diceTrayState.mode;
     button.classList.toggle("is-active", isActive);
-    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+    button.setAttribute("aria-pressed", isActive  "true" : "false");
   });
 }
 
 function formatDiceTrayRollSummary(result) {
   const modifierText = result.modifier
-    ? ` | Modificador: ${result.modifier > 0 ? "+" : ""}${result.modifier}`
+     ` | Modificador: ${result.modifier > 0  "+" : ""}${result.modifier}`
     : "";
   return `${result.total} (${result.rolls.join(" + ")}${modifierText})`;
 }
@@ -1816,14 +1816,14 @@ function initDiceTray() {
   const previewNote = root.querySelector(".dice-tray-preview-note");
 
   if (trayKicker) trayKicker.textContent = "// Rolagem";
-  if (trayTitle) trayTitle.textContent = "Lançar dados";
+  if (trayTitle) trayTitle.textContent = "LanÃ§ar dados";
   if (traySubtitle) {
     traySubtitle.textContent = "Escolha o dado, ajuste a rolagem e veja o resultado em um painel limpo e direto.";
   }
-  if (expressionLabel) expressionLabel.textContent = "Expressão livre";
+  if (expressionLabel) expressionLabel.textContent = "ExpressÃ£o livre";
   if (previewLabel) previewLabel.textContent = "Resumo";
   if (previewNote) {
-    previewNote.textContent = "A expressão livre substitui a quantidade, o dado e o modificador.";
+    previewNote.textContent = "A expressÃ£o livre substitui a quantidade, o dado e o modificador.";
   }
 
   openButton.addEventListener("click", openDiceTray);
@@ -1902,12 +1902,12 @@ function buildDiceTrayResultDetail(result) {
 
   if (result.mode === "advantage" || result.mode === "disadvantage") {
     const modeLabel = DICE_TRAY_MODES[result.mode];
-    return `${modeLabel} | 1ª: ${result.first.total} | 2ª: ${result.second.total} | Escolhido: ${result.chosen.total}`;
+    return `${modeLabel} | 1Âª: ${result.first.total} | 2Âª: ${result.second.total} | Escolhido: ${result.chosen.total}`;
   }
 
   return `Rolagens: ${result.chosen.rolls.join(" + ")}${
     result.chosen.modifier
-      ? ` | Modificador: ${result.chosen.modifier > 0 ? "+" : ""}${result.chosen.modifier}`
+       ` | Modificador: ${result.chosen.modifier > 0  "+" : ""}${result.chosen.modifier}`
       : ""
   }`;
 }
@@ -1964,8 +1964,8 @@ function rollDiceExpressionWithMode(expression, mode) {
   if (!second) return null;
 
   const chosen = normalizedMode === "advantage"
-    ? (second.total > first.total ? second : first)
-    : (second.total < first.total ? second : first);
+     (second.total > first.total  second : first)
+    : (second.total < first.total  second : first);
 
   return {
     mode: normalizedMode,
@@ -1991,7 +1991,7 @@ function renderDiceTray() {
   if (elements.badge) elements.badge.textContent = preset.label;
   if (elements.roll) {
     elements.roll.disabled = diceTrayState.rolling;
-    elements.roll.textContent = diceTrayState.rolling ? "Rolando..." : "Rolar agora";
+    elements.roll.textContent = diceTrayState.rolling  "Rolando..." : "Rolar agora";
   }
 
   applyDiceTraySpecialState(elements, "");
@@ -2010,7 +2010,7 @@ function renderDiceTray() {
       const modeLabel = DICE_TRAY_MODES[diceTrayState.mode].toLowerCase();
       const isCustom = Boolean(customExpression);
       elements.resultDetail.textContent = isCustom
-        ? `Expressão pronta: ${expression}. Modo ${modeLabel}.`
+         `ExpressÃ£o pronta: ${expression}. Modo ${modeLabel}.`
         : `Selecione os dados e role em modo ${modeLabel}.`;
     }
   }
@@ -2023,17 +2023,17 @@ async function rollDiceTray() {
   if (diceTrayState.rolling) return;
 
   const elements = getDiceTrayElements();
-  diceTrayState.qty = clampDiceTrayQuantity(elements.qty?.value ?? diceTrayState.qty);
-  diceTrayState.modifier = clampDiceTrayModifier(elements.modifier?.value ?? diceTrayState.modifier);
-  diceTrayState.customExpression = normalizeDamageExpression(elements.expression?.value ?? diceTrayState.customExpression);
+  diceTrayState.qty = clampDiceTrayQuantity(elements.qty.value  diceTrayState.qty);
+  diceTrayState.modifier = clampDiceTrayModifier(elements.modifier.value  diceTrayState.modifier);
+  diceTrayState.customExpression = normalizeDamageExpression(elements.expression.value  diceTrayState.customExpression);
   diceTrayState.mode = normalizeDiceTrayMode(diceTrayState.mode);
 
   const expression = getActiveDiceTrayExpression();
   const result = rollDiceExpressionWithMode(expression, diceTrayState.mode);
 
   if (!result) {
-    await UI.alert("Não foi possível interpretar essa rolagem.", {
-      title: "Rolagem inválida",
+    await UI.alert("NÃ£o foi possÃ­vel interpretar essa rolagem.", {
+      title: "Rolagem invÃ¡lida",
       kicker: "// Dados"
     });
     return;
@@ -2060,7 +2060,7 @@ function renderHabs(list) {
       (hab, index) => `
         <div class="hab-row">
           <input class="hab-name" type="text" placeholder="Nome..." value="${esc(hab.name)}" oninput="updateHab(${index}, 'name', this.value)"/>
-          <textarea class="hab-desc auto-grow" rows="3" placeholder="Efeito, custo, descrição..." oninput="updateHab(${index}, 'desc', this.value)">${esc(hab.desc)}</textarea>
+          <textarea class="hab-desc auto-grow" rows="3" placeholder="Efeito, custo, descriÃ§Ã£o..." oninput="updateHab(${index}, 'desc', this.value)">${esc(hab.desc)}</textarea>
           <button class="btn-remove" onclick="removeHab(${index})">x</button>
         </div>
       `
@@ -2078,7 +2078,7 @@ function updateHab(index, field, value) {
 function addHabilidade() {
   habs.push({ name: "", desc: "" });
   renderHabs(habs);
-  document.querySelectorAll(".hab-name")[habs.length - 1]?.focus();
+  document.querySelectorAll(".hab-name")[habs.length - 1].focus();
   saveSheetSilently();
 }
 
@@ -2090,8 +2090,8 @@ function removeHab(index) {
 
 function collectHabs() {
   return Array.from(document.querySelectorAll(".hab-row")).map(row => ({
-    name: row.querySelector(".hab-name")?.value || "",
-    desc: row.querySelector(".hab-desc")?.value || ""
+    name: row.querySelector(".hab-name").value || "",
+    desc: row.querySelector(".hab-desc").value || ""
   }));
 }
 
@@ -2100,12 +2100,12 @@ function renderOwnedMemories(list) {
   const element = document.getElementById("ownedMemoryList");
   if (!element) return;
 
-  const canTransfer = currentSheetTarget?.kind === "player";
-  const transferTargets = canTransfer ? getOwnedMemoryTransferTargets() : [];
+  const canTransfer = currentSheetTarget.kind === "player";
+  const transferTargets = canTransfer  getOwnedMemoryTransferTargets() : [];
 
   if (!ownedMemories.length) {
     element.className = "";
-    element.innerHTML = '<p class="empty-msg">Nenhuma memória possuída.</p>';
+    element.innerHTML = '<p class="empty-msg">Nenhuma memÃ³ria possuÃ­da.</p>';
     return;
   }
 
@@ -2120,17 +2120,17 @@ function renderOwnedMemories(list) {
           data-source="${esc(memory.source)}"
         >
           <div class="owned-memory-body">
-            <span class="item-meta">Memória</span>
-            <h3 class="owned-memory-title">${esc(memory.name || "Memória sem nome")}</h3>
-            <p class="owned-memory-desc">${esc(memory.desc || "Sem descrição.")}</p>
+            <span class="item-meta">MemÃ³ria</span>
+            <h3 class="owned-memory-title">${esc(memory.name || "MemÃ³ria sem nome")}</h3>
+            <p class="owned-memory-desc">${esc(memory.desc || "Sem descriÃ§Ã£o.")}</p>
             ${
               memory.source
-                ? `<span class="owned-memory-source">Origem: ${esc(memory.source)}</span>`
+                 `<span class="owned-memory-source">Origem: ${esc(memory.source)}</span>`
                 : ""
             }
             ${
               canTransfer
-                ? renderOwnedMemoryTransferBlock(index, transferTargets)
+                 renderOwnedMemoryTransferBlock(index, transferTargets)
                 : ""
             }
           </div>
@@ -2157,7 +2157,7 @@ function collectOwnedMemories() {
 }
 
 function getOwnedMemoryTransferTargets() {
-  if (currentSheetTarget?.kind !== "player") return [];
+  if (currentSheetTarget.kind !== "player") return [];
 
   return AUTH.getPlayers()
     .filter(player => player.username !== currentSheetTarget.owner)
@@ -2170,28 +2170,28 @@ function getOwnedMemoryTransferTargets() {
 
 function formatMemoryTargetLabel(value, targets, fallback) {
   const target = targets.find(candidate => candidate.value === value);
-  return target ? `${target.label} (${target.meta})` : fallback;
+  return target  `${target.label} (${target.meta})` : fallback;
 }
 
 function renderOwnedMemoryTransferBlock(index, targets) {
   if (!targets.length) {
     return `
       <div class="owned-memory-transfer">
-        <span class="item-meta">Transferência</span>
-        <div class="memory-award-status">Não há outro jogador disponível para receber esta memória.</div>
+        <span class="item-meta">TransferÃªncia</span>
+        <div class="memory-award-status">NÃ£o hÃ¡ outro jogador disponÃ­vel para receber esta memÃ³ria.</div>
       </div>
     `;
   }
 
   const state = ownedMemoryTransferStates[index] || {};
   const selectedTarget = targets.some(target => target.value === state.target)
-    ? state.target
+     state.target
     : targets[0].value;
   const statusClass =
     state.tone === "success"
-      ? "memory-award-status is-success"
+       "memory-award-status is-success"
       : state.tone === "fail"
-        ? "memory-award-status is-fail"
+         "memory-award-status is-fail"
         : "memory-award-status";
 
   ownedMemoryTransferStates[index] = {
@@ -2209,7 +2209,7 @@ function renderOwnedMemoryTransferBlock(index, targets) {
         </button>
         <button class="btn-inline owned-memory-transfer-send" onclick="transferOwnedMemory(${index})">Enviar</button>
       </div>
-          <div class="${statusClass}">${esc(state.text || "Selecione o jogador de destino para transferir esta memória.")}</div>
+          <div class="${statusClass}">${esc(state.text || "Selecione o jogador de destino para transferir esta memÃ³ria.")}</div>
     </div>
   `;
 }
@@ -2220,13 +2220,13 @@ async function pickOwnedMemoryTransferTarget(index) {
 
   const state = ownedMemoryTransferStates[index] || {};
   const currentTarget = targets.some(target => target.value === state.target)
-    ? state.target
+     state.target
     : targets[0].value;
 
   const selected = await UI.pickOption({
-    title: "Transferir memória",
+    title: "Transferir memÃ³ria",
     kicker: "// Jogadores",
-    message: "Escolha qual jogador vai receber esta memória.",
+    message: "Escolha qual jogador vai receber esta memÃ³ria.",
     options: targets.map(target => ({
       value: target.value,
       label: target.label,
@@ -2241,26 +2241,26 @@ async function pickOwnedMemoryTransferTarget(index) {
     ...state,
     target: selected,
     tone: "",
-    text: "Destino definido. Clique em Enviar para concluir a transferência."
+    text: "Destino definido. Clique em Enviar para concluir a transferÃªncia."
   };
 
   renderOwnedMemories(ownedMemories);
 }
 
 async function transferOwnedMemory(index) {
-  if (currentSheetTarget?.kind !== "player") return;
+  if (currentSheetTarget.kind !== "player") return;
 
   const memory = ownedMemories[index];
   const state = ownedMemoryTransferStates[index] || {};
-  const targetUsername = state.target || getOwnedMemoryTransferTargets()[0]?.value;
+  const targetUsername = state.target || getOwnedMemoryTransferTargets()[0].value;
   if (!memory || !targetUsername) return;
 
   const target = createPlayerTarget(targetUsername);
   const confirmed = await UI.confirm(
-      `Transferir "${memory.name || "Memória sem nome"}" para ${target.label}?`,
+      `Transferir "${memory.name || "MemÃ³ria sem nome"}" para ${target.label}`,
     {
-        title: "Transferir memória",
-        kicker: "// Memórias possuídas",
+        title: "Transferir memÃ³ria",
+        kicker: "// MemÃ³rias possuÃ­das",
       confirmLabel: "Transferir",
       cancelLabel: "Cancelar"
     }
@@ -2280,7 +2280,7 @@ async function transferOwnedMemory(index) {
       ownedMemoryTransferStates[index] = {
         ...state,
         tone: "fail",
-      text: error?.message || "Falha ao transferir a memória."
+      text: error.message || "Falha ao transferir a memÃ³ria."
       };
       renderOwnedMemories(ownedMemories);
       return;
@@ -2335,7 +2335,7 @@ function parseMemoryAwardTarget(value) {
 
   if (kind === "npc") {
     const npc = readNpcs().find(candidate => candidate.id === rawId);
-    return npc ? createNpcTarget(npc) : null;
+    return npc  createNpcTarget(npc) : null;
   }
 
   return null;
@@ -2343,9 +2343,9 @@ function parseMemoryAwardTarget(value) {
 
 function buildOwnedMemoryEntry(drop) {
   return normalizeOwnedMemory({
-    name: String(drop?.name || "").trim() || "Memória sem nome",
-    desc: String(drop?.desc || "").trim(),
-    source: currentSheetTarget?.label || "Origem desconhecida"
+    name: String(drop.name || "").trim() || "MemÃ³ria sem nome",
+    desc: String(drop.desc || "").trim(),
+    source: currentSheetTarget.label || "Origem desconhecida"
   });
 }
 
@@ -2356,21 +2356,21 @@ function applyMemoryRollState(index) {
   const state = memoryRollStates[index];
 
   if (threshold) {
-    threshold.style.left = `${formatChancePercent(memoryDrops[index]?.chance)}%`;
+    threshold.style.left = `${formatChancePercent(memoryDrops[index].chance)}%`;
   }
 
   if (fill) {
     fill.classList.remove("success", "fail");
     fill.style.transition = "none";
-    fill.style.width = state?.rolled !== undefined ? `${state.rolled}%` : "0%";
-    if (state?.status) fill.classList.add(state.status);
+    fill.style.width = state.rolled !== undefined  `${state.rolled}%` : "0%";
+    if (state.status) fill.classList.add(state.status);
   }
 
   if (result) {
     result.className = "memory-roll-result";
-    if (state?.status) result.classList.add(`is-${state.status}`);
-    if (state?.isRolling) result.classList.add("is-rolling");
-    result.textContent = state?.resultText || "Defina a chance e role para descobrir se a memória caiu.";
+    if (state.status) result.classList.add(`is-${state.status}`);
+    if (state.isRolling) result.classList.add("is-rolling");
+    result.textContent = state.resultText || "Defina a chance e role para descobrir se a memÃ³ria caiu.";
   }
 
   renderMemoryAwardControls(index);
@@ -2381,7 +2381,7 @@ function renderMemoryAwardControls(index) {
   const state = memoryRollStates[index];
   if (!award) return;
 
-  const showAward = Boolean(state?.success);
+  const showAward = Boolean(state.success);
   if (!showAward) {
     award.hidden = true;
     award.innerHTML = "";
@@ -2390,32 +2390,32 @@ function renderMemoryAwardControls(index) {
 
   const targets = getMemoryAwardTargets();
   const statusClass =
-    state?.awardTone === "success"
-      ? "memory-award-status is-success"
-      : state?.awardTone === "fail"
-        ? "memory-award-status is-fail"
+    state.awardTone === "success"
+       "memory-award-status is-success"
+      : state.awardTone === "fail"
+         "memory-award-status is-fail"
         : "memory-award-status";
 
   award.hidden = false;
 
   if (state.awarded) {
     award.innerHTML = `
-      <span class="item-meta">Memória enviada</span>
-      <div class="${statusClass}">${esc(state.awardText || "Memória enviada para a ficha escolhida.")}</div>
+      <span class="item-meta">MemÃ³ria enviada</span>
+      <div class="${statusClass}">${esc(state.awardText || "MemÃ³ria enviada para a ficha escolhida.")}</div>
     `;
     return;
   }
 
   if (!targets.length) {
     award.innerHTML = `
-      <span class="item-meta">Enviar memória</span>
-      <div class="memory-award-status is-fail">Não há jogadores ou NPCs disponíveis para receber esta memória.</div>
+      <span class="item-meta">Enviar memÃ³ria</span>
+      <div class="memory-award-status is-fail">NÃ£o hÃ¡ jogadores ou NPCs disponÃ­veis para receber esta memÃ³ria.</div>
     `;
     return;
   }
 
   const selectedTarget = targets.some(target => target.value === state.target)
-    ? state.target
+     state.target
     : targets[0].value;
 
   memoryRollStates[index] = {
@@ -2424,13 +2424,13 @@ function renderMemoryAwardControls(index) {
   };
 
   award.innerHTML = `
-    <span class="item-meta">Enviar memória para</span>
+    <span class="item-meta">Enviar memÃ³ria para</span>
     <button class="btn-inline memory-picker-btn" onclick="pickMemoryAwardTarget(${index})">
       <span class="memory-picker-label">${esc(formatMemoryTargetLabel(selectedTarget, targets, "Escolher destino"))}</span>
       <span class="memory-picker-hint">Alterar</span>
     </button>
     <button class="btn-inline memory-award-btn" onclick="awardMemoryDrop(${index})">Enviar para ficha</button>
-    <div class="${statusClass}">${esc(state.awardText || "A memória caiu. Escolha quem vai recebê-la.")}</div>
+    <div class="${statusClass}">${esc(state.awardText || "A memÃ³ria caiu. Escolha quem vai recebÃª-la.")}</div>
   `;
 }
 
@@ -2442,13 +2442,13 @@ async function pickMemoryAwardTarget(index) {
   if (!targets.length) return;
 
   const currentTarget = targets.some(target => target.value === state.target)
-    ? state.target
+     state.target
     : targets[0].value;
 
   const selected = await UI.pickOption({
-    title: "Enviar memória",
+    title: "Enviar memÃ³ria",
     kicker: "// Destino",
-    message: "Escolha quem vai receber esta memória.",
+    message: "Escolha quem vai receber esta memÃ³ria.",
     options: targets.map(target => ({
       value: target.value,
       label: target.label,
@@ -2476,7 +2476,7 @@ function renderMemoryDrops(list) {
 
   if (!memoryDrops.length) {
     element.className = "";
-    element.innerHTML = '<p class="empty-msg">Nenhuma memória definida.</p>';
+    element.innerHTML = '<p class="empty-msg">Nenhuma memÃ³ria definida.</p>';
     return;
   }
 
@@ -2487,13 +2487,13 @@ function renderMemoryDrops(list) {
         <div class="memory-row">
           <div class="memory-main">
             <div class="memory-field">
-              <span class="item-meta">Memória</span>
-              <input class="memory-name" type="text" placeholder="Nome da memória..." value="${esc(drop.name)}" oninput="updateMemoryDrop(${index}, 'name', this.value)" />
+              <span class="item-meta">MemÃ³ria</span>
+              <input class="memory-name" type="text" placeholder="Nome da memÃ³ria..." value="${esc(drop.name)}" oninput="updateMemoryDrop(${index}, 'name', this.value)" />
             </div>
 
             <div class="memory-field">
-              <span class="item-meta">Descrição e efeito</span>
-              <textarea class="memory-desc auto-grow" rows="3" placeholder="Descrição do drop, raridade, condição ou efeito..." oninput="updateMemoryDrop(${index}, 'desc', this.value)">${esc(drop.desc)}</textarea>
+              <span class="item-meta">DescriÃ§Ã£o e efeito</span>
+              <textarea class="memory-desc auto-grow" rows="3" placeholder="DescriÃ§Ã£o do drop, raridade, condiÃ§Ã£o ou efeito..." oninput="updateMemoryDrop(${index}, 'desc', this.value)">${esc(drop.desc)}</textarea>
             </div>
           </div>
 
@@ -2514,7 +2514,7 @@ function renderMemoryDrops(list) {
                 <div class="memory-roll-threshold" id="memoryThreshold${index}" style="left:${formatChancePercent(drop.chance)}%"></div>
                 <div class="memory-roll-fill" id="memoryRollFill${index}"></div>
               </div>
-          <div class="memory-roll-result" id="memoryRollResult${index}">Defina a chance e role para descobrir se a memória caiu.</div>
+          <div class="memory-roll-result" id="memoryRollResult${index}">Defina a chance e role para descobrir se a memÃ³ria caiu.</div>
             </div>
 
             <div class="memory-award" id="memoryAward${index}" hidden></div>
@@ -2532,7 +2532,7 @@ function renderMemoryDrops(list) {
 
 function updateMemoryDrop(index, field, value) {
   if (!memoryDrops[index]) return;
-  memoryDrops[index][field] = field === "chance" ? sanitizeChance(value, "0") : value;
+  memoryDrops[index][field] = field === "chance"  sanitizeChance(value, "0") : value;
 
   if (field === "chance") {
     delete memoryRollStates[index];
@@ -2544,7 +2544,7 @@ function addMemoryDrop() {
   memoryRollStates = {};
   memoryDrops.push({ name: "", desc: "", chance: "0" });
   renderMemoryDrops(memoryDrops);
-  document.querySelectorAll(".memory-name")[memoryDrops.length - 1]?.focus();
+  document.querySelectorAll(".memory-name")[memoryDrops.length - 1].focus();
   saveSheetSilently();
 }
 
@@ -2557,9 +2557,9 @@ function removeMemoryDrop(index) {
 
 function collectMemoryDrops() {
   return Array.from(document.querySelectorAll(".memory-row")).map(row => ({
-    name: row.querySelector(".memory-name")?.value || "",
-    desc: row.querySelector(".memory-desc")?.value || "",
-    chance: sanitizeChance(row.querySelector(".memory-chance")?.value || "0", "0")
+    name: row.querySelector(".memory-name").value || "",
+    desc: row.querySelector(".memory-desc").value || "",
+    chance: sanitizeChance(row.querySelector(".memory-chance").value || "0", "0")
   }));
 }
 
@@ -2580,7 +2580,7 @@ async function rollMemoryDrop(index) {
   delete memoryRollStates[index];
   renderMemoryAwardControls(index);
   result.className = "memory-roll-result is-rolling";
-  result.textContent = "Rolando o destino da memória...";
+  result.textContent = "Rolando o destino da memÃ³ria...";
 
   let chance = formatChancePercent(drop.chance);
   let rolled = Number((Math.random() * 100).toFixed(1));
@@ -2589,7 +2589,7 @@ async function rollMemoryDrop(index) {
   if (isBackendMode()) {
     try {
       const remoteResult = await APP.rollMonsterMemory({
-        monsterKey: currentSheetTarget?.key,
+        monsterKey: currentSheetTarget.key,
         dropIndex: index
       });
       chance = Number(remoteResult.chance || chance);
@@ -2597,7 +2597,7 @@ async function rollMemoryDrop(index) {
       success = Boolean(remoteResult.success);
     } catch (error) {
       result.className = "memory-roll-result is-fail";
-    result.textContent = error?.message || "Falha ao rolar o drop da memória.";
+    result.textContent = error.message || "Falha ao rolar o drop da memÃ³ria.";
       return;
     }
   }
@@ -2612,15 +2612,15 @@ async function rollMemoryDrop(index) {
   window.setTimeout(() => {
     memoryRollStates[index] = {
       rolled,
-      status: success ? "success" : "fail",
+      status: success  "success" : "fail",
       success,
       awarded: false,
-      target: getMemoryAwardTargets()[0]?.value || "",
+      target: getMemoryAwardTargets()[0].value || "",
       awardTone: "",
       awardText: "",
       resultText: success
-        ? `Memória obtida. Rolagem ${rolled}% dentro da chance de ${chance}%.`
-        : `Sem memória. Rolagem ${rolled}% acima da chance de ${chance}%.`
+         `MemÃ³ria obtida. Rolagem ${rolled}% dentro da chance de ${chance}%.`
+        : `Sem memÃ³ria. Rolagem ${rolled}% acima da chance de ${chance}%.`
     };
     applyMemoryRollState(index);
   }, 1250);
@@ -2629,15 +2629,15 @@ async function rollMemoryDrop(index) {
 async function awardMemoryDrop(index) {
   const drop = memoryDrops[index];
   const state = memoryRollStates[index];
-  if (!drop || !state?.success || state.awarded) return;
-  const awardedMemoryName = String(drop?.name || "").trim() || "Memória sem nome";
+  if (!drop || !state.success || state.awarded) return;
+  const awardedMemoryName = String(drop.name || "").trim() || "MemÃ³ria sem nome";
 
   const target = parseMemoryAwardTarget(state.target);
   if (!target || target.kind === "monster") {
     memoryRollStates[index] = {
       ...state,
       awardTone: "fail",
-      awardText: "Escolha um jogador ou NPC válido para receber a memória."
+      awardText: "Escolha um jogador ou NPC vÃ¡lido para receber a memÃ³ria."
     };
     renderMemoryAwardControls(index);
     return;
@@ -2646,7 +2646,7 @@ async function awardMemoryDrop(index) {
   if (isBackendMode()) {
     try {
       await APP.awardMonsterMemory({
-        monsterKey: currentSheetTarget?.key,
+        monsterKey: currentSheetTarget.key,
         targetKey: target.key,
         dropIndex: index
       });
@@ -2654,7 +2654,7 @@ async function awardMemoryDrop(index) {
       memoryRollStates[index] = {
         ...state,
         awardTone: "fail",
-      awardText: error?.message || "Falha ao enviar a memória."
+      awardText: error.message || "Falha ao enviar a memÃ³ria."
       };
       renderMemoryAwardControls(index);
       return;
@@ -2682,8 +2682,8 @@ async function awardMemoryDrop(index) {
 function getPlayerInventoryState(username) {
   if (isBackendMode()) {
     const player = AUTH.getDirectoryCache().players.find(candidate => candidate.username === username);
-    const used = Number(player?.usedSlots || 0);
-    const capacity = Number(player?.inventorySlots || DEFAULT_INVENTORY_SLOTS);
+    const used = Number(player.usedSlots || 0);
+    const capacity = Number(player.inventorySlots || DEFAULT_INVENTORY_SLOTS);
     return {
       used,
       capacity,
@@ -2706,7 +2706,7 @@ function getPlayerInventoryState(username) {
 }
 
 function getItemTransferTargets() {
-  if (currentSheetTarget?.kind !== "player") return [];
+  if (currentSheetTarget.kind !== "player") return [];
 
   return AUTH.getPlayers()
     .filter(player => player.username !== currentSheetTarget.owner)
@@ -2723,7 +2723,7 @@ function getItemTransferTargets() {
 
 function formatItemTransferLabel(value, targets, fallback) {
   const target = targets.find(candidate => candidate.value === value);
-  return target ? `${target.label} (${target.meta})` : fallback;
+  return target  `${target.label} (${target.meta})` : fallback;
 }
 
 function renderItemTransferBlock(index, targets) {
@@ -2733,20 +2733,20 @@ function renderItemTransferBlock(index, targets) {
     return `
       <div class="item-transfer">
         <span class="item-meta">Troca de item</span>
-        <div class="memory-award-status">Nenhum jogador disponível com slot livre para receber este item.</div>
+        <div class="memory-award-status">Nenhum jogador disponÃ­vel com slot livre para receber este item.</div>
       </div>
     `;
   }
 
   const state = itemTransferStates[index] || {};
   const selectedTarget = availableTargets.some(target => target.value === state.target)
-    ? state.target
+     state.target
     : availableTargets[0].value;
   const statusClass =
     state.tone === "success"
-      ? "memory-award-status is-success"
+       "memory-award-status is-success"
       : state.tone === "fail"
-        ? "memory-award-status is-fail"
+         "memory-award-status is-fail"
         : "memory-award-status";
 
   itemTransferStates[index] = {
@@ -2764,7 +2764,7 @@ function renderItemTransferBlock(index, targets) {
         </button>
         <button class="btn-inline item-transfer-send" onclick="transferItem(${index})">Enviar</button>
       </div>
-      <div class="${statusClass}">${esc(state.text || "O item só pode ser enviado para jogadores com slot livre no inventário.")}</div>
+      <div class="${statusClass}">${esc(state.text || "O item sÃ³ pode ser enviado para jogadores com slot livre no Inventário.")}</div>
     </div>
   `;
 }
@@ -2773,7 +2773,7 @@ function renderItemEditorTransfer(index) {
   const { transfer } = getItemEditorElements();
   if (!transfer) return;
 
-  if (currentSheetTarget?.kind !== "player" || !inv[index]) {
+  if (currentSheetTarget.kind !== "player" || !inv[index]) {
     transfer.hidden = true;
     transfer.innerHTML = "";
     return;
@@ -2789,7 +2789,7 @@ async function pickItemTransferTarget(index) {
 
   const state = itemTransferStates[index] || {};
   const currentTarget = targets.some(target => target.value === state.target)
-    ? state.target
+     state.target
     : targets[0].value;
 
   const selected = await UI.pickOption({
@@ -2810,7 +2810,7 @@ async function pickItemTransferTarget(index) {
     ...state,
     target: selected,
     tone: "",
-    text: "Destino definido. Clique em Enviar para concluir a transferência."
+    text: "Destino definido. Clique em Enviar para concluir a transferÃªncia."
   };
 
   if (itemEditorIndex === index) {
@@ -2822,21 +2822,21 @@ async function pickItemTransferTarget(index) {
 }
 
 async function transferItem(index) {
-  if (currentSheetTarget?.kind !== "player") return;
+  if (currentSheetTarget.kind !== "player") return;
 
   const item = inv[index];
   if (!item) return;
 
   const availableTargets = getItemTransferTargets().filter(target => !target.isFull);
   const state = itemTransferStates[index] || {};
-  const targetUsername = state.target || availableTargets[0]?.value;
+  const targetUsername = state.target || availableTargets[0].value;
   const target = availableTargets.find(candidate => candidate.value === targetUsername);
 
   if (!target) {
     itemTransferStates[index] = {
       ...state,
       tone: "fail",
-      text: "Nenhum jogador com slot livre está disponível para receber este item."
+      text: "Nenhum jogador com slot livre estÃ¡ disponÃ­vel para receber este item."
     };
     if (itemEditorIndex === index) {
       renderItemEditorTransfer(index);
@@ -2851,7 +2851,7 @@ async function transferItem(index) {
     itemTransferStates[index] = {
       ...state,
       tone: "fail",
-      text: `${target.label} está com a mochila cheia.`
+      text: `${target.label} estÃ¡ com a mochila cheia.`
     };
     if (itemEditorIndex === index) {
       renderItemEditorTransfer(index);
@@ -2862,7 +2862,7 @@ async function transferItem(index) {
   }
 
   const confirmed = await UI.confirm(
-    `Transferir "${item.name || "Item sem nome"}" para ${target.label}?`,
+    `Transferir "${item.name || "Item sem nome"}" para ${target.label}`,
     {
       title: "Transferir item",
       kicker: "// Inventário",
@@ -2885,7 +2885,7 @@ async function transferItem(index) {
       itemTransferStates[index] = {
         ...state,
         tone: "fail",
-        text: error?.message || "Falha ao transferir o item."
+        text: error.message || "Falha ao transferir o item."
       };
       if (itemEditorIndex === index) {
         renderItemEditorTransfer(index);
@@ -2938,11 +2938,11 @@ function renderInv(list) {
   if (!grid) return;
 
   const capacity = Math.max(
-    normalizeInventorySlots(currentSheetTarget?.kind || "player", inventorySlots),
+    normalizeInventorySlots(currentSheetTarget.kind || "player", inventorySlots),
     inv.length
   );
   const used = Math.min(inv.length, capacity);
-  const canExpand = currentRole === "master" && currentSheetTarget?.kind === "player";
+  const canExpand = currentRole === "master" && currentSheetTarget.kind === "player";
 
   inventorySlots = capacity;
 
@@ -2953,7 +2953,7 @@ function renderInv(list) {
   }
   if (inventoryAddBtn) {
     inventoryAddBtn.disabled = used >= capacity;
-    inventoryAddBtn.textContent = used >= capacity ? "Lotado" : "+ Item";
+    inventoryAddBtn.textContent = used >= capacity  "Lotado" : "+ Item";
   }
 
   grid.innerHTML = Array.from({ length: capacity }, (_slot, index) => {
@@ -2962,10 +2962,10 @@ function renderInv(list) {
     if (!item) {
       return `
         <article class="item-card item-card-empty">
-          <button class="item-slot-btn" onclick="addItem()" ${used >= capacity ? "disabled" : ""}>
+          <button class="item-slot-btn" onclick="addItem()" ${used >= capacity  "disabled" : ""}>
             <span class="item-slot-index">Slot ${index + 1}</span>
             <strong class="item-slot-plus">+</strong>
-            <span class="item-slot-copy">${used >= capacity ? "Inventário cheio" : "Slot vazio"}</span>
+            <span class="item-slot-copy">${used >= capacity  "Inventário cheio" : "Slot vazio"}</span>
           </button>
         </article>
       `;
@@ -2973,10 +2973,10 @@ function renderInv(list) {
 
     const itemType = normalizeItemType(item.type);
     const primaryMeta = itemType === "arma" && item.damage
-      ? item.damage
+       item.damage
       : `Qtd. ${item.qty}`;
     const secondaryMeta = itemType === "arma"
-      ? `Qtd. ${item.qty}`
+       `Qtd. ${item.qty}`
       : formatItemType(itemType);
 
     return `
@@ -2993,7 +2993,7 @@ function renderInv(list) {
           <span class="item-slot-index">Slot ${index + 1}</span>
           <span class="${getItemTypeBadgeClass(itemType)}">${esc(formatItemType(itemType))}</span>
           <h3 class="item-title item-title-compact">${esc(item.name || "Item")}</h3>
-          <span class="item-summary-line ${itemType === "arma" && item.damage ? "is-weapon" : ""}">${esc(primaryMeta)}</span>
+          <span class="item-summary-line ${itemType === "arma" && item.damage  "is-weapon" : ""}">${esc(primaryMeta)}</span>
           <span class="item-summary-line is-muted">${esc(secondaryMeta)}</span>
         </button>
       </article>
@@ -3013,7 +3013,7 @@ function updateItem(index, field, value) {
 
 async function addItem() {
   const capacity = Math.max(
-    normalizeInventorySlots(currentSheetTarget?.kind || "player", inventorySlots),
+    normalizeInventorySlots(currentSheetTarget.kind || "player", inventorySlots),
     inv.length
   );
   if (inv.length >= capacity) {
@@ -3055,19 +3055,19 @@ function collectInv() {
 
 function getInventorySlotDelta() {
   const input = document.getElementById("inventorySlotDelta");
-  const numeric = Number.parseInt(input?.value || "1", 10);
-  const safeValue = Number.isNaN(numeric) ? 1 : Math.max(1, Math.min(100, numeric));
+  const numeric = Number.parseInt(input.value || "1", 10);
+  const safeValue = Number.isNaN(numeric)  1 : Math.max(1, Math.min(100, numeric));
 
   if (input) input.value = String(safeValue);
   return safeValue;
 }
 
 async function changeInventorySlots(direction) {
-  if (!(currentRole === "master" && currentSheetTarget?.kind === "player")) return;
+  if (!(currentRole === "master" && currentSheetTarget.kind === "player")) return;
 
   const delta = getInventorySlotDelta();
   const currentCapacity = Math.max(
-    normalizeInventorySlots(currentSheetTarget?.kind || "player", inventorySlots),
+    normalizeInventorySlots(currentSheetTarget.kind || "player", inventorySlots),
     inv.length
   );
   const minimumCapacity = Math.max(DEFAULT_INVENTORY_SLOTS, inv.length);
@@ -3075,9 +3075,9 @@ async function changeInventorySlots(direction) {
 
   if (direction < 0 && targetCapacity < minimumCapacity) {
     await UI.alert(
-      `Não é possível reduzir abaixo de ${minimumCapacity} slots porque a ficha usa ${inv.length} item(ns) e o mínimo padrão é ${DEFAULT_INVENTORY_SLOTS}.`,
+      `NÃ£o Ã© possÃ­vel reduzir abaixo de ${minimumCapacity} slots porque a ficha usa ${inv.length} item(ns) e o mÃ­nimo padrÃ£o Ã© ${DEFAULT_INVENTORY_SLOTS}.`,
       {
-        title: "Redução bloqueada",
+        title: "ReduÃ§Ã£o bloqueada",
         kicker: "// Inventário",
         confirmLabel: "Entendi"
       }
@@ -3091,7 +3091,7 @@ async function changeInventorySlots(direction) {
 }
 
 function syncAutoGrowTextareas(scope = document) {
-  scope.querySelectorAll?.("textarea.auto-grow").forEach(autoGrowTextarea);
+  scope.querySelectorAll.("textarea.auto-grow").forEach(autoGrowTextarea);
 }
 
 function autoGrowTextarea(textarea) {
@@ -3112,7 +3112,7 @@ function jsEsc(value) {
 }
 
 async function openSheet(target, fromMaster) {
-  const resolvedTarget = typeof target === "string" ? createPlayerTarget(target) : target;
+  const resolvedTarget = typeof target === "string"  createPlayerTarget(target) : target;
 
   pendingRealtimeSheetKey = "";
   currentSheetTarget = resolvedTarget;
@@ -3129,7 +3129,7 @@ function updateSheetHeader(fromMaster) {
   const sheetSaveText = document.getElementById("sheetSaveText");
 
   if (sheetUser) sheetUser.textContent = formatCurrentSheetTarget();
-  if (backButton) backButton.style.display = fromMaster ? "inline-block" : "none";
+  if (backButton) backButton.style.display = fromMaster  "inline-block" : "none";
   if (sheetKindLabel) sheetKindLabel.textContent = getSheetKindTitle();
   if (sheetSaveText) sheetSaveText.textContent = getSheetSaveText();
 }
@@ -3149,33 +3149,33 @@ function applySheetKindUI(kind) {
   if (resourcesRow) resourcesRow.classList.toggle("resources-single", isMonster);
   if (sanityCard) {
     sanityCard.hidden = isMonster;
-    sanityCard.style.display = isMonster ? "none" : "";
+    sanityCard.style.display = isMonster  "none" : "";
   }
   if (charFactionGroup) {
     charFactionGroup.hidden = isMonster;
-    charFactionGroup.style.display = isMonster ? "none" : "";
+    charFactionGroup.style.display = isMonster  "none" : "";
   }
   if (charRaceGroup) charRaceGroup.classList.toggle("form-group-full", isMonster);
   if (charFaction && isMonster) charFaction.value = "";
   if (ownedMemoriesSection) {
     ownedMemoriesSection.hidden = isMonster;
-    ownedMemoriesSection.style.display = isMonster ? "none" : "";
+    ownedMemoriesSection.style.display = isMonster  "none" : "";
   }
   if (inventorySection) {
     inventorySection.hidden = isMonster;
-    inventorySection.style.display = isMonster ? "none" : "";
+    inventorySection.style.display = isMonster  "none" : "";
   }
   if (memorySection) {
     memorySection.hidden = !isMonster;
-    memorySection.style.display = isMonster ? "" : "none";
+    memorySection.style.display = isMonster  "" : "none";
   }
   if (vidaCard) vidaCard.classList.toggle("resource-card-wide", isMonster);
   renderProgressionField(kind);
 }
 
 function getSoulRanks() {
-  return Array.isArray(SOUL?.RANKS) && SOUL.RANKS.length
-    ? SOUL.RANKS
+  return Array.isArray(SOUL.RANKS) && SOUL.RANKS.length
+     SOUL.RANKS
     : [
         { rank: 1, name: "Adormecido" },
         { rank: 2, name: "Despertado" },
@@ -3202,7 +3202,7 @@ function getSoulAwardElements() {
   };
 }
 
-function renderProgressionField(kind = currentSheetTarget?.kind || "player") {
+function renderProgressionField(kind = currentSheetTarget.kind || "player") {
   const label = document.querySelector('label[for="charLevel"]');
   const levelInput = document.getElementById("charLevel");
   const row = document.querySelector(".level-field-row");
@@ -3212,11 +3212,11 @@ function renderProgressionField(kind = currentSheetTarget?.kind || "player") {
   const isPlayer = kind === "player";
 
   if (label) {
-    label.textContent = isPlayer ? "Núcleo da alma" : "Nível";
+    label.textContent = isPlayer  "NÃºcleo da alma" : "NÃ­vel";
   }
 
   if (label && isPlayer) {
-    label.textContent = "Nível";
+    label.textContent = "NÃ­vel";
   }
 
   if (group) group.classList.toggle("is-soul", isPlayer);
@@ -3224,19 +3224,19 @@ function renderProgressionField(kind = currentSheetTarget?.kind || "player") {
 
   if (levelInput) {
     levelInput.hidden = isPlayer;
-    levelInput.style.display = isPlayer ? "none" : "";
+    levelInput.style.display = isPlayer  "none" : "";
   }
 
   if (panel) {
     panel.hidden = !isPlayer;
-    panel.style.display = isPlayer ? "" : "none";
+    panel.style.display = isPlayer  "" : "none";
     panel.classList.toggle("is-compact", isPlayer);
   }
 
   if (actionButton) {
     const canAward = isPlayer && currentRole === "master";
     actionButton.hidden = !canAward;
-    actionButton.style.display = canAward ? "" : "none";
+    actionButton.style.display = canAward  "" : "none";
   }
 
   if (!isPlayer) return;
@@ -3244,7 +3244,7 @@ function renderProgressionField(kind = currentSheetTarget?.kind || "player") {
   const normalized = normalizeSoulCoreState(soulCore, getValue("charLevel") || 1);
   const rankName = getSoulRankName(normalized.rank);
   const requirement = getSoulNextRankRequirement(normalized.rank);
-  const progressPercent = requirement ? Math.min(100, (normalized.xp / requirement) * 100) : 100;
+  const progressPercent = requirement  Math.min(100, (normalized.xp / requirement) * 100) : 100;
   const rankNameElement = document.getElementById("soulRankName");
   const rankMetaElement = document.getElementById("soulRankMeta");
   const xpTextElement = document.getElementById("soulXpText");
@@ -3252,8 +3252,8 @@ function renderProgressionField(kind = currentSheetTarget?.kind || "player") {
   const progressBar = document.getElementById("soulXpBar");
   const progressLabel = buildSoulProgressLabel(normalized);
   const nextRankLabel = requirement
-    ? `Próximo rank: ${getSoulRankName(normalized.rank + 1)}`
-    : "Rank máximo alcançado";
+     `PrÃ³ximo rank: ${getSoulRankName(normalized.rank + 1)}`
+    : "Rank mÃ¡ximo alcanÃ§ado";
 
   soulCore = normalized;
   if (levelInput) levelInput.value = String(normalized.rank);
@@ -3262,8 +3262,8 @@ function renderProgressionField(kind = currentSheetTarget?.kind || "player") {
   if (xpTextElement) xpTextElement.textContent = buildSoulProgressLabel(normalized);
   if (nextRankElement) {
     nextRankElement.textContent = requirement
-      ? `Próximo rank: ${getSoulRankName(normalized.rank + 1)}`
-      : "Rank máximo alcançado";
+       `PrÃ³ximo rank: ${getSoulRankName(normalized.rank + 1)}`
+      : "Rank mÃ¡ximo alcanÃ§ado";
   }
   if (progressBar) {
     progressBar.style.width = `${progressPercent}%`;
@@ -3285,9 +3285,9 @@ function renderSoulAwardOptions() {
       option => `
         <button
           type="button"
-          class="soul-rank-option${option.rank === soulAwardState.essenceRank ? " is-active" : ""}"
+          class="soul-rank-option${option.rank === soulAwardState.essenceRank  " is-active" : ""}"
           data-soul-rank="${option.rank}"
-          aria-pressed="${option.rank === soulAwardState.essenceRank ? "true" : "false"}"
+          aria-pressed="${option.rank === soulAwardState.essenceRank  "true" : "false"}"
         >
           <span class="item-meta">Rank ${option.rank}</span>
           <strong>${esc(option.name)}</strong>
@@ -3301,7 +3301,7 @@ function renderSoulAwardPreview() {
   const { preview, amount, title } = getSoulAwardElements();
   if (!preview) return;
 
-  const normalizedAmount = Math.min(999, Math.max(1, Number.parseInt(amount?.value || soulAwardState.amount, 10) || 1));
+  const normalizedAmount = Math.min(999, Math.max(1, Number.parseInt(amount.value || soulAwardState.amount, 10) || 1));
   const selectedRank = Math.min(7, Math.max(1, Number.parseInt(soulAwardState.essenceRank, 10) || 1));
   const currentCore = normalizeSoulCoreState(soulCore, getValue("charLevel") || 1);
   const result = absorbSoulEssencesState(currentCore, selectedRank, normalizedAmount);
@@ -3313,35 +3313,35 @@ function renderSoulAwardPreview() {
 
   if (amount) amount.value = String(normalizedAmount);
   if (title) {
-    title.textContent = `Alimentar núcleo de ${currentSheetTarget?.label || "personagem"}`;
+    title.textContent = `Alimentar nÃºcleo de ${currentSheetTarget.label || "personagem"}`;
   }
 
   preview.innerHTML = `
-    <span class="item-meta">Prévia</span>
-    <strong>${normalizedAmount} essência(s) de rank ${selectedRank}</strong>
-    <p>${getSoulRankName(currentCore.rank)} recebe ${perEssenceExperience} XP por absorção nesta etapa.</p>
+    <span class="item-meta">PrÃ©via</span>
+    <strong>${normalizedAmount} essÃªncia(s) de rank ${selectedRank}</strong>
+    <p>${getSoulRankName(currentCore.rank)} recebe ${perEssenceExperience} XP por absorÃ§Ã£o nesta etapa.</p>
     <ul>
-      <li>Experiência total: ${totalExperience} XP</li>
+      <li>ExperiÃªncia total: ${totalExperience} XP</li>
       <li>Estado final: ${getSoulRankName(result.core.rank)} (Rank ${result.core.rank})</li>
       <li>Progresso final: ${buildSoulProgressLabel(result.core)}</li>
       ${
         result.rankUps.length
-          ? `<li>Subidas: ${result.rankUps.map(entry => `${entry.from}→${entry.to}`).join(", ")}</li>`
-          : "<li>Nenhuma subida de rank nesta absorção.</li>"
+           `<li>Subidas: ${result.rankUps.map(entry => `${entry.from}â†’${entry.to}`).join(", ")}</li>`
+          : "<li>Nenhuma subida de rank nesta absorÃ§Ã£o.</li>"
       }
     </ul>
   `;
 }
 
 function openSoulAwardModal() {
-  if (currentRole !== "master" || currentSheetTarget?.kind !== "player") return;
+  if (currentRole !== "master" || currentSheetTarget.kind !== "player") return;
 
   const { root, dialog, amount } = getSoulAwardElements();
   if (!root || !dialog) return;
 
   soulAwardState.open = true;
   soulAwardState.essenceRank = soulAwardState.essenceRank || 1;
-  soulAwardState.amount = Math.min(999, Math.max(1, Number.parseInt(amount?.value || soulAwardState.amount, 10) || 1));
+  soulAwardState.amount = Math.min(999, Math.max(1, Number.parseInt(amount.value || soulAwardState.amount, 10) || 1));
   root.hidden = false;
   renderSoulAwardOptions();
   renderSoulAwardPreview();
@@ -3360,22 +3360,22 @@ function closeSoulAwardModal() {
 
 function buildSoulAwardSummary(summary) {
   if (!summary) {
-    return "A essência da alma foi aplicada ao núcleo do personagem.";
+    return "A essÃªncia da alma foi aplicada ao nÃºcleo do personagem.";
   }
 
-  const beforeName = getSoulRankName(summary.before?.rank || 1);
-  const afterName = getSoulRankName(summary.after?.rank || 1);
-  const rankUps = Array.isArray(summary.rankUps) ? summary.rankUps : [];
+  const beforeName = getSoulRankName(summary.before.rank || 1);
+  const afterName = getSoulRankName(summary.after.rank || 1);
+  const rankUps = Array.isArray(summary.rankUps)  summary.rankUps : [];
 
   if (!summary.totalExperience) {
-    return `${currentSheetTarget?.label || "O personagem"} não absorveu experiência desta essência por causa da diferença de ranks.`;
+    return `${currentSheetTarget.label || "O personagem"} nÃ£o absorveu experiÃªncia desta essÃªncia por causa da diferenÃ§a de ranks.`;
   }
 
-  return `${currentSheetTarget?.label || "O personagem"} recebeu ${summary.totalExperience} XP em essência da alma. ${beforeName} → ${afterName}.${rankUps.length ? ` Subidas: ${rankUps.map(entry => `${entry.from}→${entry.to}`).join(", ")}.` : ""}`;
+  return `${currentSheetTarget.label || "O personagem"} recebeu ${summary.totalExperience} XP em essÃªncia da alma. ${beforeName} â†’ ${afterName}.${rankUps.length  ` Subidas: ${rankUps.map(entry => `${entry.from}â†’${entry.to}`).join(", ")}.` : ""}`;
 }
 
 async function applySoulAward() {
-  if (currentRole !== "master" || currentSheetTarget?.kind !== "player") return;
+  if (currentRole !== "master" || currentSheetTarget.kind !== "player") return;
 
   const { apply } = getSoulAwardElements();
   const essenceRank = Math.min(7, Math.max(1, Number.parseInt(soulAwardState.essenceRank, 10) || 1));
@@ -3389,20 +3389,20 @@ async function applySoulAward() {
         essenceRank,
         amount
       });
-      const savedData = normalizeSheetData(response?.character?.data || {}, "player");
+      const savedData = normalizeSheetData(response.character.data || {}, "player");
       remoteSheetsCache[currentSheetTarget.key] = savedData;
       persistRemoteSheetsCache();
       soulCore = normalizeSoulCoreState(savedData.soulCore, savedData.charLevel || 1);
       renderProgressionField("player");
       closeSoulAwardModal();
-      await UI.alert(buildSoulAwardSummary(response?.summary), {
-        title: "Núcleo fortalecido",
-        kicker: "// Essência da alma"
+      await UI.alert(buildSoulAwardSummary(response.summary), {
+        title: "NÃºcleo fortalecido",
+        kicker: "// EssÃªncia da alma"
       });
       return;
     }
 
-    // No modo local, a mesma lógica pura é reaproveitada para manter a integração simples.
+    // No modo local, a mesma lÃ³gica pura Ã© reaproveitada para manter a integraÃ§Ã£o simples.
     const result = absorbSoulEssencesState(soulCore, essenceRank, amount);
     soulCore = normalizeSoulCoreState(result.core, result.core.rank);
     renderProgressionField("player");
@@ -3416,14 +3416,14 @@ async function applySoulAward() {
         rankUps: result.rankUps
       }),
       {
-        title: "Núcleo fortalecido",
-        kicker: "// Essência da alma"
+        title: "NÃºcleo fortalecido",
+        kicker: "// EssÃªncia da alma"
       }
     );
   } catch (error) {
-    await UI.alert(error?.message || "Falha ao aplicar a essência da alma.", {
-      title: "Falha na absorção",
-      kicker: "// Essência da alma"
+    await UI.alert(error.message || "Falha ao aplicar a essÃªncia da alma.", {
+      title: "Falha na absorÃ§Ã£o",
+      kicker: "// EssÃªncia da alma"
     });
   } finally {
     if (apply) apply.disabled = false;
@@ -3494,14 +3494,14 @@ function getSheetKindTitle() {
 }
 
 function getSheetSaveText() {
-  if (!currentSheetTarget) return "Toda alteração da ficha fica salva para o usuário correto.";
+  if (!currentSheetTarget) return "Toda alteraÃ§Ã£o da ficha fica salva para o usuÃ¡rio correto.";
   if (currentSheetTarget.kind === "npc") {
-    return "Toda alteração desta ficha de NPC fica salva neste navegador do mestre.";
+    return "Toda alteraÃ§Ã£o desta ficha de NPC fica salva neste navegador do mestre.";
   }
   if (currentSheetTarget.kind === "monster") {
-    return "Toda alteração desta ficha de monstro fica salva neste navegador do mestre.";
+    return "Toda alteraÃ§Ã£o desta ficha de monstro fica salva neste navegador do mestre.";
   }
-  return "Toda alteração da ficha fica salva para o usuário correto.";
+  return "Toda alteraÃ§Ã£o da ficha fica salva para o usuÃ¡rio correto.";
 }
 
 function syncDirectoryName(charName) {
@@ -3525,7 +3525,7 @@ function syncDirectoryName(charName) {
       const directory = AUTH.getDirectoryCache();
       const directoryPlayers = directory.players.map(player =>
         player.username === currentSheetTarget.owner
-          ? {
+           {
               ...player,
               charname: cleanName,
               inventorySlots,
@@ -3539,7 +3539,7 @@ function syncDirectoryName(charName) {
       });
     }
     currentSheetTarget.label = cleanName;
-    updateSheetHeader(document.getElementById("btnBackMaster")?.style.display !== "none");
+    updateSheetHeader(document.getElementById("btnBackMaster").style.display !== "none");
     return;
   }
 
@@ -3551,7 +3551,7 @@ function syncDirectoryName(charName) {
       writeNpcs(npcs);
     }
     currentSheetTarget.label = cleanName;
-    updateSheetHeader(document.getElementById("btnBackMaster")?.style.display !== "none");
+    updateSheetHeader(document.getElementById("btnBackMaster").style.display !== "none");
     return;
   }
 
@@ -3562,12 +3562,14 @@ function syncDirectoryName(charName) {
     writeMonsters(monsters);
   }
   currentSheetTarget.label = cleanName;
-  updateSheetHeader(document.getElementById("btnBackMaster")?.style.display !== "none");
+  updateSheetHeader(document.getElementById("btnBackMaster").style.display !== "none");
 }
 
 setInterval(() => {
-  if (document.getElementById("sheetScreen")?.classList.contains("active")) {
+  if (document.getElementById("sheetScreen").classList.contains("active")) {
     saveSheetSilently();
   }
 }, 60000);
+
+
 

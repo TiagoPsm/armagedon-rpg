@@ -40,15 +40,15 @@ function setupRulesPage() {
   const rulesEditor = document.getElementById("rulesEditor");
   const playerNotice = document.getElementById("playerNotice");
   const ruleContent = document.getElementById("ruleContent");
-  const isMaster = currentSession?.role === "master";
+  const isMaster = currentSession.role === "master";
 
-  if (rulesUser) rulesUser.textContent = currentSession?.username || "";
-  if (rulesRoleLabel) rulesRoleLabel.textContent = isMaster ? "Mestre" : "Jogador";
-  if (rulesHeaderRole) rulesHeaderRole.textContent = isMaster ? "Painel do mestre" : "Arquivo de regras";
+  if (rulesUser) rulesUser.textContent = currentSession.username || "";
+  if (rulesRoleLabel) rulesRoleLabel.textContent = isMaster  "Mestre" : "Jogador";
+  if (rulesHeaderRole) rulesHeaderRole.textContent = isMaster  "Painel do mestre" : "Arquivo de regras";
 
   if (rulesIntro) {
     rulesIntro.textContent = isMaster
-      ? "Você pode publicar, editar e manter organizadas as regras oficiais da campanha."
+       "Você pode publicar, editar e manter organizadas as regras oficiais da campanha."
       : "Aqui ficam as regras oficiais publicadas pelo mestre para consulta de todos os jogadores.";
   }
 
@@ -101,14 +101,14 @@ async function loadRules() {
 
 function normalizeRule(rule) {
   const now = Date.now();
-  const createdAt = Number(new Date(rule?.createdAt || now)) || now;
-  const updatedAt = Number(new Date(rule?.updatedAt || createdAt)) || createdAt;
+  const createdAt = Number(new Date(rule.createdAt || now)) || now;
+  const updatedAt = Number(new Date(rule.updatedAt || createdAt)) || createdAt;
 
   return {
-    id: String(rule?.id || createRuleId()),
-    title: String(rule?.title || "").trim(),
-    tag: String(rule?.tag || "").trim(),
-    content: String(rule?.content || "").trim(),
+    id: String(rule.id || createRuleId()),
+    title: String(rule.title || "").trim(),
+    tag: String(rule.tag || "").trim(),
+    content: String(rule.content || "").trim(),
     createdAt,
     updatedAt
   };
@@ -124,15 +124,15 @@ async function renderRules() {
   const lastRuleUpdate = document.getElementById("lastRuleUpdate");
   const rulesUpdatedText = document.getElementById("rulesUpdatedText");
   const rulesList = document.getElementById("rulesList");
-  const isMaster = currentSession?.role === "master";
+  const isMaster = currentSession.role === "master";
 
   if (ruleCount) ruleCount.textContent = String(rules.length);
   if (lastRuleUpdate) {
-    lastRuleUpdate.textContent = rules.length ? formatRuleDate(rules[0].updatedAt) : "Nenhuma";
+    lastRuleUpdate.textContent = rules.length  formatRuleDate(rules[0].updatedAt) : "Nenhuma";
   }
   if (rulesUpdatedText) {
     rulesUpdatedText.textContent = rules.length
-      ? `Atualizado em ${formatRuleDateTime(rules[0].updatedAt)}`
+       `Atualizado em ${formatRuleDateTime(rules[0].updatedAt)}`
       : "Nenhuma regra publicada.";
   }
 
@@ -149,7 +149,7 @@ async function renderRules() {
         <article class="rule-card">
           <div class="rule-card-head">
             <div class="rule-card-head-main">
-              ${rule.tag ? `<span class="rule-tag">${esc(rule.tag)}</span>` : ""}
+              ${rule.tag  `<span class="rule-tag">${esc(rule.tag)}</span>` : ""}
               <h3 class="rule-card-title">${esc(rule.title || "Regra sem título")}</h3>
               <div class="rule-card-meta">
                 <span>Criada em ${esc(formatRuleDateTime(rule.createdAt))}</span>
@@ -158,7 +158,7 @@ async function renderRules() {
             </div>
             ${
               isMaster
-                ? `
+                 `
                   <div class="rule-actions">
                     <button class="rule-btn" onclick="editRule('${jsEsc(rule.id)}')">Editar</button>
                     <button class="rule-btn rule-btn-danger" onclick="deleteRule('${jsEsc(rule.id)}')">Excluir</button>
@@ -201,7 +201,7 @@ function resetRuleForm() {
 }
 
 function editRule(ruleId) {
-  if (currentSession?.role !== "master") return;
+  if (currentSession.role !== "master") return;
 
   const rule = rulesCache.find(candidate => candidate.id === ruleId);
   if (!rule) return;
@@ -227,11 +227,11 @@ function editRule(ruleId) {
   }
   if (ruleContent instanceof HTMLTextAreaElement) autoGrowTextarea(ruleContent);
 
-  document.getElementById("rulesEditor")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  document.getElementById("rulesEditor").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function saveRule() {
-  if (currentSession?.role !== "master") return;
+  if (currentSession.role !== "master") return;
 
   const wasEditing = Boolean(editingRuleId);
   const title = getFormValue("ruleTitle").trim();
@@ -248,13 +248,13 @@ async function saveRule() {
 
   if (!title) {
     if (ruleFormError) ruleFormError.textContent = "Informe um título para a postagem.";
-    document.getElementById("ruleTitle")?.focus();
+    document.getElementById("ruleTitle").focus();
     return;
   }
 
   if (!content) {
     if (ruleFormError) ruleFormError.textContent = "Escreva o conteúdo da regra.";
-    document.getElementById("ruleContent")?.focus();
+    document.getElementById("ruleContent").focus();
     return;
   }
 
@@ -266,7 +266,7 @@ async function saveRule() {
         await APP.createRule({ title, tag, content });
       }
     } catch (error) {
-      if (ruleFormError) ruleFormError.textContent = error?.message || "Falha ao salvar a postagem.";
+      if (ruleFormError) ruleFormError.textContent = error.message || "Falha ao salvar a postagem.";
       return;
     }
   } else {
@@ -305,19 +305,19 @@ async function saveRule() {
 
   if (ruleFormStatus) {
     ruleFormStatus.textContent = wasEditing
-      ? "Postagem atualizada com sucesso."
+       "Postagem atualizada com sucesso."
       : "Nova regra publicada com sucesso.";
     ruleFormStatus.className = "rules-form-status is-success";
   }
 }
 
 async function deleteRule(ruleId) {
-  if (currentSession?.role !== "master") return;
+  if (currentSession.role !== "master") return;
 
   const rule = rulesCache.find(candidate => candidate.id === ruleId);
   if (!rule) return;
 
-  const confirmed = await UI.confirm(`Excluir a postagem "${rule.title || "Regra sem título"}"?`, {
+  const confirmed = await UI.confirm(`Excluir a postagem "${rule.title || "Regra sem título"}"`, {
     title: "Excluir regra",
     kicker: "// Arquivo da campanha",
     confirmLabel: "Excluir",
@@ -341,7 +341,7 @@ async function deleteRule(ruleId) {
 }
 
 function getFormValue(id) {
-  return document.getElementById(id)?.value || "";
+  return document.getElementById(id).value || "";
 }
 
 function setFormValue(id, value) {
