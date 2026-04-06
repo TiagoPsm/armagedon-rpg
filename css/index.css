@@ -748,3 +748,68 @@ body {
     border-radius: 18px;
   }
 }
+
+/* 2026-04 dark red portal pass */
+body {
+  --page-glow-x: 50%;
+  --page-glow-y: 18%;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: -14%;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 420px at var(--page-glow-x) var(--page-glow-y), rgba(122, 16, 16, 0.24), transparent 60%),
+    radial-gradient(circle 620px at calc(var(--page-glow-x) + 14%) calc(var(--page-glow-y) + 24%), rgba(48, 4, 8, 0.22), transparent 70%);
+  mix-blend-mode: screen;
+  opacity: 0.92;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(122, 16, 16, 0.1), transparent 38%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.4));
+}
+
+.bg-layer {
+  z-index: 0;
+}
+
+#loginScreen,
+#homeScreen,
+.site-header,
+.dashboard-shell {
+  position: relative;
+  z-index: 2;
+}
+
+.intro-omen::after {
+  background: linear-gradient(90deg, transparent, rgba(122, 16, 16, 0.45), transparent);
+}
+
+.login-card::before,
+.dashboard-card::before {
+  background: radial-gradient(circle at top, rgba(122, 16, 16, 0.16), transparent 66%);
+}
+
+.login-card,
+.dashboard-card,
+.intro-omen,
+.status-card {
+  border-color: rgba(122, 16, 16, 0.18);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.header-user {
+  border-color: rgba(122, 16, 16, 0.22);
+}

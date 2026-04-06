@@ -1,7 +1,7 @@
 import { normalizeSoulCore } from "./soul-progression.js";
 
 const ATTRIBUTES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"];
-const DEFAULT_INVENTORY_SLOTS = 30;
+const DEFAULT_INVENTORY_SLOTS = 10;
 const ITEM_TYPES = new Set(["arma", "acessorio", "outro"]);
 
 function sanitizeChance(value, fallback = "0") {

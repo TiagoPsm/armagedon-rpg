@@ -5,7 +5,7 @@ const REMOTE_SHEETS_KEY = "tc_remote_sheets";
 const NPC_PREFIX = "npc:";
 const MONSTER_PREFIX = "monster:";
 const ATTRIBUTES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"];
-const DEFAULT_INVENTORY_SLOTS = 30;
+const DEFAULT_INVENTORY_SLOTS = 10;
 const ITEM_TYPES = {
   arma: "Arma",
   acessorio: "Acessório",

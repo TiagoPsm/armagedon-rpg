@@ -446,3 +446,60 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* 2026-04 dark red rules pass */
+body {
+  --page-glow-x: 50%;
+  --page-glow-y: 16%;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: -14%;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 420px at var(--page-glow-x) var(--page-glow-y), rgba(122, 16, 16, 0.22), transparent 60%),
+    radial-gradient(circle 620px at calc(var(--page-glow-x) + 12%) calc(var(--page-glow-y) + 24%), rgba(52, 6, 10, 0.2), transparent 72%);
+  mix-blend-mode: screen;
+  opacity: 0.9;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(122, 16, 16, 0.08), transparent 38%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0.38));
+}
+
+.bg-fixed {
+  z-index: 0;
+}
+
+.site-header,
+.page-main {
+  position: relative;
+  z-index: 2;
+}
+
+.rules-block::before {
+  background: linear-gradient(90deg, transparent, rgba(122, 16, 16, 0.36), transparent);
+}
+
+.rules-status-card,
+.rules-block,
+.rule-card {
+  border-color: rgba(122, 16, 16, 0.16);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.rule-card::before {
+  background: linear-gradient(180deg, rgba(122, 16, 16, 0), rgba(122, 16, 16, 0.58), rgba(154, 122, 0, 0.16), rgba(122, 16, 16, 0));
+}

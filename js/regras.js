@@ -5,7 +5,40 @@ let editingRuleId = null;
 let rulesCache = [];
 let rulesRealtimeBound = false;
 
+function initRulesPageGlow() {
+  const root = document.body;
+  if (!root) return;
+  if (typeof window.matchMedia === "function" && !window.matchMedia("(pointer: fine)").matches) return;
+
+  const setGlow = (x, y) => {
+    root.style.setProperty("--page-glow-x", x);
+    root.style.setProperty("--page-glow-y", y);
+  };
+
+  setGlow("50%", "16%");
+
+  let frameId = 0;
+  const updateGlow = (clientX, clientY) => {
+    const width = window.innerWidth || 1;
+    const height = window.innerHeight || 1;
+    const x = Math.max(0, Math.min(100, (clientX / width) * 100)).toFixed(2);
+    const y = Math.max(0, Math.min(100, (clientY / height) * 100)).toFixed(2);
+    setGlow(`${x}%`, `${y}%`);
+  };
+
+  const handleMove = event => {
+    const { clientX, clientY } = event;
+    if (frameId) cancelAnimationFrame(frameId);
+    frameId = requestAnimationFrame(() => updateGlow(clientX, clientY));
+  };
+
+  root.addEventListener("pointermove", handleMove);
+  root.addEventListener("pointerleave", () => setGlow("50%", "16%"));
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
+  initRulesPageGlow();
+
   await AUTH_READY;
   currentSession = AUTH.requireAuth();
   if (!currentSession) return;

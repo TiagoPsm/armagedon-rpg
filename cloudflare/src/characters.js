@@ -1,4 +1,4 @@
-import {
+﻿import {
   buildDefaultSheet,
   normalizeItem,
   normalizeInventorySlots,
@@ -181,7 +181,7 @@ async function saveCharacterBundle(env, character, payload, actor) {
     normalizedData.charLevel = String(normalizedData.soulCore.rank);
 
     if (normalizedData.inv.length > normalizedData.inventorySlots) {
-      throw jsonError("NPCs não podem ultrapassar o limite padrão de 30 slots.", 409);
+      throw jsonError("NPCs não podem ultrapassar o limite padrão de 10 slots.", 409);
     }
   }
 
@@ -663,3 +663,6 @@ export {
   transferItemBetweenPlayers,
   transferMemoryBetweenPlayers
 };
+
+
+
