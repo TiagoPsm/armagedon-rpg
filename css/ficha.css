@@ -4525,3 +4525,161 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
     margin-right: 0;
   }
 }
+
+/* 2026-04 central alignment cleanup for mid-page sections */
+#sheetScreen .sheet-grid.sheet-grid-primary {
+  grid-template-columns: minmax(0, 0.98fr) minmax(0, 1.02fr);
+  align-items: stretch;
+}
+
+#sheetScreen .sheet-section-resources .resources-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+
+#sheetScreen .sheet-section-resources .resource-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 186px;
+  align-items: start;
+}
+
+#sheetScreen .sheet-section-resources .resource-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.9rem;
+  margin: 1rem 0 0.95rem;
+}
+
+#sheetScreen .sheet-section-resources .resource-field {
+  width: 100%;
+  min-width: 0;
+}
+
+#sheetScreen .sheet-section-resources .resource-input {
+  width: 100%;
+  max-width: none;
+}
+
+#sheetScreen .sheet-section-resources .resource-sep {
+  align-self: center;
+  padding: 0;
+  margin-top: 1.05rem;
+}
+
+#sheetScreen .sheet-section-resources .bar-track {
+  align-self: end;
+}
+
+#sheetScreen .sheet-section-attributes .block-title-bar,
+#sheetScreen .sheet-section-skills .block-title-bar,
+#sheetScreen .sheet-section-owned-memories .block-title-bar,
+#sheetScreen .sheet-section-inventory .block-title-bar {
+  min-height: 44px;
+  align-items: center;
+}
+
+#sheetScreen .sheet-section-attributes .block-title-bar {
+  grid-template-columns: auto 1fr;
+}
+
+#sheetScreen .sheet-section-attributes .block-hint {
+  justify-self: end;
+  text-align: right;
+}
+
+#sheetScreen .attrs-shell {
+  width: 100%;
+  overflow: hidden;
+}
+
+#sheetScreen .attrs-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.68rem;
+  width: 100%;
+  align-items: stretch;
+}
+
+#sheetScreen .attr-card,
+#sheetScreen .attrs-grid .attr-card:last-child {
+  min-width: 0;
+  min-height: 150px;
+  padding: 0.92rem 0.72rem 0.84rem;
+  justify-items: center;
+  text-align: center;
+}
+
+#sheetScreen .sheet-section-skills,
+#sheetScreen .sheet-section-owned-memories,
+#sheetScreen .sheet-section-memory-drops {
+  padding-top: 1.22rem;
+  padding-bottom: 1.18rem;
+}
+
+#sheetScreen .sheet-section-skills .btn-inline,
+#sheetScreen .sheet-section-memory-drops .btn-inline {
+  margin-left: auto;
+  align-self: center;
+}
+
+#sheetScreen #habList,
+#sheetScreen #ownedMemoryList,
+#sheetScreen #memoryList {
+  display: grid;
+  gap: 0.85rem;
+  min-height: 0;
+}
+
+#sheetScreen .sheet-section-skills .empty-msg,
+#sheetScreen .sheet-section-owned-memories .empty-msg,
+#sheetScreen .sheet-section-memory-drops .empty-msg {
+  margin: 0;
+  padding-top: 0.3rem;
+}
+
+#sheetScreen .sheet-section-inventory .block-title-bar {
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+}
+
+#sheetScreen .inventory-head-actions {
+  justify-self: end;
+  width: auto;
+  min-width: min(100%, 430px);
+  justify-content: flex-end;
+}
+
+@media (max-width: 1180px) {
+  #sheetScreen .sheet-grid.sheet-grid-primary {
+    grid-template-columns: 1fr;
+  }
+
+  #sheetScreen .attrs-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  #sheetScreen .sheet-section-attributes .block-title-bar,
+  #sheetScreen .sheet-section-inventory .block-title-bar {
+    grid-template-columns: 1fr;
+  }
+
+  #sheetScreen .sheet-section-attributes .block-hint {
+    justify-self: start;
+    text-align: left;
+  }
+
+  #sheetScreen .inventory-head-actions {
+    justify-self: stretch;
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+  }
+
+  #sheetScreen .attrs-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
