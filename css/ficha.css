@@ -4720,6 +4720,323 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
   align-self: center;
 }
 
+/* 2026-04 master panel redesign */
+#masterScreen .page-main.page-main-master {
+  width: min(1380px, calc(100vw - 2.2rem));
+  padding: 7rem 0 4.8rem;
+  gap: 1.35rem;
+  position: relative;
+  z-index: 1;
+}
+
+#masterScreen .page-main.page-main-master::before,
+#masterScreen .page-main.page-main-master::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+#masterScreen .page-main.page-main-master::before {
+  background:
+    radial-gradient(circle at 12% 12%, rgba(122, 20, 20, 0.16), transparent 22%),
+    radial-gradient(circle at 84% 10%, rgba(77, 10, 10, 0.14), transparent 18%),
+    radial-gradient(circle at 50% 100%, rgba(162, 52, 40, 0.08), transparent 30%);
+  filter: blur(16px);
+  opacity: 0.9;
+}
+
+#masterScreen .page-main.page-main-master::after {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 16%),
+    linear-gradient(180deg, rgba(88, 10, 10, 0.08), transparent 24%, transparent 76%, rgba(0, 0, 0, 0.26));
+}
+
+#masterScreen .master-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.95fr);
+  gap: 1.2rem;
+  padding: 1.55rem 1.65rem;
+  border-radius: 34px;
+  border: 1px solid rgba(168, 64, 64, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.022), rgba(255, 255, 255, 0.008)),
+    linear-gradient(180deg, rgba(12, 12, 17, 0.98), rgba(5, 5, 8, 0.995));
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+#masterScreen .master-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(200, 77, 70, 0.28), rgba(200, 77, 70, 0.1), transparent);
+  pointer-events: none;
+}
+
+#masterScreen .master-hero-main {
+  display: grid;
+  align-content: center;
+  gap: 0.8rem;
+}
+
+#masterScreen .master-hero .page-heading {
+  margin: 0;
+}
+
+#masterScreen .master-hero .page-title {
+  margin-bottom: 0;
+}
+
+#masterScreen .master-hero-copy {
+  margin: 0;
+  max-width: 60ch;
+  color: rgba(223, 210, 186, 0.82);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+#masterScreen .master-hero-meta {
+  display: grid;
+  gap: 0.9rem;
+}
+
+#masterScreen .master-stat {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem 1.05rem;
+  border-radius: 24px;
+  border: 1px solid rgba(171, 77, 67, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.022), rgba(255, 255, 255, 0.008)),
+    linear-gradient(180deg, rgba(17, 18, 24, 0.96), rgba(8, 8, 12, 0.99));
+}
+
+#masterScreen .master-stat-label {
+  color: rgba(200, 77, 70, 0.88);
+  font-family: var(--font-ui);
+  font-size: 0.64rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+#masterScreen .master-stat strong {
+  color: var(--text);
+  font-family: var(--font-title);
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+#masterScreen .master-stat small {
+  color: rgba(205, 194, 170, 0.72);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+#masterScreen .panel-group-heading {
+  gap: 0.2rem;
+  padding: 0.25rem 0 0.1rem;
+}
+
+#masterScreen .panel-group-heading-spaced {
+  margin-top: 0.55rem;
+}
+
+#masterScreen .panel-group-title {
+  font-size: clamp(1.65rem, 2.4vw, 2.15rem);
+}
+
+#masterScreen .master-grid {
+  display: grid;
+  gap: 1.15rem;
+}
+
+#masterScreen .master-grid-players {
+  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+}
+
+#masterScreen .master-card-access {
+  grid-column: 1 / -1;
+}
+
+#masterScreen .master-grid-creatures {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#masterScreen .panel-block {
+  padding: 1.45rem 1.5rem;
+  border-radius: 30px;
+  border-color: rgba(171, 77, 67, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.022), rgba(255, 255, 255, 0.008)),
+    linear-gradient(180deg, rgba(10, 11, 16, 0.98), rgba(4, 4, 7, 0.995));
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+#masterScreen .panel-block::before {
+  background: linear-gradient(90deg, transparent, rgba(200, 77, 70, 0.24), rgba(200, 77, 70, 0.08), transparent);
+}
+
+#masterScreen .panel-block-title,
+#masterScreen .section-label {
+  color: #c84d46;
+  text-shadow: 0 0 18px rgba(200, 77, 70, 0.12);
+}
+
+#masterScreen .panel-block-sub,
+#masterScreen .empty-msg {
+  color: rgba(205, 194, 170, 0.78);
+}
+
+#masterScreen .panel-block-sub {
+  max-width: 60ch;
+  margin-bottom: 1rem;
+}
+
+#masterScreen .master-card-head {
+  display: grid;
+  gap: 0.2rem;
+  margin-bottom: 0.15rem;
+}
+
+#masterScreen .form-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+#masterScreen .master-card-creature .form-row {
+  grid-template-columns: 1fr;
+}
+
+#masterScreen .form-error {
+  min-height: 1.2rem;
+}
+
+#masterScreen .player-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.05rem;
+  border-radius: 22px;
+  border: 1px solid rgba(171, 77, 67, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.022), rgba(255, 255, 255, 0.008)),
+    rgba(10, 12, 18, 0.92);
+}
+
+#masterScreen .player-row + .player-row {
+  margin-top: 0.8rem;
+}
+
+#masterScreen .player-info {
+  display: grid;
+  gap: 0.32rem;
+}
+
+#masterScreen .player-user {
+  color: rgba(200, 77, 70, 0.84);
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+}
+
+#masterScreen .player-char {
+  color: var(--text);
+  font-family: var(--font-title);
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+#masterScreen .player-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.7rem;
+}
+
+#masterScreen .players-btns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.8rem;
+  margin-top: 0;
+}
+
+#masterScreen .player-btn {
+  min-height: 54px;
+  padding: 0.95rem 1rem;
+  justify-content: flex-start;
+  text-align: left;
+  border-color: rgba(171, 77, 67, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.006)),
+    rgba(10, 12, 18, 0.9);
+}
+
+#masterScreen .player-btn:hover,
+#masterScreen .btn-inline:hover {
+  border-color: rgba(200, 77, 70, 0.24);
+  box-shadow: 0 0 0 1px rgba(200, 77, 70, 0.08);
+}
+
+#masterScreen .panel-block-sep {
+  margin: 1.15rem 0 1rem;
+  border-top-color: rgba(171, 77, 67, 0.14);
+}
+
+#masterScreen #playersList,
+#masterScreen #npcList,
+#masterScreen #monsterList {
+  min-height: 2rem;
+}
+
+@media (max-width: 1100px) {
+  #masterScreen .master-hero,
+  #masterScreen .master-grid-players,
+  #masterScreen .master-grid-creatures {
+    grid-template-columns: 1fr;
+  }
+
+  #masterScreen .master-card-access {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  #masterScreen .page-main.page-main-master {
+    width: min(100%, calc(100vw - 1rem));
+    padding-top: 6.4rem;
+  }
+
+  #masterScreen .master-hero,
+  #masterScreen .panel-block {
+    padding: 1.15rem 1rem;
+    border-radius: 24px;
+  }
+
+  #masterScreen .form-row,
+  #masterScreen .player-row {
+    grid-template-columns: 1fr;
+  }
+
+  #masterScreen .player-actions {
+    justify-content: stretch;
+  }
+
+  #masterScreen .player-actions > * {
+    flex: 1 1 auto;
+  }
+
+  #masterScreen .players-btns {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 980px) {
   #sheetScreen .sheet-section-inventory .block-title-bar {
     grid-template-columns: 1fr;

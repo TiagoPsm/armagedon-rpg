@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Armagedon | Fichas</title>
   <link rel="stylesheet" href="css/style.css?v=2026-04-05-polish" />
-  <link rel="stylesheet" href="css/ficha.css?v=2026-04-05-polish" />
+  <link rel="stylesheet" href="css/ficha.css?v=2026-04-05-darkred" />
   <link rel="stylesheet" href="css/ui.css?v=2026-04-05-polish" />
   <link
     href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap"
@@ -56,128 +56,168 @@
       </div>
     </header>
 
-    <main class="page-main">
-      <div class="page-heading">
-        <span class="section-label">// Painel do mestre</span>
-        <h1 class="page-title">Jogadores, NPCs e fichas</h1>
-      </div>
+    <main class="page-main page-main-master">
+      <section class="panel-block master-hero">
+        <div class="master-hero-main">
+          <div class="page-heading">
+            <span class="section-label">// Painel do mestre</span>
+            <h1 class="page-title">Jogadores, NPCs e fichas</h1>
+          </div>
+          <p class="master-hero-copy">
+            Controle acessos, mantenha a ordem da campanha e abra qualquer ficha sem sair do portal.
+          </p>
+        </div>
+
+        <div class="master-hero-meta" aria-label="Visão geral do painel">
+          <article class="master-stat">
+            <span class="master-stat-label">Acessos</span>
+            <strong>Jogadores</strong>
+            <small>Crie logins e vincule personagens sem expor dados do mestre.</small>
+          </article>
+          <article class="master-stat">
+            <span class="master-stat-label">Controle</span>
+            <strong>Fichas</strong>
+            <small>Abra qualquer ficha ativa para revisar, editar ou acompanhar a mesa.</small>
+          </article>
+          <article class="master-stat">
+            <span class="master-stat-label">Bestiário</span>
+            <strong>NPCs e monstros</strong>
+            <small>Mantenha criaturas e aliados no mesmo fluxo visual da campanha.</small>
+          </article>
+        </div>
+      </section>
 
       <div class="panel-group-heading">
         <span class="section-label">// Controle de jogadores</span>
         <h2 class="panel-group-title">Jogadores e acessos</h2>
       </div>
 
-      <section class="panel-block">
-        <h2 class="panel-block-title">Adicionar jogador</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="newUser">Usuário</label>
-            <input
-              type="text"
-              id="newUser"
-              class="form-input"
-              placeholder="Nome de login..."
-              autocomplete="off"
-              autocapitalize="off"
-              spellcheck="false"
-            />
+      <div class="master-grid master-grid-players">
+        <section class="panel-block master-card master-card-create">
+          <h2 class="panel-block-title">Adicionar jogador</h2>
+          <p class="panel-block-sub">Crie um novo acesso e entregue a ficha pronta sem depender de cadastro externo.</p>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="newUser">Usuário</label>
+              <input
+                type="text"
+                id="newUser"
+                class="form-input"
+                placeholder="Nome de login..."
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="newPass">Senha</label>
+              <input
+                type="password"
+                id="newPass"
+                class="form-input"
+                placeholder="Senha..."
+                autocomplete="new-password"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="newChar">Nome do personagem</label>
+              <input
+                type="text"
+                id="newChar"
+                class="form-input"
+                placeholder="Nome do personagem..."
+                autocomplete="off"
+                autocapitalize="words"
+              />
+            </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label" for="newPass">Senha</label>
-            <input
-              type="password"
-              id="newPass"
-              class="form-input"
-              placeholder="Senha..."
-              autocomplete="new-password"
-            />
+          <p class="form-error" id="addError"></p>
+          <button class="btn btn-primary" onclick="addPlayer()">Adicionar jogador</button>
+        </section>
+
+        <section class="panel-block master-card master-card-directory">
+          <div class="master-card-head">
+            <div>
+              <h2 class="panel-block-title">Jogadores ativos</h2>
+              <p class="panel-block-sub">Visualize rapidamente quem já tem acesso criado e qual personagem está vinculado.</p>
+            </div>
           </div>
+          <div id="playersList"></div>
+        </section>
 
-          <div class="form-group">
-            <label class="form-label" for="newChar">Nome do personagem</label>
-            <input
-              type="text"
-              id="newChar"
-              class="form-input"
-              placeholder="Nome do personagem..."
-              autocomplete="off"
-              autocapitalize="words"
-            />
+        <section class="panel-block master-card master-card-access">
+          <div class="master-card-head">
+            <div>
+              <h2 class="panel-block-title">Acessar ficha</h2>
+              <p class="panel-block-sub">Cada jogador abre apenas a própria ficha pelo login. O mestre pode abrir qualquer uma.</p>
+            </div>
           </div>
-        </div>
-
-        <p class="form-error" id="addError"></p>
-        <button class="btn btn-primary" onclick="addPlayer()">Adicionar jogador</button>
-      </section>
-
-      <section class="panel-block">
-        <h2 class="panel-block-title">Jogadores ativos</h2>
-        <div id="playersList"></div>
-      </section>
-
-      <section class="panel-block">
-        <h2 class="panel-block-title">Acessar ficha</h2>
-        <p class="panel-block-sub">Cada jogador acessa apenas a própria ficha pelo login. O mestre pode abrir qualquer uma.</p>
-        <div id="playersBtns" class="players-btns"></div>
-      </section>
+          <div id="playersBtns" class="players-btns"></div>
+        </section>
+      </div>
 
       <div class="panel-group-heading panel-group-heading-spaced">
         <span class="section-label">// Gerenciamento de NPCs e monstros</span>
         <h2 class="panel-group-title">NPCs, inimigos e futuras criaturas</h2>
       </div>
 
-      <section class="panel-block">
-        <h2 class="panel-block-title">NPCs do mestre</h2>
-        <p class="panel-block-sub">Crie, abra e apague NPCs usando a mesma ficha dos jogadores.</p>
+      <div class="master-grid master-grid-creatures">
+        <section class="panel-block master-card master-card-creature">
+          <h2 class="panel-block-title">NPCs do mestre</h2>
+          <p class="panel-block-sub">Crie, abra e apague NPCs usando a mesma ficha dos jogadores.</p>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="newNpcName">Nome do NPC</label>
-            <input
-              type="text"
-              id="newNpcName"
-              class="form-input"
-              placeholder="Nome do NPC..."
-              autocomplete="off"
-              autocapitalize="words"
-              spellcheck="false"
-            />
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="newNpcName">Nome do NPC</label>
+              <input
+                type="text"
+                id="newNpcName"
+                class="form-input"
+                placeholder="Nome do NPC..."
+                autocomplete="off"
+                autocapitalize="words"
+                spellcheck="false"
+              />
+            </div>
           </div>
-        </div>
 
-        <p class="form-error" id="npcError"></p>
-        <button class="btn btn-primary" onclick="addNpc()">Criar NPC</button>
+          <p class="form-error" id="npcError"></p>
+          <button class="btn btn-primary" onclick="addNpc()">Criar NPC</button>
 
-        <div class="panel-block-sep"></div>
-        <div id="npcList"></div>
-      </section>
+          <div class="panel-block-sep"></div>
+          <div id="npcList"></div>
+        </section>
 
-      <section class="panel-block">
-        <h2 class="panel-block-title">Monstros do mestre</h2>
-        <p class="panel-block-sub">Crie e gerencie monstros com uma ficha própria: sem integridade, sem inventário e com área de drop de memória.</p>
+        <section class="panel-block master-card master-card-creature">
+          <h2 class="panel-block-title">Monstros do mestre</h2>
+          <p class="panel-block-sub">Crie e gerencie monstros com uma ficha própria: sem integridade, sem inventário e com área de drop de memória.</p>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="newMonsterName">Nome do monstro</label>
-            <input
-              type="text"
-              id="newMonsterName"
-              class="form-input"
-              placeholder="Nome do monstro..."
-              autocomplete="off"
-              autocapitalize="words"
-              spellcheck="false"
-            />
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="newMonsterName">Nome do monstro</label>
+              <input
+                type="text"
+                id="newMonsterName"
+                class="form-input"
+                placeholder="Nome do monstro..."
+                autocomplete="off"
+                autocapitalize="words"
+                spellcheck="false"
+              />
+            </div>
           </div>
-        </div>
 
-        <p class="form-error" id="monsterError"></p>
-        <button class="btn btn-primary" onclick="addMonster()">Criar monstro</button>
+          <p class="form-error" id="monsterError"></p>
+          <button class="btn btn-primary" onclick="addMonster()">Criar monstro</button>
 
-        <div class="panel-block-sep"></div>
-        <div id="monsterList"></div>
-      </section>
+          <div class="panel-block-sep"></div>
+          <div id="monsterList"></div>
+        </section>
+      </div>
     </main>
   </div>
 
@@ -514,7 +554,7 @@
         <div class="block-title-bar">
           <span class="section-label" style="margin:0">// Inventário</span>
           <div class="inventory-head-actions">
-            <span class="inventory-meta" id="inventoryMeta">0 / 30 slots</span>
+            <span class="inventory-meta" id="inventoryMeta">0 / 10 slots</span>
             <div class="inventory-master-controls" id="inventoryMasterControls" hidden>
               <span class="inventory-adjust-label">Ajuste</span>
               <input type="number" id="inventorySlotDelta" class="inventory-slot-input" min="1" step="1" value="1" />
@@ -738,6 +778,6 @@
   <script src="js/api.js?v=2026-04-05-polish"></script>
   <script src="js/auth.js?v=2026-04-05-polish"></script>
   <script src="js/soul-essence.js?v=2026-04-05-polish"></script>
-  <script src="js/ficha.js?v=2026-04-05-polish"></script>
+  <script src="js/ficha.js?v=2026-04-05-darkred"></script>
 </body>
 </html>
