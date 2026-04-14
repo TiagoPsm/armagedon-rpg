@@ -500,6 +500,376 @@ body::after {
     inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
+/* 2026-04 dark fantasy rules redesign */
+body.rules-page {
+  --page-glow-x: 50%;
+  --page-glow-y: 14%;
+  background:
+    radial-gradient(circle at top, rgba(122, 16, 16, 0.2), transparent 30%),
+    linear-gradient(180deg, #040506 0%, #09080b 38%, #050506 100%);
+}
+
+body.rules-page::before {
+  content: "";
+  position: fixed;
+  inset: -16%;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 520px at var(--page-glow-x) var(--page-glow-y), rgba(122, 16, 16, 0.22), transparent 58%),
+    radial-gradient(circle 760px at calc(var(--page-glow-x) + 10%) calc(var(--page-glow-y) + 24%), rgba(46, 7, 10, 0.22), transparent 74%);
+  mix-blend-mode: screen;
+  opacity: 0.95;
+}
+
+body.rules-page::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(122, 16, 16, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.46));
+}
+
+.rules-page .site-header,
+.rules-page .page-main {
+  position: relative;
+  z-index: 2;
+}
+
+.page-main.page-main-rules {
+  width: min(1320px, calc(100vw - 2rem));
+  gap: 1.45rem;
+  padding-top: 7.35rem;
+}
+
+.rules-page .rules-hero,
+.rules-page .rules-block {
+  position: relative;
+  border-radius: 30px;
+  border: 1px solid rgba(122, 16, 16, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.01)),
+    linear-gradient(180deg, rgba(31, 15, 17, 0.88), rgba(10, 10, 12, 0.96));
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(16px);
+}
+
+.rules-page .rules-hero::before,
+.rules-page .rules-block::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(122, 16, 16, 0.44), transparent);
+  pointer-events: none;
+}
+
+.rules-page .rules-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.92fr);
+  gap: 1.3rem;
+  padding: 1.65rem;
+  align-items: stretch;
+}
+
+.rules-page .rules-hero-main {
+  display: grid;
+  gap: 1.3rem;
+  min-width: 0;
+}
+
+.rules-page .page-heading {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.rules-page .section-label {
+  color: #c84d46;
+  text-shadow: 0 0 18px rgba(122, 16, 16, 0.24);
+}
+
+.rules-page .page-title,
+.rules-page .rules-block-title,
+.rules-page .rule-card-title {
+  color: #f4ecdd;
+  text-shadow: 0 10px 24px rgba(0, 0, 0, 0.26);
+}
+
+.rules-page .page-title {
+  font-size: clamp(3rem, 5vw, 4.5rem);
+}
+
+.rules-page .page-copy,
+.rules-page .rules-notice-copy,
+.rules-page .rule-card-content,
+.rules-page .rules-updated,
+.rules-page .empty-msg,
+.rules-page .rules-form-status,
+.rules-page .rules-status-copy {
+  color: rgba(205, 194, 170, 0.88);
+}
+
+.rules-page .rules-hero-points {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.rules-page .rules-hero-point,
+.rules-page .rules-overview-card,
+.rules-page .rules-status-card,
+.rules-page .rule-card {
+  border-radius: 22px;
+  border: 1px solid rgba(122, 16, 16, 0.15);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.01)),
+    rgba(9, 11, 15, 0.84);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.02),
+    0 16px 36px rgba(0, 0, 0, 0.22);
+}
+
+.rules-page .rules-hero-point {
+  padding: 1rem 1rem 1.05rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.rules-page .rules-hero-point-label,
+.rules-page .rules-status-card span,
+.rules-page .rule-card-meta,
+.rules-page .rule-tag {
+  color: rgba(200, 77, 70, 0.82);
+  font-family: var(--font-ui);
+  font-size: 0.67rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.rules-page .rules-hero-point strong,
+.rules-page .rules-status-card strong {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  line-height: 1.02;
+}
+
+.rules-page .rules-status-panel {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.rules-page .rules-status-grid {
+  margin-top: 0;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+
+.rules-page .rules-status-card {
+  min-height: 110px;
+  padding: 1rem 1.05rem;
+  align-content: start;
+}
+
+.rules-page .rules-status-card strong {
+  font-size: 1.7rem;
+}
+
+.rules-page .rules-status-copy {
+  margin: 0;
+  padding: 1rem 1.05rem 1.05rem;
+  border-radius: 20px;
+  border: 1px solid rgba(122, 16, 16, 0.14);
+  background: rgba(7, 8, 11, 0.7);
+  line-height: 1.55;
+}
+
+.rules-page .rules-overview {
+  padding: 1.25rem 1.35rem;
+}
+
+.rules-page .rules-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.rules-page .rules-overview-card {
+  padding: 1.2rem 1.2rem 1.25rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.rules-page .rules-overview-card .rules-block-title {
+  font-size: clamp(1.55rem, 2.2vw, 2.1rem);
+}
+
+.rules-page .rules-block {
+  padding: 1.45rem;
+}
+
+.rules-page .rules-block-head {
+  align-items: end;
+  margin-bottom: 1.1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(122, 16, 16, 0.14);
+}
+
+.rules-page .rules-block-title {
+  margin-top: 0.3rem;
+  font-size: clamp(1.8rem, 2.5vw, 2.45rem);
+}
+
+.rules-page .rules-form-grid {
+  gap: 1rem;
+}
+
+.rules-page .form-label {
+  color: rgba(205, 194, 170, 0.62);
+}
+
+.rules-page .form-input,
+.rules-page .rules-textarea {
+  border-color: rgba(122, 16, 16, 0.14);
+  background: rgba(5, 7, 10, 0.86);
+}
+
+.rules-page .form-input:focus,
+.rules-page .rules-textarea:focus {
+  border-color: rgba(169, 34, 34, 0.42);
+  box-shadow: 0 0 0 4px rgba(122, 16, 16, 0.16);
+  background: rgba(7, 8, 12, 0.94);
+}
+
+.rules-page .rules-notice {
+  background:
+    linear-gradient(180deg, rgba(122, 16, 16, 0.08), rgba(255, 255, 255, 0.015)),
+    rgba(12, 11, 14, 0.94);
+}
+
+.rules-page .rules-list {
+  gap: 1.05rem;
+}
+
+.rules-page .rule-card {
+  position: relative;
+  padding: 1.2rem 1.25rem 1.25rem 1.35rem;
+}
+
+.rules-page .rule-card::before {
+  content: "";
+  position: absolute;
+  inset: 1rem auto 1rem 0;
+  width: 2px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(122, 16, 16, 0), rgba(122, 16, 16, 0.7), rgba(218, 183, 131, 0.18), rgba(122, 16, 16, 0));
+}
+
+.rules-page .rule-card-head {
+  gap: 1.1rem;
+}
+
+.rules-page .rule-card-head-main {
+  gap: 0.42rem;
+}
+
+.rules-page .rule-card-title {
+  font-size: clamp(1.55rem, 2.2vw, 2.15rem);
+}
+
+.rules-page .rule-tag {
+  padding: 0.42rem 0.72rem;
+  border-radius: 999px;
+  border: 1px solid rgba(122, 16, 16, 0.22);
+  background: rgba(122, 16, 16, 0.12);
+  color: #e39a8a;
+}
+
+.rules-page .rule-card-meta {
+  color: rgba(205, 194, 170, 0.5);
+}
+
+.rules-page .rule-card-content {
+  white-space: pre-line;
+  line-height: 1.62;
+}
+
+.rules-page .rule-actions,
+.rules-page .rules-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.rules-page .rules-editor-actions {
+  justify-content: flex-end;
+}
+
+.rules-page .rule-btn {
+  min-height: 42px;
+  padding: 0.62rem 0.95rem;
+  border-radius: 999px;
+  border-color: rgba(122, 16, 16, 0.16);
+  background: rgba(7, 8, 11, 0.78);
+  color: rgba(241, 234, 215, 0.88);
+}
+
+.rules-page .rule-btn:hover {
+  border-color: rgba(169, 34, 34, 0.34);
+  background: rgba(12, 10, 13, 0.95);
+  color: #fff3e8;
+}
+
+.rules-page .rule-btn-danger {
+  color: #ff9a8e;
+  border-color: rgba(173, 45, 45, 0.3);
+}
+
+.rules-page .rule-btn-danger:hover {
+  background: rgba(122, 16, 16, 0.14);
+}
+
+@media (max-width: 1080px) {
+  .rules-page .rules-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .rules-page .rules-overview-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .page-main.page-main-rules {
+    width: min(100%, calc(100vw - 1rem));
+    padding-top: 6.6rem;
+  }
+
+  .rules-page .rules-hero,
+  .rules-page .rules-block {
+    padding: 1.15rem 1rem;
+    border-radius: 24px;
+  }
+
+  .rules-page .rules-hero-points,
+  .rules-page .rules-form-grid,
+  .rules-page .rule-card-head,
+  .rules-page .rules-block-head {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .rules-page .rules-editor-actions .btn,
+  .rules-page .rule-actions .rule-btn {
+    width: 100%;
+  }
+}
+
 .rule-card::before {
   background: linear-gradient(180deg, rgba(122, 16, 16, 0), rgba(122, 16, 16, 0.58), rgba(154, 122, 0, 0.16), rgba(122, 16, 16, 0));
 }
