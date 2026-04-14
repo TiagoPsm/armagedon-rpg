@@ -873,3 +873,27 @@ body.rules-page::after {
 .rule-card::before {
   background: linear-gradient(180deg, rgba(122, 16, 16, 0), rgba(122, 16, 16, 0.58), rgba(154, 122, 0, 0.16), rgba(122, 16, 16, 0));
 }
+
+/* 2026-04 scoped simplification: match other pages without extra sections */
+.rules-page .rules-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  align-items: start;
+}
+
+.rules-page .page-heading {
+  max-width: 760px;
+}
+
+.rules-page .rules-status-panel {
+  display: block;
+}
+
+.rules-page .rules-status-grid {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 980px) {
+  .rules-page .rules-hero {
+    grid-template-columns: 1fr;
+  }
+}
