@@ -204,50 +204,8 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
 }
 
 #sheetScreen .identity-lore-card {
-  position: relative;
-  isolation: isolate;
-  padding: 1.55rem;
-  border-radius: 30px;
-  border: 1px solid rgba(171, 77, 67, 0.12);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.008)),
-    linear-gradient(180deg, rgba(10, 13, 18, 0.98), rgba(5, 7, 11, 0.98));
-  box-shadow:
-    0 30px 80px rgba(0, 0, 0, 0.56),
-    inset 0 1px 0 rgba(255, 255, 255, 0.028),
-    inset 0 -24px 42px rgba(0, 0, 0, 0.18);
-  overflow: hidden;
-  backdrop-filter: blur(16px);
   gap: 0.7rem;
-}
-
-#sheetScreen .identity-lore-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.02), transparent 18%),
-    radial-gradient(circle at 100% 0%, rgba(151, 36, 36, 0.08), transparent 24%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.008), transparent 24%);
-  pointer-events: none;
-}
-
-#sheetScreen .identity-lore-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background:
-    linear-gradient(112deg, rgba(255, 255, 255, 0.012), transparent 20%),
-    radial-gradient(circle at top right, rgba(126, 25, 25, 0.08), transparent 24%),
-    radial-gradient(circle at bottom left, rgba(81, 9, 9, 0.07), transparent 28%);
-  pointer-events: none;
-}
-
-#sheetScreen .identity-lore-card > * {
-  position: relative;
-  z-index: 1;
+  min-height: 100%;
 }
 
 #sheetScreen .identity-lore-card .identity-note-copy {
