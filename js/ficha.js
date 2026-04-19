@@ -6,6 +6,7 @@ const NPC_PREFIX = "npc:";
 const MONSTER_PREFIX = "monster:";
 const ATTRIBUTES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"];
 const DEFAULT_INVENTORY_SLOTS = 10;
+const HAB_CARD_STATE_KEY = "tc_hab_card_states";
 const ITEM_TYPES = {
   arma: "Arma",
   acessorio: "Acessório",
@@ -646,7 +647,7 @@ async function loadSheet(username, kind = "player") {
   ownedMemoryTransferStates = {};
   itemTransferStates = {};
   itemRollStates = {};
-  habCardStates = {};
+  loadHabCardStatesForCurrentSheet();
   resetItemEditorState();
 
   updateBar("vida");
@@ -1003,10 +1004,6 @@ function normalizeHab(hab) {
     id: String(hab?.id || createHabId()),
     name: String(hab?.name || ""),
     type: normalizeHabType(hab?.type),
-    cost: String(hab?.cost || ""),
-    range: String(hab?.range || hab?.alcance || ""),
-    duration: String(hab?.duration || hab?.duracao || ""),
-    cooldown: String(hab?.cooldown || hab?.recarga || ""),
     trigger: String(hab?.trigger || hab?.gatilho || ""),
     desc: legacyDesc
   };
@@ -1031,14 +1028,15 @@ function getHabTypeBadgeClass(type) {
 }
 
 function buildHabSummaryMeta(hab) {
-  const parts = [];
+  const trigger = String(hab.trigger || "").trim();
+  const desc = String(hab.desc || "").trim();
 
-  if (String(hab.cost || "").trim()) parts.push(`Custo: ${String(hab.cost).trim()}`);
-  if (String(hab.range || "").trim()) parts.push(`Alcance: ${String(hab.range).trim()}`);
-  if (String(hab.duration || "").trim()) parts.push(`Duração: ${String(hab.duration).trim()}`);
-  if (String(hab.cooldown || "").trim()) parts.push(`Recarga: ${String(hab.cooldown).trim()}`);
+  if (trigger) return `Gatilho: ${trigger}`;
+  if (desc) {
+    return desc.length > 110 ? `${desc.slice(0, 107)}...` : desc;
+  }
 
-  return parts.join(" | ") || "Sem custo, alcance, duração ou recarga definidos.";
+  return "Sem gatilho ou descrição definidos.";
 }
 
 function syncHabCardStates() {
@@ -1046,6 +1044,51 @@ function syncHabCardStates() {
     nextState[hab.id] = habCardStates[hab.id] || { collapsed: false };
     return nextState;
   }, {});
+}
+
+function readHabCardStateStore() {
+  try {
+    return JSON.parse(localStorage.getItem(HAB_CARD_STATE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function loadHabCardStatesForCurrentSheet() {
+  if (!currentSheetTarget?.key) {
+    habCardStates = {};
+    return;
+  }
+
+  const store = readHabCardStateStore();
+  const rawStates = store[currentSheetTarget.key];
+  if (!rawStates || typeof rawStates !== "object") {
+    habCardStates = {};
+    return;
+  }
+
+  habCardStates = Object.fromEntries(
+    Object.entries(rawStates).map(([id, state]) => [
+      id,
+      {
+        collapsed: Boolean(state?.collapsed)
+      }
+    ])
+  );
+}
+
+function persistHabCardStatesForCurrentSheet() {
+  if (!currentSheetTarget?.key) return;
+
+  const store = readHabCardStateStore();
+  const nextStates = Object.fromEntries(
+    habs
+      .filter(hab => hab?.id)
+      .map(hab => [hab.id, { collapsed: Boolean(habCardStates[hab.id]?.collapsed) }])
+  );
+
+  store[currentSheetTarget.key] = nextStates;
+  localStorage.setItem(HAB_CARD_STATE_KEY, JSON.stringify(store));
 }
 
 function createHabIdentityKey(hab) {
@@ -1079,10 +1122,6 @@ function mergeHabDraftEntry(incomingHab, fallbackHab) {
     id: source.id || fallback.id || createHabId(),
     name: source.name ?? fallback.name ?? "",
     type: source.type ?? fallback.type ?? "ativa",
-    cost: source.cost ?? fallback.cost ?? "",
-    range: source.range ?? source.alcance ?? fallback.range ?? fallback.alcance ?? "",
-    duration: source.duration ?? source.duracao ?? fallback.duration ?? fallback.duracao ?? "",
-    cooldown: source.cooldown ?? source.recarga ?? fallback.cooldown ?? fallback.recarga ?? "",
     trigger: source.trigger ?? source.gatilho ?? fallback.trigger ?? fallback.gatilho ?? "",
     desc: source.desc ?? fallback.desc ?? ""
   });
@@ -2241,6 +2280,7 @@ function renderHabs(list) {
   const element = document.getElementById("habList");
   if (!element) return;
   syncHabCardStates();
+  persistHabCardStatesForCurrentSheet();
 
   if (!habs.length) {
     element.innerHTML = '<p class="empty-msg">Nenhuma habilidade registrada.</p>';
@@ -2301,56 +2341,6 @@ function renderHabs(list) {
               </div>
             </div>
 
-            <div class="hab-card-grid hab-card-grid-meta">
-              <div class="hab-field">
-                <label class="form-label" for="habCost${index}">Custo</label>
-                <input
-                  id="habCost${index}"
-                  class="hab-input"
-                  type="text"
-                  placeholder="Ex: 2 PE, 1 ação..."
-                  value="${esc(hab.cost)}"
-                  oninput="updateHab(${index}, 'cost', this.value)"
-                />
-              </div>
-
-              <div class="hab-field">
-                <label class="form-label" for="habRange${index}">Alcance</label>
-                <input
-                  id="habRange${index}"
-                  class="hab-input"
-                  type="text"
-                  placeholder="Ex: Toque, 9m, pessoal..."
-                  value="${esc(hab.range)}"
-                  oninput="updateHab(${index}, 'range', this.value)"
-                />
-              </div>
-
-              <div class="hab-field">
-                <label class="form-label" for="habDuration${index}">Duração</label>
-                <input
-                  id="habDuration${index}"
-                  class="hab-input"
-                  type="text"
-                  placeholder="Ex: Instantânea, 3 turnos..."
-                  value="${esc(hab.duration)}"
-                  oninput="updateHab(${index}, 'duration', this.value)"
-                />
-              </div>
-
-              <div class="hab-field">
-                <label class="form-label" for="habCooldown${index}">Recarga</label>
-                <input
-                  id="habCooldown${index}"
-                  class="hab-input"
-                  type="text"
-                  placeholder="Ex: Cena, descanso curto..."
-                  value="${esc(hab.cooldown)}"
-                  oninput="updateHab(${index}, 'cooldown', this.value)"
-                />
-              </div>
-            </div>
-
             <div class="hab-card-grid hab-card-grid-detail">
               <div class="hab-field">
                 <label class="form-label" for="habTrigger${index}">Gatilho</label>
@@ -2398,10 +2388,6 @@ function addHabilidade() {
     id: createHabId(),
     name: "",
     type: "ativa",
-    cost: "",
-    range: "",
-    duration: "",
-    cooldown: "",
     trigger: "",
     desc: ""
   });

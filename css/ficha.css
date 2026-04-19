@@ -1283,10 +1283,6 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
   align-items: end;
 }
 
-.hab-card-grid-meta {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
 .hab-card-grid-detail {
   grid-template-columns: 1fr;
 }
@@ -1340,7 +1336,6 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
 @media (max-width: 980px) {
   .hab-card-head,
   .hab-card-grid-main,
-  .hab-card-grid-meta,
   .hab-card-grid-detail {
     grid-template-columns: 1fr;
   }
