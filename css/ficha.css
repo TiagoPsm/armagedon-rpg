@@ -4815,6 +4815,11 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
   padding-top: 0.1rem;
 }
 
+#sheetScreen .hab-card.is-collapsed .hab-card-body,
+#sheetScreen .hab-card-body[hidden] {
+  display: none;
+}
+
 #sheetScreen .hab-card-meta {
   color: rgba(205, 194, 170, 0.74);
 }
