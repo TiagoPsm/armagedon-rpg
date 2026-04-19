@@ -386,6 +386,14 @@
           </div>
         </div>
 
+        <div class="identity-side">
+          <article class="identity-note">
+            <span class="section-label">Persistência</span>
+            <strong>Salvamento ativo</strong>
+            <p id="sheetSaveText">Toda alteração da ficha fica salva para o usuário correto.</p>
+          </article>
+        </div>
+
       </section>
 
       <section class="sheet-grid sheet-grid-primary">
@@ -650,6 +658,7 @@
                 Escolha o dado, ajuste a rolagem e veja o resultado em um painel limpo e direto.
               </p>
             </div>
+            <span class="dice-tray-badge" id="diceTrayBadge">D20</span>
           </div>
 
           <div class="dice-tray-layout">
@@ -692,6 +701,12 @@
                   <label class="form-label" for="diceTrayExpression">Expressão livre</label>
                   <input type="text" id="diceTrayExpression" class="form-input" maxlength="24" placeholder="Ex: 2d6+3" />
                 </div>
+              </div>
+
+              <div class="dice-tray-preview">
+                <span class="item-meta">Resumo</span>
+                <strong id="diceExpressionPreview">1d20</strong>
+                <p class="dice-tray-preview-note">A expressão livre substitui a quantidade, o dado e o modificador.</p>
               </div>
 
               <div class="dice-tray-actions">

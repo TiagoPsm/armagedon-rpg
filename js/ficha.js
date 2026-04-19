@@ -100,15 +100,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 function initSheetMouseGlow() {
   const sheetScreen = document.getElementById("sheetScreen");
-  const pageMain = sheetScreen?.querySelector(".page-main.page-main-sheet");
-  if (!sheetScreen || !pageMain) return;
+  if (!sheetScreen) return;
   if (typeof window.matchMedia === "function" && !window.matchMedia("(pointer: fine)").matches) return;
 
   const setGlowVars = (x, y) => {
     sheetScreen.style.setProperty("--sheet-glow-x", x);
     sheetScreen.style.setProperty("--sheet-glow-y", y);
-    pageMain.style.setProperty("--sheet-glow-x", x);
-    pageMain.style.setProperty("--sheet-glow-y", y);
   };
 
   setGlowVars("50%", "18%");
@@ -1045,7 +1042,7 @@ function getItemTypeBadgeClass(type) {
 
 function parseDamageExpression(expression) {
   const sanitized = normalizeDamageExpression(expression);
-  const match = sanitized.match(/^(\d+)d(\d+)([+-]\d+)$/i);
+  const match = sanitized.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
   if (!match) return null;
 
   const diceCount = Number.parseInt(match[1], 10);

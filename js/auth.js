@@ -213,7 +213,7 @@ async function handleLogin() {
   passInput.classList.remove("error");
 
   if (!userRaw) {
-    errorEl.textContent = "Informe seu usuário.";
+    errorEl.textContent = "Informe seu usu\u00e1rio.";
     userInput.classList.add("error");
     userInput.focus();
     return;
@@ -237,10 +237,10 @@ async function handleLogin() {
       return;
     } catch (error) {
       const message = error?.message || "Falha ao autenticar no servidor.";
-      if (/senha|usuário|usuario/i.test(message)) {
+      if (/senha|usu\u00e1rio|usuario/i.test(message)) {
         errorEl.textContent = message;
       } else {
-        errorEl.textContent = "Falha ao conectar ao servidor de autenticação.";
+        errorEl.textContent = "Falha ao conectar ao servidor de autentica\u00e7\u00e3o.";
       }
       passInput.classList.add("error");
       passInput.focus();
@@ -279,7 +279,7 @@ async function handleLogin() {
     return;
   }
 
-  errorEl.textContent = "Usuário não encontrado.";
+  errorEl.textContent = "Usu\u00e1rio n\u00e3o encontrado.";
   userInput.classList.add("error");
   userInput.focus();
 }
@@ -312,11 +312,11 @@ async function onLoginSuccess(username, role = "player") {
     dashboardCopy.textContent =
       role === "master"
         ? AUTH.isBackendEnabled()
-          ? "Você pode criar jogadores, abrir qualquer ficha e salvar tudo no servidor central."
-          : "Você pode criar jogadores, abrir qualquer ficha e manter tudo salvo neste navegador."
+          ? "Voc\u00ea pode criar jogadores, abrir qualquer ficha e manter a campanha salva no servidor central."
+          : "Voc\u00ea pode criar jogadores, abrir qualquer ficha e manter tudo salvo neste navegador."
         : AUTH.isBackendEnabled()
-          ? "Você acessa seus dados no servidor da campanha, com sincronização central."
-          : "Você acessa somente seus dados, e tudo fica salvo automaticamente neste navegador.";
+          ? "Voc\u00ea acessa seus dados no servidor da campanha, com sincroniza\u00e7\u00e3o central."
+          : "Voc\u00ea acessa somente seus dados, e tudo fica salvo automaticamente neste navegador.";
   }
 }
 
