@@ -1232,20 +1232,6 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
   align-items: center;
 }
 
-.hab-toggle {
-  width: 100%;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.8rem;
-  align-items: start;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
 .hab-toggle-copy {
   display: grid;
   gap: 0.32rem;
@@ -1264,25 +1250,16 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
   line-height: 1.5;
 }
 
-.hab-toggle-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(236, 223, 196, 0.1);
-  background: rgba(255, 255, 255, 0.02);
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  line-height: 1;
-}
-
 .hab-card-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.55rem;
   align-items: center;
+}
+
+.hab-toggle-btn {
+  min-width: 120px;
 }
 
 .hab-card-actions .btn-inline[disabled] {
@@ -4836,14 +4813,6 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
 
 #sheetScreen .hab-card-body {
   padding-top: 0.1rem;
-}
-
-#sheetScreen .hab-toggle-icon {
-  border-color: rgba(236, 223, 196, 0.12);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.008)),
-    rgba(5, 8, 13, 0.88);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
 }
 
 #sheetScreen .hab-card-meta {

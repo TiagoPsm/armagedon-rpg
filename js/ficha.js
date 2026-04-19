@@ -2189,22 +2189,20 @@ function renderHabs(list) {
       (hab, index) => `
         <article class="hab-row hab-card ${habCardStates[hab.id]?.collapsed ? "is-collapsed" : ""}" data-hab-index="${index}">
           <div class="hab-card-head">
-            <button
-              type="button"
-              class="hab-toggle"
-              onclick="toggleHabCard('${jsEsc(hab.id)}')"
-              aria-expanded="${habCardStates[hab.id]?.collapsed ? "false" : "true"}"
-              aria-controls="habCardBody${index}"
-            >
-              <span class="hab-toggle-copy">
-                <span class="${getHabTypeBadgeClass(hab.type)}">${esc(getHabTypeLabel(hab.type))}</span>
-                <strong class="hab-card-title">${esc(hab.name || "Nova entrada")}</strong>
-                <span class="hab-card-meta">${esc(buildHabSummaryMeta(hab))}</span>
-              </span>
-              <span class="hab-toggle-icon" aria-hidden="true">${habCardStates[hab.id]?.collapsed ? "+" : "-"}</span>
-            </button>
+            <div class="hab-toggle-copy">
+              <span class="${getHabTypeBadgeClass(hab.type)}">${esc(getHabTypeLabel(hab.type))}</span>
+              <strong class="hab-card-title">${esc(hab.name || "Nova entrada")}</strong>
+              <span class="hab-card-meta">${esc(buildHabSummaryMeta(hab))}</span>
+            </div>
 
             <div class="hab-card-actions">
+              <button
+                type="button"
+                class="btn-inline hab-toggle-btn"
+                onclick="toggleHabCard('${jsEsc(hab.id)}')"
+                aria-expanded="${habCardStates[hab.id]?.collapsed ? "false" : "true"}"
+                aria-controls="habCardBody${index}"
+              >${habCardStates[hab.id]?.collapsed ? "Expandir" : "Minimizar"}</button>
               <button type="button" class="btn-inline" onclick="duplicateHab(${index})">Duplicar</button>
               <button type="button" class="btn-inline" onclick="moveHab(${index}, -1)" ${index === 0 ? "disabled" : ""}>Subir</button>
               <button type="button" class="btn-inline" onclick="moveHab(${index}, 1)" ${index === habs.length - 1 ? "disabled" : ""}>Descer</button>
