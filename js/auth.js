@@ -320,7 +320,22 @@ async function onLoginSuccess(username, role = "player") {
   }
 }
 
-function handleLogout() {
+async function handleLogout() {
+  const sheetScreen = document.getElementById("sheetScreen");
+  const shouldAttemptSave =
+    Boolean(sheetScreen?.classList.contains("active"))
+    && typeof window.flushSheetSaveOnExit === "function";
+
+  if (shouldAttemptSave) {
+    const saved = await window.flushSheetSaveOnExit({
+      keepalive: false,
+      suppressError: false,
+      allowInactive: true
+    });
+
+    if (saved === false) return;
+  }
+
   AUTH.logout();
 }
 

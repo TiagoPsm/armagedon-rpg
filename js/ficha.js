@@ -680,6 +680,7 @@ function saveSheetSilently() {
     if (saveTimer) window.clearTimeout(saveTimer);
     saveTimer = window.setTimeout(() => {
       saveCurrentSheet();
+      saveTimer = null;
     }, 450);
     return;
   }
@@ -687,9 +688,34 @@ function saveSheetSilently() {
   saveCurrentSheet();
 }
 
-async function saveCurrentSheet() {
-  if (!currentSheetTarget.key) return;
-  if (!document.getElementById("sheetScreen").classList.contains("active")) return;
+function flushSheetSaveOnExit(options = {}) {
+  const {
+    keepalive = isBackendMode(),
+    suppressError = true,
+    allowInactive = true
+  } = options;
+
+  if (saveTimer) {
+    window.clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+
+  return saveCurrentSheet({
+    keepalive,
+    suppressError,
+    allowInactive
+  });
+}
+
+async function saveCurrentSheet(options = {}) {
+  const {
+    keepalive = false,
+    suppressError = false,
+    allowInactive = false
+  } = options;
+
+  if (!currentSheetTarget?.key) return true;
+  if (!allowInactive && !document.getElementById("sheetScreen").classList.contains("active")) return true;
 
   enforceSheetRules();
   const data = collectSheetData(currentSheetTarget.kind);
@@ -698,10 +724,13 @@ async function saveCurrentSheet() {
   if (isBackendMode()) {
     const requestId = ++saveRequestId;
     markRecentLocalSave(currentSheetTarget.key);
+    remoteSheetsCache[currentSheetTarget.key] = normalizeSheetData(data, currentSheetTarget.kind);
+    persistRemoteSheetsCache();
     try {
-      const saved = await APP.saveCharacter(currentSheetTarget.key, data);
+      const saved = await APP.saveCharacter(currentSheetTarget.key, data, { keepalive });
       if (requestId !== saveRequestId) return;
-      remoteSheetsCache[currentSheetTarget.key] = normalizeSheetData(saved.data || data, currentSheetTarget.kind);
+      const savedData = saved?.data || data;
+      remoteSheetsCache[currentSheetTarget.key] = normalizeSheetData(savedData, currentSheetTarget.kind);
       persistRemoteSheetsCache();
       soulCore = normalizeSoulCoreState(
         remoteSheetsCache[currentSheetTarget.key].soulCore,
@@ -709,24 +738,26 @@ async function saveCurrentSheet() {
       );
       renderProgressionField(currentSheetTarget.kind);
       if (currentSheetTarget.kind === "player" || currentSheetTarget.kind === "npc" || currentSheetTarget.kind === "monster") {
-        syncDirectoryName((saved.data || data).charName);
+        syncDirectoryName(savedData.charName || data.charName);
       }
+      return true;
     } catch (error) {
+      if (suppressError) return false;
       const saveMsg = document.getElementById("saveMsg");
       if (saveMsg) {
         saveMsg.textContent = error.message || "Falha ao salvar no servidor.";
         saveMsg.className = "save-msg";
       }
-      return;
+      return false;
     }
   } else {
     const sheets = readSheets();
     sheets[currentSheetTarget.key] = data;
     writeSheets(sheets);
     renderProgressionField(currentSheetTarget.kind);
+    syncDirectoryName(data.charName);
+    return true;
   }
-
-  syncDirectoryName(data.charName);
 }
 
 function collectSheetData(kind = "player") {
@@ -1389,7 +1420,17 @@ function initAutoSave() {
   });
 
   window.addEventListener("beforeunload", () => {
-    saveSheetSilently();
+    flushSheetSaveOnExit();
+  });
+
+  window.addEventListener("pagehide", () => {
+    flushSheetSaveOnExit();
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      flushSheetSaveOnExit();
+    }
   });
 }
 

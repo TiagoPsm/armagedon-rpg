@@ -197,6 +197,7 @@
   async function request(path, options = {}) {
     const response = await fetch(buildUrl(path), {
       method: options.method || "GET",
+      keepalive: options.keepalive === true,
       headers: {
         Accept: "application/json",
         ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}),
@@ -292,10 +293,11 @@
     async getCharacter(key) {
       return request(`/characters/${encodeURIComponent(key)}`);
     },
-    async saveCharacter(key, data) {
+    async saveCharacter(key, data, options = {}) {
       return request(`/characters/${encodeURIComponent(key)}`, {
         method: "PUT",
-        body: { data }
+        body: { data },
+        keepalive: options.keepalive === true
       });
     },
     async awardSoulEssence(key, payload) {
