@@ -12,11 +12,8 @@ const ITEM_TYPES = {
   outro: "Outro"
 };
 const HAB_TYPES = {
-  habilidade: "Habilidade",
-  poder: "Poder",
-  passiva: "Passiva",
-  tecnica: "Técnica",
-  ritual: "Ritual"
+  ativa: "Ativa",
+  passiva: "Passiva"
 };
 const DICE_PRESETS = [
   { key: "d4", label: "D4", sides: 4 },
@@ -1019,12 +1016,13 @@ function createHabId() {
 }
 
 function normalizeHabType(value) {
-  const normalized = String(value || "habilidade").trim().toLowerCase();
-  return Object.prototype.hasOwnProperty.call(HAB_TYPES, normalized) ? normalized : "habilidade";
+  const normalized = String(value || "ativa").trim().toLowerCase();
+  if (normalized === "passiva") return "passiva";
+  return "ativa";
 }
 
 function getHabTypeLabel(type) {
-  return HAB_TYPES[normalizeHabType(type)] || HAB_TYPES.habilidade;
+  return HAB_TYPES[normalizeHabType(type)] || HAB_TYPES.ativa;
 }
 
 function getHabTypeBadgeClass(type) {
@@ -2182,7 +2180,7 @@ function renderHabs(list) {
   syncHabCardStates();
 
   if (!habs.length) {
-    element.innerHTML = '<p class="empty-msg">Nenhuma habilidade ou poder registrado.</p>';
+    element.innerHTML = '<p class="empty-msg">Nenhuma habilidade registrada.</p>';
     return;
   }
 
@@ -2222,7 +2220,7 @@ function renderHabs(list) {
                   id="habName${index}"
                   class="hab-input hab-name"
                   type="text"
-                  placeholder="Nome da habilidade ou poder..."
+                  placeholder="Nome da habilidade..."
                   value="${esc(hab.name)}"
                   oninput="updateHab(${index}, 'name', this.value)"
                 />
@@ -2311,7 +2309,7 @@ function renderHabs(list) {
                   id="habDesc${index}"
                   class="hab-desc auto-grow"
                   rows="4"
-                  placeholder="Efeito, restrições, custo narrativo, combinação com outros poderes e observações de uso..."
+                  placeholder="Efeito, restrições, custo narrativo e observações de uso..."
                   oninput="updateHab(${index}, 'desc', this.value)"
                 >${esc(hab.desc)}</textarea>
               </div>
@@ -2338,7 +2336,7 @@ function addHabilidade() {
   const nextHab = normalizeHab({
     id: createHabId(),
     name: "",
-    type: "habilidade",
+    type: "ativa",
     cost: "",
     range: "",
     duration: "",
