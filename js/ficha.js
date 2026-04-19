@@ -592,7 +592,8 @@ async function loadSheet(username, kind = "player") {
   if (isBackendMode()) {
     try {
       const character = await APP.getCharacter(username);
-      remoteSheetsCache[username] = normalizeSheetData(character.data || {}, kind);
+      const mergedRemoteData = mergeSheetHabDraft(character.data || {}, remoteSheetsCache[username] || {});
+      remoteSheetsCache[username] = normalizeSheetData(mergedRemoteData, kind);
       persistRemoteSheetsCache();
     } catch (error) {
       await UI.alert(error.message || "Falha ao carregar a ficha no servidor.", {
@@ -726,7 +727,7 @@ async function saveCurrentSheet(options = {}) {
     try {
       const saved = await APP.saveCharacter(currentSheetTarget.key, data, { keepalive });
       if (requestId !== saveRequestId) return;
-      const savedData = saved?.data || data;
+      const savedData = mergeSheetHabDraft(saved?.data || data, data);
       remoteSheetsCache[currentSheetTarget.key] = normalizeSheetData(savedData, currentSheetTarget.kind);
       persistRemoteSheetsCache();
       soulCore = normalizeSoulCoreState(
@@ -1045,6 +1046,68 @@ function syncHabCardStates() {
     nextState[hab.id] = habCardStates[hab.id] || { collapsed: false };
     return nextState;
   }, {});
+}
+
+function createHabIdentityKey(hab) {
+  const id = String(hab?.id || "").trim();
+  if (id) return `id:${id}`;
+
+  const name = String(hab?.name || "").trim().toLowerCase();
+  const desc = String(hab?.desc || "").trim().toLowerCase();
+  if (name || desc) return `text:${name}::${desc}`;
+
+  return "";
+}
+
+function pickHabFallbackForMerge(incomingHab, fallbackHabs, index) {
+  if (!Array.isArray(fallbackHabs) || !fallbackHabs.length) return null;
+
+  const incomingKey = createHabIdentityKey(incomingHab);
+  if (incomingKey) {
+    const directMatch = fallbackHabs.find(candidate => createHabIdentityKey(candidate) === incomingKey);
+    if (directMatch) return directMatch;
+  }
+
+  return fallbackHabs[index] || null;
+}
+
+function mergeHabDraftEntry(incomingHab, fallbackHab) {
+  const source = incomingHab && typeof incomingHab === "object" ? incomingHab : {};
+  const fallback = fallbackHab && typeof fallbackHab === "object" ? fallbackHab : {};
+
+  return normalizeHab({
+    id: source.id || fallback.id || createHabId(),
+    name: source.name ?? fallback.name ?? "",
+    type: source.type ?? fallback.type ?? "ativa",
+    cost: source.cost ?? fallback.cost ?? "",
+    range: source.range ?? source.alcance ?? fallback.range ?? fallback.alcance ?? "",
+    duration: source.duration ?? source.duracao ?? fallback.duration ?? fallback.duracao ?? "",
+    cooldown: source.cooldown ?? source.recarga ?? fallback.cooldown ?? fallback.recarga ?? "",
+    trigger: source.trigger ?? source.gatilho ?? fallback.trigger ?? fallback.gatilho ?? "",
+    desc: source.desc ?? fallback.desc ?? ""
+  });
+}
+
+function mergeHabCollections(incomingHabs, fallbackHabs) {
+  if (!Array.isArray(incomingHabs)) return [];
+  if (!Array.isArray(fallbackHabs) || !fallbackHabs.length || !incomingHabs.length) {
+    return incomingHabs.map(normalizeHab);
+  }
+
+  return incomingHabs.map((incomingHab, index) =>
+    mergeHabDraftEntry(incomingHab, pickHabFallbackForMerge(incomingHab, fallbackHabs, index))
+  );
+}
+
+function mergeSheetHabDraft(incomingData, fallbackData) {
+  const nextData = incomingData && typeof incomingData === "object" ? { ...incomingData } : {};
+  const fallback = fallbackData && typeof fallbackData === "object" ? fallbackData : {};
+
+  if (Array.isArray(nextData.habs)) {
+    nextData.habs = mergeHabCollections(nextData.habs, fallback.habs);
+  }
+
+  return nextData;
 }
 
 function normalizeItem(item) {
