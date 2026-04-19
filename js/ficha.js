@@ -11,6 +11,13 @@ const ITEM_TYPES = {
   acessorio: "Acessório",
   outro: "Outro"
 };
+const HAB_TYPES = {
+  habilidade: "Habilidade",
+  poder: "Poder",
+  passiva: "Passiva",
+  tecnica: "Técnica",
+  ritual: "Ritual"
+};
 const DICE_PRESETS = [
   { key: "d4", label: "D4", sides: 4 },
   { key: "d6", label: "D6", sides: 6 },
@@ -32,6 +39,7 @@ let currentUser = null;
 let currentRole = null;
 let currentSheetTarget = null;
 let habs = [];
+let habCardStates = {};
 let inv = [];
 let inventorySlots = DEFAULT_INVENTORY_SLOTS;
 let memoryDrops = [];
@@ -640,6 +648,7 @@ async function loadSheet(username, kind = "player") {
   ownedMemoryTransferStates = {};
   itemTransferStates = {};
   itemRollStates = {};
+  habCardStates = {};
   resetItemEditorState();
 
   updateBar("vida");
@@ -960,10 +969,53 @@ function buildSoulProgressLabel(core) {
 }
 
 function normalizeHab(hab) {
+  const legacyDesc = String(hab?.desc || "");
   return {
-    name: hab.name || "",
-    desc: hab.desc || ""
+    id: String(hab?.id || createHabId()),
+    name: String(hab?.name || ""),
+    type: normalizeHabType(hab?.type),
+    cost: String(hab?.cost || ""),
+    range: String(hab?.range || hab?.alcance || ""),
+    duration: String(hab?.duration || hab?.duracao || ""),
+    cooldown: String(hab?.cooldown || hab?.recarga || ""),
+    trigger: String(hab?.trigger || hab?.gatilho || ""),
+    desc: legacyDesc
   };
+}
+
+function createHabId() {
+  return `hab-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function normalizeHabType(value) {
+  const normalized = String(value || "habilidade").trim().toLowerCase();
+  return Object.prototype.hasOwnProperty.call(HAB_TYPES, normalized) ? normalized : "habilidade";
+}
+
+function getHabTypeLabel(type) {
+  return HAB_TYPES[normalizeHabType(type)] || HAB_TYPES.habilidade;
+}
+
+function getHabTypeBadgeClass(type) {
+  return `hab-type-badge is-${normalizeHabType(type)}`;
+}
+
+function buildHabSummaryMeta(hab) {
+  const parts = [];
+
+  if (String(hab.cost || "").trim()) parts.push(`Custo: ${String(hab.cost).trim()}`);
+  if (String(hab.range || "").trim()) parts.push(`Alcance: ${String(hab.range).trim()}`);
+  if (String(hab.duration || "").trim()) parts.push(`Duração: ${String(hab.duration).trim()}`);
+  if (String(hab.cooldown || "").trim()) parts.push(`Recarga: ${String(hab.cooldown).trim()}`);
+
+  return parts.join(" | ") || "Sem custo, alcance, duração ou recarga definidos.";
+}
+
+function syncHabCardStates() {
+  habCardStates = habs.reduce((nextState, hab) => {
+    nextState[hab.id] = habCardStates[hab.id] || { collapsed: false };
+    return nextState;
+  }, {});
 }
 
 function normalizeItem(item) {
@@ -2086,20 +2138,145 @@ function renderHabs(list) {
   habs = list.map(normalizeHab);
   const element = document.getElementById("habList");
   if (!element) return;
+  syncHabCardStates();
 
   if (!habs.length) {
-    element.innerHTML = '<p class="empty-msg">Nenhuma habilidade registrada.</p>';
+    element.innerHTML = '<p class="empty-msg">Nenhuma habilidade ou poder registrado.</p>';
     return;
   }
 
   element.innerHTML = habs
     .map(
       (hab, index) => `
-        <div class="hab-row">
-          <input class="hab-name" type="text" placeholder="Nome..." value="${esc(hab.name)}" oninput="updateHab(${index}, 'name', this.value)"/>
-        <textarea class="hab-desc auto-grow" rows="3" placeholder="Efeito, custo, descrição..." oninput="updateHab(${index}, 'desc', this.value)">${esc(hab.desc)}</textarea>
-          <button class="btn-remove" onclick="removeHab(${index})">x</button>
-        </div>
+        <article class="hab-row hab-card ${habCardStates[hab.id]?.collapsed ? "is-collapsed" : ""}" data-hab-index="${index}">
+          <div class="hab-card-head">
+            <button
+              type="button"
+              class="hab-toggle"
+              onclick="toggleHabCard('${jsEsc(hab.id)}')"
+              aria-expanded="${habCardStates[hab.id]?.collapsed ? "false" : "true"}"
+              aria-controls="habCardBody${index}"
+            >
+              <span class="hab-toggle-copy">
+                <span class="${getHabTypeBadgeClass(hab.type)}">${esc(getHabTypeLabel(hab.type))}</span>
+                <strong class="hab-card-title">${esc(hab.name || "Nova entrada")}</strong>
+                <span class="hab-card-meta">${esc(buildHabSummaryMeta(hab))}</span>
+              </span>
+              <span class="hab-toggle-icon" aria-hidden="true">${habCardStates[hab.id]?.collapsed ? "+" : "-"}</span>
+            </button>
+
+            <div class="hab-card-actions">
+              <button type="button" class="btn-inline" onclick="duplicateHab(${index})">Duplicar</button>
+              <button type="button" class="btn-inline" onclick="moveHab(${index}, -1)" ${index === 0 ? "disabled" : ""}>Subir</button>
+              <button type="button" class="btn-inline" onclick="moveHab(${index}, 1)" ${index === habs.length - 1 ? "disabled" : ""}>Descer</button>
+              <button type="button" class="btn-remove" onclick="removeHab(${index})" aria-label="Remover entrada">x</button>
+            </div>
+          </div>
+
+          <div class="hab-card-body" id="habCardBody${index}" ${habCardStates[hab.id]?.collapsed ? "hidden" : ""}>
+            <div class="hab-card-grid hab-card-grid-main">
+              <div class="hab-field">
+                <label class="form-label" for="habName${index}">Nome</label>
+                <input
+                  id="habName${index}"
+                  class="hab-input hab-name"
+                  type="text"
+                  placeholder="Nome da habilidade ou poder..."
+                  value="${esc(hab.name)}"
+                  oninput="updateHab(${index}, 'name', this.value)"
+                />
+              </div>
+
+              <div class="hab-field hab-field-type">
+                <label class="form-label" for="habType${index}">Tipo</label>
+                <select
+                  id="habType${index}"
+                  class="hab-input hab-select"
+                  onchange="updateHab(${index}, 'type', this.value)"
+                >
+                  ${Object.entries(HAB_TYPES)
+                    .map(([value, label]) => `<option value="${esc(value)}" ${hab.type === value ? "selected" : ""}>${esc(label)}</option>`)
+                    .join("")}
+                </select>
+              </div>
+            </div>
+
+            <div class="hab-card-grid hab-card-grid-meta">
+              <div class="hab-field">
+                <label class="form-label" for="habCost${index}">Custo</label>
+                <input
+                  id="habCost${index}"
+                  class="hab-input"
+                  type="text"
+                  placeholder="Ex: 2 PE, 1 ação..."
+                  value="${esc(hab.cost)}"
+                  oninput="updateHab(${index}, 'cost', this.value)"
+                />
+              </div>
+
+              <div class="hab-field">
+                <label class="form-label" for="habRange${index}">Alcance</label>
+                <input
+                  id="habRange${index}"
+                  class="hab-input"
+                  type="text"
+                  placeholder="Ex: Toque, 9m, pessoal..."
+                  value="${esc(hab.range)}"
+                  oninput="updateHab(${index}, 'range', this.value)"
+                />
+              </div>
+
+              <div class="hab-field">
+                <label class="form-label" for="habDuration${index}">Duração</label>
+                <input
+                  id="habDuration${index}"
+                  class="hab-input"
+                  type="text"
+                  placeholder="Ex: Instantânea, 3 turnos..."
+                  value="${esc(hab.duration)}"
+                  oninput="updateHab(${index}, 'duration', this.value)"
+                />
+              </div>
+
+              <div class="hab-field">
+                <label class="form-label" for="habCooldown${index}">Recarga</label>
+                <input
+                  id="habCooldown${index}"
+                  class="hab-input"
+                  type="text"
+                  placeholder="Ex: Cena, descanso curto..."
+                  value="${esc(hab.cooldown)}"
+                  oninput="updateHab(${index}, 'cooldown', this.value)"
+                />
+              </div>
+            </div>
+
+            <div class="hab-card-grid hab-card-grid-detail">
+              <div class="hab-field">
+                <label class="form-label" for="habTrigger${index}">Gatilho</label>
+                <input
+                  id="habTrigger${index}"
+                  class="hab-input"
+                  type="text"
+                  placeholder="Quando ou como esta entrada pode ser ativada..."
+                  value="${esc(hab.trigger)}"
+                  oninput="updateHab(${index}, 'trigger', this.value)"
+                />
+              </div>
+
+              <div class="hab-field hab-field-full">
+                <label class="form-label" for="habDesc${index}">Descrição</label>
+                <textarea
+                  id="habDesc${index}"
+                  class="hab-desc auto-grow"
+                  rows="4"
+                  placeholder="Efeito, restrições, custo narrativo, combinação com outros poderes e observações de uso..."
+                  oninput="updateHab(${index}, 'desc', this.value)"
+                >${esc(hab.desc)}</textarea>
+              </div>
+            </div>
+          </div>
+        </article>
       `
     )
     .join("");
@@ -2109,27 +2286,93 @@ function renderHabs(list) {
 
 function updateHab(index, field, value) {
   if (!habs[index]) return;
-  habs[index][field] = value;
+  habs[index] = normalizeHab({
+    ...habs[index],
+    [field]: value
+  });
+  syncHabSummary(index);
 }
 
 function addHabilidade() {
-  habs.push({ name: "", desc: "" });
+  const nextHab = normalizeHab({
+    id: createHabId(),
+    name: "",
+    type: "habilidade",
+    cost: "",
+    range: "",
+    duration: "",
+    cooldown: "",
+    trigger: "",
+    desc: ""
+  });
+  habs.push(nextHab);
+  habCardStates[nextHab.id] = { collapsed: false };
   renderHabs(habs);
   document.querySelectorAll(".hab-name")[habs.length - 1].focus();
   saveSheetSilently();
 }
 
+function syncHabSummary(index) {
+  const hab = habs[index];
+  const row = document.querySelector(`.hab-card[data-hab-index="${index}"]`);
+  if (!hab || !row) return;
+
+  const badge = row.querySelector(".hab-type-badge");
+  const title = row.querySelector(".hab-card-title");
+  const meta = row.querySelector(".hab-card-meta");
+
+  if (badge) {
+    badge.className = getHabTypeBadgeClass(hab.type);
+    badge.textContent = getHabTypeLabel(hab.type);
+  }
+  if (title) title.textContent = hab.name || "Nova entrada";
+  if (meta) meta.textContent = buildHabSummaryMeta(hab);
+}
+
+function toggleHabCard(habId) {
+  if (!habCardStates[habId]) {
+    habCardStates[habId] = { collapsed: true };
+  } else {
+    habCardStates[habId].collapsed = !habCardStates[habId].collapsed;
+  }
+  renderHabs(habs);
+}
+
+function duplicateHab(index) {
+  if (!habs[index]) return;
+
+  const clone = normalizeHab({
+    ...habs[index],
+    id: createHabId(),
+    name: habs[index].name ? `${habs[index].name} (cópia)` : ""
+  });
+
+  habs.splice(index + 1, 0, clone);
+  habCardStates[clone.id] = { collapsed: false };
+  renderHabs(habs);
+  document.querySelectorAll(".hab-name")[index + 1]?.focus();
+  saveSheetSilently();
+}
+
+function moveHab(index, direction) {
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= habs.length) return;
+
+  [habs[index], habs[targetIndex]] = [habs[targetIndex], habs[index]];
+  renderHabs(habs);
+  document.querySelectorAll(".hab-name")[targetIndex]?.focus();
+  saveSheetSilently();
+}
+
 function removeHab(index) {
+  if (habs[index]?.id) delete habCardStates[habs[index].id];
   habs.splice(index, 1);
   renderHabs(habs);
   saveSheetSilently();
 }
 
 function collectHabs() {
-  return Array.from(document.querySelectorAll(".hab-row")).map(row => ({
-    name: row.querySelector(".hab-name").value || "",
-    desc: row.querySelector(".hab-desc").value || ""
-  }));
+  return habs.map(normalizeHab);
 }
 
 function renderOwnedMemories(list) {

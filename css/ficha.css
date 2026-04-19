@@ -870,11 +870,9 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
 
 .hab-row {
   display: grid;
-  grid-template-columns: minmax(180px, 0.85fr) minmax(0, 2fr) auto;
-  gap: 0.8rem;
+  gap: 0.95rem;
   align-items: start;
-  padding: 0.8rem 0;
-  border-bottom: 1px solid var(--line);
+  padding: 1rem;
 }
 
 .memory-row {
@@ -908,6 +906,8 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
   align-content: start;
 }
 
+.hab-input,
+.hab-select,
 .hab-name,
 .hab-desc,
 .memory-name,
@@ -1190,6 +1190,8 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
   height: auto;
 }
 
+.hab-input:focus,
+.hab-select:focus,
 .hab-name:focus,
 .hab-desc:focus,
 .memory-name:focus,
@@ -1216,6 +1218,153 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
 
 .btn-remove:active {
   transform: scale(0.92);
+}
+
+.hab-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.hab-card-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.hab-toggle {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hab-toggle-copy {
+  display: grid;
+  gap: 0.32rem;
+  min-width: 0;
+}
+
+.hab-card-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  line-height: 1.05;
+}
+
+.hab-card-meta {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.hab-toggle-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(236, 223, 196, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.hab-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.hab-card-actions .btn-inline[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.hab-card-body {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.hab-card-grid {
+  display: grid;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.hab-card-grid-main {
+  grid-template-columns: minmax(0, 1.35fr) minmax(190px, 0.65fr);
+}
+
+.hab-card-grid-meta {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.hab-card-grid-detail {
+  grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1.25fr);
+}
+
+.hab-field {
+  min-width: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.hab-type-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 28px;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(236, 223, 196, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(237, 224, 198, 0.9);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.hab-type-badge.is-poder {
+  border-color: rgba(235, 135, 71, 0.2);
+  color: rgba(255, 198, 166, 0.95);
+}
+
+.hab-type-badge.is-passiva {
+  border-color: rgba(195, 170, 105, 0.18);
+  color: rgba(240, 223, 173, 0.92);
+}
+
+.hab-type-badge.is-tecnica {
+  border-color: rgba(136, 156, 214, 0.2);
+  color: rgba(186, 203, 255, 0.94);
+}
+
+.hab-type-badge.is-ritual {
+  border-color: rgba(180, 109, 182, 0.2);
+  color: rgba(228, 190, 233, 0.94);
+}
+
+@media (max-width: 980px) {
+  .hab-card-head,
+  .hab-card-grid-main,
+  .hab-card-grid-meta,
+  .hab-card-grid-detail {
+    grid-template-columns: 1fr;
+  }
+
+  .hab-card-actions {
+    justify-content: flex-start;
+  }
 }
 
 .inventory-grid {
@@ -2847,6 +2996,10 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
     linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.012)),
     rgba(9, 12, 18, 0.88);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+#sheetScreen .hab-card .btn-inline {
+  margin-left: 0;
 }
 
 #sheetScreen #habList,
@@ -4645,8 +4798,8 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
   padding-bottom: 1.18rem;
 }
 
-#sheetScreen .sheet-section-skills .btn-inline,
-#sheetScreen .sheet-section-memory-drops .btn-inline {
+#sheetScreen .sheet-section-skills > .block-title-bar > .btn-inline,
+#sheetScreen .sheet-section-memory-drops > .block-title-bar > .btn-inline {
   margin-left: auto;
   align-self: center;
 }
@@ -4664,6 +4817,31 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
 #sheetScreen .sheet-section-memory-drops .empty-msg {
   margin: 0;
   padding-top: 0.3rem;
+}
+
+#sheetScreen .hab-card {
+  gap: 1rem;
+  border-radius: 24px;
+}
+
+#sheetScreen .hab-card-head {
+  gap: 0.95rem;
+}
+
+#sheetScreen .hab-card-body {
+  padding-top: 0.1rem;
+}
+
+#sheetScreen .hab-toggle-icon {
+  border-color: rgba(236, 223, 196, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.008)),
+    rgba(5, 8, 13, 0.88);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+#sheetScreen .hab-card-meta {
+  color: rgba(205, 194, 170, 0.74);
 }
 
 #sheetScreen .sheet-section-inventory .block-title-bar {
