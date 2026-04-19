@@ -387,10 +387,17 @@
         </div>
 
         <div class="identity-side">
-          <article class="identity-note">
-            <span class="section-label">Persistência</span>
-            <strong>Salvamento ativo</strong>
-            <p id="sheetSaveText">Toda alteração da ficha fica salva para o usuário correto.</p>
+          <article class="identity-note identity-lore-card" id="identityLoreCard">
+            <span class="section-label">Lore</span>
+            <strong>História e detalhes</strong>
+            <p class="identity-note-copy">Registre a lore, motivações, vínculos e segredos importantes da ficha.</p>
+            <label class="form-label identity-lore-label" for="charNotes">Lore do personagem</label>
+            <textarea
+              id="charNotes"
+              class="notes-input auto-grow identity-lore-input"
+              rows="5"
+              placeholder="Conte a história, personalidade, traumas, objetivos, aliados e tudo o que define esse personagem..."
+            ></textarea>
           </article>
         </div>
 
@@ -576,18 +583,6 @@
         <div id="inventoryGrid" class="inventory-grid">
           <p class="empty-msg">Inventário vazio.</p>
         </div>
-      </section>
-
-      <section class="sheet-block sheet-section sheet-section-notes">
-        <div class="block-title-bar">
-          <span class="section-label" style="margin:0">// Anotações</span>
-        </div>
-
-        <textarea
-          id="charNotes"
-          class="notes-input auto-grow"
-          placeholder="Anotações pessoais, segredos, objetivos e pistas..."
-        ></textarea>
       </section>
 
       <div class="save-row save-row-sheet">

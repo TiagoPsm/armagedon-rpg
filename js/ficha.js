@@ -564,7 +564,6 @@ function openSheetLegacy(target, fromMaster) {
   const sheetUser = document.getElementById("sheetUser");
   const backButton = document.getElementById("btnBackMaster");
   const sheetKindLabel = document.getElementById("sheetKindLabel");
-  const sheetSaveText = document.getElementById("sheetSaveText");
   const resolvedTarget = typeof target === "string" ? createPlayerTarget(target) : target;
 
   currentSheetTarget = resolvedTarget;
@@ -576,12 +575,6 @@ function openSheetLegacy(target, fromMaster) {
   if (backButton) backButton.style.display = fromMaster ? "inline-block" : "none";
   if (sheetKindLabel) {
     sheetKindLabel.textContent = resolvedTarget.kind === "npc" ? "Ficha do NPC" : "Ficha do personagem";
-  }
-  if (sheetSaveText) {
-    sheetSaveText.textContent =
-      resolvedTarget.kind === "npc"
-        ? "Toda alteração desta ficha de NPC fica salva neste navegador do mestre."
-        : "Toda alteração da ficha fica salva para o usuário correto.";
   }
 
   loadSheet(resolvedTarget.key);
@@ -3170,12 +3163,10 @@ function updateSheetHeader(fromMaster) {
   const sheetUser = document.getElementById("sheetUser");
   const backButton = document.getElementById("btnBackMaster");
   const sheetKindLabel = document.getElementById("sheetKindLabel");
-  const sheetSaveText = document.getElementById("sheetSaveText");
 
   if (sheetUser) sheetUser.textContent = formatCurrentSheetTarget();
   if (backButton) backButton.style.display = fromMaster ? "inline-block" : "none";
   if (sheetKindLabel) sheetKindLabel.textContent = getSheetKindTitle();
-  if (sheetSaveText) sheetSaveText.textContent = getSheetSaveText();
 }
 
 function applySheetKindUI(kind) {
@@ -3187,6 +3178,7 @@ function applySheetKindUI(kind) {
   const charFaction = document.getElementById("charFaction");
   const inventorySection = document.getElementById("inventorySection");
   const memorySection = document.getElementById("memorySection");
+  const identityLoreCard = document.getElementById("identityLoreCard");
   const vidaCard = document.getElementById("vidaCard");
   const isMonster = kind === "monster";
 
@@ -3212,6 +3204,10 @@ function applySheetKindUI(kind) {
   if (memorySection) {
     memorySection.hidden = !isMonster;
     memorySection.style.display = isMonster ? "" : "none";
+  }
+  if (identityLoreCard) {
+    identityLoreCard.hidden = isMonster;
+    identityLoreCard.style.display = isMonster ? "none" : "";
   }
   if (vidaCard) vidaCard.classList.toggle("resource-card-wide", isMonster);
   renderProgressionField(kind);
@@ -3535,17 +3531,6 @@ function getSheetKindTitle() {
   if (currentSheetTarget.kind === "npc") return "Ficha do NPC";
   if (currentSheetTarget.kind === "monster") return "Ficha do monstro";
   return "Ficha do personagem";
-}
-
-function getSheetSaveText() {
-  if (!currentSheetTarget) return "Toda alteração da ficha fica salva para o usuário correto.";
-  if (currentSheetTarget.kind === "npc") {
-    return "Toda alteração desta ficha de NPC fica salva neste navegador do mestre.";
-  }
-  if (currentSheetTarget.kind === "monster") {
-    return "Toda alteração desta ficha de monstro fica salva neste navegador do mestre.";
-  }
-  return "Toda alteração da ficha fica salva para o usuário correto.";
 }
 
 function syncDirectoryName(charName) {

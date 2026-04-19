@@ -178,10 +178,29 @@ body[data-active-screen="masterScreen"] .bg-sheet-video {
   gap: 0.55rem;
 }
 
+.identity-lore-card {
+  min-height: 100%;
+}
+
 .identity-note strong {
   font-family: var(--font-display);
   font-size: 1.6rem;
   line-height: 1;
+}
+
+.identity-note-copy {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.identity-lore-label {
+  margin-top: 0.2rem;
+}
+
+.identity-lore-input {
+  min-height: 180px;
+  resize: vertical;
 }
 
 .avatar-col {
