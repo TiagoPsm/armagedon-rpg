@@ -2149,10 +2149,6 @@ function initDiceTray() {
     || !openButton
   ) return;
 
-  if (root.parentElement !== document.body) {
-    document.body.appendChild(root);
-  }
-
   const trayKicker = root.querySelector(".dice-tray-kicker");
   const trayTitle = document.getElementById("diceTrayTitle");
   const traySubtitle = root.querySelector(".dice-tray-subtitle");
