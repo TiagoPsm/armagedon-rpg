@@ -32,6 +32,7 @@ const DICE_TRAY_MODES = {
 };
 const DEFAULT_DICE_PRESET = "d20";
 const DICE_TRAY_HISTORY_LIMIT = 5;
+const DICE_ROLL_PREVIEW_LIMIT = 12;
 const DICE_TRAY_ANIMATION_MS = 180;
 const DICE_TRAY_TIME_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
   hour: "2-digit",
@@ -69,6 +70,7 @@ let diceTrayState = {
   modifier: 0,
   mode: "normal",
   customExpression: "",
+  historyOpen: false,
   advancedOpen: false,
   rolling: false,
   lastResult: null,
@@ -1265,7 +1267,6 @@ function parseDamageExpression(expression) {
     Number.isNaN(diceSides) ||
     Number.isNaN(modifier) ||
     diceCount < 1 ||
-    diceCount > 20 ||
     diceSides < 2 ||
     diceSides > 1000 ||
     Math.abs(modifier) > 1000
@@ -1285,13 +1286,23 @@ function rollDamageExpression(expression) {
   const parsed = parseDamageExpression(expression);
   if (!parsed) return null;
 
-  const rolls = Array.from({ length: parsed.diceCount }, () => 1 + Math.floor(Math.random() * parsed.diceSides));
-  const subtotal = rolls.reduce((sum, roll) => sum + roll, 0);
+  const rolls = [];
+  let subtotal = 0;
+
+  for (let index = 0; index < parsed.diceCount; index += 1) {
+    const roll = 1 + Math.floor(Math.random() * parsed.diceSides);
+    subtotal += roll;
+    if (rolls.length < DICE_ROLL_PREVIEW_LIMIT) {
+      rolls.push(roll);
+    }
+  }
+
   const total = subtotal + parsed.modifier;
 
   return {
     ...parsed,
     rolls,
+    hiddenRollCount: Math.max(0, parsed.diceCount - rolls.length),
     subtotal,
     total
   };
@@ -1941,7 +1952,7 @@ async function rollItemDamage(index, options = {}) {
   renderInv(inv);
 
   await UI.alert(
-    `Resultado: ${result.total}. Rolagens: ${result.rolls.join(" + ")}${modifierText}.`,
+    `Resultado: ${result.total}. Rolagens: ${formatRollPreview(result)}${modifierText}${result.hiddenRollCount ? ` | ${result.diceCount} dados` : ""}.`,
     {
       title: item.name || "Rolagem de arma",
       kicker: "// Dano"
@@ -1976,6 +1987,10 @@ function getDiceTrayElements() {
     advancedToggle: document.getElementById("diceAdvancedToggleBtn"),
     advancedToggleState: document.getElementById("diceAdvancedToggleState"),
     advancedPanel: document.getElementById("diceTrayAdvancedPanel"),
+    historyToggle: document.getElementById("diceHistoryToggleBtn"),
+    historyToggleState: document.getElementById("diceHistoryToggleState"),
+    historyToggleHint: document.getElementById("diceHistoryToggleHint"),
+    historyPanel: document.getElementById("diceHistoryPanel"),
     historyList: document.getElementById("diceHistoryList"),
     reroll: document.getElementById("diceTrayRerollBtn"),
     resultCard: document.getElementById("diceResultCard"),
@@ -1991,7 +2006,7 @@ function getDiceTrayElements() {
 function clampDiceTrayQuantity(value) {
   const numeric = Number.parseInt(value, 10);
   if (Number.isNaN(numeric)) return 1;
-  return Math.min(20, Math.max(1, numeric));
+  return Math.max(1, numeric);
 }
 
 function clampDiceTrayModifier(value) {
@@ -2018,6 +2033,16 @@ function getActiveDiceTrayExpression() {
 
 function formatDiceTrayModeLabel(mode) {
   return DICE_TRAY_MODES[normalizeDiceTrayMode(mode)] || DICE_TRAY_MODES.normal;
+}
+
+function formatRollPreview(result) {
+  if (!result || !Array.isArray(result.rolls) || !result.rolls.length) return "";
+
+  const preview = result.rolls.join(" + ");
+  if (!result.hiddenRollCount) return preview;
+
+  const hiddenLabel = result.hiddenRollCount === 1 ? "1 restante" : `${result.hiddenRollCount} restantes`;
+  return `${preview} + ... (${hiddenLabel})`;
 }
 
 function formatDiceTrayTime(value) {
@@ -2077,15 +2102,18 @@ function formatDiceTrayRollSummary(result) {
   const modifierText = result.modifier
     ? ` | Modificador: ${result.modifier > 0 ? "+" : ""}${result.modifier}`
     : "";
-  return `${result.total} (${result.rolls.join(" + ")}${modifierText})`;
+  const countText = result.hiddenRollCount ? ` | ${result.diceCount} dados` : "";
+  return `${result.total} (${formatRollPreview(result)}${modifierText}${countText})`;
 }
 
 function buildDiceTrayRollMeta(result) {
   if (!result) return "";
+  const rollText = formatRollPreview(result);
   const modifierText = result.modifier
     ? ` | Mod ${result.modifier > 0 ? "+" : ""}${result.modifier}`
     : "";
-  return `${result.rolls.join(" + ")}${modifierText}`;
+  const countText = result.hiddenRollCount ? ` | ${result.diceCount} dados` : "";
+  return `${rollText}${modifierText}${countText}`;
 }
 
 function buildDiceTrayHistoryMeta(result) {
@@ -2171,6 +2199,7 @@ function openDiceTray() {
   }
 
   diceTrayState.open = true;
+  diceTrayState.historyOpen = false;
   root.hidden = false;
   root.classList.remove("is-closing");
   window.requestAnimationFrame(() => {
@@ -2212,6 +2241,7 @@ function initDiceTray() {
     optionGrid,
     modeGrid,
     advancedToggle,
+    historyToggle,
     reroll
   } = getDiceTrayElements();
   const openButton = document.getElementById("openDiceTrayBtn");
@@ -2227,6 +2257,7 @@ function initDiceTray() {
     || !optionGrid
     || !modeGrid
     || !advancedToggle
+    || !historyToggle
     || !reroll
     || !openButton
   ) return;
@@ -2255,6 +2286,10 @@ function initDiceTray() {
   });
   reroll.addEventListener("click", () => {
     rollDiceTray();
+  });
+  historyToggle.addEventListener("click", () => {
+    diceTrayState.historyOpen = !diceTrayState.historyOpen;
+    renderDiceTray();
   });
   advancedToggle.addEventListener("click", () => {
     diceTrayState.advancedOpen = !diceTrayState.advancedOpen;
@@ -2494,6 +2529,17 @@ function renderDiceTray() {
   if (elements.expression) elements.expression.value = customExpression;
   if (elements.preview) elements.preview.textContent = expression;
   if (elements.badge) elements.badge.textContent = preset.label;
+  if (elements.historyPanel) elements.historyPanel.hidden = !diceTrayState.historyOpen;
+  if (elements.historyToggle) elements.historyToggle.setAttribute("aria-expanded", diceTrayState.historyOpen ? "true" : "false");
+  if (elements.historyToggleState) elements.historyToggleState.textContent = diceTrayState.historyOpen ? "Ocultar" : "Mostrar";
+  if (elements.historyToggleHint) {
+    const historyCount = diceTrayState.history.length;
+    elements.historyToggleHint.textContent = historyCount === 0
+      ? "Últimas rolagens da sessão"
+      : historyCount === 1
+        ? "1 rolagem guardada"
+        : `${historyCount} rolagens guardadas`;
+  }
   if (elements.advancedPanel) elements.advancedPanel.hidden = !diceTrayState.advancedOpen;
   if (elements.advancedToggle) elements.advancedToggle.setAttribute("aria-expanded", diceTrayState.advancedOpen ? "true" : "false");
   if (elements.advancedToggleState) elements.advancedToggleState.textContent = diceTrayState.advancedOpen ? "Ocultar" : "Mostrar";

@@ -6262,3 +6262,133 @@
     max-height: none;
   }
 }
+
+/* 2026-04 dice tray hidden history and reordered panels */
+#sheetScreen .dice-tray-dialog {
+  width: min(940px, calc(100vw - 2rem));
+  max-height: min(84vh, 760px);
+}
+
+#sheetScreen .dice-tray-controls {
+  gap: 0.78rem;
+}
+
+#sheetScreen .dice-tray-quick-row {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.92fr);
+  align-items: start;
+}
+
+#sheetScreen .dice-result-card {
+  min-height: 0;
+}
+
+#sheetScreen .dice-result-main {
+  grid-template-columns: minmax(0, 1fr) minmax(176px, 220px);
+}
+
+#sheetScreen .dice-tray-panel-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: 0.72rem;
+}
+
+#sheetScreen .dice-panel-toggle {
+  width: 100%;
+  min-height: 58px;
+  padding: 0.82rem 0.95rem;
+  border-radius: 20px;
+  border: 1px solid rgba(175, 67, 67, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.006)),
+    rgba(7, 9, 14, 0.95);
+  color: var(--text);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--transition),
+    transform var(--transition),
+    box-shadow var(--transition);
+}
+
+#sheetScreen .dice-panel-toggle:hover,
+#sheetScreen .dice-panel-toggle:focus-visible {
+  border-color: rgba(211, 90, 82, 0.3);
+  box-shadow: 0 0 0 1px rgba(211, 90, 82, 0.1);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+#sheetScreen .dice-panel-toggle-copy {
+  display: grid;
+  gap: 0.14rem;
+}
+
+#sheetScreen .dice-panel-toggle-copy strong,
+#sheetScreen .dice-panel-toggle-state {
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+#sheetScreen .dice-panel-toggle-copy small {
+  color: rgba(205, 194, 170, 0.7);
+  font-size: 0.88rem;
+  line-height: 1.38;
+}
+
+#sheetScreen .dice-panel-toggle-state {
+  color: #d97863;
+  white-space: nowrap;
+}
+
+#sheetScreen .dice-history-card {
+  display: grid;
+  gap: 0.72rem;
+  padding: 0.92rem 1rem;
+  max-height: clamp(230px, 31vh, 308px);
+}
+
+#sheetScreen .dice-history-card[hidden] {
+  display: none !important;
+}
+
+#sheetScreen .dice-history-list {
+  max-height: clamp(154px, 23vh, 224px);
+  overflow: auto;
+  padding-right: 0.2rem;
+}
+
+#sheetScreen .dice-tray-advanced-panel {
+  padding: 0.92rem 0.98rem;
+}
+
+#sheetScreen .dice-tray-advanced-panel[hidden] {
+  display: none !important;
+}
+
+#sheetScreen .dice-tray-actions {
+  padding-top: 0.08rem;
+}
+
+@media (max-width: 920px) {
+  #sheetScreen .dice-tray-dialog {
+    width: min(100%, calc(100vw - 1rem));
+    max-height: calc(100vh - 1.6rem);
+  }
+
+  #sheetScreen .dice-tray-quick-row,
+  #sheetScreen .dice-tray-panel-row,
+  #sheetScreen .dice-result-main {
+    grid-template-columns: 1fr;
+  }
+
+  #sheetScreen .dice-history-card,
+  #sheetScreen .dice-history-list {
+    max-height: none;
+  }
+}

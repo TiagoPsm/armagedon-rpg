@@ -13,7 +13,7 @@
   <link rel="prefetch" href="regras.html" />
   <link rel="prefetch" href="index.html" />
   <link rel="stylesheet" href="css/style.css?v=2026-04-05-polish" />
-  <link rel="stylesheet" href="css/ficha.css?v=2026-04-20-dice-tray-popup-5" />
+  <link rel="stylesheet" href="css/ficha.css?v=2026-04-20-dice-tray-popup-6" />
   <link rel="stylesheet" href="css/ui.css?v=2026-04-05-polish" />
   <link
     href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap"
@@ -674,78 +674,90 @@
                 </div>
               </div>
 
-              <div class="dice-tray-result-row">
-                <div class="dice-result-card" id="diceResultCard">
-                  <div class="dice-result-head">
-                    <span class="item-meta">Resultado</span>
-                    <span class="dice-result-state" id="diceResultState" hidden></span>
-                  </div>
-
-                  <div class="dice-result-feedback" id="diceResultFeedback" hidden>
-                    <strong id="diceResultFeedbackTitle"></strong>
-                    <span id="diceResultFeedbackHint"></span>
-                  </div>
-
-                  <div class="dice-result-main">
-                    <div class="dice-result-primary">
-                      <strong id="diceResultTotal">Pronto</strong>
-                      <p id="diceResultDetail">Selecione os dados e role para ver o resultado.</p>
-                    </div>
-
-                    <div class="dice-result-summary">
-                      <span class="item-meta">Expressão</span>
-                      <strong id="diceExpressionPreview">1d20</strong>
-                      <button type="button" class="btn-inline dice-reroll-btn" id="diceTrayRerollBtn" hidden>Rolar novamente</button>
-                    </div>
-                  </div>
+              <div class="dice-result-card" id="diceResultCard">
+                <div class="dice-result-head">
+                  <span class="item-meta">Resultado</span>
+                  <span class="dice-result-state" id="diceResultState" hidden></span>
                 </div>
 
-                <aside class="dice-history-card" aria-live="polite">
-                  <div class="dice-history-head">
-                    <span class="item-meta">Últimas rolagens</span>
-                    <span class="dice-history-hint">Sessão atual</span>
+                <div class="dice-result-feedback" id="diceResultFeedback" hidden>
+                  <strong id="diceResultFeedbackTitle"></strong>
+                  <span id="diceResultFeedbackHint"></span>
+                </div>
+
+                <div class="dice-result-main">
+                  <div class="dice-result-primary">
+                    <strong id="diceResultTotal">Pronto</strong>
+                    <p id="diceResultDetail">Selecione os dados e role para ver o resultado.</p>
                   </div>
-                  <div class="dice-history-list" id="diceHistoryList">
-                    <p class="dice-history-empty">Nenhuma rolagem ainda.</p>
+
+                  <div class="dice-result-summary">
+                    <span class="item-meta">Expressão</span>
+                    <strong id="diceExpressionPreview">1d20</strong>
+                    <button type="button" class="btn-inline dice-reroll-btn" id="diceTrayRerollBtn" hidden>Rolar novamente</button>
                   </div>
-                </aside>
+                </div>
               </div>
 
-              <div class="dice-tray-advanced" id="diceTrayAdvancedBox">
+              <div class="dice-tray-panel-row">
                 <button
                   type="button"
-                  class="dice-advanced-toggle"
+                  class="dice-panel-toggle"
+                  id="diceHistoryToggleBtn"
+                  aria-expanded="false"
+                  aria-controls="diceHistoryPanel"
+                >
+                  <span class="dice-panel-toggle-copy">
+                    <strong>Histórico</strong>
+                    <small id="diceHistoryToggleHint">Últimas rolagens da sessão</small>
+                  </span>
+                  <span class="dice-panel-toggle-state" id="diceHistoryToggleState">Mostrar</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="dice-panel-toggle dice-advanced-toggle"
                   id="diceAdvancedToggleBtn"
                   aria-expanded="false"
                   aria-controls="diceTrayAdvancedPanel"
                 >
-                  <span class="dice-advanced-toggle-copy">
+                  <span class="dice-panel-toggle-copy">
                     <strong>Avançado</strong>
                     <small>Quantidade, modificador e expressão livre</small>
                   </span>
-                  <span class="dice-advanced-toggle-state" id="diceAdvancedToggleState">Mostrar</span>
+                  <span class="dice-panel-toggle-state" id="diceAdvancedToggleState">Mostrar</span>
                 </button>
+              </div>
 
-                <div class="dice-tray-advanced-panel" id="diceTrayAdvancedPanel" hidden>
-                  <div class="dice-tray-fields">
-                    <div class="dice-tray-field">
-                      <label class="form-label" for="diceTrayQty">Quantidade</label>
-                      <input type="number" id="diceTrayQty" class="form-input" min="1" max="20" value="1" />
-                    </div>
+              <aside class="dice-history-card" id="diceHistoryPanel" aria-live="polite" hidden>
+                <div class="dice-history-head">
+                  <span class="item-meta">Últimas rolagens</span>
+                  <span class="dice-history-hint">Sessão atual</span>
+                </div>
+                <div class="dice-history-list" id="diceHistoryList">
+                  <p class="dice-history-empty">Nenhuma rolagem ainda.</p>
+                </div>
+              </aside>
 
-                    <div class="dice-tray-field">
-                      <label class="form-label" for="diceTrayModifier">Modificador</label>
-                      <input type="number" id="diceTrayModifier" class="form-input" min="-1000" max="1000" value="0" />
-                    </div>
-
-                    <div class="dice-tray-field dice-tray-expression">
-                      <label class="form-label" for="diceTrayExpression">Expressão livre</label>
-                      <input type="text" id="diceTrayExpression" class="form-input" maxlength="24" placeholder="Ex: 2d6+3" />
-                    </div>
+              <div class="dice-tray-advanced-panel" id="diceTrayAdvancedPanel" hidden>
+                <div class="dice-tray-fields">
+                  <div class="dice-tray-field">
+                    <label class="form-label" for="diceTrayQty">Quantidade</label>
+                    <input type="number" id="diceTrayQty" class="form-input" min="1" value="1" />
                   </div>
 
-                  <p class="dice-tray-preview-note">A expressão livre substitui a quantidade, o dado e o modificador.</p>
+                  <div class="dice-tray-field">
+                    <label class="form-label" for="diceTrayModifier">Modificador</label>
+                    <input type="number" id="diceTrayModifier" class="form-input" min="-1000" max="1000" value="0" />
+                  </div>
+
+                  <div class="dice-tray-field dice-tray-expression">
+                    <label class="form-label" for="diceTrayExpression">Expressão livre</label>
+                    <input type="text" id="diceTrayExpression" class="form-input" maxlength="24" placeholder="Ex: 2d6+3" />
+                  </div>
                 </div>
+
+                <p class="dice-tray-preview-note">A expressão livre substitui a quantidade, o dado e o modificador.</p>
               </div>
 
               <div class="dice-tray-actions">
@@ -831,6 +843,6 @@
   <script src="js/api.js?v=2026-04-19-exit-save-fix-2"></script>
   <script src="js/auth.js?v=2026-04-20-site-speed-1"></script>
   <script src="js/soul-essence.js?v=2026-04-05-polish"></script>
-  <script src="js/ficha.js?v=2026-04-20-dice-tray-refresh-3"></script>
+  <script src="js/ficha.js?v=2026-04-20-dice-tray-refresh-4"></script>
 </body>
 </html>
