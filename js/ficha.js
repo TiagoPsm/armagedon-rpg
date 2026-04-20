@@ -62,8 +62,10 @@ let diceTrayState = {
   modifier: 0,
   mode: "normal",
   customExpression: "",
+  advancedOpen: false,
   rolling: false,
-  lastResult: null
+  lastResult: null,
+  history: []
 };
 let remoteSheetsCache = {};
 let saveTimer = null;
@@ -1963,6 +1965,11 @@ function getDiceTrayElements() {
     cancel: document.getElementById("diceTrayCancelBtn"),
     close: document.getElementById("diceTrayCloseBtn"),
     badge: document.getElementById("diceTrayBadge"),
+    advancedToggle: document.getElementById("diceAdvancedToggleBtn"),
+    advancedToggleState: document.getElementById("diceAdvancedToggleState"),
+    advancedPanel: document.getElementById("diceTrayAdvancedPanel"),
+    historyList: document.getElementById("diceHistoryList"),
+    reroll: document.getElementById("diceTrayRerollBtn"),
     resultCard: document.getElementById("diceResultCard"),
     resultState: document.getElementById("diceResultState"),
     resultTotal: document.getElementById("diceResultTotal"),
@@ -1996,6 +2003,10 @@ function buildDiceTrayExpression() {
 function getActiveDiceTrayExpression() {
   const customExpression = normalizeDamageExpression(diceTrayState.customExpression);
   return customExpression || buildDiceTrayExpression();
+}
+
+function formatDiceTrayModeLabel(mode) {
+  return DICE_TRAY_MODES[normalizeDiceTrayMode(mode)] || DICE_TRAY_MODES.normal;
 }
 
 function renderDiceOptions() {
@@ -2034,6 +2045,58 @@ function formatDiceTrayRollSummary(result) {
   return `${result.total} (${result.rolls.join(" + ")}${modifierText})`;
 }
 
+function buildDiceTrayRollMeta(result) {
+  if (!result) return "";
+  const modifierText = result.modifier
+    ? ` | Mod ${result.modifier > 0 ? "+" : ""}${result.modifier}`
+    : "";
+  return `${result.rolls.join(" + ")}${modifierText}`;
+}
+
+function buildDiceTrayHistoryMeta(result) {
+  if (!result) return "";
+
+  if (result.mode === "advantage" || result.mode === "disadvantage") {
+    return `${formatDiceTrayModeLabel(result.mode)} • ${result.first.total} / ${result.second.total}`;
+  }
+
+  return `Normal • ${buildDiceTrayRollMeta(result.chosen)}`;
+}
+
+function pushDiceTrayHistory(result) {
+  if (!result) return;
+
+  diceTrayState.history.unshift({
+    total: result.total,
+    expression: result.expression,
+    mode: result.mode,
+    meta: buildDiceTrayHistoryMeta(result),
+    special: result.special
+  });
+  diceTrayState.history = diceTrayState.history.slice(0, 5);
+}
+
+function renderDiceTrayHistory(elements) {
+  if (!elements.historyList) return;
+
+  if (!diceTrayState.history.length) {
+    elements.historyList.innerHTML = '<p class="dice-history-empty">Nenhuma rolagem ainda.</p>';
+    return;
+  }
+
+  elements.historyList.innerHTML = diceTrayState.history
+    .map(entry => `
+      <article class="dice-history-item ${entry.special ? `is-${entry.special}` : ""}">
+        <strong class="dice-history-total">${esc(String(entry.total))}</strong>
+        <div class="dice-history-copy">
+          <span class="dice-history-expression">${esc(entry.expression)}</span>
+          <span class="dice-history-meta">${esc(entry.meta)}</span>
+        </div>
+      </article>
+    `)
+    .join("");
+}
+
 function openDiceTray() {
   const { root, dialog } = getDiceTrayElements();
   if (!root || !dialog) return;
@@ -2055,9 +2118,36 @@ function closeDiceTray() {
 }
 
 function initDiceTray() {
-  const { root, dialog, qty, modifier, expression, roll, cancel, close, optionGrid, modeGrid } = getDiceTrayElements();
+  const {
+    root,
+    dialog,
+    qty,
+    modifier,
+    expression,
+    roll,
+    cancel,
+    close,
+    optionGrid,
+    modeGrid,
+    advancedToggle,
+    reroll
+  } = getDiceTrayElements();
   const openButton = document.getElementById("openDiceTrayBtn");
-  if (!root || !dialog || !qty || !modifier || !expression || !roll || !cancel || !close || !optionGrid || !modeGrid || !openButton) return;
+  if (
+    !root
+    || !dialog
+    || !qty
+    || !modifier
+    || !expression
+    || !roll
+    || !cancel
+    || !close
+    || !optionGrid
+    || !modeGrid
+    || !advancedToggle
+    || !reroll
+    || !openButton
+  ) return;
 
   if (root.parentElement !== document.body) {
     document.body.appendChild(root);
@@ -2067,16 +2157,14 @@ function initDiceTray() {
   const trayTitle = document.getElementById("diceTrayTitle");
   const traySubtitle = root.querySelector(".dice-tray-subtitle");
   const expressionLabel = root.querySelector('label[for="diceTrayExpression"]');
-  const previewLabel = root.querySelector(".dice-tray-side .item-meta");
   const previewNote = root.querySelector(".dice-tray-preview-note");
 
   if (trayKicker) trayKicker.textContent = "// Rolagem";
   if (trayTitle) trayTitle.textContent = "Lançar dados";
   if (traySubtitle) {
-    traySubtitle.textContent = "Escolha o dado, ajuste a rolagem e veja o resultado em um painel limpo e direto.";
+    traySubtitle.textContent = "Role rápido pelo fluxo principal e abra o avançado só quando precisar montar algo fora do padrão.";
   }
   if (expressionLabel) expressionLabel.textContent = "Expressão livre";
-  if (previewLabel) previewLabel.textContent = "Resumo";
   if (previewNote) {
     previewNote.textContent = "A expressão livre substitui a quantidade, o dado e o modificador.";
   }
@@ -2086,6 +2174,13 @@ function initDiceTray() {
   cancel.addEventListener("click", closeDiceTray);
   roll.addEventListener("click", () => {
     rollDiceTray();
+  });
+  reroll.addEventListener("click", () => {
+    rollDiceTray();
+  });
+  advancedToggle.addEventListener("click", () => {
+    diceTrayState.advancedOpen = !diceTrayState.advancedOpen;
+    renderDiceTray();
   });
 
   root.addEventListener("click", event => {
@@ -2128,6 +2223,7 @@ function initDiceTray() {
   expression.addEventListener("input", () => {
     diceTrayState.customExpression = normalizeDamageExpression(expression.value);
     expression.value = diceTrayState.customExpression;
+    if (diceTrayState.customExpression) diceTrayState.advancedOpen = true;
     diceTrayState.lastResult = null;
     renderDiceTray();
   });
@@ -2156,18 +2252,14 @@ function buildDiceTrayResultDetail(result) {
   if (!result) return "";
 
   if (result.mode === "advantage" || result.mode === "disadvantage") {
-    const modeLabel = DICE_TRAY_MODES[result.mode];
-    return `${modeLabel} | 1ª: ${result.first.total} | 2ª: ${result.second.total} | Escolhido: ${result.chosen.total}`;
+    const modeLabel = formatDiceTrayModeLabel(result.mode);
+    return `${modeLabel} | 1ª: ${buildDiceTrayRollMeta(result.first)} | 2ª: ${buildDiceTrayRollMeta(result.second)} | Escolhido: ${buildDiceTrayRollMeta(result.chosen)}`;
   }
 
-  return `Rolagens: ${result.chosen.rolls.join(" + ")}${
-    result.chosen.modifier
-      ? ` | Modificador: ${result.chosen.modifier > 0 ? "+" : ""}${result.chosen.modifier}`
-      : ""
-  }`;
+  return `Rolagens: ${buildDiceTrayRollMeta(result.chosen)}`;
 }
 
-function applyDiceTraySpecialState(elements, special) {
+function applyDiceTraySpecialState(elements, result) {
   const { resultCard, resultState } = elements;
   const classes = ["is-critical", "is-fumble"];
 
@@ -2178,15 +2270,28 @@ function applyDiceTraySpecialState(elements, special) {
     resultState.className = "dice-result-state";
   }
 
-  if (!special) return;
+  if (!result) return;
 
-  if (special === "critical") {
+  let label = "";
+  let toneClass = "";
+
+  if (result.special === "critical") {
     if (resultCard) resultCard.classList.add("is-critical");
-    return;
+    label = "Crítico";
+    toneClass = "is-critical";
+  } else if (result.special === "fumble") {
+    if (resultCard) resultCard.classList.add("is-fumble");
+    label = "Falha";
+    toneClass = "is-fumble";
+  } else if (result.mode !== "normal") {
+    label = formatDiceTrayModeLabel(result.mode);
+    toneClass = "is-mode";
   }
 
-  if (special === "fumble") {
-    if (resultCard) resultCard.classList.add("is-fumble");
+  if (label && resultState) {
+    resultState.hidden = false;
+    resultState.textContent = label;
+    resultState.className = `dice-result-state ${toneClass}`.trim();
   }
 }
 
@@ -2238,38 +2343,43 @@ function renderDiceTray() {
   const preset = getDicePreset(diceTrayState.preset);
   const expression = getActiveDiceTrayExpression();
   const customExpression = normalizeDamageExpression(diceTrayState.customExpression);
+  const hasCurrentResult = (
+    diceTrayState.lastResult
+    && diceTrayState.lastResult.expression === expression
+    && diceTrayState.lastResult.mode === diceTrayState.mode
+  );
 
   if (elements.qty) elements.qty.value = String(clampDiceTrayQuantity(diceTrayState.qty));
   if (elements.modifier) elements.modifier.value = String(clampDiceTrayModifier(diceTrayState.modifier));
   if (elements.expression) elements.expression.value = customExpression;
   if (elements.preview) elements.preview.textContent = expression;
   if (elements.badge) elements.badge.textContent = preset.label;
+  if (elements.advancedPanel) elements.advancedPanel.hidden = !diceTrayState.advancedOpen;
+  if (elements.advancedToggle) elements.advancedToggle.setAttribute("aria-expanded", diceTrayState.advancedOpen ? "true" : "false");
+  if (elements.advancedToggleState) elements.advancedToggleState.textContent = diceTrayState.advancedOpen ? "Ocultar" : "Mostrar";
   if (elements.roll) {
     elements.roll.disabled = diceTrayState.rolling;
     elements.roll.textContent = diceTrayState.rolling ? "Rolando..." : "Rolar agora";
   }
+  if (elements.reroll) elements.reroll.hidden = !hasCurrentResult || diceTrayState.rolling;
 
-  applyDiceTraySpecialState(elements, "");
-
-  if (
-    diceTrayState.lastResult
-    && diceTrayState.lastResult.expression === expression
-    && diceTrayState.lastResult.mode === diceTrayState.mode
-  ) {
+  if (hasCurrentResult) {
     if (elements.resultTotal) elements.resultTotal.textContent = String(diceTrayState.lastResult.total);
     if (elements.resultDetail) elements.resultDetail.textContent = buildDiceTrayResultDetail(diceTrayState.lastResult);
-    applyDiceTraySpecialState(elements, diceTrayState.lastResult.special);
+    applyDiceTraySpecialState(elements, diceTrayState.lastResult);
   } else {
+    applyDiceTraySpecialState(elements, null);
     if (elements.resultTotal) elements.resultTotal.textContent = "Pronto";
     if (elements.resultDetail) {
-      const modeLabel = DICE_TRAY_MODES[diceTrayState.mode].toLowerCase();
+      const modeLabel = formatDiceTrayModeLabel(diceTrayState.mode).toLowerCase();
       const isCustom = Boolean(customExpression);
       elements.resultDetail.textContent = isCustom
-        ? `Expressão pronta: ${expression}. Modo ${modeLabel}.`
-        : `Selecione os dados e role em modo ${modeLabel}.`;
+        ? `Expressão pronta: ${expression}. Quando quiser, role em modo ${modeLabel}.`
+        : `Escolha um dado e role em modo ${modeLabel}.`;
     }
   }
 
+  renderDiceTrayHistory(elements);
   renderDiceOptions();
   renderDiceModeButtons();
 }
@@ -2287,6 +2397,8 @@ async function rollDiceTray() {
   const result = rollDiceExpressionWithMode(expression, diceTrayState.mode);
 
   if (!result) {
+    diceTrayState.advancedOpen = true;
+    renderDiceTray();
     await UI.alert("Não foi possível interpretar essa rolagem.", {
       title: "Rolagem inválida",
       kicker: "// Dados"
@@ -2297,6 +2409,7 @@ async function rollDiceTray() {
   diceTrayState.rolling = true;
   renderDiceTray();
   diceTrayState.lastResult = result;
+  pushDiceTrayHistory(result);
   diceTrayState.rolling = false;
   renderDiceTray();
 }
