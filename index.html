@@ -14,7 +14,7 @@
     href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:wght@400;600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="css/index.css?v=2026-04-10-home-ritual" />
+  <link rel="stylesheet" href="css/index.css?v=2026-04-19-home-refine-1" />
   <link rel="stylesheet" href="css/ui.css?v=2026-04-10-home-ritual" />
 </head>
 <body>
@@ -26,14 +26,21 @@
   <section id="loginScreen" class="screen active">
     <div class="shell login-shell">
       <div class="intro-copy">
-        <div class="intro-sigil">
-          <span class="intro-sigil-frame">
-            <img src="logo-rpg-armagedon.png?v=2026-04-19-logo-fallback-3" alt="S&iacute;mbolo de Armagedon" class="intro-sigil-img" onerror="if(!this.dataset.fallbackStep){this.dataset.fallbackStep='1';this.src='assets/logo-rpg-armagedon.png?v=2026-04-19-logo-fallback-3';}else if(this.dataset.fallbackStep==='1'){this.dataset.fallbackStep='2';this.src='Logo%20app.jpg?v=2026-04-19-logo-fallback-3';}" />
-          </span>
+        <div class="intro-brandline">
+          <div class="intro-sigil">
+            <span class="intro-sigil-frame">
+              <img src="logo-rpg-armagedon.png?v=2026-04-19-logo-fallback-3" alt="S&iacute;mbolo de Armagedon" class="intro-sigil-img" onerror="if(!this.dataset.fallbackStep){this.dataset.fallbackStep='1';this.src='assets/logo-rpg-armagedon.png?v=2026-04-19-logo-fallback-3';}else if(this.dataset.fallbackStep==='1'){this.dataset.fallbackStep='2';this.src='Logo%20app.jpg?v=2026-04-19-logo-fallback-3';}" />
+            </span>
+          </div>
+
+          <div class="intro-brand-meta">
+            <p class="eyebrow">Portal da campanha</p>
+            <strong>Arquivo ritual compartilhado</strong>
+            <span>Mestre, jogadores, fichas e regras reunidos em um &uacute;nico n&uacute;cleo.</span>
+          </div>
         </div>
 
         <div class="intro-copy-block">
-          <p class="eyebrow">Portal da campanha</p>
           <h1 class="title-display">
             Armagedon
             <span>O portal ritual da campanha para mestre e jogadores</span>
@@ -72,48 +79,52 @@
       </div>
 
       <aside class="login-card">
-        <p class="eyebrow">Entrada</p>
-        <h2>Acessar conta</h2>
-        <p class="login-card-copy">Use seu login para abrir sua &aacute;rea da campanha com os dados corretos.</p>
-
-        <div class="form-group">
-          <label class="form-label" for="loginUser">Usu&aacute;rio</label>
-          <input
-            type="text"
-            id="loginUser"
-            class="form-input"
-            placeholder="Digite seu usu&aacute;rio"
-            autocomplete="username"
-          />
+        <div class="login-card-head">
+          <p class="eyebrow">Entrada</p>
+          <h2>Acessar conta</h2>
+          <p class="login-card-copy">Use seu login para abrir sua &aacute;rea da campanha com os dados corretos.</p>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="loginPass">Senha</label>
-          <div class="password-wrap">
+        <div class="login-card-form">
+          <div class="form-group">
+            <label class="form-label" for="loginUser">Usu&aacute;rio</label>
             <input
-              type="password"
-              id="loginPass"
+              type="text"
+              id="loginUser"
               class="form-input"
-              placeholder="Digite sua senha"
-              autocomplete="current-password"
+              placeholder="Digite seu usu&aacute;rio"
+              autocomplete="username"
             />
-            <button
-              type="button"
-              class="eye-btn"
-              onclick="togglePassword()"
-              aria-label="Mostrar ou ocultar senha"
-            >
-              <span id="eyeOpen">Abrir</span>
-              <span id="eyeClosed" style="display: none">Fechar</span>
-            </button>
           </div>
+
+          <div class="form-group">
+            <label class="form-label" for="loginPass">Senha</label>
+            <div class="password-wrap">
+              <input
+                type="password"
+                id="loginPass"
+                class="form-input"
+                placeholder="Digite sua senha"
+                autocomplete="current-password"
+              />
+              <button
+                type="button"
+                class="eye-btn"
+                onclick="togglePassword()"
+                aria-label="Mostrar ou ocultar senha"
+              >
+                <span id="eyeOpen">Abrir</span>
+                <span id="eyeClosed" style="display: none">Fechar</span>
+              </button>
+            </div>
+          </div>
+
+          <p class="login-error" id="loginError"></p>
+
+          <button type="button" class="btn btn-primary btn-full" onclick="handleLogin()">
+            Entrar
+          </button>
         </div>
-
-        <p class="login-error" id="loginError"></p>
-
-        <button type="button" class="btn btn-primary btn-full" onclick="handleLogin()">
-          Entrar
-        </button>
 
         <div class="login-footnote">
           <span>N&uacute;cleo sincronizado</span>

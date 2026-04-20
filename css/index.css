@@ -186,16 +186,16 @@ button {
 .login-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(380px, 448px);
-  gap: clamp(2rem, 4.8vw, 5rem);
+  grid-template-columns: minmax(0, 1.35fr) minmax(380px, 430px);
+  gap: clamp(2.4rem, 5vw, 6rem);
   align-items: center;
-  padding-block: clamp(2rem, 6vw, 5.8rem);
+  padding-block: clamp(2.2rem, 6vw, 5.8rem);
 }
 
 .intro-copy {
   position: relative;
   display: grid;
-  gap: 1.85rem;
+  gap: clamp(1.5rem, 3vw, 2.45rem);
   align-content: center;
   padding-left: clamp(0rem, 2vw, 1.8rem);
   padding-right: clamp(0rem, 2vw, 1.1rem);
@@ -209,26 +209,53 @@ button {
   background: linear-gradient(180deg, transparent, rgba(202, 74, 68, 0.34), transparent);
 }
 
+.intro-brandline {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1.2rem;
+  align-items: center;
+  max-width: 31rem;
+}
+
 .intro-sigil {
   display: flex;
   align-items: center;
 }
 
+.intro-brand-meta {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.intro-brand-meta strong {
+  font-family: var(--font-title);
+  font-size: 1.22rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.intro-brand-meta span {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
 .intro-sigil-frame {
-  width: 104px;
-  height: 104px;
+  width: 116px;
+  height: 116px;
   display: grid;
   place-items: center;
-  padding: 11px;
-  border: 1px solid rgba(176, 47, 57, 0.22);
-  border-radius: 30px;
+  padding: 12px;
+  border: 1px solid rgba(176, 47, 57, 0.28);
+  border-radius: 34px;
   background:
-    radial-gradient(circle at center, rgba(176, 47, 57, 0.14), transparent 68%),
+    radial-gradient(circle at center, rgba(176, 47, 57, 0.2), transparent 68%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01)),
     rgba(12, 13, 18, 0.9);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 26px 56px rgba(0, 0, 0, 0.34);
+    0 28px 64px rgba(0, 0, 0, 0.42),
+    0 0 34px rgba(159, 37, 48, 0.1);
 }
 
 .intro-sigil-img {
@@ -236,20 +263,36 @@ button {
   height: 100%;
   display: block;
   object-fit: cover;
-  border-radius: 20px;
-  filter: saturate(0.94) contrast(1.08) brightness(0.94);
+  border-radius: 24px;
+  filter: saturate(1.02) contrast(1.12) brightness(0.92);
 }
 
 .intro-copy-block {
   display: grid;
-  gap: 1.1rem;
-  max-width: 46rem;
-  padding: 0.9rem 0 1rem;
+  gap: 1rem;
+  max-width: 52rem;
+  padding: 0.4rem 0 0.4rem;
+  position: relative;
+}
+
+.intro-copy-block::before {
+  content: "";
+  position: absolute;
+  inset: 10% auto auto 22%;
+  width: clamp(240px, 28vw, 420px);
+  height: clamp(240px, 28vw, 420px);
+  background:
+    radial-gradient(circle at center, rgba(176, 47, 57, 0.2), rgba(176, 47, 57, 0.06) 34%, transparent 72%);
+  filter: blur(26px);
+  pointer-events: none;
+  opacity: 0.92;
 }
 
 .title-display {
-  max-width: 10ch;
-  font-size: clamp(4rem, 8.2vw, 7.3rem);
+  position: relative;
+  z-index: 1;
+  max-width: 9ch;
+  font-size: clamp(4.4rem, 9.1vw, 8.2rem);
   text-shadow:
     0 12px 40px rgba(0, 0, 0, 0.46),
     0 0 38px rgba(120, 16, 26, 0.16);
@@ -279,13 +322,12 @@ button {
 }
 
 .lead {
-  max-width: 39rem;
+  max-width: 35rem;
   color: rgba(236, 228, 209, 0.94);
-  font-size: 1.14rem;
+  font-size: 1.18rem;
 }
 
 .intro-quote,
-.intro-omen,
 .login-card,
 .dashboard-card,
 .status-card,
@@ -304,7 +346,6 @@ button {
 }
 
 .intro-quote,
-.intro-omen,
 .panel-card,
 .status-card,
 .dashboard-note {
@@ -313,7 +354,6 @@ button {
 }
 
 .intro-quote::before,
-.intro-omen::before,
 .panel-card::before,
 .status-card::before,
 .dashboard-note::before,
@@ -328,7 +368,6 @@ button {
 }
 
 .intro-quote::after,
-.intro-omen::after,
 .panel-card::after,
 .status-card::after,
 .dashboard-note::after {
@@ -340,7 +379,8 @@ button {
 }
 
 .intro-quote {
-  padding: 1.2rem 1.26rem 1.24rem;
+  max-width: 42rem;
+  padding: 1.28rem 1.42rem 1.3rem;
 }
 
 .intro-quote-label {
@@ -352,17 +392,35 @@ button {
 
 .intro-quote p {
   color: var(--text-secondary);
-  font-size: 1.02rem;
+  font-size: 1.04rem;
 }
 
 .intro-omens {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 1.1rem;
 }
 
 .intro-omen {
-  padding: 1.06rem 1.02rem 1.12rem;
+  position: relative;
+  min-height: 100%;
+  padding: 0.9rem 0.4rem 0 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  overflow: visible;
+}
+
+.intro-omen::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 62px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(202, 74, 68, 0.7), transparent);
 }
 
 .intro-omen-label {
@@ -373,21 +431,25 @@ button {
 
 .intro-omen strong {
   display: block;
-  margin-top: 0.48rem;
-  font-size: 1.48rem;
+  margin-top: 0.8rem;
+  font-family: var(--font-title);
+  font-size: 1.34rem;
+  line-height: 1.05;
 }
 
 .intro-omen p {
-  margin-top: 0.5rem;
+  margin-top: 0.58rem;
   color: var(--text-secondary);
-  font-size: 0.98rem;
+  font-size: 1rem;
+  max-width: 15rem;
 }
 
 .login-card {
   position: relative;
-  padding: 2.35rem 2.2rem 2.2rem;
+  padding: 2.5rem 2.2rem 2.2rem;
   overflow: hidden;
   isolation: isolate;
+  border-radius: 36px;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
     0 36px 110px rgba(0, 0, 0, 0.5),
@@ -409,8 +471,22 @@ button {
   font-size: clamp(2.45rem, 4.4vw, 3.2rem);
 }
 
+.login-card-head {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1.3rem;
+}
+
+.login-card-form {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.login-card-form .form-group + .form-group {
+  margin-top: 0;
+}
+
 .login-card-copy {
-  margin-top: 0.58rem;
   color: var(--text-secondary);
 }
 
@@ -546,8 +622,8 @@ button {
 }
 
 .login-footnote {
-  margin-top: 1.16rem;
-  padding-top: 1rem;
+  margin-top: 1.34rem;
+  padding-top: 1.04rem;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -857,11 +933,54 @@ button {
   }
 }
 
+.intro-brandline,
+.intro-copy-block,
+.intro-quote,
+.intro-omen,
+.login-card {
+  animation: heroReveal 0.8s ease both;
+}
+
+.intro-copy-block {
+  animation-delay: 0.06s;
+}
+
+.intro-quote {
+  animation-delay: 0.12s;
+}
+
+.intro-omen:nth-child(1) {
+  animation-delay: 0.18s;
+}
+
+.intro-omen:nth-child(2) {
+  animation-delay: 0.24s;
+}
+
+.intro-omen:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.login-card {
+  animation-delay: 0.16s;
+}
+
+@keyframes heroReveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 1080px) {
   .login-shell,
   .dashboard-hero,
-  .dashboard-grid,
-  .intro-omens {
+  .dashboard-grid {
     grid-template-columns: 1fr;
   }
 
@@ -872,6 +991,10 @@ button {
 
   .intro-copy::before {
     display: none;
+  }
+
+  .intro-omens {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -897,6 +1020,24 @@ button {
   .title-display {
     max-width: none;
     font-size: clamp(2.8rem, 15vw, 4.4rem);
+  }
+
+  .intro-brandline,
+  .intro-omens {
+    grid-template-columns: 1fr;
+  }
+
+  .intro-sigil-frame {
+    width: 88px;
+    height: 88px;
+    padding: 9px;
+    border-radius: 26px;
+  }
+
+  .intro-copy-block::before {
+    inset: 4% auto auto 10%;
+    width: 220px;
+    height: 220px;
   }
 
   .header-shell {
