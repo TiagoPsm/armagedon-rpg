@@ -45,7 +45,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   setupRulesPage();
   bindRulesRealtime();
-  await renderRules();
+  await renderRules({ preferCache: true });
+  if (AUTH.isBackendEnabled()) {
+    renderRules().catch(() => {});
+  }
 
   if (!AUTH.isBackendEnabled()) {
     window.addEventListener("storage", event => {
@@ -110,8 +113,15 @@ function writeRulesLocal(rules) {
   localStorage.setItem(RULES_KEY, JSON.stringify(rules.map(normalizeRule)));
 }
 
-async function loadRules() {
+async function loadRules(options = {}) {
+  const { preferCache = false } = options;
+
   if (AUTH.isBackendEnabled()) {
+    if (preferCache) {
+      rulesCache = readRulesLocal();
+      return rulesCache;
+    }
+
     const remoteRules = await APP.listRules();
     rulesCache = remoteRules
       .map(rule =>
@@ -125,6 +135,7 @@ async function loadRules() {
         })
       )
       .sort((left, right) => right.updatedAt - left.updatedAt);
+    writeRulesLocal(rulesCache);
     return rulesCache;
   }
 
@@ -151,8 +162,8 @@ function createRuleId() {
   return `rule-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-async function renderRules() {
-  const rules = await loadRules();
+async function renderRules(options = {}) {
+  const rules = await loadRules(options);
   const ruleCount = document.getElementById("ruleCount");
   const lastRuleUpdate = document.getElementById("lastRuleUpdate");
   const rulesUpdatedText = document.getElementById("rulesUpdatedText");

@@ -295,9 +295,6 @@ function showScreen(id) {
 async function openMasterPanel() {
   currentSheetTarget = null;
   pendingRealtimeSheetKey = "";
-  if (isBackendMode()) {
-    await AUTH.refreshDirectory();
-  }
   renderPlayers();
   renderNpcs();
   renderMonsters();
@@ -305,6 +302,17 @@ async function openMasterPanel() {
   resetNpcForm();
   resetMonsterForm();
   showScreen("masterScreen");
+
+  if (isBackendMode()) {
+    AUTH.refreshDirectory()
+      .then(() => {
+        if (!isMasterScreenActive()) return;
+        renderPlayers();
+        renderNpcs();
+        renderMonsters();
+      })
+      .catch(() => {});
+  }
 }
 
 function renderPlayers() {
@@ -588,7 +596,9 @@ function openSheetLegacy(target, fromMaster) {
 }
 
 async function loadSheet(username, kind = "player") {
-  let data = null;
+  const cachedSheets = readSheets();
+  const cachedData = normalizeSheetData(cachedSheets[username] || {}, kind);
+  applySheetData(cachedData, kind);
 
   if (isBackendMode()) {
     try {
@@ -596,17 +606,32 @@ async function loadSheet(username, kind = "player") {
       const mergedRemoteData = mergeSheetHabDraft(character.data || {}, remoteSheetsCache[username] || {});
       remoteSheetsCache[username] = normalizeSheetData(mergedRemoteData, kind);
       persistRemoteSheetsCache();
+
+      if (!currentSheetTarget || currentSheetTarget.key !== username) return;
+      applySheetData(remoteSheetsCache[username], kind);
     } catch (error) {
-      await UI.alert(error.message || "Falha ao carregar a ficha no servidor.", {
-        title: "Falha ao carregar ficha",
-        kicker: "// Servidor"
-      });
+      if (!hasRenderableSheetData(cachedData)) {
+        await UI.alert(error.message || "Falha ao carregar a ficha no servidor.", {
+          title: "Falha ao carregar ficha",
+          kicker: "// Servidor"
+        });
+      }
     }
   }
+}
 
-  const sheets = readSheets();
-  data = normalizeSheetData(sheets[username] || {}, kind);
+function hasRenderableSheetData(data) {
+  if (!data) return false;
 
+  if (data.charName || data.charClass || data.charNotes || data.avatar) return true;
+  if (Array.isArray(data.habs) && data.habs.length) return true;
+  if (Array.isArray(data.inv) && data.inv.length) return true;
+  if (Array.isArray(data.ownedMemories) && data.ownedMemories.length) return true;
+  if (Array.isArray(data.memoryDrops) && data.memoryDrops.length) return true;
+  return ATTRIBUTES.some(attr => String(data[`attr${attr}`] || "").trim() !== "");
+}
+
+function applySheetData(data, kind = "player") {
   setValue("charName", data.charName);
   setValue("charClass", data.charClass);
   setValue("charLevel", data.charLevel);
@@ -3484,8 +3509,8 @@ async function openSheet(target, fromMaster) {
   currentSheetTarget = resolvedTarget;
   updateSheetHeader(fromMaster);
   applySheetKindUI(resolvedTarget.kind);
-  await loadSheet(resolvedTarget.key, resolvedTarget.kind);
   showScreen("sheetScreen");
+  await loadSheet(resolvedTarget.key, resolvedTarget.kind);
 }
 
 function updateSheetHeader(fromMaster) {
