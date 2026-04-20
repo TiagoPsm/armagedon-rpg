@@ -37,13 +37,13 @@ router.post(
     const charName = String(req.body?.charname || req.body?.charName || "").trim() || username;
 
     if (!username || !password) {
-      throw httpError(400, "Usuario e senha sao obrigatorios.");
+      throw httpError(400, "Usuário e senha são obrigatórios.");
     }
 
     const result = await withTransaction(async client => {
       const existingUser = await getUserByUsername(client, username);
       if (existingUser) {
-        throw httpError(409, "Ja existe um jogador com esse usuario.");
+      throw httpError(409, "Já existe um jogador com esse usuário.");
       }
 
       const insertedUser = await client.query(
@@ -81,7 +81,7 @@ router.delete(
   requireRole("master"),
   asyncHandler(async (req, res) => {
     const removed = await withTransaction(client => deletePlayerByUsername(client, req.params.username));
-    if (!removed) throw httpError(404, "Jogador nao encontrado.");
+    if (!removed) throw httpError(404, "Jogador não encontrado.");
 
     req.app.get("io")?.emit("directory:changed", { scope: "players" });
     res.json({ ok: true, username: removed.username });
@@ -111,7 +111,7 @@ router.delete(
     const deleted = await withTransaction(client =>
       deleteCharacterByKey(client, buildCharacterKey("npc", req.params.id), "npc")
     );
-    if (!deleted) throw httpError(404, "NPC nao encontrado.");
+    if (!deleted) throw httpError(404, "NPC não encontrado.");
 
     req.app.get("io")?.emit("directory:changed", { scope: "npcs" });
     res.json({ ok: true, key: deleted.sheet_key });
@@ -141,7 +141,7 @@ router.delete(
     const deleted = await withTransaction(client =>
       deleteCharacterByKey(client, buildCharacterKey("monster", req.params.id), "monster")
     );
-    if (!deleted) throw httpError(404, "Monstro nao encontrado.");
+    if (!deleted) throw httpError(404, "Monstro não encontrado.");
 
     req.app.get("io")?.emit("directory:changed", { scope: "monsters" });
     res.json({ ok: true, key: deleted.sheet_key });

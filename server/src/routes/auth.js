@@ -17,13 +17,13 @@ router.post(
     const password = String(req.body?.password || "");
 
     if (!username || !password) {
-      throw httpError(400, "Usuario e senha sao obrigatorios.");
+      throw httpError(400, "Usuário e senha são obrigatórios.");
     }
 
     const user = await getUserByUsername(null, username);
 
     if (!user || !user.is_active || !verifyPassword(password, user.password_hash)) {
-      throw httpError(401, "Usuario ou senha invalidos.");
+      throw httpError(401, "Usuário ou senha inválidos.");
     }
 
     const token = signSession(user);

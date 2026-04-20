@@ -27,7 +27,7 @@ router.post(
     const tag = String(req.body?.tag || "").trim();
 
     if (!title || !content) {
-      throw httpError(400, "Titulo e conteudo sao obrigatorios.");
+    throw httpError(400, "Título e conteúdo são obrigatórios.");
     }
 
     const rule = await withTransaction(client =>
@@ -48,14 +48,14 @@ router.put(
     const tag = String(req.body?.tag || "").trim();
 
     if (!title || !content) {
-      throw httpError(400, "Titulo e conteudo sao obrigatorios.");
+    throw httpError(400, "Título e conteúdo são obrigatórios.");
     }
 
     const rule = await withTransaction(client =>
       updateRule(client, req.params.id, req.user.sub, { title, tag, content })
     );
 
-    if (!rule) throw httpError(404, "Postagem nao encontrada.");
+    if (!rule) throw httpError(404, "Postagem não encontrada.");
 
     req.app.get("io")?.emit("rules:changed", { action: "updated", id: rule.id });
     res.json(rule);
@@ -67,7 +67,7 @@ router.delete(
   requireRole("master"),
   asyncHandler(async (req, res) => {
     const removed = await withTransaction(client => deleteRule(client, req.params.id));
-    if (!removed) throw httpError(404, "Postagem nao encontrada.");
+    if (!removed) throw httpError(404, "Postagem não encontrada.");
 
     req.app.get("io")?.emit("rules:changed", { action: "deleted", id: req.params.id });
     res.json({ ok: true, id: req.params.id });

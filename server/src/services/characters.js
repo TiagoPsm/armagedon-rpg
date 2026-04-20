@@ -1,4 +1,4 @@
-const { randomUUID } = require("crypto");
+﻿const { randomUUID } = require("crypto");
 const { httpError } = require("../utils/http-error");
 const {
   buildDefaultSheet,
@@ -74,7 +74,7 @@ function serializeCharacter(character) {
 
 function assertCharacterAccess(user, character, mode = "read") {
   if (!user || !character) {
-    throw httpError(401, "Sessao invalida.");
+    throw httpError(401, "Sessão inválida.");
   }
 
   if (user.role === "master") return true;
@@ -86,8 +86,8 @@ function assertCharacterAccess(user, character, mode = "read") {
   throw httpError(
     403,
     mode === "write"
-      ? "Voce nao pode alterar esta ficha."
-      : "Voce nao pode acessar esta ficha."
+      ? "Você não pode alterar esta ficha."
+      : "Você não pode acessar esta ficha."
   );
 }
 
@@ -126,7 +126,7 @@ async function saveCharacterBundle(client, character, payload, actor) {
   if (character.kind === "player") {
     const currentSlots = normalizeInventorySlots("player", currentData.inventorySlots, currentData.inv.length);
     if (actor?.role !== "master" && normalizedData.inv.length > currentSlots) {
-      throw httpError(409, "O inventario enviado ultrapassa a capacidade atual da mochila.");
+      throw httpError(409, "O inventário enviado ultrapassa a capacidade atual da mochila.");
     }
 
     normalizedData.inventorySlots =
@@ -140,7 +140,7 @@ async function saveCharacterBundle(client, character, payload, actor) {
   if (character.kind === "npc") {
     normalizedData.inventorySlots = normalizeInventorySlots("npc", normalizedData.inventorySlots);
     if (normalizedData.inv.length > normalizedData.inventorySlots) {
-      throw httpError(409, "NPCs nao podem ultrapassar o limite padrao de 20 slots.");
+      throw httpError(409, "NPCs não podem ultrapassar o limite padrão de 10 slots.");
     }
   }
 
@@ -306,12 +306,12 @@ async function transferItemBetweenPlayers(client, actor, sourceKey, targetKey, i
   const source = await getCharacterByKey(client, sourceKey, { forUpdate: true });
   const target = await getCharacterByKey(client, targetKey, { forUpdate: true });
 
-  if (!source || !target) throw httpError(404, "Ficha de origem ou destino nao encontrada.");
+  if (!source || !target) throw httpError(404, "Ficha de origem ou destino não encontrada.");
   if (source.kind !== "player" || target.kind !== "player") {
-    throw httpError(400, "A troca de item so pode acontecer entre jogadores.");
+    throw httpError(400, "A troca de item só pode acontecer entre jogadores.");
   }
   if (source.id === target.id) {
-    throw httpError(400, "A origem e o destino nao podem ser a mesma ficha.");
+    throw httpError(400, "A origem e o destino não podem ser a mesma ficha.");
   }
 
   assertCharacterAccess(actor, source, "write");
@@ -321,7 +321,7 @@ async function transferItemBetweenPlayers(client, actor, sourceKey, targetKey, i
   const index = Number.parseInt(itemIndex, 10);
 
   if (Number.isNaN(index) || index < 0 || index >= sourceData.inv.length) {
-    throw httpError(404, "Item de origem nao encontrado.");
+    throw httpError(404, "Item de origem não encontrado.");
   }
 
   const targetCapacity = Math.max(
@@ -330,7 +330,7 @@ async function transferItemBetweenPlayers(client, actor, sourceKey, targetKey, i
   );
 
   if (targetData.inv.length >= targetCapacity) {
-    throw httpError(409, "O jogador de destino esta com a mochila cheia.");
+    throw httpError(409, "O jogador de destino está com a mochila cheia.");
   }
 
   const transferredItem = normalizeItem(sourceData.inv[index]);
@@ -368,12 +368,12 @@ async function transferMemoryBetweenPlayers(client, actor, sourceKey, targetKey,
   const source = await getCharacterByKey(client, sourceKey, { forUpdate: true });
   const target = await getCharacterByKey(client, targetKey, { forUpdate: true });
 
-  if (!source || !target) throw httpError(404, "Ficha de origem ou destino nao encontrada.");
+  if (!source || !target) throw httpError(404, "Ficha de origem ou destino não encontrada.");
   if (source.kind !== "player" || target.kind !== "player") {
-    throw httpError(400, "A transferencia so pode acontecer entre jogadores.");
+    throw httpError(400, "A transferência só pode acontecer entre jogadores.");
   }
   if (source.id === target.id) {
-    throw httpError(400, "A origem e o destino nao podem ser a mesma ficha.");
+    throw httpError(400, "A origem e o destino não podem ser a mesma ficha.");
   }
 
   assertCharacterAccess(actor, source, "write");
@@ -383,7 +383,7 @@ async function transferMemoryBetweenPlayers(client, actor, sourceKey, targetKey,
   const index = Number.parseInt(memoryIndex, 10);
 
   if (Number.isNaN(index) || index < 0 || index >= sourceData.ownedMemories.length) {
-    throw httpError(404, "Memoria nao encontrada.");
+    throw httpError(404, "Memória não encontrada.");
   }
 
   const transferredMemory = normalizeOwnedMemory(sourceData.ownedMemories[index]);
@@ -419,15 +419,15 @@ async function transferMemoryBetweenPlayers(client, actor, sourceKey, targetKey,
 
 async function rollMonsterMemoryDrop(client, actor, monsterKey, dropIndex) {
   const monster = await getCharacterByKey(client, monsterKey);
-  if (!monster) throw httpError(404, "Monstro nao encontrado.");
-  if (monster.kind !== "monster") throw httpError(400, "A rolagem so vale para monstros.");
-  if (actor.role !== "master") throw httpError(403, "Apenas o mestre pode rolar drops de memoria.");
+  if (!monster) throw httpError(404, "Monstro não encontrado.");
+  if (monster.kind !== "monster") throw httpError(400, "A rolagem só vale para monstros.");
+  if (actor.role !== "master") throw httpError(403, "Apenas o mestre pode rolar drops de memória.");
 
   const monsterData = normalizeSheetData(monster.data || {}, "monster", monster.name);
   const index = Number.parseInt(dropIndex, 10);
   const drop = monsterData.memoryDrops[index];
 
-  if (!drop) throw httpError(404, "Drop de memoria nao encontrado.");
+  if (!drop) throw httpError(404, "Drop de memória não encontrado.");
 
   const chance = Number.parseFloat(sanitizeChance(drop.chance, "0")) || 0;
   const rolled = Number((Math.random() * 100).toFixed(1));
@@ -446,15 +446,15 @@ async function rollMonsterMemoryDrop(client, actor, monsterKey, dropIndex) {
 }
 
 async function awardMonsterMemoryDrop(client, actor, monsterKey, dropIndex, targetKey) {
-  if (actor.role !== "master") throw httpError(403, "Apenas o mestre pode enviar memorias de monstros.");
+  if (actor.role !== "master") throw httpError(403, "Apenas o mestre pode enviar memórias de monstros.");
 
   const monster = await getCharacterByKey(client, monsterKey, { forUpdate: true });
   const target = await getCharacterByKey(client, targetKey, { forUpdate: true });
 
-  if (!monster || !target) throw httpError(404, "Monstro ou destino nao encontrado.");
+  if (!monster || !target) throw httpError(404, "Monstro ou destino não encontrado.");
   if (monster.kind !== "monster") throw httpError(400, "A origem precisa ser um monstro.");
   if (!["player", "npc"].includes(target.kind)) {
-    throw httpError(400, "Memorias de monstro so podem ser enviadas para jogadores ou NPCs.");
+    throw httpError(400, "Memórias de monstro só podem ser enviadas para jogadores ou NPCs.");
   }
 
   const monsterData = normalizeSheetData(monster.data || {}, "monster", monster.name);
@@ -462,7 +462,7 @@ async function awardMonsterMemoryDrop(client, actor, monsterKey, dropIndex, targ
   const index = Number.parseInt(dropIndex, 10);
   const drop = monsterData.memoryDrops[index];
 
-  if (!drop) throw httpError(404, "Drop de memoria nao encontrado.");
+  if (!drop) throw httpError(404, "Drop de memória não encontrado.");
 
   const memory = normalizeOwnedMemory({
     name: drop.name,
@@ -514,3 +514,6 @@ module.exports = {
   transferItemBetweenPlayers,
   transferMemoryBetweenPlayers
 };
+
+
+

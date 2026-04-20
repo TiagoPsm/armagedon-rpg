@@ -18,7 +18,7 @@ function resolveCorsOrigin(origin, callback) {
     return;
   }
 
-  callback(new Error("Origem nao permitida pelo servidor."), false);
+  callback(new Error("Origem não permitida pelo servidor."), false);
 }
 
 async function main() {
@@ -63,7 +63,7 @@ async function main() {
 
   app.use((_req, res) => {
     res.status(404).json({
-      error: "Rota nao encontrada."
+      error: "Rota não encontrada."
     });
   });
 
@@ -81,7 +81,7 @@ async function main() {
       String(socket.handshake.headers.authorization || "").replace(/^Bearer\s+/i, "");
 
     if (!token) {
-      next(new Error("Sessao ausente."));
+      next(new Error("Sessão ausente."));
       return;
     }
 
@@ -89,7 +89,7 @@ async function main() {
       socket.user = verifySession(token);
       next();
     } catch {
-      next(new Error("Sessao invalida."));
+      next(new Error("Sessão inválida."));
     }
   });
 

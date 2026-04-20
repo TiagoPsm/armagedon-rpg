@@ -22,7 +22,7 @@ router.post(
     const itemIndex = req.body?.itemIndex;
 
     if (!sourceKey || !targetKey) {
-      throw httpError(400, "Origem e destino sao obrigatorios.");
+    throw httpError(400, "Origem e destino são obrigatórios.");
     }
 
     const result = await withTransaction(client =>
@@ -48,7 +48,7 @@ router.post(
     const memoryIndex = req.body?.memoryIndex;
 
     if (!sourceKey || !targetKey) {
-      throw httpError(400, "Origem e destino sao obrigatorios.");
+    throw httpError(400, "Origem e destino são obrigatórios.");
     }
 
     const result = await withTransaction(client =>
@@ -73,7 +73,7 @@ router.post(
     const dropIndex = req.body?.dropIndex;
 
     if (!monsterKey) {
-      throw httpError(400, "Monstro obrigatorio.");
+    throw httpError(400, "Monstro obrigatório.");
     }
 
     const result = await withTransaction(client =>
@@ -92,7 +92,7 @@ router.post(
     const dropIndex = req.body?.dropIndex;
 
     if (!monsterKey || !targetKey) {
-      throw httpError(400, "Monstro e destino sao obrigatorios.");
+    throw httpError(400, "Monstro e destino são obrigatórios.");
     }
 
     const result = await withTransaction(client =>
