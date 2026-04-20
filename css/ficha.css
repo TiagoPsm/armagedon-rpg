@@ -6192,3 +6192,73 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* 2026-04 dice tray viewport centering and proportional layout */
+#sheetScreen .dice-tray-root {
+  padding: clamp(0.85rem, 2vh, 1.2rem);
+  place-items: center;
+  align-items: center;
+}
+
+#sheetScreen .dice-tray-dialog {
+  width: min(980px, calc(100vw - 2rem));
+  max-height: min(82vh, 720px);
+}
+
+#sheetScreen .dice-tray-layout,
+#sheetScreen .dice-tray-controls {
+  min-height: 0;
+  align-content: start;
+}
+
+#sheetScreen .dice-tray-result-row {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 348px);
+  align-items: start;
+}
+
+#sheetScreen .dice-result-card {
+  min-height: 208px;
+}
+
+#sheetScreen .dice-result-main {
+  grid-template-columns: minmax(0, 1fr) minmax(176px, 208px);
+}
+
+#sheetScreen .dice-result-summary {
+  min-height: 0;
+  align-self: start;
+}
+
+#sheetScreen .dice-history-card {
+  max-height: clamp(250px, 33vh, 316px);
+}
+
+#sheetScreen .dice-history-list {
+  max-height: clamp(170px, 25vh, 232px);
+}
+
+#sheetScreen .dice-tray-advanced,
+#sheetScreen .dice-tray-actions {
+  align-self: start;
+}
+
+@media (max-width: 920px) {
+  #sheetScreen .dice-tray-root {
+    padding: 0.9rem;
+  }
+
+  #sheetScreen .dice-tray-dialog {
+    width: min(100%, calc(100vw - 1rem));
+    max-height: calc(100vh - 1.8rem);
+  }
+
+  #sheetScreen .dice-tray-result-row,
+  #sheetScreen .dice-result-main {
+    grid-template-columns: 1fr;
+  }
+
+  #sheetScreen .dice-history-card,
+  #sheetScreen .dice-history-list {
+    max-height: none;
+  }
+}
