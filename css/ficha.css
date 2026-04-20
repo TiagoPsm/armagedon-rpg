@@ -6056,3 +6056,139 @@
     justify-content: center;
   }
 }
+
+/* 2026-04 dice tray centering and stable card heights */
+#sheetScreen .dice-tray-root {
+  padding: 1rem;
+  place-items: center;
+  align-items: center;
+}
+
+#sheetScreen .dice-tray-dialog {
+  margin: 0 auto;
+}
+
+#sheetScreen .dice-tray-result-row {
+  align-items: start;
+}
+
+#sheetScreen .dice-result-card,
+#sheetScreen .dice-history-card {
+  align-self: start;
+}
+
+#sheetScreen .dice-result-card {
+  min-height: 0;
+}
+
+#sheetScreen .dice-history-card {
+  min-height: 0;
+  max-height: 448px;
+  overflow: hidden;
+}
+
+#sheetScreen .dice-history-list {
+  min-height: 0;
+  max-height: 360px;
+  overflow: auto;
+  padding-right: 0.2rem;
+  scrollbar-width: thin;
+}
+
+#sheetScreen .dice-history-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+#sheetScreen .dice-history-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(194, 104, 77, 0.28);
+}
+
+@media (max-width: 1100px) {
+  #sheetScreen .dice-history-card {
+    max-height: 360px;
+  }
+
+  #sheetScreen .dice-history-list {
+    max-height: 272px;
+  }
+}
+
+@media (max-width: 760px) {
+  #sheetScreen .dice-tray-root {
+    padding: 0.8rem;
+  }
+
+  #sheetScreen .dice-tray-dialog {
+    max-height: calc(100vh - 1.6rem);
+  }
+
+  #sheetScreen .dice-history-card,
+  #sheetScreen .dice-history-list {
+    max-height: none;
+  }
+}
+
+/* 2026-04 dice tray compact result card */
+#sheetScreen .dice-result-card {
+  padding: 0.88rem 0.96rem;
+  gap: 0.72rem;
+  align-content: start;
+}
+
+#sheetScreen .dice-result-head {
+  gap: 0.65rem;
+}
+
+#sheetScreen .dice-result-feedback {
+  gap: 0.12rem;
+  padding: 0.6rem 0.7rem;
+}
+
+#sheetScreen .dice-result-feedback span {
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+#sheetScreen .dice-result-main {
+  grid-template-columns: minmax(0, 1fr) minmax(168px, 0.5fr);
+  gap: 0.72rem;
+  align-items: start;
+}
+
+#sheetScreen .dice-result-primary {
+  gap: 0.38rem;
+  align-content: start;
+}
+
+#sheetScreen .dice-result-card > strong,
+#sheetScreen .dice-result-primary > strong {
+  font-size: clamp(2rem, 2.6vw, 2.85rem);
+  line-height: 0.92;
+}
+
+#sheetScreen .dice-result-card p {
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+#sheetScreen .dice-result-summary {
+  padding: 0.72rem 0.78rem;
+  gap: 0.28rem;
+  align-content: start;
+}
+
+#sheetScreen .dice-result-summary > strong {
+  font-size: clamp(1.08rem, 1.5vw, 1.38rem);
+}
+
+#sheetScreen .dice-reroll-btn {
+  min-height: 34px;
+  padding: 0.46rem 0.72rem;
+}
+
+@media (max-width: 760px) {
+  #sheetScreen .dice-result-main {
+    grid-template-columns: 1fr;
+  }
+}
