@@ -31,6 +31,13 @@ const DICE_TRAY_MODES = {
   disadvantage: "Desvantagem"
 };
 const DEFAULT_DICE_PRESET = "d20";
+const DICE_TRAY_HISTORY_LIMIT = 5;
+const DICE_TRAY_ANIMATION_MS = 180;
+const DICE_TRAY_TIME_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false
+});
 const SOUL = window.SOUL_ESSENCE || null;
 
 let currentUser = null;
@@ -74,6 +81,7 @@ let sheetRealtimeBound = false;
 let directoryRefreshTimer = null;
 let sheetRefreshTimer = null;
 let pendingRealtimeSheetKey = "";
+let diceTrayCloseTimer = 0;
 const RECENT_LOCAL_SAVE_MS = 1500;
 const recentLocalSaveMap = {};
 
@@ -1972,6 +1980,9 @@ function getDiceTrayElements() {
     reroll: document.getElementById("diceTrayRerollBtn"),
     resultCard: document.getElementById("diceResultCard"),
     resultState: document.getElementById("diceResultState"),
+    resultFeedback: document.getElementById("diceResultFeedback"),
+    resultFeedbackTitle: document.getElementById("diceResultFeedbackTitle"),
+    resultFeedbackHint: document.getElementById("diceResultFeedbackHint"),
     resultTotal: document.getElementById("diceResultTotal"),
     resultDetail: document.getElementById("diceResultDetail")
   };
@@ -2007,6 +2018,30 @@ function getActiveDiceTrayExpression() {
 
 function formatDiceTrayModeLabel(mode) {
   return DICE_TRAY_MODES[normalizeDiceTrayMode(mode)] || DICE_TRAY_MODES.normal;
+}
+
+function formatDiceTrayTime(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  return DICE_TRAY_TIME_FORMATTER.format(date);
+}
+
+function shouldOpenDiceTrayAdvanced(config) {
+  return Boolean(normalizeDamageExpression(config.customExpression))
+    || clampDiceTrayQuantity(config.qty) !== 1
+    || clampDiceTrayModifier(config.modifier) !== 0;
+}
+
+function getDiceTrayHistoryTypeLabel(config) {
+  const modeLabel = formatDiceTrayModeLabel(config.mode);
+  const customExpression = normalizeDamageExpression(config.customExpression);
+
+  if (customExpression) {
+    return `Expressão livre • ${modeLabel}`;
+  }
+
+  const preset = getDicePreset(config.preset);
+  const qty = clampDiceTrayQuantity(config.qty);
+  return `${qty > 1 ? `${qty}x ` : ""}${preset.label} • ${modeLabel}`;
 }
 
 function renderDiceOptions() {
@@ -2066,14 +2101,21 @@ function buildDiceTrayHistoryMeta(result) {
 function pushDiceTrayHistory(result) {
   if (!result) return;
 
+  const now = new Date();
   diceTrayState.history.unshift({
     total: result.total,
     expression: result.expression,
     mode: result.mode,
+    qty: clampDiceTrayQuantity(diceTrayState.qty),
+    modifier: clampDiceTrayModifier(diceTrayState.modifier),
+    preset: diceTrayState.preset,
+    customExpression: normalizeDamageExpression(diceTrayState.customExpression),
+    timeLabel: formatDiceTrayTime(now),
+    typeLabel: getDiceTrayHistoryTypeLabel(diceTrayState),
     meta: buildDiceTrayHistoryMeta(result),
     special: result.special
   });
-  diceTrayState.history = diceTrayState.history.slice(0, 5);
+  diceTrayState.history = diceTrayState.history.slice(0, DICE_TRAY_HISTORY_LIMIT);
 }
 
 function renderDiceTrayHistory(elements) {
@@ -2085,25 +2127,54 @@ function renderDiceTrayHistory(elements) {
   }
 
   elements.historyList.innerHTML = diceTrayState.history
-    .map(entry => `
-      <article class="dice-history-item ${entry.special ? `is-${entry.special}` : ""}">
-        <strong class="dice-history-total">${esc(String(entry.total))}</strong>
+    .map((entry, index) => `
+      <article class="dice-history-item ${entry.special ? `is-${entry.special}` : ""} ${entry.mode !== "normal" ? `is-${entry.mode}` : ""}">
+        <div class="dice-history-total-wrap">
+          <strong class="dice-history-total">${esc(String(entry.total))}</strong>
+          <span class="dice-history-time">${esc(entry.timeLabel)}</span>
+        </div>
         <div class="dice-history-copy">
-          <span class="dice-history-expression">${esc(entry.expression)}</span>
+          <div class="dice-history-top">
+            <span class="dice-history-expression">${esc(entry.expression)}</span>
+            <span class="dice-history-type">${esc(entry.typeLabel)}</span>
+          </div>
           <span class="dice-history-meta">${esc(entry.meta)}</span>
         </div>
+        <button type="button" class="btn-inline dice-history-repeat-btn" data-dice-history-repeat="${index}">Repetir</button>
       </article>
     `)
     .join("");
+}
+
+async function repeatDiceTrayHistoryEntry(index) {
+  const entry = diceTrayState.history[index];
+  if (!entry) return;
+
+  diceTrayState.preset = entry.preset || DEFAULT_DICE_PRESET;
+  diceTrayState.qty = clampDiceTrayQuantity(entry.qty);
+  diceTrayState.modifier = clampDiceTrayModifier(entry.modifier);
+  diceTrayState.mode = normalizeDiceTrayMode(entry.mode);
+  diceTrayState.customExpression = normalizeDamageExpression(entry.customExpression);
+  diceTrayState.advancedOpen = shouldOpenDiceTrayAdvanced(diceTrayState);
+  diceTrayState.lastResult = null;
+  renderDiceTray();
+  await rollDiceTray();
 }
 
 function openDiceTray() {
   const { root, dialog } = getDiceTrayElements();
   if (!root || !dialog) return;
 
+  if (diceTrayCloseTimer) {
+    window.clearTimeout(diceTrayCloseTimer);
+    diceTrayCloseTimer = 0;
+  }
+
   diceTrayState.open = true;
   root.hidden = false;
+  root.classList.remove("is-closing");
   window.requestAnimationFrame(() => {
+    root.classList.add("is-open");
     dialog.focus();
     renderDiceTray();
   });
@@ -2111,10 +2182,21 @@ function openDiceTray() {
 
 function closeDiceTray() {
   const { root } = getDiceTrayElements();
-  if (!root) return;
+  if (!root || root.hidden) return;
+
+  if (diceTrayCloseTimer) {
+    window.clearTimeout(diceTrayCloseTimer);
+    diceTrayCloseTimer = 0;
+  }
 
   diceTrayState.open = false;
-  root.hidden = true;
+  root.classList.remove("is-open");
+  root.classList.add("is-closing");
+  diceTrayCloseTimer = window.setTimeout(() => {
+    root.hidden = true;
+    root.classList.remove("is-closing");
+    diceTrayCloseTimer = 0;
+  }, DICE_TRAY_ANIMATION_MS);
 }
 
 function initDiceTray() {
@@ -2188,6 +2270,15 @@ function initDiceTray() {
       return;
     }
 
+    const repeatButton = target.closest("[data-dice-history-repeat]");
+    if (repeatButton instanceof HTMLElement) {
+      const index = Number.parseInt(repeatButton.dataset.diceHistoryRepeat || "-1", 10);
+      if (index >= 0) {
+        void repeatDiceTrayHistoryEntry(index);
+      }
+      return;
+    }
+
     const option = target.closest("[data-dice-option]");
     if (option instanceof HTMLElement) {
       diceTrayState.preset = option.dataset.diceOption || DEFAULT_DICE_PRESET;
@@ -2244,6 +2335,46 @@ function initDiceTray() {
   renderDiceTray();
 }
 
+function getDiceTrayResultFeedback(result) {
+  if (!result) return null;
+
+  const modeLabel = formatDiceTrayModeLabel(result.mode);
+
+  if (result.special === "critical") {
+    return {
+      title: "Acerto crítico",
+      hint: result.mode === "normal"
+        ? "Você atingiu o valor máximo possível desta rolagem."
+        : `${modeLabel}: o resultado escolhido alcançou o valor máximo possível.`
+    };
+  }
+
+  if (result.special === "fumble") {
+    return {
+      title: "Falha crítica",
+      hint: result.mode === "normal"
+        ? "Você caiu no valor mínimo possível desta rolagem."
+        : `${modeLabel}: o resultado escolhido ficou no valor mínimo possível.`
+    };
+  }
+
+  if (result.mode === "advantage") {
+    return {
+      title: "Vantagem ativa",
+      hint: "Duas rolagens foram feitas e o maior resultado foi mantido."
+    };
+  }
+
+  if (result.mode === "disadvantage") {
+    return {
+      title: "Desvantagem ativa",
+      hint: "Duas rolagens foram feitas e o menor resultado foi mantido."
+    };
+  }
+
+  return null;
+}
+
 function buildDiceTrayResultDetail(result) {
   if (!result) return "";
 
@@ -2256,8 +2387,8 @@ function buildDiceTrayResultDetail(result) {
 }
 
 function applyDiceTraySpecialState(elements, result) {
-  const { resultCard, resultState } = elements;
-  const classes = ["is-critical", "is-fumble"];
+  const { resultCard, resultState, resultFeedback, resultFeedbackTitle, resultFeedbackHint } = elements;
+  const classes = ["is-critical", "is-fumble", "is-advantage", "is-disadvantage"];
 
   if (resultCard) resultCard.classList.remove(...classes);
   if (resultState) {
@@ -2265,11 +2396,18 @@ function applyDiceTraySpecialState(elements, result) {
     resultState.textContent = "";
     resultState.className = "dice-result-state";
   }
+  if (resultFeedback) resultFeedback.hidden = true;
+  if (resultFeedbackTitle) resultFeedbackTitle.textContent = "";
+  if (resultFeedbackHint) resultFeedbackHint.textContent = "";
 
   if (!result) return;
 
   let label = "";
   let toneClass = "";
+  const feedback = getDiceTrayResultFeedback(result);
+
+  if (result.mode === "advantage" && resultCard) resultCard.classList.add("is-advantage");
+  if (result.mode === "disadvantage" && resultCard) resultCard.classList.add("is-disadvantage");
 
   if (result.special === "critical") {
     if (resultCard) resultCard.classList.add("is-critical");
@@ -2281,13 +2419,19 @@ function applyDiceTraySpecialState(elements, result) {
     toneClass = "is-fumble";
   } else if (result.mode !== "normal") {
     label = formatDiceTrayModeLabel(result.mode);
-    toneClass = "is-mode";
+    toneClass = result.mode === "advantage" ? "is-advantage" : "is-disadvantage";
   }
 
   if (label && resultState) {
     resultState.hidden = false;
     resultState.textContent = label;
     resultState.className = `dice-result-state ${toneClass}`.trim();
+  }
+
+  if (feedback && resultFeedback && resultFeedbackTitle && resultFeedbackHint) {
+    resultFeedback.hidden = false;
+    resultFeedbackTitle.textContent = feedback.title;
+    resultFeedbackHint.textContent = feedback.hint;
   }
 }
 
