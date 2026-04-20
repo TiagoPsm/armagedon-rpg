@@ -1570,7 +1570,7 @@ function setValue(id, value) {
 
 function modScale(value) {
   if (value <= 0) return 0;
-  return Math.floor((value - 1) / 3);
+  return Math.floor(value / 3);
 }
 
 function getIntegrityMaxFromSoul(value, fallback = "") {
