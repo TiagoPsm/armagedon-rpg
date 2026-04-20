@@ -1994,6 +1994,7 @@ function getDiceTrayElements() {
     historyList: document.getElementById("diceHistoryList"),
     reroll: document.getElementById("diceTrayRerollBtn"),
     resultCard: document.getElementById("diceResultCard"),
+    resultBreakdown: document.getElementById("diceResultBreakdown"),
     resultState: document.getElementById("diceResultState"),
     resultFeedback: document.getElementById("diceResultFeedback"),
     resultFeedbackTitle: document.getElementById("diceResultFeedbackTitle"),
@@ -2415,10 +2416,92 @@ function buildDiceTrayResultDetail(result) {
 
   if (result.mode === "advantage" || result.mode === "disadvantage") {
     const modeLabel = formatDiceTrayModeLabel(result.mode);
-    return `${modeLabel} | 1ª: ${buildDiceTrayRollMeta(result.first)} | 2ª: ${buildDiceTrayRollMeta(result.second)} | Escolhido: ${buildDiceTrayRollMeta(result.chosen)}`;
+    const keptLabel = result.mode === "advantage" ? "Maior resultado mantido." : "Menor resultado mantido.";
+    return `${modeLabel} ativa. ${keptLabel}`;
   }
 
-  return `Rolagens: ${buildDiceTrayRollMeta(result.chosen)}`;
+  if (result.chosen.modifier) {
+    return `Subtotal ${result.chosen.subtotal} com modificador ${result.chosen.modifier > 0 ? "+" : ""}${result.chosen.modifier}.`;
+  }
+
+  return `${result.chosen.diceCount}d${result.chosen.diceSides} concluído sem modificador.`;
+}
+
+function buildDiceTrayBreakdownCards(result) {
+  if (!result) return [];
+
+  if (result.mode === "advantage" || result.mode === "disadvantage") {
+    return [
+      {
+        label: "1ª rolagem",
+        value: String(result.first.total),
+        meta: buildDiceTrayRollMeta(result.first)
+      },
+      {
+        label: "2ª rolagem",
+        value: String(result.second.total),
+        meta: buildDiceTrayRollMeta(result.second)
+      },
+      {
+        label: "Mantida",
+        value: String(result.chosen.total),
+        meta: result.mode === "advantage" ? "Maior resultado escolhido" : "Menor resultado escolhido",
+        tone: "accent"
+      },
+      {
+        label: "Expressão",
+        value: result.expression,
+        meta: formatDiceTrayModeLabel(result.mode)
+      }
+    ];
+  }
+
+  return [
+    {
+      label: "Dados",
+      value: `${result.chosen.diceCount}d${result.chosen.diceSides}`,
+      meta: result.chosen.hiddenRollCount ? `${result.chosen.diceCount} dados lançados` : "Expressão ativa"
+    },
+    {
+      label: "Rolagens",
+      value: formatRollPreview(result.chosen),
+      meta: result.chosen.hiddenRollCount ? "Prévia compacta das rolagens" : "Todos os dados exibidos",
+      wide: true
+    },
+    {
+      label: "Subtotal",
+      value: String(result.chosen.subtotal),
+      meta: "Soma antes do modificador"
+    },
+    {
+      label: "Modificador",
+      value: result.chosen.modifier ? `${result.chosen.modifier > 0 ? "+" : ""}${result.chosen.modifier}` : "0",
+      meta: "Ajuste final aplicado",
+      tone: result.chosen.modifier ? "accent" : ""
+    }
+  ];
+}
+
+function renderDiceTrayBreakdown(elements, result) {
+  const { resultBreakdown } = elements;
+  if (!resultBreakdown) return;
+
+  if (!result) {
+    resultBreakdown.hidden = true;
+    resultBreakdown.innerHTML = "";
+    return;
+  }
+
+  resultBreakdown.hidden = false;
+  resultBreakdown.innerHTML = buildDiceTrayBreakdownCards(result)
+    .map(card => `
+      <article class="dice-breakdown-card ${card.wide ? "is-wide" : ""} ${card.tone ? `is-${card.tone}` : ""}">
+        <span class="dice-breakdown-label">${esc(card.label)}</span>
+        <strong class="dice-breakdown-value">${esc(card.value)}</strong>
+        <span class="dice-breakdown-meta">${esc(card.meta)}</span>
+      </article>
+    `)
+    .join("");
 }
 
 function applyDiceTraySpecialState(elements, result) {
@@ -2553,8 +2636,10 @@ function renderDiceTray() {
     if (elements.resultTotal) elements.resultTotal.textContent = String(diceTrayState.lastResult.total);
     if (elements.resultDetail) elements.resultDetail.textContent = buildDiceTrayResultDetail(diceTrayState.lastResult);
     applyDiceTraySpecialState(elements, diceTrayState.lastResult);
+    renderDiceTrayBreakdown(elements, diceTrayState.lastResult);
   } else {
     applyDiceTraySpecialState(elements, null);
+    renderDiceTrayBreakdown(elements, null);
     if (elements.resultTotal) elements.resultTotal.textContent = "Pronto";
     if (elements.resultDetail) {
       const modeLabel = formatDiceTrayModeLabel(diceTrayState.mode).toLowerCase();
