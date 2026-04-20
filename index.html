@@ -14,7 +14,7 @@
     href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:wght@400;600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="css/index.css?v=2026-04-19-home-minimal-2" />
+  <link rel="stylesheet" href="css/index.css?v=2026-04-19-master-dashboard-1" />
   <link rel="stylesheet" href="css/ui.css?v=2026-04-10-home-ritual" />
 </head>
 <body>
@@ -137,16 +137,22 @@
       <section class="dashboard-hero">
         <div class="dashboard-card dashboard-main-card">
           <div class="dashboard-copy-block">
-            <p class="eyebrow">Sess&atilde;o ativa</p>
-            <h2 class="dashboard-title">Bem-vindo, <span id="heroUser">Convidado</span></h2>
+            <div class="dashboard-heading-row">
+              <p class="eyebrow" id="dashboardEyebrow">Sess&atilde;o ativa</p>
+              <span class="dashboard-mode-badge" id="saveModeBadge">Modo local</span>
+            </div>
+            <h2 class="dashboard-title" id="dashboardTitle">Painel da campanha</h2>
             <p class="dashboard-copy" id="dashboardCopy">
               Sua sess&atilde;o e seus dados ficam salvos no navegador deste dispositivo.
             </p>
+            <div class="dashboard-owner">
+              <span>Conectado como</span>
+              <strong id="heroUser">Convidado</strong>
+            </div>
 
             <div class="hero-actions">
               <a href="ficha.html" class="btn btn-primary">Abrir fichas</a>
               <a href="regras.html" class="btn btn-ghost">Ver regras</a>
-              <button type="button" class="btn btn-ghost" onclick="handleLogout()">Sair</button>
             </div>
           </div>
         </div>
@@ -156,41 +162,71 @@
             <article class="status-card">
               <span>Jogadores</span>
               <strong id="playerCount">0</strong>
+              <small id="playerCountMeta">Acessos ativos</small>
             </article>
             <article class="status-card">
-              <span>Seu acesso</span>
+              <span>NPCs</span>
+              <strong id="npcCount">0</strong>
+              <small id="npcCountMeta">No diret&oacute;rio</small>
+            </article>
+            <article class="status-card">
+              <span>Monstros</span>
+              <strong id="monsterCount">0</strong>
+              <small id="monsterCountMeta">No besti&aacute;rio</small>
+            </article>
+            <article class="status-card">
+              <span>Acesso</span>
               <strong id="roleLabel">Jogador</strong>
+              <small id="roleMeta">Permiss&otilde;es da sess&atilde;o</small>
             </article>
           </div>
 
           <article class="dashboard-note">
-            <span class="dashboard-note-label">Leitura r&aacute;pida</span>
-            <p>Abra fichas, consulte regras e mantenha o fluxo da campanha em um portal &uacute;nico e est&aacute;vel.</p>
+            <span class="dashboard-note-label" id="dashboardNoteLabel">Leitura r&aacute;pida</span>
+            <p id="dashboardNoteCopy">Abra fichas, consulte regras e mantenha o fluxo da campanha em um portal &uacute;nico e est&aacute;vel.</p>
           </article>
         </div>
       </section>
 
-      <section class="dashboard-grid">
-        <article class="panel-card">
-          <p class="eyebrow">Fluxo do portal</p>
-          <h3>Fichas da campanha</h3>
-          <p>Abra a &aacute;rea das fichas para acompanhar jogadores, NPCs, monstros, mem&oacute;rias, recursos e invent&aacute;rios.</p>
-          <a href="ficha.html" class="panel-link">Entrar nas fichas</a>
-        </article>
+      <section class="dashboard-workspace">
+        <div class="dashboard-workspace-head">
+          <div>
+            <p class="eyebrow" id="dashboardSectionEyebrow">Acesso r&aacute;pido</p>
+            <h3 class="dashboard-section-title" id="dashboardSectionTitle">Comandos do painel</h3>
+          </div>
+          <p class="dashboard-section-copy" id="dashboardSectionCopy">
+            Abra as &aacute;reas principais da campanha sem passar por blocos extras.
+          </p>
+        </div>
 
-        <article class="panel-card">
-          <p class="eyebrow">Navega&ccedil;&atilde;o</p>
-          <h3>Regras organizadas</h3>
-          <p>Consulte a base da campanha em uma leitura limpa, mantendo as informa&ccedil;&otilde;es de sistema concentradas em um &uacute;nico lugar.</p>
-          <a href="regras.html" class="panel-link">Abrir regras</a>
-        </article>
+        <div class="action-list">
+          <a href="ficha.html" class="action-row">
+            <div class="action-row-copy">
+              <span class="action-row-kicker">Fichas</span>
+              <strong id="fichasActionTitle">Gerenciar campanha</strong>
+              <p id="fichasActionCopy">Jogadores, NPCs, monstros e invent&aacute;rios no mesmo painel.</p>
+            </div>
+            <span class="action-row-meta" id="fichasActionMeta">0 registros</span>
+          </a>
 
-        <article class="panel-card">
-          <p class="eyebrow">Persist&ecirc;ncia</p>
-          <h3>Campanha viva</h3>
-          <p>Os dados permanecem vinculados ao usu&aacute;rio correto, com separa&ccedil;&atilde;o entre mestre, jogadores e conte&uacute;do compartilhado.</p>
-          <span class="panel-link panel-link-static">Sess&atilde;o persistente</span>
-        </article>
+          <a href="regras.html" class="action-row">
+            <div class="action-row-copy">
+              <span class="action-row-kicker">Regras</span>
+              <strong id="rulesActionTitle">Abrir arquivo da campanha</strong>
+              <p id="rulesActionCopy">Centralize regras, ajustes e refer&ecirc;ncias da mesa.</p>
+            </div>
+            <span class="action-row-meta" id="rulesActionMeta">Leitura direta</span>
+          </a>
+
+          <div class="action-row action-row-static">
+            <div class="action-row-copy">
+              <span class="action-row-kicker">Persist&ecirc;ncia</span>
+              <strong>Estado do salvamento</strong>
+              <p id="saveModeDescription">Os dados est&atilde;o vinculados ao modo atual da campanha.</p>
+            </div>
+            <span class="action-row-meta" id="saveModeLabel">Navegador</span>
+          </div>
+        </div>
       </section>
     </main>
   </div>
@@ -198,6 +234,6 @@
   <script src="js/ui.js?v=2026-04-10-home-ritual"></script>
   <script src="js/runtime-config.js?v=2026-04-10-home-ritual"></script>
   <script src="js/api.js?v=2026-04-10-home-ritual"></script>
-  <script src="js/auth.js?v=2026-04-10-home-ritual"></script>
+  <script src="js/auth.js?v=2026-04-19-master-dashboard-1"></script>
 </body>
 </html>

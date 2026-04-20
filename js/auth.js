@@ -181,10 +181,87 @@ function initAuthPageGlow() {
 }
 
 function updateHomeSummary() {
+  const session = AUTH.getSession();
+  const role = session?.role || "player";
+  const directory = AUTH.getDirectoryCache();
+  const readLocalList = key => {
+    try {
+      const value = JSON.parse(localStorage.getItem(key) || "[]");
+      return Array.isArray(value) ? value : [];
+    } catch {
+      return [];
+    }
+  };
+  const players = AUTH.isBackendEnabled()
+    ? (Array.isArray(directory?.players) ? directory.players : [])
+    : AUTH.getPlayers();
+  const npcs = AUTH.isBackendEnabled()
+    ? (Array.isArray(directory?.npcs) ? directory.npcs : [])
+    : readLocalList("tc_npcs");
+  const monsters = AUTH.isBackendEnabled()
+    ? (Array.isArray(directory?.monsters) ? directory.monsters : [])
+    : readLocalList("tc_monsters");
+  const totalSheets = players.length + npcs.length + monsters.length;
+  const backendEnabled = AUTH.isBackendEnabled();
+
   const playerCount = document.getElementById("playerCount");
-  if (playerCount) {
-    playerCount.textContent = String(AUTH.getPlayers().length);
+  const npcCount = document.getElementById("npcCount");
+  const monsterCount = document.getElementById("monsterCount");
+  const playerCountMeta = document.getElementById("playerCountMeta");
+  const npcCountMeta = document.getElementById("npcCountMeta");
+  const monsterCountMeta = document.getElementById("monsterCountMeta");
+  const saveModeBadge = document.getElementById("saveModeBadge");
+  const saveModeLabel = document.getElementById("saveModeLabel");
+  const saveModeDescription = document.getElementById("saveModeDescription");
+  const fichasActionMeta = document.getElementById("fichasActionMeta");
+  const rulesActionMeta = document.getElementById("rulesActionMeta");
+  const dashboardNoteCopy = document.getElementById("dashboardNoteCopy");
+  const roleLabel = document.getElementById("roleLabel");
+  const roleMeta = document.getElementById("roleMeta");
+
+  if (playerCount) playerCount.textContent = String(players.length);
+  if (npcCount) npcCount.textContent = String(npcs.length);
+  if (monsterCount) monsterCount.textContent = String(monsters.length);
+
+  if (playerCountMeta) {
+    playerCountMeta.textContent = role === "master" ? "Acessos ativos" : "No diretório da campanha";
   }
+
+  if (npcCountMeta) npcCountMeta.textContent = "Personagens do mestre";
+  if (monsterCountMeta) monsterCountMeta.textContent = "Criaturas cadastradas";
+
+  if (saveModeBadge) {
+    saveModeBadge.textContent = backendEnabled ? "Servidor" : "Navegador";
+  }
+
+  if (saveModeLabel) {
+    saveModeLabel.textContent = backendEnabled ? "Servidor" : "Navegador";
+  }
+
+  if (saveModeDescription) {
+    saveModeDescription.textContent = backendEnabled
+      ? "As altera\u00e7\u00f5es ficam centralizadas no servidor da campanha."
+      : "As altera\u00e7\u00f5es ficam salvas neste navegador at\u00e9 a migra\u00e7\u00e3o completa.";
+  }
+
+  if (fichasActionMeta) {
+    fichasActionMeta.textContent = role === "master"
+      ? `${totalSheets} registros`
+      : "Sua ficha e o diret\u00f3rio";
+  }
+
+  if (rulesActionMeta) {
+    rulesActionMeta.textContent = backendEnabled ? "Atualiza\u00e7\u00e3o central" : "Consulta direta";
+  }
+
+  if (dashboardNoteCopy) {
+    dashboardNoteCopy.textContent = role === "master"
+      ? "Use este painel para abrir as duas \u00e1reas centrais da campanha e acompanhar o estado geral sem excesso de informa\u00e7\u00e3o."
+      : "Abra sua ficha e consulte as regras em um fluxo curto, sem navega\u00e7\u00e3o desnecess\u00e1ria.";
+  }
+
+  if (roleLabel) roleLabel.textContent = role === "master" ? "Mestre" : "Jogador";
+  if (roleMeta) roleMeta.textContent = role === "master" ? "Controle da campanha" : "Acesso da sess\u00e3o";
 }
 
 function bindHomeRealtime() {
@@ -289,10 +366,16 @@ async function onLoginSuccess(username, role = "player") {
   const homeScreen = document.getElementById("homeScreen");
   const headerUser = document.getElementById("headerUser");
   const heroUser = document.getElementById("heroUser");
-  const playerCount = document.getElementById("playerCount");
   const headerRole = document.getElementById("headerRole");
-  const roleLabel = document.getElementById("roleLabel");
   const dashboardCopy = document.getElementById("dashboardCopy");
+  const dashboardTitle = document.getElementById("dashboardTitle");
+  const dashboardEyebrow = document.getElementById("dashboardEyebrow");
+  const dashboardSectionTitle = document.getElementById("dashboardSectionTitle");
+  const dashboardSectionCopy = document.getElementById("dashboardSectionCopy");
+  const fichasActionTitle = document.getElementById("fichasActionTitle");
+  const fichasActionCopy = document.getElementById("fichasActionCopy");
+  const rulesActionTitle = document.getElementById("rulesActionTitle");
+  const rulesActionCopy = document.getElementById("rulesActionCopy");
 
   if (AUTH.isBackendEnabled()) {
     await AUTH.refreshDirectory();
@@ -304,20 +387,58 @@ async function onLoginSuccess(username, role = "player") {
 
   if (headerUser) headerUser.textContent = username;
   if (heroUser) heroUser.textContent = username;
-  if (playerCount) playerCount.textContent = String(AUTH.getPlayers().length);
   if (headerRole) headerRole.textContent = role === "master" ? "Mestre" : "Jogador";
-  if (roleLabel) roleLabel.textContent = role === "master" ? "Mestre" : "Jogador";
+
+  if (dashboardEyebrow) {
+    dashboardEyebrow.textContent = role === "master" ? "Painel do mestre" : "Sess\u00e3o ativa";
+  }
+
+  if (dashboardTitle) {
+    dashboardTitle.textContent = role === "master" ? "Comando da campanha" : "Painel da campanha";
+  }
 
   if (dashboardCopy) {
     dashboardCopy.textContent =
       role === "master"
         ? AUTH.isBackendEnabled()
-          ? "Voc\u00ea pode criar jogadores, abrir qualquer ficha e manter a campanha salva no servidor central."
-          : "Voc\u00ea pode criar jogadores, abrir qualquer ficha e manter tudo salvo neste navegador."
+          ? "Crie acessos, abra qualquer ficha e mantenha a campanha organizada com salvamento central."
+          : "Crie acessos, abra qualquer ficha e mantenha a campanha organizada neste navegador."
         : AUTH.isBackendEnabled()
-          ? "Voc\u00ea acessa seus dados no servidor da campanha, com sincroniza\u00e7\u00e3o central."
-          : "Voc\u00ea acessa somente seus dados, e tudo fica salvo automaticamente neste navegador.";
+          ? "Abra sua ficha e consulte as regras com sincroniza\u00e7\u00e3o central da campanha."
+          : "Abra sua ficha e consulte as regras com salvamento local neste navegador.";
   }
+
+  if (dashboardSectionTitle) {
+    dashboardSectionTitle.textContent = role === "master" ? "Atalhos do mestre" : "Atalhos da campanha";
+  }
+
+  if (dashboardSectionCopy) {
+    dashboardSectionCopy.textContent = role === "master"
+      ? "As duas \u00e1reas principais ficam acess\u00edveis em um fluxo curto e direto."
+      : "Tudo que voc\u00ea precisa fica concentrado nos atalhos principais.";
+  }
+
+  if (fichasActionTitle) {
+    fichasActionTitle.textContent = role === "master" ? "Gerenciar campanha" : "Abrir sua ficha";
+  }
+
+  if (fichasActionCopy) {
+    fichasActionCopy.textContent = role === "master"
+      ? "Jogadores, NPCs, monstros e invent\u00e1rios no mesmo painel."
+      : "Acesse sua ficha e acompanhe o diret\u00f3rio da campanha.";
+  }
+
+  if (rulesActionTitle) {
+    rulesActionTitle.textContent = role === "master" ? "Abrir arquivo da campanha" : "Consultar regras";
+  }
+
+  if (rulesActionCopy) {
+    rulesActionCopy.textContent = role === "master"
+      ? "Centralize regras, ajustes e refer\u00eancias da mesa."
+      : "Leia as regras e os ajustes oficiais sem sair do portal.";
+  }
+
+  updateHomeSummary();
 }
 
 async function handleLogout() {
