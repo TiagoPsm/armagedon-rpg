@@ -2611,7 +2611,7 @@ function renderDiceTray() {
   } else {
     applyDiceTraySpecialState(elements, null);
     renderDiceTrayBreakdown(elements, null);
-    if (elements.resultTotal) elements.resultTotal.textContent = "Pronto";
+    if (elements.resultTotal) elements.resultTotal.textContent = "—";
     if (elements.resultDetail) {
       const modeLabel = formatDiceTrayModeLabel(diceTrayState.mode).toLowerCase();
       const isCustom = Boolean(customExpression);
