@@ -6602,3 +6602,93 @@
     max-width: none;
   }
 }
+
+/* 2026-04 dice tray centered result composition */
+#sheetScreen .dice-result-card {
+  padding: 1rem 1.08rem;
+}
+
+#sheetScreen .dice-result-head {
+  align-items: center;
+}
+
+#sheetScreen .dice-result-main {
+  grid-template-columns: minmax(176px, 208px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+}
+
+#sheetScreen .dice-result-value-box {
+  width: 100%;
+  max-width: 208px;
+  min-height: 174px;
+  justify-self: center;
+}
+
+#sheetScreen .dice-result-info {
+  width: min(100%, 540px);
+  justify-self: center;
+  align-content: center;
+  gap: 0.78rem;
+}
+
+#sheetScreen .dice-result-info > p {
+  text-align: left;
+}
+
+#sheetScreen .dice-result-feedback {
+  width: min(100%, 520px);
+  justify-self: start;
+}
+
+#sheetScreen .dice-result-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 0.72rem;
+}
+
+#sheetScreen .dice-result-summary {
+  flex: 0 1 220px;
+  min-width: 190px;
+  min-height: 0;
+}
+
+#sheetScreen .dice-result-breakdown {
+  flex: 1 1 180px;
+  justify-content: center;
+  align-items: center;
+}
+
+#sheetScreen .dice-breakdown-card {
+  min-height: 42px;
+}
+
+#sheetScreen .dice-breakdown-card.is-wide {
+  flex: 1 1 100%;
+  justify-content: space-between;
+}
+
+@media (max-width: 920px) {
+  #sheetScreen .dice-result-main {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  #sheetScreen .dice-result-info,
+  #sheetScreen .dice-result-feedback {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  #sheetScreen .dice-result-meta-row {
+    justify-content: stretch;
+  }
+
+  #sheetScreen .dice-result-summary,
+  #sheetScreen .dice-result-breakdown {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
