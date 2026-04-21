@@ -2374,37 +2374,17 @@ function initDiceTray() {
 function getDiceTrayResultFeedback(result) {
   if (!result) return null;
 
-  const modeLabel = formatDiceTrayModeLabel(result.mode);
-
   if (result.special === "critical") {
     return {
       title: "Acerto crítico",
-      hint: result.mode === "normal"
-        ? "Você atingiu o valor máximo possível desta rolagem."
-        : `${modeLabel}: o resultado escolhido alcançou o valor máximo possível.`
+      hint: "Você atingiu o valor máximo possível desta rolagem."
     };
   }
 
   if (result.special === "fumble") {
     return {
       title: "Falha crítica",
-      hint: result.mode === "normal"
-        ? "Você caiu no valor mínimo possível desta rolagem."
-        : `${modeLabel}: o resultado escolhido ficou no valor mínimo possível.`
-    };
-  }
-
-  if (result.mode === "advantage") {
-    return {
-      title: "Vantagem ativa",
-      hint: "Duas rolagens foram feitas e o maior resultado foi mantido."
-    };
-  }
-
-  if (result.mode === "disadvantage") {
-    return {
-      title: "Desvantagem ativa",
-      hint: "Duas rolagens foram feitas e o menor resultado foi mantido."
+      hint: "Você caiu no valor mínimo possível desta rolagem."
     };
   }
 
@@ -2415,16 +2395,16 @@ function buildDiceTrayResultDetail(result) {
   if (!result) return "";
 
   if (result.mode === "advantage" || result.mode === "disadvantage") {
-    const modeLabel = formatDiceTrayModeLabel(result.mode);
-    const keptLabel = result.mode === "advantage" ? "Maior resultado mantido." : "Menor resultado mantido.";
-    return `${modeLabel} ativa. ${keptLabel}`;
+    return result.mode === "advantage"
+      ? "Maior resultado mantido."
+      : "Menor resultado mantido.";
   }
 
   if (result.chosen.modifier) {
-    return `Subtotal ${result.chosen.subtotal} com modificador ${result.chosen.modifier > 0 ? "+" : ""}${result.chosen.modifier}.`;
+    return `Resultado final com modificador ${result.chosen.modifier > 0 ? "+" : ""}${result.chosen.modifier}.`;
   }
 
-  return `${result.chosen.diceCount}d${result.chosen.diceSides} concluído sem modificador.`;
+  return "Resultado final da rolagem.";
 }
 
 function buildDiceTrayBreakdownCards(result) {
@@ -2434,52 +2414,44 @@ function buildDiceTrayBreakdownCards(result) {
     return [
       {
         label: "1ª rolagem",
-        value: String(result.first.total),
-        meta: buildDiceTrayRollMeta(result.first)
+        value: String(result.first.total)
       },
       {
         label: "2ª rolagem",
-        value: String(result.second.total),
-        meta: buildDiceTrayRollMeta(result.second)
+        value: String(result.second.total)
       },
       {
         label: "Mantida",
         value: String(result.chosen.total),
-        meta: result.mode === "advantage" ? "Maior resultado escolhido" : "Menor resultado escolhido",
         tone: "accent"
-      },
-      {
-        label: "Expressão",
-        value: result.expression,
-        meta: formatDiceTrayModeLabel(result.mode)
       }
     ];
   }
 
-  return [
-    {
-      label: "Dados",
-      value: `${result.chosen.diceCount}d${result.chosen.diceSides}`,
-      meta: result.chosen.hiddenRollCount ? `${result.chosen.diceCount} dados lançados` : "Expressão ativa"
-    },
+  const cards = [
     {
       label: "Rolagens",
       value: formatRollPreview(result.chosen),
-      meta: result.chosen.hiddenRollCount ? "Prévia compacta das rolagens" : "Todos os dados exibidos",
       wide: true
-    },
-    {
-      label: "Subtotal",
-      value: String(result.chosen.subtotal),
-      meta: "Soma antes do modificador"
-    },
-    {
-      label: "Modificador",
-      value: result.chosen.modifier ? `${result.chosen.modifier > 0 ? "+" : ""}${result.chosen.modifier}` : "0",
-      meta: "Ajuste final aplicado",
-      tone: result.chosen.modifier ? "accent" : ""
     }
   ];
+
+  if (result.chosen.diceCount > 1 || result.chosen.hiddenRollCount) {
+    cards.push({
+      label: "Dados",
+      value: `${result.chosen.diceCount}d${result.chosen.diceSides}`
+    });
+  }
+
+  if (result.chosen.modifier) {
+    cards.push({
+      label: "Mod",
+      value: `${result.chosen.modifier > 0 ? "+" : ""}${result.chosen.modifier}`,
+      tone: "accent"
+    });
+  }
+
+  return cards;
 }
 
 function renderDiceTrayBreakdown(elements, result) {
@@ -2498,7 +2470,6 @@ function renderDiceTrayBreakdown(elements, result) {
       <article class="dice-breakdown-card ${card.wide ? "is-wide" : ""} ${card.tone ? `is-${card.tone}` : ""}">
         <span class="dice-breakdown-label">${esc(card.label)}</span>
         <strong class="dice-breakdown-value">${esc(card.value)}</strong>
-        <span class="dice-breakdown-meta">${esc(card.meta)}</span>
       </article>
     `)
     .join("");

@@ -6395,11 +6395,11 @@
 
 /* 2026-04 dice tray result breakdown cards */
 #sheetScreen .dice-result-card {
-  gap: 0.78rem;
+  gap: 0.68rem;
 }
 
 #sheetScreen .dice-result-primary {
-  gap: 0.3rem;
+  gap: 0.24rem;
 }
 
 #sheetScreen .dice-result-card p {
@@ -6407,9 +6407,10 @@
 }
 
 #sheetScreen .dice-result-breakdown {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.65rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 #sheetScreen .dice-result-breakdown[hidden] {
@@ -6417,21 +6418,25 @@
 }
 
 #sheetScreen .dice-breakdown-card {
-  min-height: 86px;
-  padding: 0.72rem 0.8rem;
-  border-radius: 18px;
+  min-height: 0;
+  max-width: 100%;
+  padding: 0.48rem 0.68rem;
+  border-radius: 14px;
   border: 1px solid rgba(175, 67, 67, 0.13);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.004)),
     rgba(11, 14, 20, 0.9);
-  display: grid;
-  align-content: start;
-  gap: 0.22rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.44rem;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 #sheetScreen .dice-breakdown-card.is-wide {
-  grid-column: span 2;
+  flex: 1 1 100%;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.68rem;
 }
 
 #sheetScreen .dice-breakdown-card.is-accent {
@@ -6448,45 +6453,38 @@
   font-size: 0.58rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 #sheetScreen .dice-breakdown-value {
-  color: rgba(244, 237, 224, 0.95);
-  font-family: var(--font-display);
-  font-size: clamp(1rem, 1.65vw, 1.32rem);
-  line-height: 1.08;
+  color: rgba(233, 226, 211, 0.92);
+  font-family: var(--font-ui);
+  font-size: 0.88rem;
+  line-height: 1.34;
   word-break: break-word;
 }
 
 #sheetScreen .dice-breakdown-card.is-wide .dice-breakdown-value {
-  font-family: inherit;
-  font-size: 0.95rem;
-  line-height: 1.45;
+  text-align: right;
+  font-size: 0.84rem;
+  line-height: 1.42;
   font-weight: 600;
 }
 
-#sheetScreen .dice-breakdown-meta {
-  color: rgba(205, 194, 170, 0.66);
-  font-size: 0.76rem;
-  line-height: 1.36;
-}
-
 @media (max-width: 920px) {
-  #sheetScreen .dice-result-breakdown {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  #sheetScreen .dice-breakdown-card.is-wide {
+    align-items: center;
   }
 
-  #sheetScreen .dice-breakdown-card.is-wide {
-    grid-column: span 2;
+  #sheetScreen .dice-breakdown-card.is-wide .dice-breakdown-value {
+    text-align: left;
   }
 }
 
 @media (max-width: 620px) {
-  #sheetScreen .dice-result-breakdown {
-    grid-template-columns: 1fr;
-  }
-
+  #sheetScreen .dice-breakdown-card,
   #sheetScreen .dice-breakdown-card.is-wide {
-    grid-column: span 1;
+    width: 100%;
+    justify-content: space-between;
   }
 }
