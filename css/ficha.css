@@ -6488,3 +6488,117 @@
     justify-content: space-between;
   }
 }
+
+/* 2026-04 dice tray dedicated total box */
+#sheetScreen .dice-result-card {
+  gap: 0.78rem;
+}
+
+#sheetScreen .dice-result-main {
+  grid-template-columns: minmax(168px, 210px) minmax(0, 1fr);
+  gap: 0.82rem;
+  align-items: stretch;
+}
+
+#sheetScreen .dice-result-value-box {
+  min-height: 168px;
+  padding: 0.9rem 0.95rem;
+  border-radius: 22px;
+  border: 1px solid rgba(175, 67, 67, 0.15);
+  background:
+    radial-gradient(circle at top left, rgba(211, 90, 82, 0.08), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.004)),
+    rgba(11, 14, 20, 0.92);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.024),
+    0 16px 28px rgba(0, 0, 0, 0.18);
+}
+
+#sheetScreen #diceResultTotal {
+  display: block;
+  width: 100%;
+  max-width: 4ch;
+  color: rgba(247, 239, 224, 0.98);
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 5vw, 4.6rem);
+  line-height: 0.9;
+  text-align: center;
+  white-space: nowrap;
+}
+
+#sheetScreen .dice-result-info {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.68rem;
+}
+
+#sheetScreen .dice-result-info > p {
+  margin: 0;
+  max-width: none;
+  font-size: 0.92rem;
+  line-height: 1.46;
+}
+
+#sheetScreen .dice-result-feedback {
+  order: 2;
+}
+
+#sheetScreen .dice-result-meta-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  gap: 0.68rem;
+  align-items: stretch;
+}
+
+#sheetScreen .dice-result-summary {
+  min-height: 0;
+  padding: 0.78rem 0.82rem;
+  gap: 0.32rem;
+  align-content: start;
+}
+
+#sheetScreen .dice-result-summary > strong {
+  font-size: clamp(1.12rem, 1.55vw, 1.42rem);
+}
+
+#sheetScreen .dice-reroll-btn {
+  margin-top: 0.1rem;
+}
+
+#sheetScreen .dice-result-breakdown {
+  align-items: stretch;
+  align-content: start;
+}
+
+#sheetScreen .dice-breakdown-card {
+  min-height: 40px;
+  padding: 0.46rem 0.62rem;
+}
+
+#sheetScreen .dice-breakdown-card.is-wide {
+  justify-content: flex-start;
+  align-items: center;
+}
+
+#sheetScreen .dice-breakdown-card.is-wide .dice-breakdown-value {
+  text-align: left;
+}
+
+@media (max-width: 920px) {
+  #sheetScreen .dice-result-main,
+  #sheetScreen .dice-result-meta-row {
+    grid-template-columns: 1fr;
+  }
+
+  #sheetScreen .dice-result-value-box {
+    min-height: 132px;
+  }
+
+  #sheetScreen #diceResultTotal {
+    max-width: none;
+  }
+}
