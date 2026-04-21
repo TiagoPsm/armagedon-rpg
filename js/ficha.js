@@ -2259,7 +2259,6 @@ function initDiceTray() {
     || !modeGrid
     || !advancedToggle
     || !historyToggle
-    || !reroll
     || !openButton
   ) return;
 
@@ -2285,9 +2284,11 @@ function initDiceTray() {
   roll.addEventListener("click", () => {
     rollDiceTray();
   });
-  reroll.addEventListener("click", () => {
-    rollDiceTray();
-  });
+  if (reroll) {
+    reroll.addEventListener("click", () => {
+      rollDiceTray();
+    });
+  }
   historyToggle.addEventListener("click", () => {
     diceTrayState.historyOpen = !diceTrayState.historyOpen;
     renderDiceTray();
