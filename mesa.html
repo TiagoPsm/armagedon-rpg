@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Armagedom | Mesa Virtual</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico?v=2026-04-19-logo-fallback-3" />
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=2026-04-19-logo-fallback-3" />
+  <link rel="shortcut icon" href="favicon.ico?v=2026-04-19-logo-fallback-3" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2026-04-19-logo-fallback-3" />
+  <link rel="dns-prefetch" href="//armagedon-api.tiagopsm2008.workers.dev" />
+  <link rel="preconnect" href="https://armagedon-api.tiagopsm2008.workers.dev" crossorigin />
+  <link rel="prefetch" href="index.html" />
+  <link rel="prefetch" href="ficha.html" />
+  <link rel="prefetch" href="regras.html" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;500;600;700&family=Crimson+Text:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="css/mesa.css?v=2026-04-21-mesa-skeleton-1" />
+</head>
+<body>
+  <div class="bg-layer bg-noise"></div>
+  <div class="bg-layer bg-vignette"></div>
+  <div class="bg-layer bg-scar"></div>
+  <div class="bg-layer bg-orbit"></div>
+
+  <header class="site-header">
+    <div class="shell header-shell">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <img src="logo-rpg-site.jpg?v=2026-04-20-site-speed-1" alt="" class="site-logo-img" onerror="if(!this.dataset.fallbackStep){this.dataset.fallbackStep='1';this.src='logo-rpg-armagedon.png?v=2026-04-19-logo-fallback-3';}else if(this.dataset.fallbackStep==='1'){this.dataset.fallbackStep='2';this.src='assets/logo-rpg-armagedon.png?v=2026-04-19-logo-fallback-3';}else if(this.dataset.fallbackStep==='2'){this.dataset.fallbackStep='3';this.src='Logo%20app.jpg?v=2026-04-19-logo-fallback-3';}" />
+        </span>
+        <span class="brand-copy">
+          <strong>Armagedom</strong>
+          <small>Mesa virtual</small>
+        </span>
+      </div>
+
+      <nav class="main-nav" aria-label="Navegação principal">
+        <a href="index.html" class="nav-link">Início</a>
+        <a href="ficha.html" class="nav-link">Fichas</a>
+        <a href="mesa.html" class="nav-link active">Mesa</a>
+        <a href="regras.html" class="nav-link">Regras</a>
+      </nav>
+
+      <div class="header-actions">
+        <span class="header-user" id="headerUser">Convidado</span>
+        <button type="button" class="btn btn-ghost btn-small" onclick="handleLogout()">Sair</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell mesa-shell">
+    <section class="mesa-overview">
+      <div class="mesa-overview-copy">
+        <p class="eyebrow">Mesa narrativa</p>
+        <h1>Mesa Virtual</h1>
+        <p class="mesa-lead">
+          Protótipo visual da cena. Nesta fase, o palco, os tokens e as permissões são simulados no navegador
+          para fecharmos a experiência antes do banco e do tempo real.
+        </p>
+      </div>
+
+      <div class="mesa-overview-meta">
+        <article class="meta-card">
+          <span>Modo</span>
+          <strong id="roleBadge">Jogador</strong>
+          <small id="roleSummary">Leitura e edição do próprio estado.</small>
+        </article>
+        <article class="meta-card">
+          <span>Presentes</span>
+          <strong id="activeTokenCount">0</strong>
+          <small>Tokens visíveis no palco atual.</small>
+        </article>
+        <article class="meta-card">
+          <span>Fonte</span>
+          <strong>Mock local</strong>
+          <small>Protótipo salvo no navegador deste dispositivo.</small>
+        </article>
+      </div>
+    </section>
+
+    <section class="mesa-layout">
+      <aside class="mesa-panel mesa-panel-left">
+        <div class="panel-block">
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Direção da cena</p>
+              <h2>Controles locais</h2>
+            </div>
+          </div>
+
+          <div class="scene-status-card">
+            <div class="scene-status-copy">
+              <span class="scene-status-label">Estado atual</span>
+              <strong id="sceneStateTitle">Mesa pronta</strong>
+              <p id="sceneStateCopy">Os dados abaixo ainda são locais, sem persistência no backend.</p>
+            </div>
+            <button type="button" class="btn btn-ghost btn-small" id="resetMesaBtn">Reiniciar protótipo</button>
+          </div>
+
+          <div class="scene-toggles">
+            <label class="toggle-row" id="playerPreviewRow">
+              <span class="toggle-copy">
+                <strong>Prévia do jogador</strong>
+                <small>Oculta os tokens invisíveis e mostra a mesa como os jogadores verão.</small>
+              </span>
+              <input type="checkbox" id="playerPreviewToggle" />
+              <span class="toggle-indicator" aria-hidden="true"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="panel-block">
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Escalação</p>
+              <h2>Adicionar à mesa</h2>
+            </div>
+            <span class="panel-badge" id="rosterCountBadge">0 disponíveis</span>
+          </div>
+
+          <label class="search-field" for="rosterSearch">
+            <span>Buscar personagem</span>
+            <input type="search" id="rosterSearch" placeholder="Nome, tipo ou dono..." autocomplete="off" />
+          </label>
+
+          <div class="roster-section" id="rosterList" aria-live="polite"></div>
+        </div>
+      </aside>
+
+      <section class="mesa-stage-panel">
+        <div class="panel-block panel-stage">
+          <div class="panel-head panel-head-stage">
+            <div>
+              <p class="panel-kicker">Palco da campanha</p>
+              <h2>Cena compartilhada</h2>
+            </div>
+
+            <div class="stage-head-meta">
+              <span class="panel-badge" id="stageViewBadge">Visão do mestre</span>
+              <span class="panel-badge panel-badge-soft" id="stageHintBadge">Arraste os tokens para organizar a cena.</span>
+            </div>
+          </div>
+
+          <div class="mesa-stage-wrap">
+            <div class="mesa-stage-grid" aria-hidden="true"></div>
+            <div class="mesa-stage-glow" aria-hidden="true"></div>
+            <div id="mesaStage" class="mesa-stage" aria-live="polite"></div>
+
+            <div id="mesaEmptyState" class="mesa-empty-state" hidden>
+              <strong>Nenhum token em cena.</strong>
+              <p>Use a coluna da esquerda para colocar personagens, NPCs e monstros no palco.</p>
+            </div>
+          </div>
+
+          <div class="stage-footer">
+            <div class="stage-footer-copy">
+              <span class="panel-kicker">Protótipo</span>
+              <p>
+                Nesta primeira fase, a mesa funciona localmente para validar layout, fluxo visual e permissões de
+                interface antes de ligar backend, banco e realtime.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="mesa-panel mesa-panel-right">
+        <div class="panel-block token-inspector-block">
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Inspetor</p>
+              <h2>Token selecionado</h2>
+            </div>
+          </div>
+
+          <div id="tokenInspector" class="token-inspector" aria-live="polite">
+            <div class="token-inspector-empty">
+              <strong>Selecione um token</strong>
+              <p>Os detalhes da cena aparecem aqui quando você escolhe um retrato no palco.</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="js/runtime-config.js?v=2026-04-10-home-ritual"></script>
+  <script src="js/api.js?v=2026-04-10-home-ritual"></script>
+  <script src="js/auth.js?v=2026-04-20-site-speed-1"></script>
+  <script src="js/mesa.js?v=2026-04-21-mesa-skeleton-1"></script>
+</body>
+</html>
