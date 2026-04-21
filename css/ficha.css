@@ -6725,3 +6725,64 @@
     min-width: 0;
   }
 }
+
+/* 2026-04 dice tray result focus only */
+#sheetScreen .dice-result-card {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.9rem;
+  min-height: 228px;
+  padding: 1.1rem 1.2rem;
+}
+
+#sheetScreen .dice-result-head {
+  width: 100%;
+  max-width: 460px;
+  justify-content: center;
+}
+
+#sheetScreen .dice-result-main {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  gap: 0;
+}
+
+#sheetScreen .dice-result-value-box {
+  width: min(100%, 240px);
+  max-width: 240px;
+  min-height: 184px;
+  margin: 0 auto;
+}
+
+#sheetScreen #diceResultTotal {
+  max-width: 4ch;
+  font-size: clamp(3.2rem, 5.6vw, 5rem);
+}
+
+#sheetScreen .dice-result-info,
+#sheetScreen .dice-result-meta-row,
+#sheetScreen .dice-result-summary,
+#sheetScreen .dice-result-breakdown,
+#sheetScreen .dice-reroll-btn {
+  display: none !important;
+}
+
+#sheetScreen .dice-result-feedback {
+  order: unset;
+  width: min(100%, 420px);
+  justify-self: center;
+  text-align: center;
+}
+
+@media (max-width: 920px) {
+  #sheetScreen .dice-result-card {
+    min-height: 0;
+  }
+
+  #sheetScreen .dice-result-value-box {
+    min-height: 152px;
+  }
+}

@@ -2613,11 +2613,7 @@ function renderDiceTray() {
     renderDiceTrayBreakdown(elements, null);
     if (elements.resultTotal) elements.resultTotal.textContent = "—";
     if (elements.resultDetail) {
-      const modeLabel = formatDiceTrayModeLabel(diceTrayState.mode).toLowerCase();
-      const isCustom = Boolean(customExpression);
-      elements.resultDetail.textContent = isCustom
-        ? `Expressão pronta: ${expression}. Quando quiser, role em modo ${modeLabel}.`
-        : `Escolha um dado e role em modo ${modeLabel}.`;
+      elements.resultDetail.textContent = "";
     }
   }
 
