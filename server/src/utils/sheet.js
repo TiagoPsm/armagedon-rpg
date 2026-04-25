@@ -20,6 +20,34 @@ function sanitizeAttrValue(attr, value, fallback) {
   return String(Math.max(1, numeric));
 }
 
+function normalizeResourceValue(value, fallback = "") {
+  if (value === "" || value === null || value === undefined) return fallback;
+
+  const numeric = Number.parseInt(value, 10);
+  if (Number.isNaN(numeric)) return fallback;
+
+  return String(Math.max(0, numeric));
+}
+
+function clampResourceValue(value, maxValue, fallback = "") {
+  const current = normalizeResourceValue(value, fallback);
+  if (current === "") return current;
+
+  const max = normalizeResourceValue(maxValue, "");
+  if (max === "") return current;
+
+  return String(Math.min(
+    Number.parseInt(current, 10),
+    Number.parseInt(max, 10)
+  ));
+}
+
+function getIntegrityMaxFromSoul(value, fallback = "") {
+  const numeric = Number.parseInt(value, 10);
+  if (Number.isNaN(numeric)) return fallback;
+  return String(Math.max(0, Math.floor(numeric / 3)));
+}
+
 function normalizeInventorySlots(kind, value, used = 0) {
   if (kind === "monster") return 0;
   if (kind === "npc") return DEFAULT_INVENTORY_SLOTS;
@@ -92,6 +120,8 @@ function normalizeMemoryDrop(drop) {
 function normalizeSheetData(data, kind = "player", charNameFallback = "") {
   const isMonster = kind === "monster";
   const inventory = isMonster ? [] : Array.isArray(data?.inv) ? data.inv.map(normalizeItem) : [];
+  const vidaMax = normalizeResourceValue(data?.vidaMax);
+  const integMax = normalizeResourceValue(data?.integMax);
   const normalized = {
     charName: String(data?.charName || charNameFallback || ""),
     charClass: String(data?.charClass || ""),
@@ -99,10 +129,10 @@ function normalizeSheetData(data, kind = "player", charNameFallback = "") {
     charRace: String(data?.charRace || ""),
     charFaction: isMonster ? "" : String(data?.charFaction || ""),
     avatar: String(data?.avatar || ""),
-    vidaAtual: String(data?.vidaAtual || ""),
-    vidaMax: String(data?.vidaMax || ""),
-    integAtual: isMonster ? "" : String(data?.integAtual || ""),
-    integMax: isMonster ? "" : String(data?.integMax || ""),
+    vidaAtual: clampResourceValue(data?.vidaAtual, vidaMax),
+    vidaMax,
+    integAtual: clampResourceValue(data?.integAtual, integMax),
+    integMax,
     charNotes: String(data?.charNotes || ""),
     habs: Array.isArray(data?.habs) ? data.habs.map(normalizeHab) : [],
     ownedMemories: isMonster
@@ -127,6 +157,11 @@ function normalizeSheetData(data, kind = "player", charNameFallback = "") {
     );
   });
 
+  if (!isMonster) {
+    normalized.integMax = getIntegrityMaxFromSoul(normalized.attrAlma, "");
+    normalized.integAtual = clampResourceValue(normalized.integAtual, normalized.integMax);
+  }
+
   if (isMonster) {
     normalized.charFaction = "";
     normalized.integAtual = "";
@@ -146,8 +181,8 @@ function buildDefaultSheet(kind, charName) {
       charLevel: "1",
       vidaAtual: "",
       vidaMax: "",
-      integAtual: kind === "monster" ? "" : "",
-      integMax: kind === "monster" ? "" : "",
+      integAtual: "",
+      integMax: "",
       inventorySlots: kind === "monster" ? 0 : DEFAULT_INVENTORY_SLOTS
     },
     kind,
