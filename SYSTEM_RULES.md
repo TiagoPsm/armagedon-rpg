@@ -44,6 +44,9 @@ Tipos de ficha:
 - Integridade maxima e derivada de Alma
 - Regra atual:
   - a cada 3 pontos de Alma, +1 de Integridade maxima
+- Frontend, Worker e backend legado devem recalcular Integridade maxima antes de salvar, sem aceitar `integMax` divergente vindo do cliente
+- Vida atual nao pode passar da Vida maxima
+- Integridade atual nao pode passar da Integridade maxima
 
 ## Atributos
 
