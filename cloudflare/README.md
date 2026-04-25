@@ -7,6 +7,17 @@ Base inicial para migrar o portal Armagedon para:
 - Cloudflare D1
 - Durable Objects no passo seguinte
 
+## Regra Obrigatoria de Documentacao
+
+Qualquer alteracao no Worker, D1, rotas, deploy ou comportamento publicado da API deve atualizar este arquivo no mesmo PR.
+
+Registro minimo esperado:
+
+- o que mudou
+- quais rotas ou tabelas foram afetadas
+- como validar a mudanca
+- quais riscos ou pendencias continuam abertos
+
 ## Estado atual desta migracao
 
 Esta base cobre o inicio da API em Workers com:
@@ -39,9 +50,25 @@ E tambem inclui:
 - modulo de auth com JWT em Workers
 - bootstrap do mestre por variavel de ambiente
 
+## Transferencias no Worker
+
+As rotas de transferencia jogador-para-jogador ficam em `cloudflare/src/characters.js`.
+
+Regras atuais:
+
+- origem e destino precisam existir
+- origem e destino precisam ser `player`
+- origem e destino nao podem ser a mesma ficha
+- o ator precisa ter acesso de escrita a ficha de origem
+- item so entra no destino se houver espaco na mochila
+- item, memoria e auditoria sao persistidos em lote via `env.DB.batch`
+
+O uso de `env.DB.batch` evita gravacao parcial entre origem, destino e auditoria. A documentacao atual do D1 informa que batches rodam como transacoes: se uma instrucao falha, a sequencia inteira e abortada/rollback.
+
 ## O que ainda falta migrar
 
 - realtime com Durable Objects
+- persistencia oficial da cena da Mesa no D1
 - refinamento das permissoes e sincronizacao em tempo real
 - testes completos de todos os fluxos publicados
 

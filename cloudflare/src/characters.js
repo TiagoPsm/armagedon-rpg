@@ -1,4 +1,4 @@
-﻿import {
+import {
   buildDefaultSheet,
   normalizeItem,
   normalizeInventorySlots,
@@ -454,6 +454,50 @@ async function insertTransferAudit(env, transferType, actorUserId, sourceCharact
     .run();
 }
 
+function buildPersistCharacterStatement(env, character, normalizedData, now) {
+  const name = persistNameFromData(character.name, normalizedData);
+  const payload = JSON.stringify({
+    ...normalizedData,
+    charName: name
+  });
+
+  return env.DB.prepare(
+    `
+      update characters
+      set name = ?, data_json = ?, updated_at = ?
+      where id = ?
+    `
+  ).bind(name, payload, now, character.id);
+}
+
+function buildTransferAuditStatement(env, transferType, actorUserId, sourceCharacterId, targetCharacterId, payload, now) {
+  return env.DB.prepare(
+    `
+      insert into transfer_audit (
+        id, transfer_type, actor_user_id, source_character_id, target_character_id, payload_json, created_at
+      )
+      values (?, ?, ?, ?, ?, ?, ?)
+    `
+  ).bind(
+    crypto.randomUUID(),
+    transferType,
+    actorUserId || null,
+    sourceCharacterId || null,
+    targetCharacterId || null,
+    JSON.stringify(payload || {}),
+    now
+  );
+}
+
+async function persistTransferBatch(env, transferType, actor, source, sourceData, target, targetData, payload) {
+  const now = new Date().toISOString();
+  await env.DB.batch([
+    buildPersistCharacterStatement(env, source, sourceData, now),
+    buildPersistCharacterStatement(env, target, targetData, now),
+    buildTransferAuditStatement(env, transferType, actor.sub, source.id, target.id, payload, now)
+  ]);
+}
+
 async function transferItemBetweenPlayers(env, actor, sourceKey, targetKey, itemIndex) {
   const source = await getCharacterByKey(env, sourceKey);
   const target = await getCharacterByKey(env, targetKey);
@@ -493,14 +537,22 @@ async function transferItemBetweenPlayers(env, actor, sourceKey, targetKey, item
   sourceData.inv.splice(index, 1);
   targetData.inv.push(transferredItem);
 
-  await persistCharacterData(env, source, sourceData);
-  await persistCharacterData(env, target, targetData);
-
-  await insertTransferAudit(env, "item-player-to-player", actor.sub, source.id, target.id, {
+  const auditPayload = {
     item: transferredItem,
     sourceKey: source.key,
     targetKey: target.key
-  });
+  };
+
+  await persistTransferBatch(
+    env,
+    "item-player-to-player",
+    actor,
+    source,
+    sourceData,
+    target,
+    targetData,
+    auditPayload
+  );
 
   return {
     item: transferredItem,
@@ -539,14 +591,22 @@ async function transferMemoryBetweenPlayers(env, actor, sourceKey, targetKey, me
   sourceData.ownedMemories.splice(index, 1);
   targetData.ownedMemories.push(transferredMemory);
 
-  await persistCharacterData(env, source, sourceData);
-  await persistCharacterData(env, target, targetData);
-
-  await insertTransferAudit(env, "memory-player-to-player", actor.sub, source.id, target.id, {
+  const auditPayload = {
     memory: transferredMemory,
     sourceKey: source.key,
     targetKey: target.key
-  });
+  };
+
+  await persistTransferBatch(
+    env,
+    "memory-player-to-player",
+    actor,
+    source,
+    sourceData,
+    target,
+    targetData,
+    auditPayload
+  );
 
   return {
     memory: transferredMemory,
@@ -663,6 +723,3 @@ export {
   transferItemBetweenPlayers,
   transferMemoryBetweenPlayers
 };
-
-
-
