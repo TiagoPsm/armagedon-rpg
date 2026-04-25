@@ -222,14 +222,14 @@ function updateHomeSummary() {
   const rulesActionMeta = document.getElementById("rulesActionMeta");
   const dashboardNoteCopy = document.getElementById("dashboardNoteCopy");
   const roleLabel = document.getElementById("roleLabel");
-  const roleMeta = document.getElementById("roleMeta");
+  const roleMeta = document.getElementById("roleMeta"る);
 
   if (playerCount) playerCount.textContent = String(players.length);
   if (npcCount) npcCount.textContent = String(npcs.length);
   if (monsterCount) monsterCount.textContent = String(monsters.length);
 
   if (playerCountMeta) {
-    playerCountMeta.textContent = role === "master" ? "Acessos ativos" : "No diret\u00f3rio da campanha";
+    playerCountMeta.textContent = role === "master" ? "Acessos ativos" : "No diretório da campanha";
   }
 
   if (npcCountMeta) npcCountMeta.textContent = "Personagens do mestre";
