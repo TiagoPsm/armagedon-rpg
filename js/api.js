@@ -83,7 +83,7 @@
           resolve(window.io);
           return;
         }
-        reject(new Error("Cliente de tempo real indisponÃ­vel."));
+        reject(new Error("Cliente de tempo real indisponível."));
       };
     script.onerror = () => reject(new Error("Falha ao carregar o cliente de tempo real."));
       document.head.appendChild(script);
@@ -131,7 +131,7 @@
         return socket;
       } catch (error) {
         emitEvent("socket:error", {
-      message: error?.message || "Falha ao iniciar a sincronizaÃ§Ã£o em tempo real."
+      message: error?.message || "Falha ao iniciar a sincronização em tempo real."
         });
         return null;
       } finally {
@@ -217,7 +217,7 @@
     }
 
     if (!response.ok) {
-    const error = new Error(payload?.error || "Falha na comunicaÃ§Ã£o com o servidor.");
+    const error = new Error(payload?.error || "Falha na comunicação com o servidor.");
       error.status = response.status;
       error.payload = payload;
       throw error;
