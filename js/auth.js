@@ -229,7 +229,7 @@ function updateHomeSummary() {
   if (monsterCount) monsterCount.textContent = String(monsters.length);
 
   if (playerCountMeta) {
-    playerCountMeta.textContent = role === "master" ? "Acessos ativos" : "No diretÃ³rio da campanha";
+    playerCountMeta.textContent = role === "master" ? "Acessos ativos" : "No diret\u00f3rio da campanha";
   }
 
   if (npcCountMeta) npcCountMeta.textContent = "Personagens do mestre";
