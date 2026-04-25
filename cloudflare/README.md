@@ -38,6 +38,18 @@ E tambem inclui:
 - schema inicial em `d1/schema.sql`
 - modulo de auth com JWT em Workers
 - bootstrap do mestre por variavel de ambiente
+- normalizacao de ficha em `src/sheet.js`
+
+## Normalizacao de Ficha no Worker
+
+A rota `PUT /api/characters/:key` deve normalizar a ficha antes de persistir em D1.
+
+Regras atuais:
+
+- Vida atual nao pode passar da Vida maxima
+- Integridade maxima de jogador/NPC deriva de Alma e ignora `integMax` divergente enviado pelo cliente
+- Integridade atual nao pode passar da Integridade maxima
+- Monstros continuam sem Integridade, inventario, faccao ou memorias possuidas
 
 ## O que ainda falta migrar
 
