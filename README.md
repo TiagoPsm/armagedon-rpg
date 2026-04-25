@@ -234,7 +234,7 @@ Existe tambem um roteiro direto em `DEPLOY_FREE.md` para seguir a publicacao gra
 - realtime via Socket.IO fica desligado por padrao quando a API ativa e Worker
 - Vida atual e Integridade atual sao limitadas ao maximo antes de salvar
 - jogador pode alterar Integridade atual na propria ficha e na mesa
-- transferencias jogador-para-jogador no Worker validam tipo `player` e usam lote para origem, destino e auditoria
+- transferencias jogador-para-jogador no Worker ainda precisam entrar em PR propria para validar tipo `player` e usar lote para origem, destino e auditoria
 - Express/PostgreSQL em `server/` continua como legado/referencia
 
 ## Proxima Etapa da Mesa Realtime
