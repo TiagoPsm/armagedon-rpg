@@ -21,6 +21,7 @@ Base de backend para tirar o portal do `localStorage` e centralizar tudo em um u
 - envio de memoria de monstro para jogador ou NPC
 - troca de itens entre jogadores com bloqueio por mochila cheia
 - eventos em tempo real via Socket.IO
+- normalizacao de Vida/Integridade antes de persistir ficha
 
 ## Estrutura
 
@@ -116,6 +117,10 @@ CORS_ORIGIN=https://seuusuario.github.io,https://www.seudominio.com
 - jogadores so podem editar a propria ficha
 - NPCs e monstros sao controlados pelo mestre
 - a troca de itens entre jogadores falha se o destino estiver sem slot livre
+- Vida atual nao pode passar da Vida maxima
+- Integridade maxima de jogador/NPC deriva de Alma no servidor e ignora `integMax` divergente enviado pelo cliente
+- Integridade atual nao pode passar da Integridade maxima
+- monstros continuam sem Integridade, inventario, faccao ou memorias possuidas
 
 ## Integracao com o frontend atual
 
