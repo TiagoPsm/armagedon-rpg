@@ -222,7 +222,7 @@ function updateHomeSummary() {
   const rulesActionMeta = document.getElementById("rulesActionMeta");
   const dashboardNoteCopy = document.getElementById("dashboardNoteCopy");
   const roleLabel = document.getElementById("roleLabel");
-  const roleMeta = document.getElementById("roleMeta"る);
+  const roleMeta = document.getElementById("roleMeta");
 
   if (playerCount) playerCount.textContent = String(players.length);
   if (npcCount) npcCount.textContent = String(npcs.length);
