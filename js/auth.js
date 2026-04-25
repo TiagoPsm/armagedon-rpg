@@ -15,6 +15,11 @@ const AUTH = {
       this._backendReady = await APP.init();
       const session = this.getSession();
 
+      if (!this._backendReady && session?.backend) {
+        this.clearSession();
+        return null;
+      }
+
       if (this._backendReady && session?.token) {
         APP.setToken(session.token);
         try {

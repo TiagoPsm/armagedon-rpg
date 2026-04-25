@@ -2,6 +2,7 @@
   const DEFAULT_BASE_URL =
     window.ARMAGEDON_CONFIG?.apiBaseUrl || localStorage.getItem("tc_api_base_url") || "http://localhost:4000/api";
   const HEALTH_TIMEOUT_MS = 1800;
+  const REALTIME_ENABLED = window.ARMAGEDON_CONFIG?.realtimeEnabled === true;
   const REALTIME_EVENTS = [
     "directory:changed",
     "sheet:changed",
@@ -95,6 +96,7 @@
   }
 
   async function ensureSocket() {
+    if (!REALTIME_ENABLED) return null;
     if (!state.backendAvailable || !state.token) return null;
     if (state.socket) return state.socket;
     if (state.socketPromise) return state.socketPromise;
