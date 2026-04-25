@@ -84,7 +84,7 @@ Registro minimo esperado:
 - Mesa preparada para aparecer no GitHub Pages: `.github/workflows/pages.yml` agora copia `mesa.html`
 - Frontend nao tenta mais carregar Socket.IO contra Worker por padrao; `realtimeEnabled` fica desligado em `js/runtime-config.js` ate Durable Objects/WebSocket existirem
 - Sessao backend nao cai mais silenciosamente para modo local quando a API nao responde; a sessao e limpa para evitar divergencia entre navegador e D1
-- Transferencias de item e memoria entre jogadores no Worker usam `DB.batch` para persistir origem, destino e auditoria no mesmo lote
+- Transferencias de item e memoria entre jogadores no Worker continuam como proxima correcao backend: validar tipo `player` e persistir origem, destino e auditoria em lote
 - Documentacao `.md` mantida junto com a mudanca, conforme regra do projeto
 - Etapa anterior:
   - documentacao `.md` atualizada para reduzir contexto futuro e registrar obrigacao de manter docs junto com mudancas de site
