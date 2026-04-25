@@ -15,6 +15,11 @@ const AUTH = {
       this._backendReady = await APP.init();
       const session = this.getSession();
 
+      if (!this._backendReady && session?.backend) {
+        this.clearSession();
+        return null;
+      }
+
       if (this._backendReady && session?.token) {
         APP.setToken(session.token);
         try {
@@ -224,7 +229,7 @@ function updateHomeSummary() {
   if (monsterCount) monsterCount.textContent = String(monsters.length);
 
   if (playerCountMeta) {
-    playerCountMeta.textContent = role === "master" ? "Acessos ativos" : "No diretório da campanha";
+    playerCountMeta.textContent = role === "master" ? "Acessos ativos" : "No diretÃ³rio da campanha";
   }
 
   if (npcCountMeta) npcCountMeta.textContent = "Personagens do mestre";
