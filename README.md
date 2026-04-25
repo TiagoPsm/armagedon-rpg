@@ -29,62 +29,41 @@ Para entender o projeto sem reler historico de conversa:
 - `server/README.md`: backend Express/PostgreSQL legado e referencia local
 - `DEPLOY_FREE.md`: roteiro de publicacao gratuita e observacoes de deploy
 
-## Voce precisa criar um projeto novo?
+## Como Rodar
 
-Nao. Este projeto atual ja pode ser usado.
+O frontend funciona como site estatico puro, sem build e sem bundler.
 
-Hoje o frontend funciona como site estatico puro, sem build e sem bundler:
+Arquivos principais:
 
 - `index.html`: home/login e painel inicial
 - `ficha.html`: painel de fichas, jogador, NPC e monstro
 - `mesa.html`: mesa virtual e tokens
 - `regras.html`: regras da campanha
-- `css/`: estilos separados por pagina e dominio
-- `js/`: logica separada por dominio
+- `css/`: estilos do site
+- `js/`: logica do frontend
 - `cloudflare/`: API ativa em Cloudflare Workers + D1
-- `server/`: backend Express/PostgreSQL legado, mantido como referencia e alternativa local
+- `server/`: backend Express/PostgreSQL legado, mantido como referencia
 
-## Como colocar em pratica
-
-### Opcao 1: abrir direto no navegador
-
-1. Entre na pasta do projeto.
-2. Clique duas vezes em `index.html`.
-3. O navegador vai abrir o site.
-
-Isso costuma funcionar porque o frontend nao depende de build. Para dados centralizados, use a API configurada em `js/runtime-config.js`.
-
-### Opcao 2: rodar com servidor local
-
-Se preferir um fluxo mais limpo, rode um servidor simples.
-
-No PowerShell, dentro da pasta do projeto:
+Para abrir localmente:
 
 ```powershell
 python -m http.server 8000
 ```
 
-Depois abra:
+Depois acesse:
 
 ```text
 http://localhost:8000
 ```
 
-## Login inicial do modo local
-
-Usuario mestre padrao:
+## Login Inicial do Modo Local
 
 ```text
-mestre
+Usuario: mestre
+Senha: Mestre123
 ```
 
-Senha mestre padrao:
-
-```text
-Mestre123
-```
-
-## Como o modo atual salva os dados
+## Persistencia Atual
 
 No site publicado, os dados principais devem ficar no servidor:
 
@@ -92,150 +71,38 @@ No site publicado, os dados principais devem ficar no servidor:
 - banco: Cloudflare D1
 - URL configurada em `js/runtime-config.js`
 
-O navegador ainda usa cache/fallback local:
+O navegador ainda usa `localStorage` para sessao, cache de fichas/diretorio e fallback local quando a API nao esta disponivel. Producao nao deve depender de `localStorage` como fonte principal.
 
-- `localStorage` para a sessao de login
-- `localStorage` para cache de fichas e diretorio
-- `localStorage` para fallback local quando a API nao esta disponivel
+## Estado Atual
 
-Isso significa:
+- API publicada: Cloudflare Workers
+- banco publicado: Cloudflare D1
+- frontend: site estatico sem build
+- workflow do GitHub Pages inclui `mesa.html`
+- Mesa oficial publicada no Pages
+- Mesa usa personagens e status das fichas quando a API esta ativa
+- posicao/visibilidade dos tokens da Mesa ainda ficam locais ate realtime com Durable Objects
+- realtime via Socket.IO fica desligado por padrao quando a API ativa e Worker
+- Vida atual e Integridade atual sao limitadas ao maximo antes de salvar
+- jogador pode alterar Integridade atual na propria ficha e na mesa
+- transferencias jogador-para-jogador no Worker validam tipo `player` e persistem origem, destino e auditoria em lote D1
+- Express/PostgreSQL em `server/` continua como legado/referencia
 
-- producao nao deve depender de `localStorage` como fonte principal
-- alteracoes feitas offline podem divergir do D1 se a API cair
-- qualquer ajuste de persistencia precisa considerar navegador e servidor
+## Publicacao Gratuita Recomendada
 
-## Arquivos Grandes Ja Separados
+Caminho atual recomendado:
 
-A ficha e a mesa foram divididas de forma incremental, ainda com `<script src="..."></script>` comum:
+- frontend estatico no GitHub Pages ou Cloudflare Pages
+- API em Cloudflare Workers
+- banco em Cloudflare D1
+- realtime futuro em Durable Objects
 
-- ficha: `js/ficha-core.js`, `js/ficha-master.js`, `js/ficha-sheet.js`, `js/ficha-inventory.js`, `js/ficha-memories.js`, `js/ficha-soul.js`, `js/ficha-dice.js`, `js/ficha-habs.js`, `js/ficha-init.js`
-- mesa: `js/mesa-core.js`, `js/mesa-stage.js`, `js/mesa-roster.js`, `js/mesa-inspector.js`, `js/mesa-storage.js`, `js/mesa-init.js`
-- CSS da ficha e da mesa tambem foi separado por blocos
-- `js/ficha.js`, `js/mesa.js`, `css/ficha.css` e `css/mesa.css` ficaram como entradas de compatibilidade
-
-Manter a ordem de carregamento nos HTMLs e preservar funcoes globais usadas por handlers inline.
-
-## O que ja foi preparado ou mantido
-
-- backend em `server/`
-- esquema SQL inicial em `server/sql/schema.sql`
-- autenticacao por `usuario + senha` criada pelo mestre
-- APIs para jogadores, NPCs, monstros, fichas, regras e transferencias
-- base para troca de itens e memorias no servidor
-- troca de itens entre jogadores ja adicionada no portal atual, com validacao de mochila cheia
-- API Cloudflare em `cloudflare/` para o caminho publicado atual
-
-## Como prosseguir com banco de dados
-
-Este caminho usa o backend Express/PostgreSQL legado. O caminho publicado atual recomendado e Cloudflare Workers + D1, documentado em `cloudflare/README.md`.
-
-1. Instale Node.js 18+ na maquina onde o backend vai rodar.
-2. Crie um banco PostgreSQL.
-3. Aplique `server/sql/schema.sql`.
-4. Copie `server/.env.example` para `server/.env` e ajuste as variaveis.
-5. Entre em `server/` e rode `npm.cmd install`.
-6. Rode `npm.cmd start`.
-7. Mantenha o frontend em `http://localhost:8000` e o backend em `http://localhost:4000`.
-
-Detalhes completos estao em `server/README.md`.
-
-## Publicacao gratuita recomendada
-
-Se o objetivo for publicar rapido com poucas mudancas, o caminho mais simples continua sendo:
-
-- frontend estatico no GitHub Pages
-- backend Node.js no Render
-- banco PostgreSQL no Neon
-
-Se o objetivo for a melhor base gratuita possivel no medio prazo, a migracao recomendada agora passa a ser:
-
-- frontend: Cloudflare Pages
-- API: Cloudflare Workers
-- banco: Cloudflare D1
-- realtime: Durable Objects
-
-A base inicial dessa migracao esta em `cloudflare/`.
-
-### Antes de publicar
+Antes de publicar:
 
 1. Nao publique `server/.env`.
 2. Confirme que `.gitignore` esta ativo.
 3. Gere um `JWT_SECRET` proprio em producao.
 4. Troque a senha padrao do mestre.
-
-### Frontend
-
-O frontend ja esta pronto para GitHub Pages:
-
-- `.nojekyll` evita processamento desnecessario do Pages
-- `js/runtime-config.js` centraliza a URL da API publicada
-- `.github/workflows/pages.yml` publica so os arquivos estaticos do portal
-- `mesa.html` deve ser publicado junto com `index.html`, `ficha.html` e `regras.html`
-
-Para publicar, edite `js/runtime-config.js` e troque:
-
-```js
-apiBaseUrl: "http://localhost:4000/api"
-```
-
-por algo como:
-
-```js
-apiBaseUrl: "https://api-seu-projeto.exemplo.com/api"
-```
-
-Depois envie o repositorio ao GitHub e publique a raiz do projeto como site estatico.
-
-Se sua branch principal nao se chama `main`, ajuste isso em `.github/workflows/pages.yml`.
-
-### Backend
-
-O backend agora esta pronto para o Render com:
-
-- `render.yaml`
-
-Tambem continua compativel com hosts Node/Docker usando:
-
-- `server/Procfile`
-- `server/Dockerfile`
-
-No Render, basta conectar o repositorio e preencher os segredos do Blueprint. Em outros hosts, a configuracao minima continua sendo:
-
-- `PORT`
-- `DATABASE_URL`
-- `DATABASE_SSL`
-- `JWT_SECRET`
-- `CORS_ORIGIN`
-- `MASTER_BOOTSTRAP_USERNAME`
-- `MASTER_BOOTSTRAP_PASSWORD`
-
-### Banco
-
-Use um PostgreSQL externo e passe a string completa em `DATABASE_URL`.
-
-### Dominio proprio
-
-Se voce ja usa dominio proprio, mantenha assim:
-
-- site: `www.seudominio.com`
-- api: `api.seudominio.com`
-
-O frontend aponta para a API apenas pelo `js/runtime-config.js`, entao futuras trocas de host ficam simples.
-
-Existe tambem um roteiro direto em `DEPLOY_FREE.md` para seguir a publicacao gratuita passo a passo.
-
-## Estado atual
-
-- API publicada: Cloudflare Workers
-- banco publicado: Cloudflare D1
-- frontend: site estatico sem build
-- ficha e mesa: JS/CSS divididos por dominio
-- workflow do GitHub Pages inclui `mesa.html`
-- realtime via Socket.IO fica desligado por padrao quando a API ativa e Worker
-- Vida atual e Integridade atual sao limitadas ao maximo antes de salvar
-- jogador pode alterar Integridade atual na propria ficha e na mesa
-- transferencias jogador-para-jogador no Worker ainda precisam entrar em PR propria para validar tipo `player` e usar lote para origem, destino e auditoria
-- Express/PostgreSQL em `server/` continua como legado/referencia
 
 ## Proxima Etapa da Mesa Realtime
 
