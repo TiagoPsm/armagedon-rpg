@@ -1,19 +1,48 @@
 # Armagedon
 
-Portal para campanha de RPG com home, fichas, regras, NPCs, monstros, memorias e inventario.
+Portal estatico para campanha de RPG com home, fichas, mesa virtual, regras, NPCs, monstros, memorias, inventario e API publicada em Cloudflare Workers + D1.
+
+## Regra Obrigatoria de Documentacao
+
+Sempre que qualquer pessoa ou agente alterar o site, tambem deve atualizar os arquivos `.md` relacionados.
+
+No minimo:
+
+- atualize `DEV_STATUS.md` quando mudar comportamento, arquitetura, arquivos principais ou pendencias
+- atualize `SYSTEM_RULES.md` quando a mudanca tocar regra de gameplay, permissao ou persistencia
+- atualize `VISUAL_RULES.md` quando a mudanca criar ou consolidar decisao visual
+- atualize `cloudflare/README.md` quando a mudanca tocar Worker, D1, rotas ou deploy Cloudflare
+- atualize `server/README.md` quando a mudanca tocar o backend Express/PostgreSQL legado
+- atualize `DEPLOY_FREE.md` quando a mudanca alterar publicacao, workflow ou arquivos enviados
+
+Cada atualizacao deve registrar: o que mudou, quais arquivos foram afetados, como validar e quais pendencias continuam abertas. Esta regra existe para reduzir contexto em conversas futuras.
+
+## Leitura Rapida Para Reduzir Contexto
+
+Para entender o projeto sem reler historico de conversa:
+
+- `README.md`: visao geral e mapa de arquivos
+- `DEV_STATUS.md`: estado atual, ultimas mudancas, validacoes e proximas frentes
+- `SYSTEM_RULES.md`: regras funcionais que nao devem mudar sem autorizacao
+- `VISUAL_RULES.md`: padroes visuais consolidados
+- `cloudflare/README.md`: API ativa em Workers + D1
+- `server/README.md`: backend Express/PostgreSQL legado e referencia local
+- `DEPLOY_FREE.md`: roteiro de publicacao gratuita e observacoes de deploy
 
 ## Voce precisa criar um projeto novo?
 
 Nao. Este projeto atual ja pode ser usado.
 
-Hoje o frontend ainda funciona como site estatico:
+Hoje o frontend funciona como site estatico puro, sem build e sem bundler:
 
-- `index.html` e a pagina inicial
-- `ficha.html` e o painel de fichas
-- `regras.html` e o arquivo de regras da campanha
-- `css/` guarda os estilos
-- `js/` guarda a logica de login e fichas
-- `server/` agora guarda a base do backend Node + PostgreSQL para migrar o portal para um servidor centralizado
+- `index.html`: home/login e painel inicial
+- `ficha.html`: painel de fichas, jogador, NPC e monstro
+- `mesa.html`: mesa virtual e tokens
+- `regras.html`: regras da campanha
+- `css/`: estilos separados por pagina e dominio
+- `js/`: logica separada por dominio
+- `cloudflare/`: API ativa em Cloudflare Workers + D1
+- `server/`: backend Express/PostgreSQL legado, mantido como referencia e alternativa local
 
 ## Como colocar em pratica
 
@@ -23,7 +52,7 @@ Hoje o frontend ainda funciona como site estatico:
 2. Clique duas vezes em `index.html`.
 3. O navegador vai abrir o site.
 
-Isso costuma funcionar porque o projeto nao depende de build nem backend.
+Isso costuma funcionar porque o frontend nao depende de build. Para dados centralizados, use a API configurada em `js/runtime-config.js`.
 
 ### Opcao 2: rodar com servidor local
 
@@ -57,20 +86,36 @@ Mestre123
 
 ## Como o modo atual salva os dados
 
-O projeto usa o armazenamento do proprio navegador:
+No site publicado, os dados principais devem ficar no servidor:
+
+- API: Cloudflare Workers
+- banco: Cloudflare D1
+- URL configurada em `js/runtime-config.js`
+
+O navegador ainda usa cache/fallback local:
 
 - `localStorage` para a sessao de login
-- `localStorage` para jogadores e fichas
-- `localStorage` para as postagens de regras
+- `localStorage` para cache de fichas e diretorio
+- `localStorage` para fallback local quando a API nao esta disponivel
 
 Isso significa:
 
-- os dados ficam no navegador atual
-- a sessao continua ativa mesmo depois de fechar a aba
-- se voce limpar os dados do navegador, os personagens somem
-- nao existe banco de dados ativo ainda no frontend atual
+- producao nao deve depender de `localStorage` como fonte principal
+- alteracoes feitas offline podem divergir do D1 se a API cair
+- qualquer ajuste de persistencia precisa considerar navegador e servidor
 
-## O que ja foi preparado para a migracao
+## Arquivos Grandes Ja Separados
+
+A ficha e a mesa foram divididas de forma incremental, ainda com `<script src="..."></script>` comum:
+
+- ficha: `js/ficha-core.js`, `js/ficha-master.js`, `js/ficha-sheet.js`, `js/ficha-inventory.js`, `js/ficha-memories.js`, `js/ficha-soul.js`, `js/ficha-dice.js`, `js/ficha-habs.js`, `js/ficha-init.js`
+- mesa: `js/mesa-core.js`, `js/mesa-stage.js`, `js/mesa-roster.js`, `js/mesa-inspector.js`, `js/mesa-storage.js`, `js/mesa-init.js`
+- CSS da ficha e da mesa tambem foi separado por blocos
+- `js/ficha.js`, `js/mesa.js`, `css/ficha.css` e `css/mesa.css` ficaram como entradas de compatibilidade
+
+Manter a ordem de carregamento nos HTMLs e preservar funcoes globais usadas por handlers inline.
+
+## O que ja foi preparado ou mantido
 
 - backend em `server/`
 - esquema SQL inicial em `server/sql/schema.sql`
@@ -78,8 +123,11 @@ Isso significa:
 - APIs para jogadores, NPCs, monstros, fichas, regras e transferencias
 - base para troca de itens e memorias no servidor
 - troca de itens entre jogadores ja adicionada no portal atual, com validacao de mochila cheia
+- API Cloudflare em `cloudflare/` para o caminho publicado atual
 
 ## Como prosseguir com banco de dados
+
+Este caminho usa o backend Express/PostgreSQL legado. O caminho publicado atual recomendado e Cloudflare Workers + D1, documentado em `cloudflare/README.md`.
 
 1. Instale Node.js 18+ na maquina onde o backend vai rodar.
 2. Crie um banco PostgreSQL.
@@ -122,6 +170,7 @@ O frontend ja esta pronto para GitHub Pages:
 - `.nojekyll` evita processamento desnecessario do Pages
 - `js/runtime-config.js` centraliza a URL da API publicada
 - `.github/workflows/pages.yml` publica so os arquivos estaticos do portal
+- `mesa.html` deve ser publicado junto com `index.html`, `ficha.html` e `regras.html`
 
 Para publicar, edite `js/runtime-config.js` e troque:
 
@@ -177,8 +226,23 @@ Existe tambem um roteiro direto em `DEPLOY_FREE.md` para seguir a publicacao gra
 
 ## Estado atual
 
-- o PostgreSQL local foi configurado com o banco `armagedon`
-- o esquema SQL ja foi aplicado com sucesso
-- o backend ja respondeu em `GET /api/health` e `POST /api/auth/login`
-- um teste de fumaca validou criacao de jogadores, troca de itens, troca de memorias, monstro com drop e CRUD de regras
-- o frontend ja tem deteccao de backend e fallback local, mas ainda precisa de testes completos no navegador com o servidor ligado
+- API publicada: Cloudflare Workers
+- banco publicado: Cloudflare D1
+- frontend: site estatico sem build
+- ficha e mesa: JS/CSS divididos por dominio
+- workflow do GitHub Pages inclui `mesa.html`
+- realtime via Socket.IO fica desligado por padrao quando a API ativa e Worker
+- Vida atual e Integridade atual sao limitadas ao maximo antes de salvar
+- jogador pode alterar Integridade atual na propria ficha e na mesa
+- transferencias jogador-para-jogador no Worker validam tipo `player` e usam lote para origem, destino e auditoria
+- Express/PostgreSQL em `server/` continua como legado/referencia
+
+## Proxima Etapa da Mesa Realtime
+
+A Mesa ja pode ser publicada como pagina estatica oficial. Para virar realtime de verdade, a proxima etapa tecnica e:
+
+1. criar persistencia de cena no D1
+2. criar Durable Object por sala/mesa
+3. conectar navegadores via WebSocket
+4. transmitir movimento/status em tempo real
+5. salvar no D1 com debounce para evitar gravacao excessiva
