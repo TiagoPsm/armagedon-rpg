@@ -2,6 +2,7 @@
   const DEFAULT_BASE_URL =
     window.ARMAGEDON_CONFIG?.apiBaseUrl || localStorage.getItem("tc_api_base_url") || "http://localhost:4000/api";
   const HEALTH_TIMEOUT_MS = 1800;
+  const REALTIME_ENABLED = window.ARMAGEDON_CONFIG?.realtimeEnabled === true;
   const REALTIME_EVENTS = [
     "directory:changed",
     "sheet:changed",
@@ -82,7 +83,7 @@
           resolve(window.io);
           return;
         }
-        reject(new Error("Cliente de tempo real indisponível."));
+        reject(new Error("Cliente de tempo real indisponÃ­vel."));
       };
     script.onerror = () => reject(new Error("Falha ao carregar o cliente de tempo real."));
       document.head.appendChild(script);
@@ -95,6 +96,7 @@
   }
 
   async function ensureSocket() {
+    if (!REALTIME_ENABLED) return null;
     if (!state.backendAvailable || !state.token) return null;
     if (state.socket) return state.socket;
     if (state.socketPromise) return state.socketPromise;
@@ -129,7 +131,7 @@
         return socket;
       } catch (error) {
         emitEvent("socket:error", {
-      message: error?.message || "Falha ao iniciar a sincronização em tempo real."
+      message: error?.message || "Falha ao iniciar a sincronizaÃ§Ã£o em tempo real."
         });
         return null;
       } finally {
@@ -215,7 +217,7 @@
     }
 
     if (!response.ok) {
-    const error = new Error(payload?.error || "Falha na comunicação com o servidor.");
+    const error = new Error(payload?.error || "Falha na comunicaÃ§Ã£o com o servidor.");
       error.status = response.status;
       error.payload = payload;
       throw error;
