@@ -6,6 +6,16 @@ Este e o caminho principal atual da API publicada do Armagedon.
 
 Sempre que uma mudanca tocar Worker, D1, rotas, schema, secrets, deploy Cloudflare, autenticacao, normalizacao de ficha ou transferencias, atualize este arquivo e `../DEV_STATUS.md`.
 
+## Pasta Oficial de Trabalho
+
+Alteracoes em Worker, D1 e deploy Cloudflare devem ser feitas somente no checkout Git oficial:
+
+```text
+C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
+```
+
+Nao use a pasta antiga `rpg-campaign` para editar ou publicar arquivos em `cloudflare/`.
+
 Registro minimo esperado:
 
 - rota/schema afetado

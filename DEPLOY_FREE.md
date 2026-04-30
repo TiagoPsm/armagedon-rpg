@@ -4,6 +4,16 @@
 
 Sempre que qualquer etapa de deploy, workflow, dominio, API publicada ou lista de arquivos publicados mudar, atualize este arquivo e `DEV_STATUS.md`. Se a mudanca for em Cloudflare, atualize tambem `cloudflare/README.md`. Se for no backend Express/PostgreSQL legado, atualize `server/README.md`.
 
+## Pasta Oficial Para Deploy
+
+Execute commits, pushes e validacoes de publicacao somente a partir de:
+
+```text
+C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
+```
+
+A pasta `rpg-campaign` ficou como copia antiga/local e nao deve ser usada para publicar no GitHub Pages.
+
 Este arquivo existe para evitar depender do historico de conversa na hora de publicar.
 
 ## Status Atual

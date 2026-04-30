@@ -8,6 +8,16 @@ O caminho publicado principal atual usa Cloudflare Workers + D1 em `../cloudflar
 
 Sempre que uma mudanca tocar este backend, rotas Express, schema PostgreSQL, Socket.IO, normalizacao de ficha ou regras de permissao, atualize este arquivo e `../DEV_STATUS.md`. Se a mesma regra existir no Worker, atualize tambem `../cloudflare/README.md`.
 
+## Pasta Oficial de Trabalho
+
+Alteracoes neste backend legado devem ser feitas somente no checkout Git oficial:
+
+```text
+C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
+```
+
+Nao use a pasta antiga `rpg-campaign` para editar ou publicar arquivos em `server/`.
+
 Registro minimo esperado:
 
 - rota/servico afetado

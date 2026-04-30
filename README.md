@@ -17,6 +17,16 @@ No minimo:
 
 Cada atualizacao deve registrar: o que mudou, quais arquivos foram afetados, como validar e quais pendencias continuam abertas. Esta regra existe para reduzir contexto em conversas futuras.
 
+## Pasta Oficial de Trabalho
+
+Use sempre esta pasta como copia principal do projeto:
+
+```text
+C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
+```
+
+A pasta antiga `rpg-campaign` nao e um checkout Git e deve ser tratada apenas como copia historica/local. Toda alteracao, validacao, commit, push e publicacao deve acontecer em `rpg-campaign-git-sync`.
+
 ## Leitura Rapida Para Reduzir Contexto
 
 Para entender o projeto sem reler historico de conversa:

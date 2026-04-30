@@ -6,6 +6,16 @@ Este arquivo define a direcao visual do projeto. Atualizar sempre que uma decisa
 
 Sempre que uma alteracao visual consolidar padrao novo, ajustar layout importante, mudar responsividade, trocar paleta, alterar componentes principais ou criar comportamento visual reutilizavel, este arquivo deve ser atualizado na mesma etapa. Tambem atualize `DEV_STATUS.md` quando a mudanca afetar paginas ou arquivos sensiveis.
 
+## Pasta Oficial de Trabalho
+
+Mudancas visuais devem ser feitas no checkout Git oficial:
+
+```text
+C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
+```
+
+A pasta antiga `rpg-campaign` nao deve ser usada para editar layout, CSS, HTML ou assets publicados.
+
 ## Direcao de Arte
 
 - Estilo principal: dark fantasy

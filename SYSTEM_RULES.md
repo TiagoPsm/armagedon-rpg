@@ -6,6 +6,16 @@ Este arquivo registra regras funcionais e de gameplay que nao devem ser alterada
 
 Sempre que uma mudanca alterar ou esclarecer regra de gameplay, permissao, persistencia ou validacao, este arquivo deve ser atualizado na mesma etapa. Tambem atualize `DEV_STATUS.md` com resumo, arquivos afetados e validacoes.
 
+## Pasta Oficial de Trabalho
+
+Mudancas de regra, persistencia ou permissao devem ser feitas no checkout Git oficial:
+
+```text
+C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
+```
+
+Nao use a pasta antiga `rpg-campaign` para alterar regras ou publicar commits.
+
 ## Principio Geral
 
 - Melhorias visuais podem ser feitas

@@ -51,6 +51,8 @@ Registro minimo esperado:
 - Informar exatamente quais arquivos foram alterados
 - Informar exatamente o que precisa ser enviado ao GitHub
 - Nao mudar regras do sistema sem autorizacao explicita
+- Usar sempre `C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync` como pasta oficial de trabalho
+- Tratar `C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign` como copia antiga/local, nao como fonte para commits
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
 ## Estado Funcional Atual
@@ -80,6 +82,14 @@ Registro minimo esperado:
 - Home/login ja segue essa mesma linguagem visual
 
 ## Ultima Etapa Concluida
+
+- Pasta oficial de trabalho consolidada: toda alteracao futura deve usar `rpg-campaign-git-sync`, que e o checkout Git alinhado com `origin/main`
+- A pasta antiga `rpg-campaign` permanece apenas como copia historica/local e nao deve ser usada para publicar
+- Documentacao `.md` atualizada para registrar essa regra operacional antes do proximo passo
+- Etapa anterior:
+  - commit `3d7496b` publicado direto na `main`
+  - GitHub Pages validado com sucesso
+  - site publicado confirmado servindo os arquivos separados da ficha e da Mesa
 
 - Textos da Mesa oficial atualizados para remover o aspecto de "mock/prototipo" no site publicado
 - A interface agora comunica o estado real: personagens e status usam fichas online quando a API esta ativa, enquanto posicao/visibilidade da cena ainda ficam locais ate Durable Objects/WebSocket
