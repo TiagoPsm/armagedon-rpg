@@ -27,6 +27,8 @@ C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 
 A pasta antiga `rpg-campaign` nao e um checkout Git e deve ser tratada apenas como copia historica/local. Toda alteracao, validacao, commit, push e publicacao deve acontecer em `rpg-campaign-git-sync`.
 
+Nota operacional: se a pasta antiga `rpg-campaign` nao puder ser apagada ou renomeada, primeiro feche chats, terminais, Explorer, VS Code ou qualquer app ainda aberto nela. O Codex pode manter uma pasta bloqueada quando uma conversa antiga ainda esta vinculada a esse workspace.
+
 ## Leitura Rapida Para Reduzir Contexto
 
 Para entender o projeto sem reler historico de conversa:

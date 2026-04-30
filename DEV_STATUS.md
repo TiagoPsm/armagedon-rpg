@@ -83,6 +83,14 @@ Registro minimo esperado:
 
 ## Ultima Etapa Concluida
 
+- Registro operacional desta conversa:
+  - o projeto oficial no Codex passou a ser `rpg-campaign-git-sync`
+  - a conversa antiga ainda estava vinculada a `rpg-campaign`, por isso o Windows bloqueou apagar ou renomear a pasta antiga
+  - comparacao meticulosa entre as pastas indicou `0` arquivos exclusivos na pasta antiga
+  - a pasta oficial tem arquivos a mais e esta alinhada com `origin/main`, portanto segue sendo a fonte de verdade
+  - proximos passos devem acontecer em novo chat/projeto apontando para `rpg-campaign-git-sync`
+  - a pasta antiga so deve ser enviada para a Lixeira depois que chats, terminais e apps que ainda usam `rpg-campaign` forem fechados
+
 - Pasta oficial de trabalho consolidada: toda alteracao futura deve usar `rpg-campaign-git-sync`, que e o checkout Git alinhado com `origin/main`
 - A pasta antiga `rpg-campaign` permanece apenas como copia historica/local e nao deve ser usada para publicar
 - Documentacao `.md` atualizada para registrar essa regra operacional antes do proximo passo

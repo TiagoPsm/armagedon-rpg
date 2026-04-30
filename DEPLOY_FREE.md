@@ -14,6 +14,8 @@ C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 
 A pasta `rpg-campaign` ficou como copia antiga/local e nao deve ser usada para publicar no GitHub Pages.
 
+Antes de qualquer deploy, confirme que o terminal ou a sessao do Codex esta em `rpg-campaign-git-sync`. Se uma conversa antiga ainda estiver vinculada a `rpg-campaign`, crie/abra um novo chat no projeto `rpg-campaign-git-sync` antes de continuar.
+
 Este arquivo existe para evitar depender do historico de conversa na hora de publicar.
 
 ## Status Atual
