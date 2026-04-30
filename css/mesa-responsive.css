@@ -1,0 +1,474 @@
+/* 2026-04 fullscreen simplificado da mesa */
+.panel-stage:fullscreen,
+.panel-stage:-webkit-full-screen,
+.panel-stage.is-pseudo-fullscreen {
+  display: block !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  min-width: 100vw !important;
+  height: 100vh !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: rgba(4, 5, 9, 1) !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  isolation: isolate;
+}
+
+.panel-stage.is-pseudo-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+}
+
+.panel-stage:fullscreen .mesa-stage-toolbar,
+.panel-stage:-webkit-full-screen .mesa-stage-toolbar,
+.panel-stage.is-pseudo-fullscreen .mesa-stage-toolbar,
+.panel-stage:fullscreen .stage-footer,
+.panel-stage:-webkit-full-screen .stage-footer,
+.panel-stage.is-pseudo-fullscreen .stage-footer {
+  display: none !important;
+}
+
+.panel-stage:fullscreen .panel-head-stage,
+.panel-stage:-webkit-full-screen .panel-head-stage,
+.panel-stage.is-pseudo-fullscreen .panel-head-stage {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 8;
+  margin: 0;
+  pointer-events: none;
+}
+
+.panel-stage:fullscreen .panel-head-stage > div:first-child,
+.panel-stage:-webkit-full-screen .panel-head-stage > div:first-child,
+.panel-stage.is-pseudo-fullscreen .panel-head-stage > div:first-child,
+.panel-stage:fullscreen .stage-head-meta .panel-badge,
+.panel-stage:-webkit-full-screen .stage-head-meta .panel-badge,
+.panel-stage.is-pseudo-fullscreen .stage-head-meta .panel-badge {
+  display: none !important;
+}
+
+.panel-stage:fullscreen .stage-head-meta,
+.panel-stage:-webkit-full-screen .stage-head-meta,
+.panel-stage.is-pseudo-fullscreen .stage-head-meta {
+  pointer-events: auto;
+  justify-content: flex-end;
+  width: auto;
+}
+
+.panel-stage:fullscreen #fullscreenMesaBtn,
+.panel-stage:-webkit-full-screen #fullscreenMesaBtn,
+.panel-stage.is-pseudo-fullscreen #fullscreenMesaBtn {
+  min-height: 42px;
+  padding-inline: 1.05rem;
+  border-color: rgba(255, 248, 236, 0.12);
+  background:
+     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.01)),
+     rgba(9, 10, 15, 0.82);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.32);
+  position: relative;
+  z-index: 2;
+}
+
+.panel-stage:fullscreen .mesa-stage-wrap,
+.panel-stage:-webkit-full-screen .mesa-stage-wrap,
+.panel-stage.is-pseudo-fullscreen .mesa-stage-wrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-width: 100%;
+  height: 100%;
+  min-height: 100%;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.panel-stage:fullscreen .mesa-stage,
+.panel-stage:-webkit-full-screen .mesa-stage,
+.panel-stage.is-pseudo-fullscreen .mesa-stage,
+.panel-stage:fullscreen .mesa-stage-grid,
+.panel-stage:-webkit-full-screen .mesa-stage-grid,
+.panel-stage.is-pseudo-fullscreen .mesa-stage-grid,
+.panel-stage:fullscreen .mesa-stage-glow,
+.panel-stage:-webkit-full-screen .mesa-stage-glow,
+.panel-stage.is-pseudo-fullscreen .mesa-stage-glow {
+  inset: 0;
+}
+
+/* 2026-04 lapidacao da UX local da mesa */
+.mesa-hero .mesa-lead {
+  max-width: 58ch;
+  font-size: 0.98rem;
+  line-height: 1.42;
+}
+
+.mesa-roster-card .panel-head h2,
+.mesa-inspector-shell .panel-head h2 {
+  font-size: clamp(1.34rem, 1.45vw, 1.72rem);
+  line-height: 0.98;
+}
+
+.stage-footer-copy p,
+.scene-status-copy p,
+.toggle-copy small,
+.token-inspector-empty p {
+  text-wrap: pretty;
+}
+
+.roster-group-head span {
+  white-space: nowrap;
+}
+
+.roster-entry {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.72rem;
+  align-items: center;
+  padding: 0.76rem 0.84rem;
+  border-radius: 18px;
+}
+
+.roster-entry-headline {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.roster-entry-copy {
+  gap: 0.16rem;
+}
+
+.roster-entry-name {
+  font-size: 0.98rem;
+  line-height: 1.04;
+  overflow-wrap: anywhere;
+}
+
+.roster-entry-meta {
+  font-size: 0.82rem;
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+
+.roster-entry-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.36rem;
+}
+
+.roster-entry[data-state="on-stage"] .status-chip {
+  border-color: rgba(255, 248, 236, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 248, 236, 0.92);
+}
+
+.mesa-token,
+.roster-entry,
+.token-inspector-card {
+  --mesa-type-border: rgba(255, 255, 255, 0.075);
+  --mesa-type-top-glow: rgba(176, 47, 57, 0.1);
+  --mesa-type-shadow: rgba(176, 47, 57, 0.06);
+  --mesa-type-line: rgba(176, 47, 57, 0.24);
+}
+
+.mesa-token[data-type="player"],
+.roster-entry[data-type="player"],
+.token-inspector-card[data-type="player"] {
+  --mesa-type-border: rgba(118, 134, 208, 0.12);
+  --mesa-type-top-glow: rgba(118, 134, 208, 0.08);
+  --mesa-type-shadow: rgba(118, 134, 208, 0.05);
+  --mesa-type-line: rgba(118, 134, 208, 0.26);
+}
+
+.mesa-token[data-type="npc"],
+.roster-entry[data-type="npc"],
+.token-inspector-card[data-type="npc"] {
+  --mesa-type-border: rgba(176, 143, 50, 0.12);
+  --mesa-type-top-glow: rgba(176, 143, 50, 0.08);
+  --mesa-type-shadow: rgba(176, 143, 50, 0.05);
+  --mesa-type-line: rgba(176, 143, 50, 0.25);
+}
+
+.mesa-token[data-type="monster"],
+.roster-entry[data-type="monster"],
+.token-inspector-card[data-type="monster"] {
+  --mesa-type-border: rgba(176, 48, 57, 0.14);
+  --mesa-type-top-glow: rgba(176, 48, 57, 0.1);
+  --mesa-type-shadow: rgba(176, 48, 57, 0.07);
+  --mesa-type-line: rgba(176, 48, 57, 0.28);
+}
+
+.mesa-token,
+.roster-entry,
+.token-inspector-card {
+  border-color: var(--mesa-type-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 18px 34px rgba(0, 0, 0, 0.32),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.mesa-token::before,
+.roster-entry::before,
+.token-inspector-card::before {
+  background: radial-gradient(circle at top left, var(--mesa-type-top-glow), transparent 64%);
+}
+
+.mesa-token::after,
+.roster-entry::after,
+.token-inspector-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 18px;
+  right: 18px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--mesa-type-line), transparent);
+  pointer-events: none;
+}
+
+.mesa-token {
+  width: clamp(188px, 14.4vw, 212px);
+  padding: 0.7rem;
+  border-radius: 22px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 18px 34px rgba(0, 0, 0, 0.34),
+    0 0 18px var(--mesa-type-shadow);
+}
+
+.mesa-token:hover {
+  transform: translateY(-2px);
+}
+
+.mesa-token.is-selected {
+  box-shadow:
+    0 0 0 1px rgba(255, 248, 236, 0.08),
+    0 20px 40px rgba(0, 0, 0, 0.4),
+    0 0 20px var(--mesa-type-shadow);
+}
+
+.mesa-token-top {
+  align-items: center;
+  gap: 0.32rem;
+}
+
+.mesa-token-avatar {
+  aspect-ratio: 1.16 / 1;
+  margin: 0.08rem 0 0.52rem;
+  border-radius: 15px;
+}
+
+.mesa-token-avatar-fallback {
+  font-size: clamp(1.95rem, 2vw, 2.32rem);
+}
+
+.mesa-token-name {
+  font-size: 0.94rem;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+}
+
+.mesa-token-meta {
+  margin-top: 0.1rem;
+  font-size: 0.74rem;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.token-bars {
+  gap: 0.28rem;
+  margin-top: 0.1rem;
+}
+
+.status-row-head {
+  gap: 0.45rem;
+}
+
+.status-label,
+.bar-label,
+.search-field span {
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+}
+
+.status-value {
+  font-size: 0.78rem;
+}
+
+.status-bar,
+.bar-preview {
+  height: 10px;
+  border-radius: 999px;
+}
+
+.token-type-badge,
+.token-state-pill,
+.status-chip {
+  min-height: 23px;
+  padding: 0.18rem 0.52rem;
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+}
+
+.token-inspector {
+  gap: 0.72rem;
+}
+
+.token-inspector-card,
+.token-inspector-stats,
+.token-inspector-controls {
+  padding: 0.78rem;
+}
+
+.token-inspector-card {
+  border-radius: 18px;
+}
+
+.token-inspector-hero {
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 0.72rem;
+  align-items: start;
+}
+
+.token-inspector-avatar {
+  width: 78px;
+  border-radius: 16px;
+}
+
+.token-inspector-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+  margin-bottom: 0.28rem;
+}
+
+.token-inspector-name {
+  margin-top: 0;
+  max-width: 16ch;
+  font-size: clamp(1rem, 1.22vw, 1.34rem);
+  line-height: 0.98;
+  overflow-wrap: anywhere;
+}
+
+.token-inspector-owner {
+  margin-top: 0.18rem;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.token-inspector-stats h3,
+.token-inspector-controls h3 {
+  font-size: 0.88rem;
+  letter-spacing: 0.05em;
+}
+
+.stats-grid {
+  gap: 0.65rem;
+}
+
+.stat-editor {
+  gap: 0.38rem;
+}
+
+.bar-label-row span:last-child {
+  font-size: 0.76rem;
+}
+
+.stat-editor-inputs {
+  grid-template-columns: minmax(0, 1fr) 12px minmax(0, 1fr);
+  gap: 0.3rem;
+}
+
+.stat-editor-inputs input {
+  min-height: 36px;
+  padding: 0.52rem 0.64rem;
+  border-radius: 12px;
+}
+
+.inspector-meta-grid {
+  gap: 0.46rem;
+}
+
+.inspector-meta-card {
+  padding: 0.7rem 0.76rem;
+  border-radius: 14px;
+}
+
+.inspector-meta-card strong {
+  font-size: 0.94rem;
+}
+
+.token-inspector-controls {
+  gap: 0.52rem;
+}
+
+.inspector-control-grid {
+  gap: 0.52rem;
+}
+
+.inspector-row {
+  gap: 0.52rem;
+  padding: 0.68rem 0.76rem;
+}
+
+.inspector-row-copy strong {
+  font-size: 0.84rem;
+  line-height: 1.1;
+}
+
+.inspector-row-copy small {
+  font-size: 0.76rem;
+  line-height: 1.2;
+  max-width: 26ch;
+  text-wrap: pretty;
+}
+
+.mini-btn {
+  min-height: 33px;
+  padding: 0.44rem 0.72rem;
+  font-size: 0.62rem;
+}
+
+.inspector-note {
+  padding: 0.72rem 0.8rem;
+  border-radius: 14px;
+  font-size: 0.82rem;
+  line-height: 1.28;
+}
+
+.panel-stage:fullscreen .mesa-token,
+.panel-stage:-webkit-full-screen .mesa-token,
+.panel-stage.is-pseudo-fullscreen .mesa-token {
+  width: clamp(210px, 16vw, 236px);
+}
+
+.panel-stage:fullscreen .mesa-token-avatar,
+.panel-stage:-webkit-full-screen .mesa-token-avatar,
+.panel-stage.is-pseudo-fullscreen .mesa-token-avatar {
+  aspect-ratio: 1.1 / 1;
+}
+
+@media (max-width: 1180px) {
+  .roster-entry {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .roster-entry-actions {
+    justify-content: flex-start;
+  }
+
+  .token-inspector-name {
+    max-width: none;
+  }
+}

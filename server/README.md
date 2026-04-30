@@ -1,6 +1,19 @@
 # Backend Armagedon
 
-Base de backend para tirar o portal do `localStorage` e centralizar tudo em um unico servidor.
+Backend Express/PostgreSQL legado do Armagedon.
+
+O caminho publicado principal atual usa Cloudflare Workers + D1 em `../cloudflare/`. Este backend continua util como referencia local, alternativa de hospedagem Node e comparacao de regras de negocio.
+
+## Regra Obrigatoria de Documentacao
+
+Sempre que uma mudanca tocar este backend, rotas Express, schema PostgreSQL, Socket.IO, normalizacao de ficha ou regras de permissao, atualize este arquivo e `../DEV_STATUS.md`. Se a mesma regra existir no Worker, atualize tambem `../cloudflare/README.md`.
+
+Registro minimo esperado:
+
+- rota/servico afetado
+- comportamento alterado
+- validacao executada
+- diferencas em relacao ao Worker, se existirem
 
 ## Stack
 
@@ -30,6 +43,13 @@ Base de backend para tirar o portal do `localStorage` e centralizar tudo em um u
 - `src/services/`: regras de negocio
 - `src/utils/`: autenticacao, senhas e normalizacao de ficha
 - `sql/schema.sql`: esquema inicial do banco
+
+## Papel Atual no Projeto
+
+- Nao e o backend principal do site publicado atual
+- Serve como fallback de arquitetura e referencia para comparar regras com o Worker
+- Deve continuar compilando e mantendo as mesmas regras essenciais do Worker
+- Qualquer correcao de regra feita aqui deve ser avaliada tambem em `../cloudflare/src/`
 
 ## Subindo localmente
 
@@ -120,20 +140,21 @@ CORS_ORIGIN=https://seuusuario.github.io,https://www.seudominio.com
 - Vida atual nao pode passar da Vida maxima
 - Integridade maxima de jogador/NPC deriva de Alma no servidor e ignora `integMax` divergente enviado pelo cliente
 - Integridade atual nao pode passar da Integridade maxima
-- monstros continuam sem Integridade, inventario, faccao ou memorias possuidas
+- jogador pode alterar Integridade atual da propria ficha
 
 ## Integracao com o frontend atual
 
-O frontend atual ja detecta automaticamente o backend quando ele responde em `http://localhost:4000`.
+O frontend atual pode detectar este backend quando ele responde em `http://localhost:4000`, mas o caminho publicado usa Cloudflare Workers configurado em `../js/runtime-config.js`.
 
 Partes ja integradas:
 
 - autenticacao em `js/auth.js`
 - regras em `js/regras.js`
-- criacao e exclusao de jogadores, NPCs e monstros em `js/ficha.js`
-- leitura e escrita de fichas em `js/ficha.js`
-- transferencia de itens e memorias em `js/ficha.js`
-- rolagem e envio de memorias de monstro em `js/ficha.js`
+- criacao e exclusao de jogadores, NPCs e monstros nos arquivos `js/ficha-*.js`
+- leitura e escrita de fichas nos arquivos `js/ficha-*.js`
+- transferencia de itens e memorias nos arquivos `js/ficha-*.js`
+- rolagem e envio de memorias de monstro nos arquivos `js/ficha-*.js`
+- Mesa virtual nos arquivos `js/mesa-*.js`
 
 ## Observacao
 

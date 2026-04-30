@@ -2,6 +2,10 @@
 
 Este arquivo define a direcao visual do projeto. Atualizar sempre que uma decisao de design passar a ser padrao.
 
+## Regra Obrigatoria de Documentacao
+
+Sempre que uma alteracao visual consolidar padrao novo, ajustar layout importante, mudar responsividade, trocar paleta, alterar componentes principais ou criar comportamento visual reutilizavel, este arquivo deve ser atualizado na mesma etapa. Tambem atualize `DEV_STATUS.md` quando a mudanca afetar paginas ou arquivos sensiveis.
+
 ## Direcao de Arte
 
 - Estilo principal: dark fantasy
@@ -69,6 +73,15 @@ Elementos que devem servir de base para as outras paginas:
 - inputs escuros e integrados
 - atmosfera de calor e brasa sombria
 
+Arquivos visuais atuais da ficha:
+
+- `css/ficha-base.css`
+- `css/ficha-layout.css`
+- `css/ficha-master.css`
+- `css/ficha-inventory-memory.css`
+- `css/ficha-dice-soul.css`
+- `css/ficha-responsive.css`
+
 ## Home / Login
 
 - Ja redesenhada para seguir a linguagem da ficha
@@ -113,6 +126,24 @@ Elementos que devem servir de base para as outras paginas:
   - listas com hierarquia clara
   - grade separada entre criacao, diretorio e acesso rapido
   - mesmo peso visual da ficha, sem parecer uma dashboard generica
+
+## Mesa Virtual
+
+- Deve priorizar leitura rapida de tokens, status e selecao
+- O palco deve ficar claro, responsivo e sem sobreposicao incoerente
+- Inspetor lateral deve ser compacto e funcional
+- Jogadores podem editar apenas valores atuais permitidos
+- Mestre pode controlar visibilidade, organizacao e valores maximos
+- Visual deve seguir a mesma linguagem dark fantasy da ficha, mas com densidade maior por ser ferramenta de mesa
+
+Arquivos visuais atuais da Mesa:
+
+- `css/mesa-base.css`
+- `css/mesa-layout.css`
+- `css/mesa-stage.css`
+- `css/mesa-roster.css`
+- `css/mesa-inspector.css`
+- `css/mesa-responsive.css`
 
 ## Pagina de Regras
 

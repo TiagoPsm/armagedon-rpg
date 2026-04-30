@@ -1,0 +1,1278 @@
+@media (max-width: 1320px) {
+  .mesa-layout {
+    grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+  }
+
+  .mesa-panel-right {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 1080px) {
+  .mesa-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .mesa-overview-meta {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mesa-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-stage {
+    min-height: 760px;
+  }
+}
+
+@media (max-width: 760px) {
+  .shell {
+    width: min(100%, calc(100% - 1.1rem));
+  }
+
+  .header-shell {
+    min-height: auto;
+    padding: 0.9rem 0;
+    flex-wrap: wrap;
+  }
+
+  .main-nav,
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .main-nav {
+    justify-content: center;
+  }
+
+  .header-actions {
+    justify-content: space-between;
+  }
+
+  .mesa-overview,
+  .panel-block,
+  .meta-card,
+  .scene-status-card,
+  .mesa-token,
+  .roster-entry,
+  .token-inspector-card,
+  .token-inspector-stats {
+    border-radius: 24px;
+  }
+
+  .mesa-overview h1 {
+    font-size: clamp(2.4rem, 12vw, 3.5rem);
+  }
+
+  .mesa-overview-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .token-inspector-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .token-inspector-avatar {
+    width: 100%;
+    max-width: 180px;
+  }
+
+  .inspector-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-head,
+  .panel-head-stage {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .stage-head-meta {
+    justify-content: start;
+  }
+
+  .mesa-stage-wrap {
+    min-height: 520px;
+  }
+
+  .mesa-token {
+    width: min(74vw, 240px);
+  }
+
+  .roster-entry,
+  .inspector-row {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .roster-entry-actions {
+    justify-content: flex-start;
+  }
+}
+
+/* 2026-04 mesa focus layout */
+.shell {
+  width: min(1560px, calc(100% - 1.4rem));
+}
+
+.mesa-shell {
+  padding: clamp(1.2rem, 3.6vw, 2.4rem) 0 3.2rem;
+}
+
+.mesa-overview {
+  padding: 1.2rem 1.28rem;
+  gap: 0.9rem;
+}
+
+.mesa-overview h1 {
+  font-size: clamp(2.45rem, 4vw, 3.8rem);
+}
+
+.mesa-lead {
+  max-width: 38rem;
+  font-size: 1.02rem;
+}
+
+.meta-card {
+  min-height: 136px;
+}
+
+.mesa-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+  grid-template-areas:
+    "stage right"
+    "left right";
+}
+
+.mesa-panel-left {
+  grid-area: left;
+  grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
+  align-self: start;
+}
+
+.mesa-panel-right {
+  grid-area: right;
+  align-self: stretch;
+}
+
+.mesa-stage-panel {
+  grid-area: stage;
+}
+
+.panel-stage {
+  min-height: 980px;
+  border-color: rgba(176, 47, 57, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 40px 100px rgba(0, 0, 0, 0.52),
+    0 0 30px rgba(176, 47, 57, 0.1);
+}
+
+.mesa-stage-wrap {
+  min-height: clamp(760px, 80vh, 1080px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 20px 60px rgba(0, 0, 0, 0.36);
+}
+
+.token-inspector {
+  position: sticky;
+  top: 104px;
+}
+
+.panel-stage:fullscreen,
+.panel-stage:-webkit-full-screen,
+.panel-stage.is-pseudo-fullscreen {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  min-height: 100vh;
+  border-radius: 0;
+  border-color: rgba(255, 255, 255, 0.08);
+  padding: 1rem;
+  background:
+    radial-gradient(circle at 18% 16%, rgba(176, 47, 57, 0.12), transparent 26%),
+    radial-gradient(circle at 82% 18%, rgba(176, 143, 50, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.004)),
+    rgba(4, 5, 9, 0.98);
+}
+
+.panel-stage.is-pseudo-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+
+.panel-stage:fullscreen .mesa-stage-wrap,
+.panel-stage:-webkit-full-screen .mesa-stage-wrap,
+.panel-stage.is-pseudo-fullscreen .mesa-stage-wrap {
+  min-height: calc(100vh - 120px);
+  height: 100%;
+}
+
+.panel-stage:fullscreen .mesa-stage-grid,
+.panel-stage:-webkit-full-screen .mesa-stage-grid,
+.panel-stage.is-pseudo-fullscreen .mesa-stage-grid {
+  background-size: 104px 104px;
+}
+
+.panel-stage:fullscreen .mesa-token,
+.panel-stage:-webkit-full-screen .mesa-token,
+.panel-stage.is-pseudo-fullscreen .mesa-token {
+  width: clamp(228px, 17vw, 252px);
+}
+
+body.mesa-pseudo-fullscreen {
+  overflow: hidden;
+}
+
+body.mesa-pseudo-fullscreen .site-header,
+body.mesa-pseudo-fullscreen .mesa-overview,
+body.mesa-pseudo-fullscreen .mesa-panel-left,
+body.mesa-pseudo-fullscreen .mesa-panel-right {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 1320px) {
+  .mesa-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+  }
+
+  .mesa-panel-left {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1080px) {
+  .mesa-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "stage"
+      "right"
+      "left";
+  }
+
+  .mesa-panel-left {
+    grid-template-columns: 1fr;
+  }
+
+  .token-inspector {
+    position: static;
+  }
+
+  .panel-stage {
+    min-height: 820px;
+  }
+}
+
+@media (max-width: 760px) {
+  .mesa-stage-wrap {
+    min-height: 540px;
+  }
+
+  .panel-stage:fullscreen,
+  .panel-stage:-webkit-full-screen,
+  .panel-stage.is-pseudo-fullscreen {
+    padding: 0.75rem;
+  }
+}
+
+/* 2026-04 mesa layout rebalance */
+.mesa-shell {
+  padding: clamp(1rem, 3vw, 1.8rem) 0 3rem;
+}
+
+.mesa-overview {
+  grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
+  gap: 1rem;
+  padding: 1.15rem 1.2rem;
+}
+
+.mesa-overview h1 {
+  font-size: clamp(2.35rem, 4vw, 3.5rem);
+}
+
+.mesa-lead {
+  max-width: 34rem;
+  font-size: 1rem;
+}
+
+.meta-card {
+  min-height: 128px;
+}
+
+.mesa-layout {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "stage stage"
+    "left right";
+  align-items: start;
+}
+
+.mesa-stage-panel,
+.mesa-panel-left,
+.mesa-panel-right {
+  min-width: 0;
+}
+
+.mesa-panel-left {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-self: start;
+}
+
+.mesa-panel-right {
+  align-self: start;
+}
+
+.panel-stage {
+  min-height: 820px;
+  padding: 1rem;
+}
+
+.panel-head-stage {
+  gap: 0.85rem;
+}
+
+.stage-head-meta {
+  justify-content: flex-start;
+}
+
+.mesa-stage-wrap {
+  min-height: clamp(640px, 70vh, 860px);
+}
+
+.mesa-token {
+  width: clamp(190px, 14vw, 220px);
+}
+
+.token-inspector {
+  position: static;
+}
+
+.token-inspector-card,
+.token-inspector-stats {
+  padding: 0.95rem;
+}
+
+.stage-footer {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+}
+
+@media (max-width: 1200px) {
+  .mesa-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "stage"
+      "left"
+      "right";
+  }
+
+  .mesa-panel-left {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .mesa-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .mesa-stage-wrap {
+    min-height: 520px;
+  }
+
+  .mesa-token {
+    width: min(72vw, 220px);
+  }
+}
+
+/* 2026-04 compact token polish */
+.mesa-token {
+  width: clamp(148px, 10.5vw, 170px);
+  display: grid;
+  align-content: start;
+  gap: 0.3rem;
+  padding: 0.58rem;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012)),
+    linear-gradient(145deg, rgba(72, 18, 25, 0.26), rgba(14, 15, 21, 0.92) 38%, rgba(9, 10, 15, 0.98) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 18px 36px rgba(0, 0, 0, 0.34);
+}
+
+.mesa-token::before {
+  height: 62px;
+  background: radial-gradient(circle at top left, rgba(176, 47, 57, 0.16), transparent 62%);
+  opacity: 0.8;
+}
+
+.mesa-token:hover {
+  transform: translateY(-2px) scale(1.01);
+}
+
+.mesa-token.is-selected {
+  box-shadow:
+    0 0 0 1px rgba(255, 248, 236, 0.09),
+    0 18px 44px rgba(0, 0, 0, 0.4),
+    0 0 26px rgba(176, 47, 57, 0.1);
+}
+
+.mesa-token.is-dragging {
+  box-shadow:
+    0 22px 48px rgba(0, 0, 0, 0.44),
+    0 0 24px rgba(176, 47, 57, 0.12);
+}
+
+.mesa-token-top {
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.mesa-token-avatar {
+  aspect-ratio: 1.2 / 1;
+  margin: 0;
+  border-radius: 16px;
+}
+
+.mesa-token-avatar-fallback {
+  font-size: clamp(1.9rem, 2.2vw, 2.35rem);
+}
+
+.mesa-token-name {
+  font-size: 0.92rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.mesa-token-meta {
+  margin: 0;
+  color: rgba(212, 201, 182, 0.82);
+  font-size: 0.74rem;
+  line-height: 1.12;
+}
+
+.token-type-badge,
+.token-state-pill {
+  min-height: 24px;
+  padding: 0.22rem 0.54rem;
+  font-size: 0.56rem;
+  letter-spacing: 0.12em;
+}
+
+.token-bars {
+  gap: 0.28rem;
+  margin-top: 0.02rem;
+}
+
+.status-row {
+  gap: 0.12rem;
+}
+
+.status-row-head {
+  gap: 0.28rem;
+}
+
+.status-label {
+  font-size: 0.52rem;
+  letter-spacing: 0.16em;
+}
+
+.status-value {
+  font-size: 0.78rem;
+}
+
+.status-bar {
+  height: 7px;
+}
+
+@media (max-width: 760px) {
+  .mesa-token {
+    width: min(54vw, 164px);
+  }
+}
+
+/* 2026-04 control panels polish */
+.mesa-panel-left {
+  grid-template-columns: minmax(250px, 0.86fr) minmax(320px, 1.14fr);
+  gap: 1rem;
+}
+
+.mesa-panel-left > .panel-block,
+.mesa-panel-right > .panel-block {
+  min-width: 0;
+}
+
+.mesa-panel-left .panel-head,
+.mesa-panel-right .panel-head {
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.65rem 0.9rem;
+  margin-bottom: 0.85rem;
+}
+
+.mesa-panel-left .panel-head > div,
+.mesa-panel-right .panel-head > div {
+  min-width: 0;
+  flex: 1 1 180px;
+}
+
+.mesa-panel-left .panel-head h2 {
+  margin-top: 0.22rem;
+  font-size: clamp(1.28rem, 1.8vw, 1.72rem);
+  line-height: 0.94;
+  text-wrap: balance;
+}
+
+.mesa-panel-right .panel-head h2 {
+  margin-top: 0.22rem;
+  font-size: clamp(1.4rem, 2vw, 1.92rem);
+  line-height: 0.94;
+  text-wrap: balance;
+}
+
+.panel-kicker {
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+}
+
+.panel-badge {
+  min-height: 30px;
+  max-width: 100%;
+  padding: 0.34rem 0.72rem;
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
+  text-wrap: balance;
+}
+
+.scene-status-card {
+  gap: 0.85rem;
+  padding: 0.9rem;
+}
+
+.scene-status-copy strong {
+  margin-top: 0.32rem;
+  font-size: 1.28rem;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.scene-status-copy p {
+  margin-top: 0.45rem;
+  font-size: 0.92rem;
+  line-height: 1.32;
+  max-width: 24ch;
+}
+
+.scene-toggles {
+  margin-top: 0.85rem;
+}
+
+.toggle-row {
+  grid-template-columns: minmax(0, 1fr) 58px;
+  align-items: start;
+  gap: 0.85rem;
+  padding: 0.82rem 0.92rem;
+}
+
+.toggle-copy small {
+  font-size: 0.9rem;
+  line-height: 1.32;
+}
+
+.search-field {
+  gap: 0.34rem;
+}
+
+.search-field input {
+  min-height: 46px;
+  padding: 0.78rem 0.9rem;
+  border-radius: 16px;
+}
+
+.roster-section {
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.roster-group {
+  gap: 0.5rem;
+}
+
+.roster-group-head {
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.35rem 0.7rem;
+}
+
+.roster-group-head h3 {
+  font-size: 0.94rem;
+}
+
+.roster-group-head span {
+  font-size: 0.84rem;
+}
+
+.roster-entry {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.58rem;
+  align-items: start;
+  padding: 0.82rem 0.9rem;
+  border-radius: 20px;
+}
+
+.roster-entry-copy {
+  gap: 0.14rem;
+}
+
+.roster-entry-name {
+  font-size: 1rem;
+  line-height: 1.04;
+  text-wrap: balance;
+}
+
+.roster-entry-meta {
+  font-size: 0.88rem;
+  line-height: 1.26;
+}
+
+.roster-entry-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 0.38rem;
+}
+
+.mini-btn {
+  min-height: 34px;
+  padding: 0.48rem 0.76rem;
+  font-size: 0.64rem;
+  letter-spacing: 0.13em;
+}
+
+.token-inspector {
+  gap: 0.85rem;
+}
+
+.token-inspector-card,
+.token-inspector-stats,
+.token-inspector-controls {
+  min-width: 0;
+}
+
+.token-inspector-card,
+.token-inspector-stats {
+  padding: 0.9rem;
+}
+
+.token-inspector-hero {
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.token-inspector-avatar {
+  width: 96px;
+  border-radius: 20px;
+}
+
+.token-inspector-name {
+  margin-top: 0.32rem;
+  font-size: clamp(1.46rem, 2vw, 2rem);
+  line-height: 0.95;
+  text-wrap: balance;
+}
+
+.token-inspector-copy p {
+  margin-top: 0.32rem;
+  font-size: 0.92rem;
+  line-height: 1.3;
+}
+
+.token-inspector-stats h3,
+.token-inspector-controls h3 {
+  font-size: 1rem;
+}
+
+.stats-grid {
+  gap: 0.75rem;
+}
+
+.stat-editor {
+  gap: 0.44rem;
+}
+
+.bar-label-row {
+  gap: 0.65rem;
+}
+
+.bar-label-row span:last-child {
+  font-size: 0.88rem;
+}
+
+.stat-editor-inputs {
+  grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr);
+  gap: 0.45rem;
+}
+
+.stat-editor-inputs input {
+  min-height: 42px;
+  padding: 0.66rem 0.8rem;
+  border-radius: 14px;
+}
+
+.token-inspector-controls {
+  gap: 0.6rem;
+}
+
+.inspector-meta-grid {
+  gap: 0.6rem;
+}
+
+.inspector-meta-card {
+  padding: 0.8rem 0.86rem;
+  border-radius: 16px;
+}
+
+.inspector-meta-card strong {
+  margin-top: 0.24rem;
+  font-size: 1.08rem;
+}
+
+.inspector-control-grid {
+  gap: 0.55rem;
+}
+
+.inspector-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.82rem 0.9rem;
+  border-radius: 16px;
+}
+
+.inspector-row-copy strong {
+  font-size: 0.95rem;
+}
+
+.inspector-row-copy small {
+  font-size: 0.88rem;
+  line-height: 1.3;
+  max-width: 46ch;
+}
+
+.inspector-row .roster-entry-actions {
+  justify-content: flex-end;
+}
+
+.inspector-note {
+  padding: 0.85rem 0.92rem;
+  border-radius: 16px;
+  font-size: 0.92rem;
+  line-height: 1.34;
+}
+
+@media (max-width: 1320px) {
+  .mesa-panel-left {
+    grid-template-columns: 1fr;
+  }
+
+  .inspector-row {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .inspector-row .roster-entry-actions {
+    justify-content: flex-start;
+  }
+}
+
+/* 2026-04 mesa focus layout */
+.mesa-shell {
+  width: min(1840px, calc(100vw - 1.5rem));
+  max-width: min(1840px, calc(100vw - 1.5rem));
+  padding-top: clamp(0.8rem, 2vw, 1.35rem);
+}
+
+.mesa-overview {
+  grid-template-columns: minmax(0, 1.55fr) minmax(420px, 0.9fr);
+  align-items: end;
+  gap: 0.95rem;
+  padding: 0.95rem 1.1rem;
+}
+
+.mesa-overview-copy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.mesa-overview h1 {
+  margin: 0;
+  font-size: clamp(2.15rem, 3.8vw, 3.2rem);
+}
+
+.mesa-lead {
+  max-width: 48rem;
+  font-size: 0.96rem;
+}
+
+.mesa-overview-meta {
+  gap: 0.75rem;
+}
+
+.meta-card {
+  min-height: 112px;
+  padding: 0.85rem 0.95rem;
+}
+
+.mesa-layout {
+  margin-top: 0.95rem;
+  grid-template-columns: 1fr;
+  grid-template-areas: none;
+  gap: 1rem;
+}
+
+.mesa-stage-panel,
+.mesa-workbench,
+.mesa-roster-block,
+.mesa-panel-right {
+  min-width: 0;
+}
+
+.panel-stage {
+  min-height: 980px;
+  padding: 1rem;
+}
+
+.mesa-stage-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  gap: 0.8rem;
+  margin-bottom: 0.85rem;
+}
+
+.scene-status-card-compact {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.9rem 0.95rem;
+}
+
+.scene-status-card-compact .scene-status-copy p {
+  margin-top: 0.42rem;
+  max-width: 56rem;
+  font-size: 0.92rem;
+}
+
+.scene-status-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.scene-toggles-inline {
+  margin-top: 0;
+}
+
+.scene-toggles-inline .toggle-row {
+  min-height: 100%;
+  padding: 0.95rem 1rem;
+}
+
+.mesa-stage-wrap {
+  min-height: clamp(780px, 79vh, 1100px);
+}
+
+.stage-footer {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+}
+
+.stage-footer-copy p {
+  max-width: 64rem;
+  font-size: 0.92rem;
+}
+
+.mesa-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.mesa-roster-block .panel-head h2,
+.mesa-panel-right .panel-head h2 {
+  font-size: 1.6rem;
+}
+
+.mesa-roster-block .panel-head,
+.mesa-panel-right .panel-head {
+  margin-bottom: 0.85rem;
+}
+
+.token-inspector {
+  position: sticky;
+  top: 96px;
+}
+
+body.mesa-pseudo-fullscreen .site-header,
+body.mesa-pseudo-fullscreen .mesa-overview,
+body.mesa-pseudo-fullscreen .mesa-workbench {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 1280px) {
+  .mesa-shell {
+    width: calc(100vw - 1rem);
+    max-width: calc(100vw - 1rem);
+  }
+
+  .mesa-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .mesa-stage-toolbar,
+  .mesa-workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .token-inspector {
+    position: static;
+  }
+
+  .mesa-stage-wrap {
+    min-height: clamp(640px, 74vh, 900px);
+  }
+}
+
+@media (max-width: 760px) {
+  .mesa-overview-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-head-stage {
+    align-items: start;
+  }
+
+  .stage-head-meta {
+    justify-content: flex-start;
+  }
+
+  .scene-status-card-compact {
+    grid-template-columns: 1fr;
+  }
+
+  .scene-status-actions {
+    justify-content: flex-start;
+  }
+
+  .mesa-stage-wrap {
+    min-height: 500px;
+  }
+}
+
+/* 2026-04 mesa layout reset */
+.mesa-shell {
+  width: min(1720px, calc(100% - 1.25rem));
+  max-width: min(1720px, calc(100% - 1.25rem));
+  padding-top: 1rem;
+}
+
+.mesa-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(380px, 0.9fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem 1.05rem;
+}
+
+.mesa-hero-copy {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.mesa-hero h1 {
+  margin: 0;
+  font-size: clamp(2.35rem, 4vw, 3.3rem);
+}
+
+.mesa-hero .mesa-lead {
+  max-width: 48rem;
+  margin: 0;
+  font-size: 0.97rem;
+}
+
+.mesa-hero-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.mesa-hero-meta .meta-card {
+  min-height: 114px;
+  padding: 0.85rem 0.95rem;
+}
+
+.mesa-focus-layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.mesa-primary-stage,
+.mesa-focus-workbench,
+.mesa-workbench-stack,
+.mesa-inspector-shell {
+  min-width: 0;
+}
+
+.mesa-primary-stage .panel-stage {
+  width: 100%;
+  min-height: 920px;
+  padding: 1rem;
+}
+
+.mesa-stage-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
+  gap: 0.8rem;
+  margin-bottom: 0.85rem;
+}
+
+.scene-status-card-compact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.9rem 0.95rem;
+}
+
+.scene-status-card-compact .scene-status-copy p {
+  margin-top: 0.42rem;
+  max-width: 64rem;
+  font-size: 0.92rem;
+}
+
+.scene-status-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.scene-toggles-inline {
+  margin-top: 0;
+}
+
+.scene-toggles-inline .toggle-row {
+  min-height: 100%;
+  padding: 0.95rem 1rem;
+}
+
+.mesa-primary-stage .mesa-stage-wrap {
+  min-height: clamp(720px, 76vh, 980px);
+}
+
+.mesa-primary-stage .stage-footer {
+  margin-top: 0.72rem;
+  padding-top: 0.72rem;
+}
+
+.mesa-primary-stage .stage-footer-copy p {
+  max-width: 72rem;
+  font-size: 0.92rem;
+}
+
+.mesa-focus-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
+  gap: 1rem;
+  align-items: start;
+}
+
+.mesa-workbench-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.mesa-roster-card .panel-head,
+.mesa-inspector-shell .panel-head {
+  margin-bottom: 0.85rem;
+}
+
+.mesa-roster-card .panel-head h2,
+.mesa-inspector-shell .panel-head h2 {
+  margin-top: 0.25rem;
+  font-size: 1.62rem;
+}
+
+.mesa-inspector-shell .token-inspector {
+  position: static !important;
+  top: auto !important;
+}
+
+body.mesa-pseudo-fullscreen .site-header,
+body.mesa-pseudo-fullscreen .mesa-hero,
+body.mesa-pseudo-fullscreen .mesa-focus-workbench {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 1280px) {
+  .mesa-shell {
+    width: calc(100% - 1rem);
+    max-width: calc(100% - 1rem);
+  }
+
+  .mesa-hero,
+  .mesa-stage-toolbar,
+  .mesa-focus-workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .mesa-primary-stage .mesa-stage-wrap {
+    min-height: clamp(620px, 72vh, 860px);
+  }
+}
+
+@media (max-width: 760px) {
+  .mesa-hero-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .scene-status-card-compact {
+    grid-template-columns: 1fr;
+  }
+
+  .scene-status-actions {
+    justify-content: flex-start;
+  }
+
+  .panel-head-stage {
+    align-items: start;
+  }
+
+  .stage-head-meta {
+    justify-content: flex-start;
+  }
+
+  .mesa-primary-stage .mesa-stage-wrap {
+    min-height: 500px;
+  }
+}
+
+/* 2026-04 ajuste fino do inspetor */
+.mesa-inspector-shell .token-inspector-card,
+.mesa-inspector-shell .token-inspector-stats,
+.mesa-inspector-shell .token-inspector-controls {
+  padding: 0.85rem;
+}
+
+.mesa-inspector-shell .token-inspector-hero {
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.mesa-inspector-shell .token-inspector-avatar {
+  width: 86px;
+  border-radius: 18px;
+}
+
+.mesa-inspector-shell .token-inspector-copy {
+  min-width: 0;
+}
+
+.mesa-inspector-shell .token-inspector-copy .token-type-badge {
+  margin-bottom: 0.35rem;
+}
+
+.mesa-inspector-shell .token-inspector-name {
+  margin-top: 0.12rem;
+  font-size: clamp(1.08rem, 1.45vw, 1.5rem);
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-wrap: pretty;
+}
+
+.mesa-inspector-shell .token-inspector-copy p {
+  margin-top: 0.24rem;
+  font-size: 0.86rem;
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+
+.mesa-inspector-shell .token-inspector-stats h3,
+.mesa-inspector-shell .token-inspector-controls h3 {
+  font-size: 0.92rem;
+  line-height: 1.08;
+  letter-spacing: 0.04em;
+}
+
+.mesa-inspector-shell .bar-label-row {
+  gap: 0.5rem;
+}
+
+.mesa-inspector-shell .bar-label-row span:last-child {
+  font-size: 0.8rem;
+}
+
+.mesa-inspector-shell .stat-editor-inputs {
+  grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1fr);
+  gap: 0.35rem;
+}
+
+.mesa-inspector-shell .stat-editor-inputs input {
+  min-height: 38px;
+  padding: 0.58rem 0.72rem;
+  border-radius: 12px;
+}
+
+.mesa-inspector-shell .inspector-meta-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.mesa-inspector-shell .inspector-meta-card {
+  padding: 0.72rem 0.78rem;
+}
+
+.mesa-inspector-shell .inspector-meta-card strong {
+  font-size: 0.98rem;
+}
+
+.mesa-inspector-shell .inspector-row {
+  gap: 0.6rem;
+  padding: 0.74rem 0.8rem;
+}
+
+.mesa-inspector-shell .inspector-row-copy strong {
+  font-size: 0.88rem;
+  line-height: 1.1;
+}
+
+.mesa-inspector-shell .inspector-row-copy small {
+  font-size: 0.8rem;
+  line-height: 1.22;
+  max-width: none;
+}
+
+.mesa-inspector-shell .mini-btn {
+  min-height: 34px;
+  padding: 0.48rem 0.75rem;
+  font-size: 0.64rem;
+}
+
+.mesa-inspector-shell .status-chip,
+.mesa-inspector-shell .token-state-pill {
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+}

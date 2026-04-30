@@ -13,11 +13,18 @@
   <link rel="prefetch" href="index.html" />
   <link rel="prefetch" href="ficha.html" />
   <link rel="prefetch" href="regras.html" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;500;600;700&family=Crimson+Text:wght@400;600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="css/mesa.css?v=2026-04-21-mesa-skeleton-1" />
+  <link rel="stylesheet" href="css/mesa-base.css?v=2026-04-24-split-1" />
+  <link rel="stylesheet" href="css/mesa-roster.css?v=2026-04-24-split-1" />
+  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-04-24-split-1" />
+  <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-04-24-split-1" />
+  <link rel="stylesheet" href="css/mesa-layout.css?v=2026-04-24-split-1" />
+  <link rel="stylesheet" href="css/mesa-responsive.css?v=2026-04-24-split-1" />
 </head>
 <body>
   <div class="bg-layer bg-noise"></div>
@@ -52,8 +59,8 @@
   </header>
 
   <main class="shell mesa-shell">
-    <section class="mesa-overview">
-      <div class="mesa-overview-copy">
+    <section class="mesa-hero panel-block">
+      <div class="mesa-hero-copy">
         <p class="eyebrow">Mesa narrativa</p>
         <h1>Mesa Virtual</h1>
         <p class="mesa-lead">
@@ -62,7 +69,7 @@
         </p>
       </div>
 
-      <div class="mesa-overview-meta">
+      <div class="mesa-hero-meta">
         <article class="meta-card">
           <span>Modo</span>
           <strong id="roleBadge">Jogador</strong>
@@ -81,57 +88,9 @@
       </div>
     </section>
 
-    <section class="mesa-layout">
-      <aside class="mesa-panel mesa-panel-left">
-        <div class="panel-block">
-          <div class="panel-head">
-            <div>
-              <p class="panel-kicker">Direcao da cena</p>
-              <h2>Controles locais</h2>
-            </div>
-          </div>
-
-          <div class="scene-status-card">
-            <div class="scene-status-copy">
-              <span class="scene-status-label">Estado atual</span>
-              <strong id="sceneStateTitle">Mesa pronta</strong>
-              <p id="sceneStateCopy">A escalacao vem das fichas salvas; a cena ainda aguarda realtime.</p>
-            </div>
-            <button type="button" class="btn btn-ghost btn-small" id="resetMesaBtn">Limpar cena</button>
-          </div>
-
-          <div class="scene-toggles">
-            <label class="toggle-row" id="playerPreviewRow">
-              <span class="toggle-copy">
-                <strong>Previa do jogador</strong>
-                <small>Oculta os tokens invisiveis e mostra a mesa como os jogadores verao.</small>
-              </span>
-              <input type="checkbox" id="playerPreviewToggle" />
-              <span class="toggle-indicator" aria-hidden="true"></span>
-            </label>
-          </div>
-        </div>
-
-        <div class="panel-block">
-          <div class="panel-head">
-            <div>
-              <p class="panel-kicker">Escalacao</p>
-              <h2>Adicionar a mesa</h2>
-            </div>
-            <span class="panel-badge" id="rosterCountBadge">0 disponiveis</span>
-          </div>
-
-          <label class="search-field" for="rosterSearch">
-            <span>Buscar personagem</span>
-            <input type="search" id="rosterSearch" placeholder="Nome, tipo ou dono..." autocomplete="off" />
-          </label>
-
-          <div class="roster-section" id="rosterList" aria-live="polite"></div>
-        </div>
-      </aside>
-
-      <section class="mesa-stage-panel">
-        <div class="panel-block panel-stage">
+    <section class="mesa-focus-layout">
+      <section class="mesa-primary-stage">
+        <div class="panel-block panel-stage" id="mesaPanelStage">
           <div class="panel-head panel-head-stage">
             <div>
               <p class="panel-kicker">Palco da campanha</p>
@@ -141,17 +100,42 @@
             <div class="stage-head-meta">
               <span class="panel-badge" id="stageViewBadge">Visao do mestre</span>
               <span class="panel-badge panel-badge-soft" id="stageHintBadge">Arraste os tokens para organizar a cena.</span>
+              <button type="button" class="mini-btn" id="fullscreenMesaBtn" aria-pressed="false">Tela cheia</button>
             </div>
           </div>
 
-          <div class="mesa-stage-wrap">
+          <div class="mesa-stage-toolbar">
+          <div class="scene-status-card scene-status-card-compact">
+            <div class="scene-status-copy">
+              <span class="scene-status-label">Estado atual</span>
+              <strong id="sceneStateTitle">Mesa pronta</strong>
+              <p id="sceneStateCopy">A escalacao vem das fichas salvas; a cena ainda aguarda realtime.</p>
+            </div>
+              <div class="scene-status-actions">
+                <button type="button" class="btn btn-ghost btn-small" id="resetMesaBtn">Limpar cena</button>
+              </div>
+            </div>
+
+            <div class="scene-toggles scene-toggles-inline">
+              <label class="toggle-row" id="playerPreviewRow">
+                <span class="toggle-copy">
+                  <strong>Previa do jogador</strong>
+                  <small>Oculta tokens invisiveis e valida a cena como os jogadores vao enxergar.</small>
+                </span>
+                <input type="checkbox" id="playerPreviewToggle" />
+                <span class="toggle-indicator" aria-hidden="true"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="mesa-stage-wrap" id="mesaStageWrap">
             <div class="mesa-stage-grid" aria-hidden="true"></div>
             <div class="mesa-stage-glow" aria-hidden="true"></div>
             <div id="mesaStage" class="mesa-stage" aria-live="polite"></div>
 
             <div id="mesaEmptyState" class="mesa-empty-state" hidden>
               <strong>Nenhum token em cena.</strong>
-              <p>Use a coluna da esquerda para colocar personagens, NPCs e monstros no palco.</p>
+              <p>Use a escalacao abaixo para colocar personagens, NPCs e monstros no palco.</p>
             </div>
           </div>
 
@@ -166,29 +150,55 @@
         </div>
       </section>
 
-      <aside class="mesa-panel mesa-panel-right">
-        <div class="panel-block token-inspector-block">
-          <div class="panel-head">
-            <div>
-              <p class="panel-kicker">Inspetor</p>
-              <h2>Token selecionado</h2>
+      <section class="mesa-focus-workbench">
+        <div class="mesa-workbench-stack">
+          <div class="panel-block mesa-roster-card">
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Escalacao</p>
+                <h2>Adicionar a mesa</h2>
+              </div>
+              <span class="panel-badge" id="rosterCountBadge">0 disponiveis</span>
             </div>
-          </div>
 
-          <div id="tokenInspector" class="token-inspector" aria-live="polite">
-            <div class="token-inspector-empty">
-              <strong>Selecione um token</strong>
-              <p>Os detalhes da cena aparecem aqui quando voce escolhe um retrato no palco.</p>
-            </div>
+            <label class="search-field" for="rosterSearch">
+              <span>Buscar personagem</span>
+              <input type="search" id="rosterSearch" placeholder="Nome, tipo ou dono..." autocomplete="off" />
+            </label>
+
+            <div class="roster-section" id="rosterList" aria-live="polite"></div>
           </div>
         </div>
-      </aside>
+
+        <aside class="mesa-inspector-shell">
+          <div class="panel-block token-inspector-block">
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Inspetor</p>
+                <h2>Token selecionado</h2>
+              </div>
+            </div>
+
+            <div id="tokenInspector" class="token-inspector" aria-live="polite">
+              <div class="token-inspector-empty">
+                <strong>Selecione um token</strong>
+                <p>Os detalhes da cena aparecem aqui quando voce escolhe um retrato no palco.</p>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </section>
     </section>
   </main>
 
   <script src="js/runtime-config.js?v=2026-04-10-home-ritual"></script>
   <script src="js/api.js?v=2026-04-10-home-ritual"></script>
   <script src="js/auth.js?v=2026-04-20-site-speed-1"></script>
-  <script src="js/mesa.js?v=2026-04-25-mesa-official-copy-1"></script>
+  <script src="js/mesa-core.js?v=2026-04-24-split-1"></script>
+  <script src="js/mesa-stage.js?v=2026-04-24-split-1"></script>
+  <script src="js/mesa-roster.js?v=2026-04-25-mesa-official-1"></script>
+  <script src="js/mesa-inspector.js?v=2026-04-25-mesa-official-1"></script>
+  <script src="js/mesa-storage.js?v=2026-04-24-split-1"></script>
+  <script src="js/mesa-init.js?v=2026-04-24-split-1"></script>
 </body>
 </html>

@@ -1,0 +1,106 @@
+.roster-section {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.roster-group {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.roster-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.roster-group-head h3 {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+
+.roster-group-head span {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.roster-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: center;
+  padding: 0.9rem 0.95rem;
+  border-radius: 22px;
+}
+
+.roster-entry-copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.roster-entry-name {
+  font-family: var(--font-title);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.roster-entry-meta {
+  color: var(--text-secondary);
+  font-size: 0.96rem;
+}
+
+.roster-entry-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.mini-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0.56rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-primary);
+  font-family: var(--font-title);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform var(--transition), border-color var(--transition), background-color var(--transition);
+}
+
+.mini-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(176, 47, 57, 0.22);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.mini-btn.is-muted,
+.mini-btn:disabled {
+  cursor: default;
+  opacity: 0.56;
+}
+
+.mini-btn.is-primary {
+  border-color: rgba(202, 74, 68, 0.22);
+  background: linear-gradient(135deg, rgba(103, 16, 24, 0.86), rgba(176, 48, 57, 0.9));
+}
+
+.panel-stage {
+  min-height: 820px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.panel-head-stage {
+  align-items: center;
+}

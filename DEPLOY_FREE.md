@@ -1,5 +1,21 @@
 # Deploy Gratuito do Armagedon
 
+## Regra Obrigatoria de Documentacao
+
+Sempre que qualquer etapa de deploy, workflow, dominio, API publicada ou lista de arquivos publicados mudar, atualize este arquivo e `DEV_STATUS.md`. Se a mudanca for em Cloudflare, atualize tambem `cloudflare/README.md`. Se for no backend Express/PostgreSQL legado, atualize `server/README.md`.
+
+Este arquivo existe para evitar depender do historico de conversa na hora de publicar.
+
+## Status Atual
+
+O caminho publicado principal do projeto e:
+
+- frontend estatico
+- API em Cloudflare Workers
+- banco em Cloudflare D1
+
+O roteiro abaixo com GitHub Pages + Render + Neon continua util como alternativa gratuita/legada para o backend Express/PostgreSQL em `server/`.
+
 Este roteiro usa:
 
 - frontend: GitHub Pages
@@ -13,6 +29,7 @@ Essa combinacao exige pouco retrabalho no projeto atual e evita o fluxo do Koyeb
 1. Crie um repositorio novo no GitHub.
 2. Envie esta pasta inteira, exceto o que estiver ignorado em `.gitignore`.
 3. Confirme se a branch principal se chama `main`.
+4. Garanta que os arquivos `.md` atualizados tambem sejam enviados.
 
 Se a branch principal tiver outro nome, ajuste `.github/workflows/pages.yml`.
 
@@ -97,6 +114,7 @@ Depois envie esse ajuste ao GitHub.
 1. No repositorio do GitHub, abra `Settings > Pages`.
 2. Confirme que GitHub Pages esta ativo.
 3. O workflow em `.github/workflows/pages.yml` vai publicar o site automaticamente.
+4. O workflow deve copiar `mesa.html`, alem de `index.html`, `ficha.html` e `regras.html`.
 
 Quando terminar, o frontend deve ficar em algo como:
 
@@ -118,7 +136,7 @@ entao essa URL precisa estar autorizada no backend.
 
 ## 8. Limites do Render Free
 
-Segundo a documentacao oficial atual do Render:
+Pontos comuns do plano gratuito do Render que devem ser confirmados antes de publicar:
 
 - web services free entram em spin down apos 15 minutos sem trafego
 - o primeiro acesso depois disso pode levar ate cerca de 1 minuto
@@ -134,10 +152,13 @@ Teste em producao:
 2. criacao de jogador
 3. login do jogador
 4. salvar ficha
-5. regras
-6. troca de memoria
-7. troca de item
-8. atualizacao entre duas abas
+5. editar Vida atual sem ultrapassar Vida maxima
+6. editar Integridade atual do jogador na ficha
+7. editar Vida/Integridade atual do jogador na Mesa
+8. regras
+9. troca de memoria
+10. troca de item
+11. atualizacao entre duas abas
 
 ## 10. Seguranca minima
 
@@ -147,3 +168,24 @@ Antes de usar com outras pessoas:
 - gere um `JWT_SECRET` novo
 - nao publique `server/.env`
 - faca backup regular do banco
+
+## Arquivos Que Normalmente Precisam Ir no Deploy
+
+- `index.html`
+- `ficha.html`
+- `mesa.html`
+- `regras.html`
+- `css/`
+- `js/`
+- `assets/` e imagens usadas pelas paginas
+- `.nojekyll`
+- `.github/workflows/pages.yml`, se o workflow mudou
+- `.md` alterados, para manter o contexto do projeto atualizado
+
+## Observacao Sobre Realtime
+
+A Mesa atual pode ser publicada como pagina oficial, mas realtime verdadeiro ainda depende da proxima etapa:
+
+- D1 para persistir o estado da cena
+- Durable Objects + WebSocket para sincronizar abas em tempo real
+- `realtimeEnabled` em `js/runtime-config.js` deve continuar `false` ate esse fluxo estar implementado

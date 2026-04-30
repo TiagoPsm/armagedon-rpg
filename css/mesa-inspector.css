@@ -1,0 +1,233 @@
+.token-inspector {
+  display: grid;
+  gap: 1rem;
+}
+
+.token-inspector-card {
+  padding: 1rem;
+}
+
+.token-inspector-hero {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 0.95rem;
+  align-items: center;
+}
+
+.token-inspector-avatar {
+  width: 120px;
+  aspect-ratio: 1 / 1;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.08), transparent 40%),
+    linear-gradient(135deg, rgba(55, 58, 84, 0.72), rgba(11, 12, 18, 0.95));
+}
+
+.token-inspector-avatar img,
+.token-inspector-avatar .mesa-token-avatar-fallback {
+  width: 100%;
+  height: 100%;
+}
+
+.token-inspector-name {
+  margin-top: 0.5rem;
+  font-size: 2rem;
+}
+
+.token-inspector-copy p {
+  margin: 0.42rem 0 0;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.42;
+}
+
+.token-inspector-stats {
+  padding: 1rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.token-inspector-stats h3,
+.token-inspector-controls h3 {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 1.08rem;
+  font-weight: 600;
+}
+
+.stats-grid {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.stat-editor {
+  display: grid;
+  gap: 0.52rem;
+}
+
+.bar-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.bar-label-row span:last-child {
+  color: var(--text-secondary);
+  font-size: 0.94rem;
+}
+
+.stat-editor-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.stat-editor-inputs input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0.72rem 0.85rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(6, 7, 11, 0.9);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.stat-editor-inputs input:focus {
+  border-color: var(--border-up);
+  box-shadow: 0 0 0 3px rgba(176, 47, 57, 0.14);
+}
+
+.stat-editor-inputs input:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+}
+
+.stat-divider {
+  text-align: center;
+  color: var(--text-muted);
+  font-family: var(--font-title);
+}
+
+.token-inspector-controls {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.inspector-control-grid {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.inspector-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.9rem 0.95rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.inspector-row.is-status-hidden {
+  border-style: dashed;
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.inspector-row-copy {
+  min-width: 0;
+}
+
+.inspector-row-copy strong {
+  display: block;
+  font-family: var(--font-title);
+  font-size: 1rem;
+}
+
+.inspector-row-copy small {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.inspector-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.inspector-meta-card {
+  padding: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.inspector-meta-card strong {
+  display: block;
+  margin-top: 0.3rem;
+  font-family: var(--font-title);
+  font-size: 1.2rem;
+}
+
+.inspector-note {
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(176, 143, 50, 0.14);
+  border-radius: 18px;
+  background: rgba(176, 143, 50, 0.08);
+  color: var(--text-secondary);
+  font-size: 0.98rem;
+  line-height: 1.42;
+}
+
+.inspector-note strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--text-primary);
+  font-family: var(--font-title);
+  font-size: 0.96rem;
+}
+
+.bar-preview {
+  position: relative;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.bar-preview span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.bar-preview.is-life span {
+  background: linear-gradient(90deg, #7d121b, #cc474f);
+}
+
+.bar-preview.is-integrity span {
+  background: linear-gradient(90deg, #7e6320, #d9b45c);
+}
+
+.hidden {
+  display: none !important;
+}
+
+@keyframes orbitPulse {
+  from {
+    transform: scale(0.985);
+    opacity: 0.54;
+  }
+
+  to {
+    transform: scale(1.02);
+    opacity: 0.84;
+  }
+}

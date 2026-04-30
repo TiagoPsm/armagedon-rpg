@@ -1,26 +1,28 @@
 # Migracao para Cloudflare
 
-Base inicial para migrar o portal Armagedon para:
+Este e o caminho principal atual da API publicada do Armagedon.
+
+## Regra Obrigatoria de Documentacao
+
+Sempre que uma mudanca tocar Worker, D1, rotas, schema, secrets, deploy Cloudflare, autenticacao, normalizacao de ficha ou transferencias, atualize este arquivo e `../DEV_STATUS.md`.
+
+Registro minimo esperado:
+
+- rota/schema afetado
+- comportamento alterado
+- validacao executada
+- pendencias que continuam abertas
+
+## Stack Atual
 
 - Cloudflare Pages
 - Cloudflare Workers
 - Cloudflare D1
 - Durable Objects no passo seguinte
 
-## Regra Obrigatoria de Documentacao
-
-Qualquer alteracao no Worker, D1, rotas, deploy ou comportamento publicado da API deve atualizar este arquivo no mesmo PR.
-
-Registro minimo esperado:
-
-- o que mudou
-- quais rotas ou tabelas foram afetadas
-- como validar a mudanca
-- quais riscos ou pendencias continuam abertos
-
 ## Estado atual desta migracao
 
-Esta base cobre o inicio da API em Workers com:
+Esta base cobre a API em Workers com:
 
 - `GET /api/health`
 - `POST /api/auth/login`
@@ -34,6 +36,7 @@ Esta base cobre o inicio da API em Workers com:
 - `DELETE /api/directory/monsters/:id`
 - `GET /api/characters/:key`
 - `PUT /api/characters/:key`
+- `POST /api/characters/:key/soul-essence`
 - `POST /api/transfers/items/player-to-player`
 - `POST /api/transfers/memories/player-to-player`
 - `POST /api/transfers/memories/monster-roll`
@@ -50,39 +53,14 @@ E tambem inclui:
 - modulo de auth com JWT em Workers
 - bootstrap do mestre por variavel de ambiente
 - normalizacao de ficha em `src/sheet.js`
-
-## Normalizacao de Ficha no Worker
-
-A rota `PUT /api/characters/:key` deve normalizar a ficha antes de persistir em D1.
-
-Regras atuais:
-
-- Vida atual nao pode passar da Vida maxima
-- Integridade maxima de jogador/NPC deriva de Alma e ignora `integMax` divergente enviado pelo cliente
-- Integridade atual nao pode passar da Integridade maxima
-- Monstros continuam sem Integridade, inventario, faccao ou memorias possuidas
-
-## Transferencias no Worker
-
-As rotas de transferencia jogador-para-jogador ficam em `cloudflare/src/characters.js`.
-
-Regras atuais:
-
-- origem e destino precisam existir
-- origem e destino precisam ser `player`
-- origem e destino nao podem ser a mesma ficha
-- o ator precisa ter acesso de escrita a ficha de origem
-- item so entra no destino se houver espaco na mochila
-- item, memoria e auditoria sao persistidos em lote via `env.DB.batch`
-
-O uso de `env.DB.batch` evita gravacao parcial entre origem, destino e auditoria. A documentacao atual do D1 informa que batches rodam como transacoes: se uma instrucao falha, a sequencia inteira e abortada/rollback.
+- progressao por Essencias da Alma em `src/soul-progression.js`
 
 ## O que ainda falta migrar
 
 - realtime com Durable Objects
-- persistencia oficial da cena da Mesa no D1
 - refinamento das permissoes e sincronizacao em tempo real
 - testes completos de todos os fluxos publicados
+- transacao/batch D1 para outras mutacoes multi-etapa sensiveis que ainda nao usam lote
 
 ## Como esta modelado
 
@@ -95,13 +73,24 @@ Para acelerar a migracao, a modelagem do D1 segue a mesma ideia do backend atual
 
 O campo `data_json` em `characters` guarda a ficha inteira em JSON.
 
+## Regras de Backend Que Devem Permanecer
+
+- Producao deve salvar no D1, nao depender de `localStorage`
+- Jogador so pode editar a propria ficha
+- Mestre controla jogadores, NPCs, monstros, regras e concessao de Essencia da Alma
+- Vida atual nao pode passar da Vida maxima
+- Integridade maxima de jogador/NPC deriva de Alma no Worker e ignora `integMax` divergente enviado pelo cliente
+- Integridade atual nao pode passar da Integridade maxima
+- Monstros nao devem ganhar inventario, faccao ou memorias possuidas
+- Troca de itens deve ser limitada a jogador para jogador
+- Transferencias jogador-para-jogador devem persistir origem, destino e auditoria via `DB.batch`
+
 ## Proximo passo recomendado
 
-Depois de criar a conta Cloudflare, o proximo passo e:
+Proximos passos tecnicos:
 
-1. criar o projeto Pages
-2. criar o banco D1
-3. aplicar `d1/schema.sql`
-4. configurar os secrets do Worker
-5. ligar o frontend publicado na nova API
-6. migrar realtime com Durable Objects
+1. desenhar schema D1 da Mesa oficial
+2. implementar Durable Object da sala da Mesa com WebSocket
+3. salvar estado da cena no D1 com debounce
+4. manter `d1/schema.sql` sincronizado com qualquer mudanca de banco
+5. documentar cada alteracao neste arquivo e em `../DEV_STATUS.md`

@@ -2,6 +2,10 @@
 
 Este arquivo registra regras funcionais e de gameplay que nao devem ser alteradas sem autorizacao explicita.
 
+## Regra Obrigatoria de Documentacao
+
+Sempre que uma mudanca alterar ou esclarecer regra de gameplay, permissao, persistencia ou validacao, este arquivo deve ser atualizado na mesma etapa. Tambem atualize `DEV_STATUS.md` com resumo, arquivos afetados e validacoes.
+
 ## Principio Geral
 
 - Melhorias visuais podem ser feitas
@@ -44,9 +48,14 @@ Tipos de ficha:
 - Integridade maxima e derivada de Alma
 - Regra atual:
   - a cada 3 pontos de Alma, +1 de Integridade maxima
-- Frontend, Worker e backend legado devem recalcular Integridade maxima antes de salvar, sem aceitar `integMax` divergente vindo do cliente
+- O frontend e o backend devem recalcular Integridade maxima antes de salvar, sem aceitar `integMax` divergente vindo do cliente
 - Vida atual nao pode passar da Vida maxima
 - Integridade atual nao pode passar da Integridade maxima
+- Jogador pode alterar sua Integridade atual na ficha
+- Jogador pode alterar sua Integridade atual na Mesa quando controla o proprio token
+- Vida atual de jogador, NPC e monstro nao pode passar da Vida maxima
+- Integridade atual nao pode passar da Integridade maxima
+- O limite deve existir no frontend e no backend, nao apenas na interface
 
 ## Atributos
 
@@ -93,6 +102,19 @@ Tipos ja previstos e auditados:
 - item de jogador para jogador
 - memoria de jogador para jogador
 - memoria obtida por drop de monstro
+
+Regras importantes:
+
+- troca de itens deve acontecer apenas entre jogadores
+- destino nao pode receber item se a mochila estiver cheia
+- operacoes multi-etapa devem evitar estado parcial sempre que o backend permitir transacao/batch
+- no Worker, transferencias jogador-para-jogador devem gravar origem, destino e auditoria no mesmo `DB.batch`
+
+## Sessao e Modo Offline
+
+- Sessao criada pelo servidor nao pode cair silenciosamente para salvamento local
+- Se a API publicada estiver indisponivel durante uma sessao backend, o fluxo deve bloquear/limpar a sessao em vez de salvar divergencia no navegador
+- Fallback local existe para desenvolvimento e apoio, nao como modo automatico de producao logada
 
 ## Rolagem de Dados
 
@@ -151,4 +173,6 @@ Para cada nova etapa:
 3. validacao de sintaxe e logica
 4. lista exata de arquivos alterados
 5. orientacao clara do que subir
-6. atualizacao destes arquivos de referencia
+6. atualizacao dos arquivos `.md` de referencia
+
+Se uma etapa mexer no site e nao atualizar documentacao, ela deve ser considerada incompleta.

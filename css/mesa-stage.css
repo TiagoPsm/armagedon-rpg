@@ -1,0 +1,288 @@
+.stage-head-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: end;
+}
+
+.mesa-stage-wrap {
+  position: relative;
+  min-height: 640px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 18% 16%, rgba(176, 47, 57, 0.1), transparent 26%),
+    radial-gradient(circle at 82% 18%, rgba(176, 143, 50, 0.06), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.014), rgba(255, 255, 255, 0.004)),
+    rgba(6, 7, 11, 0.92);
+  overflow: hidden;
+}
+
+.mesa-stage-grid,
+.mesa-stage-glow,
+.mesa-stage {
+  position: absolute;
+  inset: 0;
+}
+
+.mesa-stage-grid {
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 88px 88px;
+  mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1), transparent 92%);
+}
+
+.mesa-stage-glow {
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 54%, rgba(202, 74, 68, 0.08), transparent 28%),
+    radial-gradient(circle at 50% 54%, rgba(255, 248, 236, 0.03), transparent 14%);
+}
+
+.mesa-stage {
+  z-index: 2;
+  user-select: none;
+}
+
+.mesa-token {
+  position: absolute;
+  width: clamp(210px, 18vw, 238px);
+  padding: 0.8rem;
+  border-radius: 26px;
+  cursor: pointer;
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition),
+    border-color var(--transition),
+    opacity var(--transition);
+}
+
+.mesa-token:hover {
+  transform: translateY(-1px);
+}
+
+.mesa-token.is-selected {
+  border-color: rgba(255, 248, 236, 0.24);
+  box-shadow:
+    0 0 0 1px rgba(255, 248, 236, 0.1),
+    0 22px 52px rgba(0, 0, 0, 0.4),
+    0 0 32px rgba(176, 47, 57, 0.14);
+}
+
+.mesa-token.is-dragging {
+  cursor: grabbing;
+  box-shadow:
+    0 26px 52px rgba(0, 0, 0, 0.46),
+    0 0 28px rgba(176, 47, 57, 0.12);
+}
+
+.mesa-token.is-hidden-master {
+  opacity: 0.52;
+  border-style: dashed;
+}
+
+.mesa-token-top {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.mesa-token-avatar {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  overflow: hidden;
+  margin-top: 0.65rem;
+  margin-bottom: 0.7rem;
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.08), transparent 40%),
+    linear-gradient(135deg, rgba(55, 58, 84, 0.72), rgba(11, 12, 18, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mesa-token-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.mesa-token-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 3vw, 3.4rem);
+  color: rgba(255, 248, 236, 0.94);
+}
+
+.mesa-token-name {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 1.18rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.mesa-token-meta {
+  margin: 0.22rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.token-type-badge,
+.token-state-pill,
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0.36rem 0.72rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.token-type-badge[data-type="player"] {
+  color: #c8d3ff;
+  border-color: rgba(93, 114, 212, 0.24);
+  background: rgba(93, 114, 212, 0.12);
+}
+
+.token-type-badge[data-type="npc"] {
+  color: #f1deb0;
+  border-color: rgba(176, 143, 50, 0.24);
+  background: rgba(176, 143, 50, 0.12);
+}
+
+.token-type-badge[data-type="monster"] {
+  color: #ffc1c5;
+  border-color: rgba(176, 48, 57, 0.24);
+  background: rgba(176, 48, 57, 0.12);
+}
+
+.token-state-pill {
+  color: var(--text-secondary);
+  font-size: 0.66rem;
+}
+
+.token-bars {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.status-row {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.status-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.status-label {
+  color: var(--text-secondary);
+  font-size: 0.62rem;
+}
+
+.status-value {
+  color: var(--text-primary);
+  font-family: var(--font-title);
+  font-size: 0.96rem;
+}
+
+.status-value.is-concealed {
+  color: rgba(255, 248, 236, 0.66);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.status-bar {
+  position: relative;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.status-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.status-bar.is-concealed > span {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.18));
+  box-shadow: none;
+}
+
+.status-bar.is-life > span {
+  background: linear-gradient(90deg, #7d121b, #cc474f);
+}
+
+.status-bar.is-integrity > span {
+  background: linear-gradient(90deg, #7e6320, #d9b45c);
+}
+
+.mesa-empty-state,
+.token-inspector-empty {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  min-height: 100%;
+  text-align: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  padding: 2rem;
+}
+
+.mesa-empty-state {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.mesa-empty-state[hidden],
+.token-inspector-empty[hidden] {
+  display: none !important;
+}
+
+.mesa-empty-state strong,
+.token-inspector-empty strong {
+  font-family: var(--font-title);
+  font-size: 1.4rem;
+}
+
+.mesa-empty-state p,
+.token-inspector-empty p {
+  max-width: 20rem;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.46;
+}
+
+.stage-footer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stage-footer p {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.45;
+}
