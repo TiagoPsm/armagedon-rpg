@@ -91,9 +91,17 @@ O campo `data_json` em `characters` guarda a ficha inteira em JSON.
 - Vida atual nao pode passar da Vida maxima
 - Integridade maxima de jogador/NPC deriva de Alma no Worker e ignora `integMax` divergente enviado pelo cliente
 - Integridade atual nao pode passar da Integridade maxima
+- Habilidades devem preservar `id`, `name`, `type`, `trigger` e `desc` ao salvar no D1
 - Monstros nao devem ganhar inventario, faccao ou memorias possuidas
 - Troca de itens deve ser limitada a jogador para jogador
 - Transferencias jogador-para-jogador devem persistir origem, destino e auditoria via `DB.batch`
+
+## Registro de revisao estatica 2026-04-30
+
+- `cloudflare/src/sheet.js` foi alinhado ao frontend e ao backend legado para nao descartar tipo, gatilho e identificador das habilidades ao normalizar fichas.
+- Validacao executada: `node --check` em `cloudflare/src/sheet.js`, `cloudflare/src/index.js`, `server/src/utils/sheet.js` e `js/ficha-core.js`.
+- Validacao funcional local executada com Edge headless confirmou criacao, salvamento e recarregamento de habilidade com `type` e `trigger` preservados no fluxo da ficha.
+- Pendencia: quando necessario, validar o mesmo fluxo contra a API publicada apos deploy do Worker.
 
 ## Proximo passo recomendado
 

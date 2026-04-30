@@ -29,6 +29,12 @@ A pasta antiga `rpg-campaign` nao e um checkout Git e deve ser tratada apenas co
 
 Nota operacional: se a pasta antiga `rpg-campaign` nao puder ser apagada ou renomeada, primeiro feche chats, terminais, Explorer, VS Code ou qualquer app ainda aberto nela. O Codex pode manter uma pasta bloqueada quando uma conversa antiga ainda esta vinculada a esse workspace.
 
+Status em 2026-04-30:
+
+- a pasta oficial preservada e em uso e `rpg-campaign-git-sync`
+- a pasta antiga `rpg-campaign` foi excluida depois que o Windows liberou o bloqueio
+- a unica pasta de trabalho em `FichaApp` agora deve ser `rpg-campaign-git-sync`
+
 ## Leitura Rapida Para Reduzir Contexto
 
 Para entender o projeto sem reler historico de conversa:

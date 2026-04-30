@@ -83,6 +83,38 @@ Registro minimo esperado:
 
 ## Ultima Etapa Concluida
 
+- Retomada de revisao em 2026-04-30:
+  - a pasta antiga `C:\Users\tiago\Desktop\Proxima Campanha\FichaApp\rpg-campaign` foi excluida com sucesso
+  - a pasta oficial restante e `C:\Users\tiago\Desktop\Proxima Campanha\FichaApp\rpg-campaign-git-sync`
+  - `node --check` passou em 48 arquivos JavaScript de `js/`, `cloudflare/src/` e `server/src/`
+  - varredura inicial nao encontrou arquivos inexistentes referenciados por `src` ou `href` nos HTMLs
+  - varredura inicial nao encontrou IDs duplicados nos HTMLs
+  - correcoes aplicadas durante a revisao estatica:
+    - `cloudflare/src/sheet.js` agora preserva `id`, `type` e `trigger` das habilidades ao normalizar fichas no Worker
+    - `js/ficha-soul.js` agora calcula o estado anterior da Essencia da Alma antes de atualizar `soulCore` no modo local
+  - validacao adicional executada: `node --check` em `cloudflare/src/sheet.js`, `cloudflare/src/index.js`, `server/src/utils/sheet.js` e `js/ficha-core.js`
+  - validacao funcional automatizada executada com Microsoft Edge headless:
+    - normalizacao de habilidades do Worker preserva `id`, `type`, `trigger` e `desc`
+    - login local do mestre funciona quando `ARMAGEDON_CONFIG` aponta para API local indisponivel
+    - criacao de jogador local, abertura de ficha, criacao de habilidade, salvamento e recarregamento preservam dados
+    - rolagem de dados retorna total numerico
+    - concessao local de 100 Essencias rank 1 exibe progressao de Adormecido para Despertado no resumo
+  - achado remanescente:
+    - `server/src/routes/characters.js` nao possui a rota `POST /characters/:key/soul-essence`, embora o frontend chame essa rota quando a API esta ativa; isso afeta o backend Express/PostgreSQL legado, nao o Worker publicado
+  - pendencia aberta: continuar revisao funcional em navegador nas telas de ficha, mesa e regras
+
+- Controle de arquivos `.md` desta etapa, em 2026-04-30:
+  - `README.md`: registrado o status operacional da limpeza da pasta antiga, deixando claro que `rpg-campaign-git-sync` e a pasta oficial preservada
+  - `DEV_STATUS.md`: registrado este resumo de controle para rastrear a etapa
+  - validacao executada: listagem das pastas em `C:\Users\tiago\Desktop\Proxima Campanha\FichaApp`
+  - pendencia anterior resolvida: o diretorio vazio `rpg-campaign` foi apagado
+
+- Limpeza operacional da pasta antiga:
+  - tentativa de apagar `C:\Users\tiago\Desktop\Proxima Campanha\FichaApp\rpg-campaign`
+  - o conteudo interno foi removido
+  - em nova tentativa, o diretorio vazio foi excluido com sucesso
+  - `C:\Users\tiago\Desktop\Proxima Campanha\FichaApp\rpg-campaign-git-sync` foi mantida intacta como pasta oficial
+
 - Registro operacional desta conversa:
   - o projeto oficial no Codex passou a ser `rpg-campaign-git-sync`
   - a conversa antiga ainda estava vinculada a `rpg-campaign`, por isso o Windows bloqueou apagar ou renomear a pasta antiga

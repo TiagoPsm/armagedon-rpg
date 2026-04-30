@@ -228,14 +228,15 @@ async function applySoulAward() {
     }
 
     // No modo local, a mesma lógica pura é reaproveitada para manter a integração simples.
-    const result = absorbSoulEssencesState(soulCore, essenceRank, amount);
+    const beforeCore = normalizeSoulCoreState(soulCore, soulCore.rank);
+    const result = absorbSoulEssencesState(beforeCore, essenceRank, amount);
     soulCore = normalizeSoulCoreState(result.core, result.core.rank);
     renderProgressionField("player");
     closeSoulAwardModal();
     saveSheetSilently();
     await UI.alert(
       buildSoulAwardSummary({
-        before: normalizeSoulCoreState(soulCore, soulCore.rank),
+        before: beforeCore,
         after: result.core,
         totalExperience: result.totalExperience,
         rankUps: result.rankUps

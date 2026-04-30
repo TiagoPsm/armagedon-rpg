@@ -54,10 +54,24 @@ function normalizeInventorySlots(kind, value, used = 0) {
 }
 
 function normalizeHab(hab = {}) {
+  const legacyDesc = String(hab.desc || "");
   return {
+    id: String(hab.id || createHabId()),
     name: String(hab.name || ""),
-    desc: String(hab.desc || "")
+    type: normalizeHabType(hab.type),
+    trigger: String(hab.trigger || hab.gatilho || ""),
+    desc: legacyDesc
   };
+}
+
+function createHabId() {
+  return `hab-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function normalizeHabType(value) {
+  const normalized = String(value || "ativa").trim().toLowerCase();
+  if (normalized === "passiva") return "passiva";
+  return "ativa";
 }
 
 function normalizeItemType(value) {

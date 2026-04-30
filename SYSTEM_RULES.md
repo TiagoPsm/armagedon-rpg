@@ -51,6 +51,14 @@ Tipos de ficha:
 - NPC
 - monstro
 
+Habilidades registradas na ficha devem preservar:
+
+- identificador interno (`id`)
+- nome
+- tipo (`ativa` ou `passiva`)
+- gatilho
+- descricao
+
 ## Recursos
 
 - Vida continua existindo
