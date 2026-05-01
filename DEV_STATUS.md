@@ -83,6 +83,22 @@ Registro minimo esperado:
 
 ## Ultima Etapa Concluida
 
+- Automacao do vault Obsidian em 2026-05-01:
+  - `tools/update-obsidian-context.ps1`: criado script para gerar snapshot automatico do estado do repositorio
+  - `.githooks/pre-commit`: criado hook versionado para atualizar e adicionar o snapshot do Obsidian antes de cada commit
+  - `tools/install-obsidian-hooks.ps1`: criado instalador para configurar `core.hooksPath=.githooks` neste checkout
+  - `docs/obsidian/10-SNAPSHOT-AUTOMATICO.md`: passa a ser gerado com branch, ultimo commit, alteracoes locais, paginas principais, estrutura de raiz e maiores arquivos locais
+  - `docs/obsidian/00-INICIO.md`: atualizado com o comando de atualizacao e com a regra de leitura do snapshot
+  - `README.md`: documentado o fluxo de automacao para reduzir contexto e tokens em sessoes futuras
+  - regra operacional consolidada: toda etapa com alteracao de arquivo deve terminar com snapshot atualizado; commits usam hook automatico, etapas sem commit devem rodar o script manualmente
+  - validacoes executadas: `.\tools\update-obsidian-context.ps1`; parser PowerShell dos scripts; links wiki do vault; `git diff --check`
+
+- Vault Obsidian de contexto em 2026-05-01:
+  - criado `docs/obsidian/` como base Markdown para abrir no Obsidian
+  - adicionadas notas de entrada, contexto atual, arquitetura, decisoes, pendencias, deploy, ficha, mesa, regras e historico compacto
+  - `README.md`: atualizado para apontar o novo vault como leitura rapida recomendada
+  - objetivo: reduzir releitura completa do repositorio, melhorar obtencao de contexto e manter decisoes do projeto organizadas em arquivos versionados
+
 - Polimento visual da ficha em 2026-05-01:
   - `css/ficha-responsive.css`: adicionada camada final para espacamento de secoes, alinhamento de cabecalhos, foco visivel, cards de habilidades/poderes, inventario e modal de rolagem
   - `ficha.html`: atualizado cache bust de `css/ficha-responsive.css` para `2026-05-01-sheet-polish`

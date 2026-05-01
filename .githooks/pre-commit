@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+set -eu
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+if command -v pwsh >/dev/null 2>&1; then
+  shell_bin="pwsh"
+elif command -v powershell.exe >/dev/null 2>&1; then
+  shell_bin="powershell.exe"
+elif command -v powershell >/dev/null 2>&1; then
+  shell_bin="powershell"
+else
+  echo "PowerShell nao encontrado. Nao foi possivel atualizar o snapshot do Obsidian." >&2
+  exit 1
+fi
+
+"$shell_bin" -NoProfile -ExecutionPolicy Bypass -File "$repo_root/tools/update-obsidian-context.ps1"
+git add "docs/obsidian/10-SNAPSHOT-AUTOMATICO.md"

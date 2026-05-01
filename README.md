@@ -39,6 +39,9 @@ Status em 2026-04-30:
 
 Para entender o projeto sem reler historico de conversa:
 
+- `docs/obsidian/00-INICIO.md`: ponto de entrada recomendado para Obsidian e Codex
+- `docs/obsidian/01-CONTEXTO-ATUAL.md`: resumo compacto do estado atual
+- `docs/obsidian/03-DECISOES.md`: decisoes consolidadas para evitar retrabalho
 - `README.md`: visao geral e mapa de arquivos
 - `DEV_STATUS.md`: estado atual, ultimas mudancas, validacoes e proximas frentes
 - `SYSTEM_RULES.md`: regras funcionais que nao devem mudar sem autorizacao
@@ -46,6 +49,28 @@ Para entender o projeto sem reler historico de conversa:
 - `cloudflare/README.md`: API ativa em Workers + D1
 - `server/README.md`: backend Express/PostgreSQL legado e referencia local
 - `DEPLOY_FREE.md`: roteiro de publicacao gratuita e observacoes de deploy
+
+O diretorio `docs/obsidian/` pode ser aberto como vault no Obsidian. Ele deve guardar contexto curto, decisoes e pendencias para reduzir custo de tokens em sessoes futuras.
+
+### Automacao do contexto Obsidian
+
+Para atualizar o snapshot do projeto antes de uma sessao longa, rode na raiz do repositorio:
+
+```powershell
+.\tools\update-obsidian-context.ps1
+```
+
+O comando gera `docs/obsidian/10-SNAPSHOT-AUTOMATICO.md` com branch atual, ultimo commit, alteracoes locais, paginas principais, estrutura de raiz e maiores arquivos locais. Essa nota serve como contexto rapido para Obsidian e Codex, sem exigir varredura completa do repositorio a cada conversa.
+
+Para garantir que o Obsidian seja alimentado antes de cada commit neste checkout, os hooks versionados devem estar ativos:
+
+```powershell
+.\tools\install-obsidian-hooks.ps1
+```
+
+Esse instalador configura `core.hooksPath` para `.githooks`. A partir disso, `.githooks/pre-commit` roda `tools/update-obsidian-context.ps1` e adiciona `docs/obsidian/10-SNAPSHOT-AUTOMATICO.md` ao commit automaticamente.
+
+Regra operacional: toda etapa que alterar arquivos deve terminar com o snapshot do Obsidian atualizado. Se houver commit, o hook faz isso automaticamente. Se a etapa terminar sem commit, rode `.\tools\update-obsidian-context.ps1` antes de encerrar.
 
 ## Voce precisa criar um projeto novo?
 
