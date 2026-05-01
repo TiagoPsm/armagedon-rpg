@@ -63,6 +63,39 @@
     return root;
   }
 
+  function initCursorGlow() {
+    if (document.querySelector(".cursor-crimson-glow")) return;
+    if (typeof window.matchMedia === "function") {
+      if (!window.matchMedia("(pointer: fine)").matches) return;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    }
+
+    const glow = document.createElement("div");
+    glow.className = "cursor-crimson-glow";
+    glow.setAttribute("aria-hidden", "true");
+    document.body.appendChild(glow);
+
+    let frameId = 0;
+    let nextX = window.innerWidth / 2;
+    let nextY = window.innerHeight / 2;
+
+    const render = () => {
+      frameId = 0;
+      glow.style.transform = `translate3d(${nextX}px, ${nextY}px, 0) translate(-50%, -50%)`;
+    };
+
+    const handleMove = event => {
+      nextX = event.clientX;
+      nextY = event.clientY;
+      glow.classList.add("is-visible");
+      if (!frameId) frameId = window.requestAnimationFrame(render);
+    };
+
+    document.addEventListener("pointermove", handleMove, { passive: true });
+    document.addEventListener("pointerleave", () => glow.classList.remove("is-visible"));
+    window.addEventListener("blur", () => glow.classList.remove("is-visible"));
+  }
+
   function onKeyDown(event) {
     if (event.key === "Escape") {
       event.preventDefault();
@@ -201,8 +234,12 @@
   };
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", ensureModal, { once: true });
+    document.addEventListener("DOMContentLoaded", () => {
+      ensureModal();
+      initCursorGlow();
+    }, { once: true });
   } else {
     ensureModal();
+    initCursorGlow();
   }
 })();

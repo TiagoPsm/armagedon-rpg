@@ -181,3 +181,327 @@
     min-height: 152px;
   }
 }
+
+/* 2026-05 sheet polish: spacing, compact states and mobile resilience */
+#sheetScreen .page-main.page-main-sheet {
+  gap: 1.08rem;
+}
+
+#sheetScreen .sheet-block,
+#sheetScreen .sheet-section {
+  border-radius: 26px;
+}
+
+#sheetScreen .sheet-section {
+  padding: clamp(1.05rem, 1.6vw, 1.32rem);
+}
+
+#sheetScreen .sheet-section .block-title-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.82rem 1rem;
+  align-items: center;
+  min-height: 42px;
+  margin-bottom: 0.92rem;
+}
+
+#sheetScreen .sheet-section .block-title-bar > .section-label,
+#sheetScreen .sheet-section .block-title-bar > .block-hint {
+  min-width: 0;
+}
+
+#sheetScreen .sheet-section .block-title-bar > .block-hint {
+  justify-self: end;
+  max-width: 42ch;
+  text-align: right;
+  line-height: 1.4;
+}
+
+#sheetScreen .btn-inline,
+#sheetScreen .btn-remove,
+#sheetScreen .item-remove-compact,
+#sheetScreen .dice-option-btn,
+#sheetScreen .dice-mode-btn,
+#sheetScreen .dice-panel-toggle,
+#sheetScreen .item-summary-btn,
+#sheetScreen .item-slot-btn {
+  -webkit-tap-highlight-color: transparent;
+}
+
+#sheetScreen .btn-inline {
+  min-height: 38px;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+#sheetScreen .btn-inline:focus-visible,
+#sheetScreen .btn-remove:focus-visible,
+#sheetScreen .item-remove-compact:focus-visible,
+#sheetScreen .item-summary-btn:focus-visible,
+#sheetScreen .item-slot-btn:focus-visible,
+#sheetScreen .dice-option-btn:focus-visible,
+#sheetScreen .dice-mode-btn:focus-visible,
+#sheetScreen .dice-panel-toggle:focus-visible {
+  outline: 2px solid rgba(202, 74, 68, 0.72);
+  outline-offset: 2px;
+}
+
+#sheetScreen #habList,
+#sheetScreen #ownedMemoryList,
+#sheetScreen #memoryList {
+  gap: 0.78rem;
+}
+
+#sheetScreen .hab-card {
+  padding: 0.95rem;
+  border: 1px solid rgba(202, 74, 68, 0.13);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.005)),
+    rgba(6, 8, 13, 0.92);
+}
+
+#sheetScreen .hab-card-head {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+#sheetScreen .hab-toggle-copy {
+  gap: 0.28rem;
+}
+
+#sheetScreen .hab-card-title {
+  overflow-wrap: anywhere;
+}
+
+#sheetScreen .hab-card-actions {
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+#sheetScreen .hab-card-actions .btn-inline {
+  min-width: 0;
+  padding-inline: 0.72rem;
+}
+
+#sheetScreen .hab-toggle-btn {
+  min-width: 104px;
+}
+
+#sheetScreen .hab-card .btn-remove {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border-radius: 999px;
+}
+
+#sheetScreen .hab-card-grid-main {
+  grid-template-columns: minmax(0, 1.65fr) minmax(180px, 0.62fr);
+  gap: 0.8rem;
+}
+
+#sheetScreen .hab-card .hab-input,
+#sheetScreen .hab-card .hab-select,
+#sheetScreen .hab-card .hab-desc {
+  min-height: 44px;
+}
+
+#sheetScreen .hab-card .hab-desc {
+  min-height: 116px;
+  line-height: 1.5;
+}
+
+#sheetScreen .sheet-section-inventory .block-title-bar {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+#sheetScreen .inventory-head-actions {
+  min-width: 0;
+  justify-self: end;
+  justify-content: end;
+  gap: 0.58rem;
+}
+
+#sheetScreen .inventory-meta {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.64rem;
+  border-radius: 999px;
+  border: 1px solid rgba(202, 74, 68, 0.12);
+  background: rgba(255, 255, 255, 0.018);
+}
+
+#sheetScreen .inventory-master-controls {
+  min-width: 0;
+}
+
+#sheetScreen .inventory-slot-input {
+  width: 70px;
+}
+
+#sheetScreen .inventory-grid {
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 0.62rem;
+}
+
+#sheetScreen .item-card,
+#sheetScreen .item-slot-btn {
+  min-height: 104px;
+}
+
+#sheetScreen .item-card {
+  border-color: rgba(202, 74, 68, 0.11);
+}
+
+#sheetScreen .item-summary-btn-compact {
+  padding: 0.42rem 0.36rem 0.28rem;
+}
+
+#sheetScreen .item-title-compact {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+#sheetScreen .item-type-badge {
+  max-width: 100%;
+}
+
+#sheetScreen .dice-tray-dialog {
+  width: min(1040px, calc(100vw - 1.4rem));
+}
+
+#sheetScreen .dice-tray-quick-row,
+#sheetScreen .dice-tray-panel-row,
+#sheetScreen .dice-result-main,
+#sheetScreen .dice-result-meta-row {
+  min-width: 0;
+}
+
+#sheetScreen .dice-option-grid {
+  grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+}
+
+#sheetScreen .dice-option-btn,
+#sheetScreen .dice-mode-btn {
+  min-width: 0;
+}
+
+#sheetScreen .dice-panel-toggle {
+  min-width: 0;
+}
+
+#sheetScreen .dice-panel-toggle-copy {
+  min-width: 0;
+}
+
+#sheetScreen .dice-panel-toggle-copy small {
+  overflow-wrap: anywhere;
+}
+
+#sheetScreen .save-row-sheet {
+  gap: 0.8rem;
+  align-items: center;
+}
+
+#sheetScreen .save-row-sheet .btn {
+  min-height: 44px;
+}
+
+@media (max-width: 980px) {
+  #sheetScreen .sheet-section .block-title-bar,
+  #sheetScreen .sheet-section-inventory .block-title-bar {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  #sheetScreen .sheet-section .block-title-bar > .block-hint {
+    justify-self: start;
+    max-width: none;
+    text-align: left;
+  }
+
+  #sheetScreen .inventory-head-actions {
+    width: 100%;
+    justify-self: stretch;
+    justify-content: start;
+  }
+
+  #sheetScreen .hab-card-head {
+    grid-template-columns: 1fr;
+  }
+
+  #sheetScreen .hab-card-actions {
+    justify-content: flex-start;
+  }
+
+  #sheetScreen .hab-card-grid-main {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  #sheetScreen .page-main.page-main-sheet {
+    width: min(100%, calc(100vw - 0.72rem));
+    padding-bottom: 2.8rem;
+  }
+
+  #sheetScreen .sheet-block,
+  #sheetScreen .sheet-section {
+    border-radius: 22px;
+  }
+
+  #sheetScreen .sheet-section {
+    padding: 1rem 0.86rem;
+  }
+
+  #sheetScreen .hab-card {
+    padding: 0.82rem;
+    border-radius: 20px;
+  }
+
+  #sheetScreen .hab-card-actions,
+  #sheetScreen .inventory-head-actions,
+  #sheetScreen .inventory-master-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  #sheetScreen .hab-toggle-btn,
+  #sheetScreen .inventory-meta,
+  #sheetScreen #inventoryAddBtn {
+    grid-column: 1 / -1;
+  }
+
+  #sheetScreen .hab-card .btn-remove {
+    width: 100%;
+    min-width: 0;
+    border-radius: 14px;
+  }
+
+  #sheetScreen .inventory-slot-input {
+    width: 100%;
+  }
+
+  #sheetScreen .inventory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #sheetScreen .dice-option-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  #sheetScreen .dice-tray-dialog {
+    width: min(100%, calc(100vw - 0.72rem));
+  }
+
+  #sheetScreen .save-row-sheet {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  #sheetScreen .save-row-sheet .btn {
+    width: 100%;
+  }
+}

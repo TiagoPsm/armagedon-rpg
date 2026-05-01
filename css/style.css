@@ -1143,3 +1143,41 @@ select:hover {
   width: min(1280px, calc(100vw - 2rem));
   gap: 1.35rem;
 }
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .access-card,
+  .session-shell,
+  .site-header,
+  .sheet-block,
+  .panel-block {
+    background-color: rgba(7, 9, 13, 0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 2026-04 static dark background pass */
+body {
+  background:
+    radial-gradient(circle at 50% -12%, rgba(122, 16, 16, 0.14), transparent 34%),
+    linear-gradient(180deg, #010203 0%, #050608 52%, #010203 100%);
+}
+
+.bg-noise,
+.bg-embers {
+  display: none;
+}
+
+.bg-vignette {
+  background:
+    radial-gradient(circle at center, transparent 42%, rgba(0, 0, 0, 0.38) 74%, rgba(0, 0, 0, 0.9) 100%);
+}

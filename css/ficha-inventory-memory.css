@@ -2391,3 +2391,31 @@
 #sheetScreen #inventoryAddBtn {
   align-self: center;
 }
+
+/* 2026-04 static dark background pass */
+#sheetScreen {
+  background:
+    radial-gradient(circle at 50% -10%, rgba(122, 16, 16, 0.12), transparent 30%),
+    linear-gradient(180deg, #010203 0%, #050608 52%, #010203 100%);
+}
+
+#sheetScreen::before {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(122, 16, 16, 0.12), transparent 32%);
+  opacity: 0.7;
+  transition: none;
+}
+
+#sheetScreen::after {
+  background:
+    radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.38) 74%, rgba(0, 0, 0, 0.92) 100%);
+}
+
+#sheetScreen .page-main.page-main-sheet {
+  filter: none;
+}
+
+#sheetScreen .page-main.page-main-sheet::before,
+#sheetScreen .page-main.page-main-sheet::after {
+  background: none;
+}

@@ -473,6 +473,14 @@
   backdrop-filter: blur(8px);
 }
 
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .sheet-block,
+  .panel-block,
+  .soul-award-backdrop {
+    background-color: rgba(7, 9, 13, 0.96);
+  }
+}
+
 .soul-award-dialog {
   position: relative;
   width: min(860px, calc(100vw - 2rem));

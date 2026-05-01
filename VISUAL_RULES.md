@@ -92,6 +92,11 @@ Arquivos visuais atuais da ficha:
 - `css/ficha-dice-soul.css`
 - `css/ficha-responsive.css`
 
+Comportamento visual consolidado:
+
+- habilidades e poderes devem abrir minimizados por padrao sempre que uma ficha for carregada
+- o usuario pode expandir cards durante a leitura/edicao da ficha, mas uma nova abertura deve voltar ao estado minimizado
+
 ## Home / Login
 
 - Ja redesenhada para seguir a linguagem da ficha
@@ -106,6 +111,25 @@ Arquivos visuais atuais da ficha:
 - Deve ser sutil, bonito e funcional
 - Nao deve atrapalhar leitura nem esconder conteudo
 - Deve atuar como reforco atmosferico, nao como efeito principal
+- O brilho do cursor deve usar vermelho carmesim da paleta do site, ficar pequeno e centralizado no ponteiro
+- O efeito deve ser desligado em ponteiros grosseiros e em `prefers-reduced-motion: reduce`
+
+## Performance Visual
+
+- Imagens de marca carregadas no HTML devem declarar dimensoes estaveis para evitar salto de layout
+- Logos publicados devem ter fallback apenas para arquivos que tambem entram no pacote do site publicado
+- A primeira imagem visivel da home pode usar `fetchpriority="high"`; os demais logos devem preferir carregamento leve com `decoding="async"`
+- Evitar `prefetch` cruzado entre paginas quando isso antecipar download sem necessidade clara
+- Animacoes e transicoes devem respeitar `prefers-reduced-motion`
+- Superficies com `backdrop-filter` precisam manter contraste e legibilidade mesmo quando o navegador nao suportar blur
+- O fundo principal do site deve ser preto estatico, com brilho vermelho muito sutil e sem animacoes decorativas continuas
+- Camadas como orbitas, cinzas, brasas e glow dinamico de pagina devem ficar desligadas por padrao para melhorar fluidez
+
+## Ficha
+
+- Ajustes visuais da ficha devem preservar a estrutura existente e entrar como camada final de polimento quando houver overrides acumulados
+- Habilidades, poderes, inventario e rolagens devem manter controles claros, foco visivel, espacamento consistente e layout sem texto espremido em mobile
+- Botoes compactos da ficha devem manter area clicavel suficiente e nao depender apenas de hover para indicar estado
 
 ## Inventario
 

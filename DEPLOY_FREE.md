@@ -189,10 +189,16 @@ Antes de usar com outras pessoas:
 - `regras.html`
 - `css/`
 - `js/`
-- `assets/` e imagens usadas pelas paginas
+- imagens usadas pelas paginas
 - `.nojekyll`
 - `.github/workflows/pages.yml`, se o workflow mudou
 - `.md` alterados, para manter o contexto do projeto atualizado
+
+Observacao de performance:
+
+- nao publique a pasta `assets/` inteira quando ela contiver arquivos grandes que nao estao em uso nas paginas
+- o workflow do GitHub Pages deve copiar somente os assets realmente usados pelo HTML/CSS publicado
+- se um asset dentro de `assets/` passar a ser usado no futuro, adicione a copia dele de forma explicita no workflow em vez de restaurar uma copia ampla da pasta inteira
 
 ## Observacao Sobre Realtime
 

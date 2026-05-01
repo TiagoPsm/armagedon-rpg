@@ -940,6 +940,19 @@
   margin-top: 0.35rem;
 }
 
+/* 2026-04 static dark background pass */
+.bg-blackfire,
+.bg-cinders {
+  display: none;
+  animation: none;
+}
+
+.bg-cinders::before,
+.bg-cinders::after {
+  display: none;
+  animation: none;
+}
+
 .player-btn {
   width: 100%;
   min-height: 48px;

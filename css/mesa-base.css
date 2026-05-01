@@ -605,3 +605,55 @@ button {
     0 0 0 3px rgba(176, 47, 57, 0.14),
     0 12px 28px rgba(0, 0, 0, 0.22);
 }
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .site-header,
+  .panel-block,
+  .meta-card,
+  .scene-status-card,
+  .mesa-token,
+  .roster-entry,
+  .token-inspector-card,
+  .token-inspector-stats {
+    background-color: rgba(7, 8, 12, 0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 2026-04 static dark background pass */
+body {
+  background:
+    radial-gradient(circle at 50% -10%, rgba(122, 16, 16, 0.16), transparent 32%),
+    linear-gradient(180deg, #010203 0%, #050608 52%, #010203 100%);
+}
+
+body::before {
+  display: none;
+}
+
+body::after {
+  background:
+    radial-gradient(circle at center, transparent 38%, rgba(0, 0, 0, 0.42) 72%, rgba(0, 0, 0, 0.92) 100%);
+}
+
+.bg-noise,
+.bg-scar,
+.bg-orbit {
+  display: none;
+  animation: none;
+}
+
+.bg-vignette {
+  background:
+    radial-gradient(circle at center, transparent 36%, rgba(0, 0, 0, 0.44) 72%, rgba(0, 0, 0, 0.94) 100%);
+}

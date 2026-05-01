@@ -2,6 +2,32 @@ body.modal-open {
   overflow: hidden;
 }
 
+.cursor-crimson-glow {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 190;
+  width: 76px;
+  height: 76px;
+  border-radius: 999px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(-50%, -50%, 0);
+  background:
+    radial-gradient(circle, rgba(255, 116, 96, 0.32) 0 4%, rgba(202, 74, 68, 0.2) 24%, rgba(124, 18, 24, 0.09) 56%, transparent 82%);
+  filter: blur(2.5px);
+  box-shadow:
+    0 0 30px rgba(202, 74, 68, 0.14),
+    0 0 58px rgba(124, 18, 24, 0.08);
+  mix-blend-mode: screen;
+  transition: opacity 140ms ease;
+  will-change: transform, opacity;
+}
+
+.cursor-crimson-glow.is-visible {
+  opacity: 0.58;
+}
+
 .ui-modal-root {
   position: fixed;
   inset: 0;
@@ -218,6 +244,12 @@ body.modal-open {
   line-height: 1;
 }
 
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .cursor-crimson-glow {
+    display: none;
+  }
+}
+
 @media (max-width: 640px) {
   .ui-modal-panel {
     padding: 1.2rem;
@@ -231,5 +263,15 @@ body.modal-open {
 
   .ui-modal-actions .btn {
     width: 100%;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .ui-modal-backdrop {
+    background: rgba(0, 0, 0, 0.82);
+  }
+
+  .ui-modal-panel {
+    background-color: rgba(8, 9, 12, 0.98);
   }
 }

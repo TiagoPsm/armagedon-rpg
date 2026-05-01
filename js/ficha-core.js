@@ -716,7 +716,7 @@ function buildHabSummaryMeta(hab) {
 
 function syncHabCardStates() {
   habCardStates = habs.reduce((nextState, hab) => {
-    nextState[hab.id] = habCardStates[hab.id] || { collapsed: false };
+    nextState[hab.id] = habCardStates[hab.id] || { collapsed: true };
     return nextState;
   }, {});
 }
@@ -730,26 +730,7 @@ function readHabCardStateStore() {
 }
 
 function loadHabCardStatesForCurrentSheet() {
-  if (!currentSheetTarget?.key) {
-    habCardStates = {};
-    return;
-  }
-
-  const store = readHabCardStateStore();
-  const rawStates = store[currentSheetTarget.key];
-  if (!rawStates || typeof rawStates !== "object") {
-    habCardStates = {};
-    return;
-  }
-
-  habCardStates = Object.fromEntries(
-    Object.entries(rawStates).map(([id, state]) => [
-      id,
-      {
-        collapsed: Boolean(state?.collapsed)
-      }
-    ])
-  );
+  habCardStates = {};
 }
 
 function persistHabCardStatesForCurrentSheet() {

@@ -569,6 +569,43 @@ body.rules-page::after {
   pointer-events: none;
 }
 
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .rules-hero,
+  .rules-block,
+  .rules-page .rules-hero,
+  .rules-page .rules-block {
+    background-color: rgba(8, 9, 12, 0.96);
+  }
+}
+
+/* 2026-04 static dark background pass */
+body.rules-page {
+  background:
+    radial-gradient(circle at 50% -10%, rgba(122, 16, 16, 0.14), transparent 32%),
+    linear-gradient(180deg, #010203 0%, #050608 52%, #010203 100%);
+}
+
+body.rules-page::before {
+  display: none;
+}
+
+body.rules-page::after {
+  background:
+    radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.42) 74%, rgba(0, 0, 0, 0.94) 100%);
+}
+
+.bg-blackfire,
+.bg-cinders {
+  display: none;
+  animation: none;
+}
+
+.bg-cinders::before,
+.bg-cinders::after {
+  display: none;
+  animation: none;
+}
+
 .rules-page .rules-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.92fr);
