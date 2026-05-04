@@ -39,8 +39,21 @@ let dragAnimationFrame = 0;
 let pendingDragPoint = null;
 const mesaSheetSaveTimers = new Map();
 const pendingMesaSheetPatches = new Map();
+let mesaInitStarted = false;
 
-document.addEventListener("DOMContentLoaded", initMesaPage);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bootMesaPage, { once: true });
+} else {
+  bootMesaPage();
+}
+
+function bootMesaPage() {
+  if (mesaInitStarted) return;
+  mesaInitStarted = true;
+  initMesaPage().catch(error => {
+    console.error("Falha ao iniciar a mesa virtual.", error);
+  });
+}
 
 async function initMesaPage() {
   bindEvents();

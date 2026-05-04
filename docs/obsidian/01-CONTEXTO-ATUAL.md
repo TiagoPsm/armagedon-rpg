@@ -45,6 +45,7 @@ Paginas principais:
 - GitHub Pages ja serve `mesa.html`, `js/mesa-core.js` e `js/mesa-stage.js` com cache bust `2026-05-01-mesa-scene-1`
 - Ajuste de 2026-05-04 na Mesa: `js/mesa-core.js` atualiza o diretorio oficial antes de montar o roster e semeia/salva tokens iniciais quando a cena remota vem vazia ou com referencias antigas.
 - Cena oficial `default` foi populada no D1 com 5 tokens iniciais apos o deploy da correcao de tokens.
+- Ajuste complementar de 2026-05-04: boot da Mesa ficou protegido contra `DOMContentLoaded` perdido para nao manter a tela em `Convidado`/`0 disponiveis`.
 
 ## Validacoes Recentes Confirmadas
 
