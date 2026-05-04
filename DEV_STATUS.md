@@ -83,6 +83,19 @@ Registro minimo esperado:
 
 ## Ultima Etapa Concluida
 
+- Persistencia oficial inicial da Mesa em 2026-05-01:
+  - `cloudflare/d1/schema.sql`: adicionada tabela `mesa_scenes` para guardar a cena oficial da Mesa em JSON no D1
+  - `cloudflare/src/mesa.js`: criado modulo de leitura, normalizacao e salvamento da cena
+  - `cloudflare/src/index.js`: adicionadas rotas `GET /api/mesa/scene` e `PUT /api/mesa/scene`
+  - `js/api.js`: adicionados metodos `getMesaScene()` e `saveMesaScene()`
+  - `js/mesa-core.js` e `js/mesa-stage.js`: Mesa passa a carregar cena oficial quando a API esta ativa e salvar alteracoes do mestre no servidor, mantendo `localStorage` como fallback
+  - `js/mesa-roster.js` e `mesa.html`: textos ajustados para indicar persistencia no servidor sem prometer realtime ainda
+  - permissao consolidada: jogadores podem ler a cena oficial; apenas mestre pode salvar posicao, ordem e visibilidade de tokens
+  - D1 remoto: schema aplicado em `armagedon` e tabela `mesa_scenes` confirmada
+  - Worker publicado: `armagedon-api`, version ID `44ddb8ef-776e-4bdc-841b-9dd171af1690`
+  - validacoes executadas: `node --check` em `js/` e `cloudflare/src/`; `git diff --check`; links wiki do Obsidian; `wrangler deploy --dry-run`; `wrangler d1 execute` remoto; `GET /api/health` com HTTP 200; `GET /api/mesa/scene` sem sessao com HTTP 401
+  - pendencia: publicar frontend no GitHub Pages via push na `main` e validar a Mesa logada no site oficial
+
 - Automacao do vault Obsidian em 2026-05-01:
   - `tools/update-obsidian-context.ps1`: criado script para gerar snapshot automatico do estado do repositorio
   - `.githooks/pre-commit`: criado hook versionado para atualizar e adicionar o snapshot do Obsidian antes de cada commit

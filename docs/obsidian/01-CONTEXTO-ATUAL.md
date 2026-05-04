@@ -40,6 +40,8 @@ Paginas principais:
 - ficha recebeu polimento visual em `css/ficha-responsive.css`
 - GitHub Pages passou a usar `build_type: workflow`
 - workflow publica artifact leve, sem `assets/` inteiro e sem MP4
+- Mesa recebeu base de persistencia oficial da cena no D1, com `GET /api/mesa/scene` e `PUT /api/mesa/scene`
+- D1 remoto ja possui `mesa_scenes`; Worker `armagedon-api` foi publicado com version ID `44ddb8ef-776e-4bdc-841b-9dd171af1690`
 
 ## Validacoes Recentes Confirmadas
 
@@ -67,3 +69,8 @@ Toda etapa importante deve atualizar os `.md` relacionados, especialmente:
 - `VISUAL_RULES.md`
 - `DEPLOY_FREE.md`
 - notas em `docs/obsidian/` quando mudarem contexto, decisao ou pendencia
+
+## Pendencia Imediata Da Mesa
+
+- publicar frontend no GitHub Pages via push na `main`
+- validar persistencia da cena logado como mestre no site publicado

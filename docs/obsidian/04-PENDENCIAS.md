@@ -6,6 +6,7 @@
 - Validar periodicamente se GitHub Pages continua em `build_type: workflow`.
 - Manter `docs/obsidian/` atualizado apos decisoes importantes.
 - Revisar em navegador real apos mudancas visuais grandes, especialmente mobile.
+- Publicar frontend no GitHub Pages e validar a Mesa logada apos deploy da persistencia oficial.
 
 ## Riscos Tecnicos
 
@@ -20,6 +21,7 @@
 - Criar uma nota de "contratos de API" do Worker.
 - Adicionar checklist de QA por pagina.
 - Integrar Obsidian via plugin/API local ou MCP se isso trouxer ganho real.
+- Implementar realtime da Mesa com Durable Objects/WebSocket depois da persistencia D1 estar validada.
 
 ## Nao Fazer Sem Confirmar
 

@@ -27,6 +27,7 @@ import {
   transferItemBetweenPlayers,
   transferMemoryBetweenPlayers
 } from "./characters.js";
+import { getMesaScene, saveMesaScene } from "./mesa.js";
 
 function withCors(response, origin) {
   const headers = new Headers(response.headers);
@@ -300,6 +301,17 @@ export default {
           json(await awardSoulEssenceToPlayer(env, session, key, body.essenceRank, body.amount)),
           origin
         );
+      }
+
+      if (path === "/api/mesa/scene" && request.method === "GET") {
+        await requireAuth(request, env);
+        return withCors(json(await getMesaScene(env)), origin);
+      }
+
+      if (path === "/api/mesa/scene" && request.method === "PUT") {
+        const session = await requireAuth(request, env);
+        const body = await readJson(request);
+        return withCors(json(await saveMesaScene(env, session, body)), origin);
       }
 
       if (path === "/api/transfers/items/player-to-player" && request.method === "POST") {

@@ -167,6 +167,7 @@ Manter a ordem de carregamento nos HTMLs e preservar funcoes globais usadas por 
 - base para troca de itens e memorias no servidor
 - troca de itens entre jogadores ja adicionada no portal atual, com validacao de mochila cheia
 - API Cloudflare em `cloudflare/` para o caminho publicado atual
+- Mesa com base inicial de cena oficial no D1 (`GET /api/mesa/scene` e `PUT /api/mesa/scene`), mantendo realtime para etapa posterior
 
 ## Como prosseguir com banco de dados
 

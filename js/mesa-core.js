@@ -28,10 +28,13 @@ const state = {
   previewPlayerView: false,
   search: "",
   drag: null,
-  fullscreenMode: "off"
+  fullscreenMode: "off",
+  scenePersistence: "local"
 };
 let mesaPersistTimer = null;
 let pendingPersistPayload = null;
+let mesaRemotePersistInFlight = false;
+let pendingRemotePersistPayload = null;
 let dragAnimationFrame = 0;
 let pendingDragPoint = null;
 const mesaSheetSaveTimers = new Map();
@@ -55,7 +58,7 @@ async function initMesaPage() {
   state.role = resolveInitialRole(session);
   state.roster = buildRoster();
 
-  hydrateState();
+  await hydrateState();
   renderAll();
 }
 
@@ -379,8 +382,29 @@ function buildFallbackRoster(sheets = {}) {
 // A Mesa usa a ficha como fonte de verdade para identidade e status.
 // O estado salvo aqui e apenas a camada visual do palco:
 // posicao, ordem, visibilidade e regra de exposicao dos status.
-function hydrateState() {
-  const saved = readJsonStorage(MESA_STORAGE_KEY, {});
+async function hydrateState() {
+  const saved = await loadMesaSceneSnapshot();
+  applyMesaSceneSnapshot(saved);
+}
+
+async function loadMesaSceneSnapshot() {
+  if (window.AUTH?.isBackendEnabled?.() && window.APP?.getMesaScene) {
+    try {
+      const remoteScene = await window.APP.getMesaScene();
+      const remoteData = remoteScene?.data && typeof remoteScene.data === "object" ? remoteScene.data : {};
+      localStorage.setItem(MESA_STORAGE_KEY, JSON.stringify(remoteData));
+      state.scenePersistence = "remote";
+      return remoteData;
+    } catch (error) {
+      console.warn("Falha ao carregar cena oficial da mesa.", error);
+    }
+  }
+
+  state.scenePersistence = "local";
+  return readJsonStorage(MESA_STORAGE_KEY, {});
+}
+
+function applyMesaSceneSnapshot(saved) {
   const rosterMap = new Map(state.roster.map(entry => [entry.characterKey, entry]));
   const savedTokens = Array.isArray(saved?.tokens) ? saved.tokens : [];
   const mergedTokens = savedTokens

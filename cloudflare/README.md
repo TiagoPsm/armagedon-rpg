@@ -47,6 +47,8 @@ Esta base cobre a API em Workers com:
 - `GET /api/characters/:key`
 - `PUT /api/characters/:key`
 - `POST /api/characters/:key/soul-essence`
+- `GET /api/mesa/scene`
+- `PUT /api/mesa/scene`
 - `POST /api/transfers/items/player-to-player`
 - `POST /api/transfers/memories/player-to-player`
 - `POST /api/transfers/memories/monster-roll`
@@ -79,15 +81,18 @@ Para acelerar a migracao, a modelagem do D1 segue a mesma ideia do backend atual
 - `users`
 - `characters`
 - `rules_posts`
+- `mesa_scenes`
 - `transfer_audit`
 
 O campo `data_json` em `characters` guarda a ficha inteira em JSON.
+O campo `data_json` em `mesa_scenes` guarda a cena visual da Mesa: tokens ativos, posicao, ordem, visibilidade e exposicao de status.
 
 ## Regras de Backend Que Devem Permanecer
 
 - Producao deve salvar no D1, nao depender de `localStorage`
 - Jogador so pode editar a propria ficha
 - Mestre controla jogadores, NPCs, monstros, regras e concessao de Essencia da Alma
+- Jogadores podem ler a cena da Mesa, mas apenas o mestre pode salvar posicao, ordem e visibilidade dos tokens
 - Vida atual nao pode passar da Vida maxima
 - Integridade maxima de jogador/NPC deriva de Alma no Worker e ignora `integMax` divergente enviado pelo cliente
 - Integridade atual nao pode passar da Integridade maxima
@@ -107,8 +112,17 @@ O campo `data_json` em `characters` guarda a ficha inteira em JSON.
 
 Proximos passos tecnicos:
 
-1. desenhar schema D1 da Mesa oficial
-2. implementar Durable Object da sala da Mesa com WebSocket
-3. salvar estado da cena no D1 com debounce
+1. publicar frontend no GitHub Pages com cache bust `2026-05-01-mesa-scene-1`
+2. validar mestre salvando cena e jogador carregando a cena persistida
+3. implementar Durable Object da sala da Mesa com WebSocket
 4. manter `d1/schema.sql` sincronizado com qualquer mudanca de banco
 5. documentar cada alteracao neste arquivo e em `../DEV_STATUS.md`
+
+## Registro de deploy 2026-05-04
+
+- `wrangler d1 execute armagedon --remote --file d1/schema.sql`: aplicado com sucesso no D1 remoto.
+- Tabela confirmada: `mesa_scenes`.
+- `wrangler deploy`: Worker `armagedon-api` publicado com version ID `44ddb8ef-776e-4bdc-841b-9dd171af1690`.
+- Validacao publica:
+  - `GET /api/health`: HTTP 200
+  - `GET /api/mesa/scene` sem sessao: HTTP 401, confirmando rota ativa e protegida

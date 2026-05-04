@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-01 16:39:09 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-04 17:15:24 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,23 +13,28 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `7436c72 2026-05-01 Adiciona automacao do Obsidian`
+- Ultimo commit: `4f5298f 2026-05-01 Adiciona automacao do Obsidian`
 
 ### Alteracoes Locais
 
 ```text
-M  .githooks/pre-commit
+M  DEV_STATUS.md
+M  README.md
+M  SYSTEM_RULES.md
+M  cloudflare/README.md
+M  cloudflare/d1/schema.sql
+M  cloudflare/src/index.js
+A  cloudflare/src/mesa.js
 M  docs/obsidian/01-CONTEXTO-ATUAL.md
-M  docs/obsidian/02-ARQUITETURA.md
-M  docs/obsidian/03-DECISOES.md
 M  docs/obsidian/04-PENDENCIAS.md
 M  docs/obsidian/05-DEPLOY.md
-M  docs/obsidian/06-FICHA.md
 M  docs/obsidian/07-MESA.md
-M  docs/obsidian/08-REGRAS.md
-M  docs/obsidian/09-HISTORICO-DE-SESSOES.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  tools/update-obsidian-context.ps1
+M  js/api.js
+M  js/mesa-core.js
+M  js/mesa-roster.js
+M  js/mesa-stage.js
+M  mesa.html
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -41,18 +46,23 @@ M  tools/update-obsidian-context.ps1
 ### Arquivos Em Stage
 
 ```text
-.githooks/pre-commit
+DEV_STATUS.md
+README.md
+SYSTEM_RULES.md
+cloudflare/README.md
+cloudflare/d1/schema.sql
+cloudflare/src/index.js
+cloudflare/src/mesa.js
 docs/obsidian/01-CONTEXTO-ATUAL.md
-docs/obsidian/02-ARQUITETURA.md
-docs/obsidian/03-DECISOES.md
 docs/obsidian/04-PENDENCIAS.md
 docs/obsidian/05-DEPLOY.md
-docs/obsidian/06-FICHA.md
 docs/obsidian/07-MESA.md
-docs/obsidian/08-REGRAS.md
-docs/obsidian/09-HISTORICO-DE-SESSOES.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-tools/update-obsidian-context.ps1
+js/api.js
+js/mesa-core.js
+js/mesa-roster.js
+js/mesa-stage.js
+mesa.html
 ```
 
 ## Paginas Principais
@@ -123,8 +133,8 @@ tools/update-obsidian-context.ps1
 Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
-   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
    13,08 MB  assets\sheet-fire-background.mp4
+   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
     0,99 MB  assets\logo-rpg-armagedon.png
     0,99 MB  logo-rpg-armagedon.png
     0,19 MB  Logo app.jpg

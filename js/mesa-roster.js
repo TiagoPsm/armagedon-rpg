@@ -19,9 +19,15 @@ function renderSummary() {
   }
 
   if (sceneStateCopy) {
-    sceneStateCopy.textContent = isMaster()
-      ? "Arraste tokens e ajuste visibilidade. A posicao da cena ainda e local ate o realtime."
-      : "A cena respeita a visibilidade e libera so o seu proprio estado.";
+    if (state.scenePersistence === "remote") {
+      sceneStateCopy.textContent = isMaster()
+        ? "Cena salva no servidor. O realtime entra depois para atualizar jogadores sem recarregar."
+        : "Cena carregada do servidor; atualize a pagina para receber mudancas ate o realtime.";
+    } else {
+      sceneStateCopy.textContent = isMaster()
+        ? "Arraste tokens e ajuste visibilidade. Sem API, a cena fica neste navegador."
+        : "A cena respeita a visibilidade e libera so o seu proprio estado.";
+    }
   }
 }
 

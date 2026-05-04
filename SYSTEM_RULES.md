@@ -134,6 +134,14 @@ Regras importantes:
 - Se a API publicada estiver indisponivel durante uma sessao backend, o fluxo deve bloquear/limpar a sessao em vez de salvar divergencia no navegador
 - Fallback local existe para desenvolvimento e apoio, nao como modo automatico de producao logada
 
+## Mesa Digital
+
+- A cena oficial da Mesa deve ser salva no Cloudflare D1 quando a API estiver ativa
+- `localStorage` da Mesa e apenas fallback/cache local, nao fonte principal da cena publicada
+- Jogadores podem ler a cena oficial liberada pelo mestre
+- Apenas o mestre pode salvar posicao, ordem, visibilidade e exposicao de status dos tokens da cena
+- Realtime/WebSocket e etapa posterior; ate la, jogadores podem precisar recarregar a pagina para ver a cena atualizada
+
 ## Rolagem de Dados
 
 A ficha possui rolagem propria.

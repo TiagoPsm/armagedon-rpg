@@ -308,6 +308,16 @@
         body: payload
       });
     },
+    async getMesaScene() {
+      return request("/mesa/scene");
+    },
+    async saveMesaScene(data, options = {}) {
+      return request("/mesa/scene", {
+        method: "PUT",
+        body: { data },
+        keepalive: options.keepalive === true
+      });
+    },
     async listRules() {
       return request("/rules");
     },

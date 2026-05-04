@@ -46,6 +46,8 @@ Para varredura completa, usar:
 - abrir as quatro paginas localmente
 - validar console sem erros
 
+Quando houver mudanca em `cloudflare/d1/schema.sql`, aplicar o schema no D1 remoto antes de depender da rota publicada. Para a Mesa oficial, a tabela necessaria e `mesa_scenes`.
+
 ## Validacao Apos Deploy
 
 Confirmar:
@@ -61,3 +63,17 @@ Confirmar:
 - Commit: `0c59efd13910681472aec0153ee43d1ee04c3483`
 - Mensagem: `Otimiza visual e publicacao do site`
 - Resultado: sucesso
+
+## Proximo Deploy Pendente
+
+- Publicar GitHub Pages com cache bust `2026-05-01-mesa-scene-1` em `mesa.html`
+
+## Deploy Cloudflare 2026-05-04
+
+- Schema D1 aplicado no banco remoto `armagedon`.
+- Tabela `mesa_scenes` confirmada.
+- Worker `armagedon-api` publicado.
+- Version ID: `44ddb8ef-776e-4bdc-841b-9dd171af1690`
+- Validacao:
+  - `GET /api/health`: HTTP 200
+  - `GET /api/mesa/scene` sem sessao: HTTP 401

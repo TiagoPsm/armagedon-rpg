@@ -257,8 +257,7 @@ function resetPrototype() {
 }
 
 function persistState(options = {}) {
-  // Persistencia local da Mesa:
-  // este payload guarda apenas o estado visual da cena.
+  // Este payload guarda apenas o estado visual da cena.
   // Identidade, retrato e status continuam vindo da ficha.
   pendingPersistPayload = {
     previewPlayerView: Boolean(state.previewPlayerView),
@@ -291,8 +290,43 @@ function flushPersistState() {
     mesaPersistTimer = null;
   }
   if (!pendingPersistPayload) return;
-  localStorage.setItem(MESA_STORAGE_KEY, JSON.stringify(pendingPersistPayload));
+  const payload = pendingPersistPayload;
+  localStorage.setItem(MESA_STORAGE_KEY, JSON.stringify(payload));
   pendingPersistPayload = null;
+  queueRemoteMesaPersist(payload);
+}
+
+function canPersistRemoteMesaScene() {
+  return Boolean(isMaster() && window.AUTH?.isBackendEnabled?.() && window.APP?.saveMesaScene);
+}
+
+function queueRemoteMesaPersist(payload) {
+  if (!canPersistRemoteMesaScene()) return;
+  pendingRemotePersistPayload = payload;
+  if (mesaRemotePersistInFlight) return;
+  void runRemoteMesaPersist();
+}
+
+async function runRemoteMesaPersist() {
+  if (!pendingRemotePersistPayload || !canPersistRemoteMesaScene()) return;
+  mesaRemotePersistInFlight = true;
+
+  while (pendingRemotePersistPayload) {
+    const payload = pendingRemotePersistPayload;
+    pendingRemotePersistPayload = null;
+
+    try {
+      await window.APP.saveMesaScene(payload, {
+        keepalive: document.visibilityState === "hidden"
+      });
+      state.scenePersistence = "remote";
+    } catch (error) {
+      state.scenePersistence = "local";
+      console.warn("Falha ao salvar cena oficial da mesa.", error);
+    }
+  }
+
+  mesaRemotePersistInFlight = false;
 }
 
 // A Mesa atualiza Vida e Integridade escrevendo primeiro na ficha local.
