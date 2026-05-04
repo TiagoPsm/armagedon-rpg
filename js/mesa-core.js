@@ -56,6 +56,7 @@ async function initMesaPage() {
 
   state.session = session;
   state.role = resolveInitialRole(session);
+  await refreshMesaDirectoryBeforeRoster();
   state.roster = buildRoster();
 
   await hydrateState();
@@ -143,6 +144,16 @@ function resolveInitialRole(session) {
   return session?.role || "player";
 }
 
+async function refreshMesaDirectoryBeforeRoster() {
+  if (!window.AUTH?.isBackendEnabled?.() || !window.AUTH?.refreshDirectory) return;
+
+  try {
+    await window.AUTH.refreshDirectory();
+  } catch (error) {
+    console.warn("Falha ao atualizar diretorio da mesa antes do roster.", error);
+  }
+}
+
 function buildRoster() {
   const directory = window.AUTH?.getDirectoryCache?.() || { players: [], npcs: [], monsters: [] };
   const sheets = readMergedSheets();
@@ -207,22 +218,20 @@ function buildNpcs(directory, sheets) {
   const backendNpcs = Array.isArray(directory?.npcs) ? directory.npcs : [];
   const localNpcs = readJsonStorage(NPCS_KEY, []).map(normalizeNamedEntity);
   const npcs = backendNpcs.length ? backendNpcs.map(normalizeNamedEntity) : localNpcs;
-  const npcMap = new Map(npcs.map(npc => [String(npc.id), npc]));
+  const npcMap = new Map(npcs.map(npc => [resolveDirectoryCharacterKey(npc, NPC_PREFIX, "npc"), npc]));
 
   Object.keys(sheets || {}).forEach(rawKey => {
     const key = String(rawKey || "").trim();
     if (!key.startsWith(NPC_PREFIX)) return;
     const npcId = key.slice(NPC_PREFIX.length).trim();
-    if (!npcId || npcMap.has(npcId)) return;
-    npcMap.set(npcId, {
+    if (!npcId || npcMap.has(key)) return;
+    npcMap.set(key, {
       id: npcId,
       name: String(sheets?.[key]?.charName || npcId).trim() || npcId
     });
   });
 
-  return [...npcMap.values()].map(npc => {
-    const npcId = String(npc.id || slugify(npc.name || "npc"));
-    const key = `${NPC_PREFIX}${npcId}`;
+  return [...npcMap.entries()].map(([key, npc]) => {
     const sheet = normalizeSheetSnapshot(sheets[key], "npc");
     const name = String(sheet.charName || npc.name || "NPC").trim() || "NPC";
     return createRosterEntry({
@@ -245,22 +254,20 @@ function buildMonsters(directory, sheets) {
   const backendMonsters = Array.isArray(directory?.monsters) ? directory.monsters : [];
   const localMonsters = readJsonStorage(MONSTERS_KEY, []).map(normalizeNamedEntity);
   const monsters = backendMonsters.length ? backendMonsters.map(normalizeNamedEntity) : localMonsters;
-  const monsterMap = new Map(monsters.map(monster => [String(monster.id), monster]));
+  const monsterMap = new Map(monsters.map(monster => [resolveDirectoryCharacterKey(monster, MONSTER_PREFIX, "monster"), monster]));
 
   Object.keys(sheets || {}).forEach(rawKey => {
     const key = String(rawKey || "").trim();
     if (!key.startsWith(MONSTER_PREFIX)) return;
     const monsterId = key.slice(MONSTER_PREFIX.length).trim();
-    if (!monsterId || monsterMap.has(monsterId)) return;
-    monsterMap.set(monsterId, {
+    if (!monsterId || monsterMap.has(key)) return;
+    monsterMap.set(key, {
       id: monsterId,
       name: String(sheets?.[key]?.charName || monsterId).trim() || monsterId
     });
   });
 
-  return [...monsterMap.values()].map(monster => {
-    const monsterId = String(monster.id || slugify(monster.name || "monster"));
-    const key = `${MONSTER_PREFIX}${monsterId}`;
+  return [...monsterMap.entries()].map(([key, monster]) => {
     const sheet = normalizeSheetSnapshot(sheets[key], "monster");
     const name = String(sheet.charName || monster.name || "Monstro").trim() || "Monstro";
     return createRosterEntry({
@@ -282,8 +289,19 @@ function buildMonsters(directory, sheets) {
 function normalizeNamedEntity(entity) {
   return {
     id: String(entity?.id || slugify(entity?.name || "registro")),
+    key: String(entity?.key || "").trim(),
     name: String(entity?.name || "Registro").trim() || "Registro"
   };
+}
+
+function resolveDirectoryCharacterKey(entity, prefix, fallbackName) {
+  const rawKey = String(entity?.key || "").trim();
+  if (rawKey.startsWith(prefix)) return rawKey;
+
+  const rawId = String(entity?.id || "").trim();
+  if (rawId.startsWith(prefix)) return rawId;
+
+  return `${prefix}${rawId || slugify(entity?.name || fallbackName)}`;
 }
 
 function normalizeSheetSnapshot(raw, type) {
@@ -384,7 +402,17 @@ function buildFallbackRoster(sheets = {}) {
 // posicao, ordem, visibilidade e regra de exposicao dos status.
 async function hydrateState() {
   const saved = await loadMesaSceneSnapshot();
-  applyMesaSceneSnapshot(saved);
+  const snapshotResult = applyMesaSceneSnapshot(saved);
+
+  if (
+    snapshotResult.seeded
+    && state.scenePersistence === "remote"
+    && isMaster()
+    && state.tokens.length
+    && typeof persistState === "function"
+  ) {
+    persistState({ immediate: true });
+  }
 }
 
 async function loadMesaSceneSnapshot() {
@@ -411,9 +439,11 @@ function applyMesaSceneSnapshot(saved) {
     .map(token => mergeTokenWithRoster(token, rosterMap.get(String(token.characterKey || ""))))
     .filter(Boolean);
 
-  state.tokens = mergedTokens.length ? mergedTokens : seedInitialTokens();
+  const seeded = !mergedTokens.length;
+  state.tokens = seeded ? seedInitialTokens() : mergedTokens;
   state.previewPlayerView = isMaster() ? Boolean(saved?.previewPlayerView) : false;
   state.selectedTokenId = pickInitialSelectedToken(saved?.selectedTokenId);
+  return { seeded, savedTokenCount: savedTokens.length };
 }
 
 function seedInitialTokens() {

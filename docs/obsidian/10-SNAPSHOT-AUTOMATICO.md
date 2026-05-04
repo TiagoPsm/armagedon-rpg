@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-04 17:18:26 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-04 18:09:20 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `b80947d 2026-05-04 Adiciona persistencia oficial da mesa`
+- Ultimo commit: `b27b8ee 2026-05-04 Registra deploy da mesa oficial`
 
 ### Alteracoes Locais
 
@@ -21,9 +21,10 @@
 M  DEV_STATUS.md
 M  docs/obsidian/01-CONTEXTO-ATUAL.md
 M  docs/obsidian/04-PENDENCIAS.md
-M  docs/obsidian/05-DEPLOY.md
 M  docs/obsidian/07-MESA.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  js/mesa-core.js
+M  mesa.html
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -38,9 +39,10 @@ M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 DEV_STATUS.md
 docs/obsidian/01-CONTEXTO-ATUAL.md
 docs/obsidian/04-PENDENCIAS.md
-docs/obsidian/05-DEPLOY.md
 docs/obsidian/07-MESA.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+js/mesa-core.js
+mesa.html
 ```
 
 ## Paginas Principais
@@ -113,8 +115,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
 ```text
    13,08 MB  assets\sheet-fire-background.mp4
    13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
-    0,99 MB  assets\logo-rpg-armagedon.png
     0,99 MB  logo-rpg-armagedon.png
+    0,99 MB  assets\logo-rpg-armagedon.png
     0,19 MB  Logo app.jpg
     0,06 MB  css\ficha-inventory-memory.css
     0,05 MB  server\package-lock.json
