@@ -42,6 +42,7 @@ Paginas principais:
 - workflow publica artifact leve, sem `assets/` inteiro e sem MP4
 - Mesa recebeu base de persistencia oficial da cena no D1, com `GET /api/mesa/scene` e `PUT /api/mesa/scene`
 - D1 remoto ja possui `mesa_scenes`; Worker `armagedon-api` foi publicado com version ID `44ddb8ef-776e-4bdc-841b-9dd171af1690`
+- GitHub Pages ja serve `mesa.html`, `js/mesa-core.js` e `js/mesa-stage.js` com cache bust `2026-05-01-mesa-scene-1`
 
 ## Validacoes Recentes Confirmadas
 
@@ -72,5 +73,5 @@ Toda etapa importante deve atualizar os `.md` relacionados, especialmente:
 
 ## Pendencia Imediata Da Mesa
 
-- publicar frontend no GitHub Pages via push na `main`
 - validar persistencia da cena logado como mestre no site publicado
+- validar leitura da cena como jogador no site publicado

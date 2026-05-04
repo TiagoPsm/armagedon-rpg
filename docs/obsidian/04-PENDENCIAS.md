@@ -6,7 +6,7 @@
 - Validar periodicamente se GitHub Pages continua em `build_type: workflow`.
 - Manter `docs/obsidian/` atualizado apos decisoes importantes.
 - Revisar em navegador real apos mudancas visuais grandes, especialmente mobile.
-- Publicar frontend no GitHub Pages e validar a Mesa logada apos deploy da persistencia oficial.
+- Validar a Mesa logada apos deploy da persistencia oficial: mestre salva cena e jogador carrega cena publicada.
 
 ## Riscos Tecnicos
 

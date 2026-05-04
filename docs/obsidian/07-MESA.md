@@ -73,6 +73,6 @@ Worker/D1:
 
 ## Pendencia Imediata
 
-- Publicar frontend no GitHub Pages com os scripts da Mesa versionados como `2026-05-01-mesa-scene-1`.
 - Validar no site oficial com mestre logado: mover/adicionar/remover token, recarregar e confirmar persistencia.
+- Validar no site oficial com jogador logado: carregar cena e respeitar visibilidade/status liberados.
 - Realtime com Durable Objects/WebSocket continua fora desta etapa.

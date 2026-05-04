@@ -93,8 +93,9 @@ Registro minimo esperado:
   - permissao consolidada: jogadores podem ler a cena oficial; apenas mestre pode salvar posicao, ordem e visibilidade de tokens
   - D1 remoto: schema aplicado em `armagedon` e tabela `mesa_scenes` confirmada
   - Worker publicado: `armagedon-api`, version ID `44ddb8ef-776e-4bdc-841b-9dd171af1690`
-  - validacoes executadas: `node --check` em `js/` e `cloudflare/src/`; `git diff --check`; links wiki do Obsidian; `wrangler deploy --dry-run`; `wrangler d1 execute` remoto; `GET /api/health` com HTTP 200; `GET /api/mesa/scene` sem sessao com HTTP 401
-  - pendencia: publicar frontend no GitHub Pages via push na `main` e validar a Mesa logada no site oficial
+  - GitHub Pages publicado pela `main` com cache bust `2026-05-01-mesa-scene-1`
+  - validacoes executadas: `node --check` em `js/` e `cloudflare/src/`; `git diff --check`; links wiki do Obsidian; `wrangler deploy --dry-run`; `wrangler d1 execute` remoto; `GET /api/health` com HTTP 200; `GET /api/mesa/scene` sem sessao com HTTP 401; `mesa.html`, `js/mesa-core.js` e `js/mesa-stage.js` publicados com HTTP 200
+  - pendencia: validar em navegador logado como mestre e jogador a persistencia visual completa da cena no site oficial
 
 - Automacao do vault Obsidian em 2026-05-01:
   - `tools/update-obsidian-context.ps1`: criado script para gerar snapshot automatico do estado do repositorio

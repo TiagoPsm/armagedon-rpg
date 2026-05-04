@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-04 17:15:24 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-04 17:18:26 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,28 +13,17 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `4f5298f 2026-05-01 Adiciona automacao do Obsidian`
+- Ultimo commit: `b80947d 2026-05-04 Adiciona persistencia oficial da mesa`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
-M  README.md
-M  SYSTEM_RULES.md
-M  cloudflare/README.md
-M  cloudflare/d1/schema.sql
-M  cloudflare/src/index.js
-A  cloudflare/src/mesa.js
 M  docs/obsidian/01-CONTEXTO-ATUAL.md
 M  docs/obsidian/04-PENDENCIAS.md
 M  docs/obsidian/05-DEPLOY.md
 M  docs/obsidian/07-MESA.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/api.js
-M  js/mesa-core.js
-M  js/mesa-roster.js
-M  js/mesa-stage.js
-M  mesa.html
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -47,22 +36,11 @@ M  mesa.html
 
 ```text
 DEV_STATUS.md
-README.md
-SYSTEM_RULES.md
-cloudflare/README.md
-cloudflare/d1/schema.sql
-cloudflare/src/index.js
-cloudflare/src/mesa.js
 docs/obsidian/01-CONTEXTO-ATUAL.md
 docs/obsidian/04-PENDENCIAS.md
 docs/obsidian/05-DEPLOY.md
 docs/obsidian/07-MESA.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/api.js
-js/mesa-core.js
-js/mesa-roster.js
-js/mesa-stage.js
-mesa.html
 ```
 
 ## Paginas Principais

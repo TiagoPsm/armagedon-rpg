@@ -64,10 +64,6 @@ Confirmar:
 - Mensagem: `Otimiza visual e publicacao do site`
 - Resultado: sucesso
 
-## Proximo Deploy Pendente
-
-- Publicar GitHub Pages com cache bust `2026-05-01-mesa-scene-1` em `mesa.html`
-
 ## Deploy Cloudflare 2026-05-04
 
 - Schema D1 aplicado no banco remoto `armagedon`.
@@ -77,3 +73,15 @@ Confirmar:
 - Validacao:
   - `GET /api/health`: HTTP 200
   - `GET /api/mesa/scene` sem sessao: HTTP 401
+
+## Deploy GitHub Pages 2026-05-04
+
+- Push na `main` publicado pelo workflow `Deploy GitHub Pages`.
+- `mesa.html`: HTTP 200 com cache bust `2026-05-01-mesa-scene-1`.
+- `js/mesa-core.js`: HTTP 200 e contem `getMesaScene`.
+- `js/mesa-stage.js`: HTTP 200 e contem `saveMesaScene`.
+
+## Proximo Deploy Pendente
+
+- Nenhum deploy pendente para a base de persistencia da Mesa.
+- Proxima etapa de produto: validacao logada de mestre/jogador e depois realtime com Durable Objects.
