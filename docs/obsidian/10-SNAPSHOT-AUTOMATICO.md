@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-04 18:09:20 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-04 18:18:16 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,18 +13,15 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `b27b8ee 2026-05-04 Registra deploy da mesa oficial`
+- Ultimo commit: `934c97e 2026-05-04 Corrige tokens iniciais da mesa`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
 M  docs/obsidian/01-CONTEXTO-ATUAL.md
-M  docs/obsidian/04-PENDENCIAS.md
 M  docs/obsidian/07-MESA.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-core.js
-M  mesa.html
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -38,11 +35,8 @@ M  mesa.html
 ```text
 DEV_STATUS.md
 docs/obsidian/01-CONTEXTO-ATUAL.md
-docs/obsidian/04-PENDENCIAS.md
 docs/obsidian/07-MESA.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/mesa-core.js
-mesa.html
 ```
 
 ## Paginas Principais

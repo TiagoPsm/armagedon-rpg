@@ -56,6 +56,7 @@ Worker/D1:
 - A Mesa deve chamar `AUTH.refreshDirectory()` antes de montar o roster quando a API esta ativa.
 - NPCs e monstros vindos do Worker devem usar a `key` oficial do diretorio como `characterKey`.
 - Cena remota vazia ou com tokens que nao batem mais com o roster deve ser repovoada por `seedInitialTokens()`; se o usuario for mestre, esse estado inicial deve ser salvo no D1.
+- Em 2026-05-04, a cena `default` do D1 foi encontrada com `0` tokens e populada com 5 tokens iniciais depois do deploy da correcao.
 
 ## Visual
 

@@ -87,8 +87,9 @@ Registro minimo esperado:
   - problema identificado: a API oficial tinha diretorio populado, mas a cena `default` estava salva com `0` tokens; em navegadores com cache/diretorio local desatualizado, a Mesa podia abrir sem tokens de jogadores, NPCs ou monstros
   - `js/mesa-core.js`: Mesa agora atualiza o diretorio pela API antes de montar o roster, usa a `key` oficial de NPCs/monstros quando ela vem do Worker e repopula a cena vazia/stale a partir do roster oficial
   - `mesa.html`: cache bust de `js/mesa-core.js` atualizado para `2026-05-04-mesa-tokens-1`
+  - D1 oficial: a cena `default` estava com `0` tokens e foi populada com 5 tokens iniciais do diretorio atual apos o deploy da correcao
   - comportamento esperado: ao abrir como mestre, se a cena remota estiver vazia mas houver personagens cadastrados, a Mesa semeia tokens iniciais e salva a cena oficial no D1; jogadores passam a carregar a cena publicada
-  - validacao em andamento nesta etapa: sintaxe JS, referencias HTML/CSS, API oficial, snapshot Obsidian, publicacao e leitura da pagina oficial
+  - validacoes executadas: `node --check` em `js/` e `cloudflare/src/`; teste logico de roster/tokens; teste de hidratacao com salvamento remoto; varredura HTML/CSS de referencias e IDs duplicados; links wiki do Obsidian; servidor local com HTTP 200 nas paginas principais; GitHub Pages com sucesso; arquivos publicados com HTTP 200; API oficial confirmada com cena contendo tokens
 
 - Persistencia oficial inicial da Mesa em 2026-05-01:
   - `cloudflare/d1/schema.sql`: adicionada tabela `mesa_scenes` para guardar a cena oficial da Mesa em JSON no D1
