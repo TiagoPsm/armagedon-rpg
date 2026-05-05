@@ -89,5 +89,5 @@ Confirmar:
 
 ## Proximo Deploy Pendente
 
-- GitHub Pages precisa publicar o frontend com cache bust `2026-05-04-mesa-realtime-1`.
+- GitHub Pages precisa publicar o frontend com `auth.js?v=2026-05-05-mesa-auth-export-1`.
 - Apos Pages concluir, validar no navegador real com mestre e jogador simultaneos.

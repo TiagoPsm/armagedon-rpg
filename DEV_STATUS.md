@@ -85,6 +85,12 @@ Registro minimo esperado:
 
 ## Ultima Etapa Concluida
 
+- Correcao de export global da autenticacao em 2026-05-05:
+  - problema identificado apos deploy: `auth.js` declarava `const AUTH`, mas nao expunha `window.AUTH`; a Mesa consulta `window.AUTH`, entao podia ficar parada no HTML inicial (`Convidado`, `Jogador`, `0`) mesmo com API e cena corretas
+  - `js/auth.js`: adicionada ponte `window.AUTH = AUTH` antes de iniciar `window.AUTH_READY`
+  - `index.html`, `ficha.html`, `mesa.html` e `regras.html`: cache bust de `auth.js` atualizado para `2026-05-05-mesa-auth-export-1`
+  - validacao executada: simulacao da Mesa com sessao real do mestre contra a API oficial confirmou `headerUser=mestre`, `roleBadge=Mestre`, `activeTokenCount=5`, roster carregado e copia de realtime ativa
+
 - Realtime oficial da Mesa em 2026-05-04:
   - objetivo: permitir que o mestre adicione jogadores, NPCs e monstros existentes na Mesa e que todos vejam a cena atualizada em tempo real
   - `cloudflare/src/mesa-realtime.js`: criado Durable Object `MesaRealtimeRoom` para aceitar WebSockets, registrar presenca e transmitir eventos da cena

@@ -65,6 +65,7 @@ Worker/D1:
 - Em 2026-05-04, a cena `default` do D1 foi encontrada com `0` tokens e populada com 5 tokens iniciais depois do deploy da correcao.
 - `js/mesa-core.js` deve iniciar por `bootMesaPage()`, com guarda de execucao unica e fallback para `document.readyState !== "loading"`.
 - `Limpar cena` deixa `state.tokens = []` e salva o palco vazio, nao volta a semear tokens automaticamente.
+- `auth.js` deve manter `window.AUTH = AUTH`; a Mesa depende de `window.AUTH` para resolver sessao, diretorio e backend.
 
 ## Visual
 
@@ -87,5 +88,5 @@ Worker/D1:
 
 ## Pendencia Imediata
 
-- Validar visualmente no site oficial apos GitHub Pages publicar o frontend com cache bust `2026-05-04-mesa-realtime-1`.
+- Validar visualmente no site oficial apos GitHub Pages publicar `auth.js?v=2026-05-05-mesa-auth-export-1`.
 - Conferir com mestre e jogador em navegadores/abas separadas: mestre adiciona/remove/move token e jogador ve a mudanca sem recarregar.

@@ -6,7 +6,7 @@
 - Validar periodicamente se GitHub Pages continua em `build_type: workflow`.
 - Manter `docs/obsidian/` atualizado apos decisoes importantes.
 - Revisar em navegador real apos mudancas visuais grandes, especialmente mobile.
-- Validar visualmente a Mesa logada no site oficial apos GitHub Pages publicar o frontend realtime.
+- Validar visualmente a Mesa logada no site oficial apos GitHub Pages publicar a correcao `window.AUTH = AUTH`.
 - Testar com mestre e jogador conectados ao mesmo tempo: adicionar, mover, remover token e confirmar sincronizacao sem recarregar.
 
 ## Riscos Tecnicos

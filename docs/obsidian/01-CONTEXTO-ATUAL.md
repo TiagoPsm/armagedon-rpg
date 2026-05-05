@@ -49,6 +49,7 @@ Paginas principais:
 - Ajuste complementar de 2026-05-04: boot da Mesa ficou protegido contra `DOMContentLoaded` perdido para nao manter a tela em `Convidado`/`0 disponiveis`.
 - Realtime oficial da Mesa publicado em 2026-05-04: Durable Object `MesaRealtimeRoom`, rota `GET /api/mesa/realtime`, frontend com WebSocket nativo e broadcast `mesa:scene` apos `PUT /api/mesa/scene`.
 - Worker `armagedon-api` atualizado para version ID `2cab1568-cc32-4a79-81d0-07851eac7a4a`.
+- Correcao de 2026-05-05: `js/auth.js` agora expõe `window.AUTH = AUTH`; sem isso a Mesa podia nao resolver sessao e ficar no HTML inicial `Convidado`/`0`.
 
 ## Validacoes Recentes Confirmadas
 
@@ -61,6 +62,7 @@ Paginas principais:
 - MP4 antigo e `assets/logo-rpg-armagedon.png` fora do pacote publicado
 - WebSocket oficial validado com duas conexoes recebendo `mesa:ready`
 - `PUT /api/mesa/scene` validado transmitindo `mesa:scene` com os 5 tokens atuais
+- Simulacao de Mesa com sessao real do mestre validou renderizacao de usuario, modo Mestre, 5 tokens e roster carregado apos `window.AUTH` ser exportado
 
 ## Direcao Visual
 
@@ -81,5 +83,5 @@ Toda etapa importante deve atualizar os `.md` relacionados, especialmente:
 
 ## Pendencia Imediata Da Mesa
 
-- aguardar GitHub Pages publicar os HTML/JS com cache bust `2026-05-04-mesa-realtime-1`
+- aguardar GitHub Pages publicar os HTMLs com `auth.js?v=2026-05-05-mesa-auth-export-1`
 - validar visualmente no navegador real: mestre coloca/remove tokens e jogador conectado ve a mudanca sem recarregar

@@ -171,6 +171,7 @@ const AUTH = {
 
 let homeRealtimeBound = false;
 
+window.AUTH = AUTH;
 window.AUTH_READY = AUTH.init();
 
 function initAuthPageGlow() {

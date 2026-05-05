@@ -2,6 +2,13 @@
 
 Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STATUS.md`.
 
+## 2026-05-05 - Correcao De Sessao Da Mesa
+
+- Corrigido `auth.js` para expor `window.AUTH = AUTH`.
+- Causa: Mesa dependia de `window.AUTH`; sem a ponte global podia ficar em `Convidado`/`0` apesar da API e realtime estarem publicados.
+- Cache bust de `auth.js` atualizado nos quatro HTMLs.
+- Simulacao com sessao real do mestre validou renderizacao de Mestre, 5 tokens e roster carregado.
+
 ## 2026-05-04 - Realtime Da Mesa
 
 - Durable Object `MesaRealtimeRoom` criado para WebSocket da Mesa.
