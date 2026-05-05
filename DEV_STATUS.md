@@ -30,7 +30,8 @@ Registro minimo esperado:
 - Worker usa o banco D1 `armagedon`
 - Realtime da Mesa usa Cloudflare Durable Objects com WebSocket nativo
 - A ficha e armazenada principalmente em JSON dentro da tabela `characters`
-- Nao existe build/bundler nesta etapa
+- Nao existe bundler nesta etapa
+- `npm run build:pages` gera o artefato estatico `_site/` para o GitHub Pages sem publicar `assets/` inteiro
 - Scripts continuam carregados por `<script src="..."></script>`
 - A ordem de carregamento dos scripts da ficha e da mesa e parte do contrato atual
 
@@ -69,6 +70,8 @@ Registro minimo esperado:
 - Rolagem de dados na ficha implementada
 - Mesa virtual com roster, palco, inspetor e edicao local/online de status
 - Mesa virtual sincroniza cena em tempo real para mestre e jogadores conectados
+- Mesa virtual usa renderer Canvas/Worker por padrao, com fallback Canvas principal e DOM legado via `localStorage.mesaRenderer = "dom"`
+- Realtime da Mesa aceita deltas incrementais de token para reduzir payload durante movimento
 - Jogador pode alterar Integridade atual na propria ficha e na Mesa
 - Vida atual de jogador, NPC e monstro nao pode passar da Vida maxima
 - Integridade atual continua limitada pela Integridade maxima
@@ -314,6 +317,8 @@ Mudancas nesses arquivos costumam impactar diretamente o funcionamento do site:
 - Mesa:
   - `js/mesa-core.js`: estado, sessao e montagem do roster
   - `js/mesa-stage.js`: palco, tokens, persistencia e edicao de status
+  - `js/mesa-renderer-v2.js`: renderer Canvas/Worker do palco da Mesa
+  - `js/mesa-renderer-worker.js`: desenho OffscreenCanvas em Worker quando suportado
   - `js/mesa-roster.js`: lista de personagens
   - `js/mesa-inspector.js`: painel do token selecionado
   - `js/mesa-storage.js`: helpers de storage, numeros e visual de barras
@@ -321,11 +326,11 @@ Mudancas nesses arquivos costumam impactar diretamente o funcionamento do site:
 
 ## Proximas Frentes Recomendadas
 
-1. Projetar e implementar Mesa realtime com Durable Objects/WebSocket
-2. Criar persistencia oficial da cena da Mesa no D1
-3. Revisar responsividade da ficha, inventario e mesa
-4. Otimizar imagens e cache depois das correcoes funcionais
-5. Criar teste manual guiado para duas abas da Mesa quando realtime estiver pronto
+1. Validar a Mesa Canvas/Worker no site publicado com mestre e jogador em abas separadas
+2. Medir comportamento em maquina mais fraca e ajustar cap de `devicePixelRatio` se necessario
+3. Normalizar thumbnails WebP/JPEG dos avatares grandes no fluxo de salvamento da ficha
+4. Revisar responsividade da ficha, inventario e mesa
+5. Expandir os testes Playwright para mestre/jogador com API real quando for seguro usar credenciais de teste
 
 ## Publicacao
 
@@ -347,6 +352,12 @@ Sempre confirmar os arquivos exatos da etapa antes do upload.
 - `node --check` em todos os JS de `js/`
 - `node --check` em todos os JS de `cloudflare/src/`
 - `node --check` em todos os JS de `server/src/`
+- `npm run check:js`
+- `npm run audit:static`
+- `npm run build:pages`
+- `npm run test:mesa`
+- `npm run perf:mesa`
+- `npx wrangler deploy --dry-run` em `cloudflare/`
 - servidor estatico temporario respondeu `200` para `ficha.html` e `mesa.html`
 - workflow de Pages revisado para incluir `mesa.html`
 - Browser Use abriu `http://127.0.0.1:8012/mesa.html` sem erros de console registrados

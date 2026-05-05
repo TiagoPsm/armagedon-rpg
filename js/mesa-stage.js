@@ -1,6 +1,18 @@
 const mesaStageTokenElements = new Map();
+let mesaStageRenderer = null;
+let lastCanvasStageSnapshot = null;
+let pendingRealtimeDragMove = null;
+let realtimeDragMoveTimer = 0;
+let lastRealtimeDragMoveAt = 0;
+let lastMesaDragEndAt = 0;
+const MESA_REALTIME_DRAG_INTERVAL_MS = 66;
 
 function renderStage() {
+  if (renderCanvasStage()) return;
+  renderDomStage();
+}
+
+function renderDomStage() {
   const stage = getMesaDomRef("stage");
   const emptyState = getMesaDomRef("emptyState");
   if (!stage || !emptyState) return;
@@ -37,6 +49,82 @@ function renderStage() {
     updateMesaTokenElementState(element, token);
     stage.appendChild(element);
   });
+}
+
+function getMesaStageRenderer() {
+  const stage = getMesaDomRef("stage");
+  if (!stage || !window.MesaRendererV2?.get) return null;
+  if (mesaStageRenderer) return mesaStageRenderer;
+  mesaStageRenderer = window.MesaRendererV2.get(stage, {
+    workerUrl: "js/mesa-renderer-worker.js?v=2026-05-05-canvas-v2"
+  });
+  return mesaStageRenderer;
+}
+
+function renderCanvasStage() {
+  const renderer = getMesaStageRenderer();
+  if (!renderer?.enabled) return false;
+
+  const stage = getMesaDomRef("stage");
+  const emptyState = getMesaDomRef("emptyState");
+  if (!stage || !emptyState) return false;
+
+  const renderedTokens = [...getRenderedTokens()].sort((a, b) => (a.order || 0) - (b.order || 0));
+  emptyState.hidden = renderedTokens.length > 0;
+  clearDomStageTokenElements();
+
+  lastCanvasStageSnapshot = {
+    tokens: renderedTokens.map(createCanvasTokenSnapshot),
+    selectedTokenId: state.selectedTokenId,
+    draggingTokenId: state.drag?.tokenId || "",
+    isFullscreen: state.fullscreenMode !== "off",
+    isPlayerPerspective: isPlayerPerspective()
+  };
+
+  renderer.render(lastCanvasStageSnapshot);
+  return true;
+}
+
+function clearDomStageTokenElements() {
+  mesaStageTokenElements.forEach(element => {
+    element.remove?.();
+  });
+  mesaStageTokenElements.clear();
+}
+
+function createCanvasTokenSnapshot(token) {
+  const hiddenForMaster = isMaster() && !state.previewPlayerView && !token.visibleToPlayers;
+  const statePillLabel = hiddenForMaster
+    ? "Oculto"
+    : token.type !== "player" && token.statsVisibleToPlayers !== true
+      ? "Status restrito"
+      : "";
+
+  return {
+    id: token.id,
+    characterKey: token.characterKey,
+    type: token.type,
+    typeLabel: token.typeLabel,
+    name: token.name,
+    ownerCopy: getOwnerCopy(token.ownerUsername),
+    imageUrl: token.imageUrl,
+    initials: token.initials,
+    x: token.x,
+    y: token.y,
+    order: token.order || 1,
+    currentLife: token.currentLife,
+    maxLife: token.maxLife,
+    currentIntegrity: token.currentIntegrity,
+    maxIntegrity: token.maxIntegrity,
+    canViewStats: canViewTokenStats(token),
+    hiddenForMaster,
+    statePillLabel
+  };
+}
+
+function refreshCanvasStageToken() {
+  if (!mesaStageRenderer?.enabled || !lastCanvasStageSnapshot) return;
+  renderCanvasStage();
 }
 
 function createMesaTokenElement(token) {
@@ -79,6 +167,11 @@ function updateMesaTokenElementState(element, token) {
 }
 
 function updateStageTokenSelection(previousTokenId, nextTokenId) {
+  if (mesaStageRenderer?.enabled) {
+    refreshCanvasStageToken();
+    return;
+  }
+
   [previousTokenId, nextTokenId].forEach(tokenId => {
     if (!tokenId) return;
     const token = findToken(tokenId);
@@ -130,8 +223,15 @@ function selectToken(tokenId) {
   const previousTokenId = state.selectedTokenId;
   state.selectedTokenId = tokenId;
   const token = findToken(tokenId);
+  let orderChanged = false;
   if (token && isMaster()) {
+    const previousOrder = token.order || 1;
     token.order = getNextOrder();
+    orderChanged = token.order !== previousOrder;
+  }
+  if (orderChanged) {
+    bumpMesaSceneVersion();
+    broadcastMesaTokenMove(token);
   }
   persistState();
   updateStageTokenSelection(previousTokenId, tokenId);
@@ -165,6 +265,8 @@ function handleInspectorAction(event) {
     return;
   }
 
+  bumpMesaSceneVersion();
+  broadcastMesaTokenUpsert(token);
   persistState();
   scheduleMesaRender({ summary: true, controls: true, stage: true, inspector: true });
 }
@@ -181,14 +283,15 @@ function handleInspectorStatInput(event) {
   if (!sheetPatch) return;
 
   applySheetPatchFromMesa(token.characterKey, sheetPatch);
+  broadcastMesaTokenUpsert(findToken(token.id) || token);
   scheduleMesaRender({ stage: true, inspector: true });
 }
 
 function handleTokenPointerDown(event) {
   if (state.drag) return;
-  const tokenElement = event.target.closest("[data-token-id]");
-  if (!tokenElement) return;
-  const tokenId = String(tokenElement.dataset.tokenId || "");
+  const target = resolveStagePointerTarget(event);
+  if (!target) return;
+  const tokenId = target.tokenId;
   const token = findToken(tokenId);
   if (!token) return;
 
@@ -199,7 +302,7 @@ function handleTokenPointerDown(event) {
   if (event.button !== 0) return;
   if (event.target.closest("input, button, a")) return;
 
-  beginTokenDrag(tokenElement, token, event.clientX, event.clientY, event.pointerId);
+  beginTokenDrag(target, token, event.clientX, event.clientY, event.pointerId);
   event.preventDefault();
   updateStageTokenSelection(previousTokenId, tokenId);
   scheduleMesaRender({ inspector: true });
@@ -207,9 +310,9 @@ function handleTokenPointerDown(event) {
 
 function handleTokenMouseDown(event) {
   if (state.drag) return;
-  const tokenElement = event.target.closest("[data-token-id]");
-  if (!tokenElement) return;
-  const tokenId = String(tokenElement.dataset.tokenId || "");
+  const target = resolveStagePointerTarget(event);
+  if (!target) return;
+  const tokenId = target.tokenId;
   const token = findToken(tokenId);
   if (!token) return;
 
@@ -220,35 +323,73 @@ function handleTokenMouseDown(event) {
   if (event.button !== 0) return;
   if (event.target.closest("input, button, a")) return;
 
-  beginTokenDrag(tokenElement, token, event.clientX, event.clientY, null);
+  beginTokenDrag(target, token, event.clientX, event.clientY, null);
   event.preventDefault();
   updateStageTokenSelection(previousTokenId, tokenId);
   scheduleMesaRender({ inspector: true });
 }
 
-function beginTokenDrag(tokenElement, token, clientX, clientY, pointerId) {
+function resolveStagePointerTarget(event) {
+  const tokenElement = event.target.closest?.("[data-token-id]");
+  if (tokenElement) {
+    return {
+      mode: "dom",
+      tokenId: String(tokenElement.dataset.tokenId || ""),
+      tokenElement
+    };
+  }
+
+  const renderer = getMesaStageRenderer();
+  const hit = renderer?.enabled ? renderer.hitTest(event.clientX, event.clientY) : null;
+  if (!hit?.tokenId) return null;
+
+  return {
+    mode: "canvas",
+    tokenId: hit.tokenId,
+    tokenElement: null,
+    bounds: hit.bounds,
+    localX: hit.localX,
+    localY: hit.localY
+  };
+}
+
+function beginTokenDrag(target, token, clientX, clientY, pointerId) {
   const stage = getMesaDomRef("stage");
   if (!stage) return;
 
   const stageRect = stage.getBoundingClientRect();
-  const tokenRect = tokenElement.getBoundingClientRect();
+  const tokenRect = target.tokenElement?.getBoundingClientRect?.() || target.bounds || {
+    x: 0,
+    y: 0,
+    width: 1,
+    height: 1
+  };
+  const tokenLeft = Number.isFinite(tokenRect.left) ? tokenRect.left : stageRect.left + (target.bounds?.x || 0);
+  const tokenTop = Number.isFinite(tokenRect.top) ? tokenRect.top : stageRect.top + (target.bounds?.y || 0);
 
   state.drag = {
     tokenId: token.id,
-    tokenElement,
+    mode: target.mode,
+    tokenElement: target.tokenElement,
     stageRect,
     tokenWidth: tokenRect.width,
     tokenHeight: tokenRect.height,
-    pointerOffsetX: clientX - tokenRect.left,
-    pointerOffsetY: clientY - tokenRect.top
+    pointerOffsetX: clientX - tokenLeft,
+    pointerOffsetY: clientY - tokenTop
   };
 
   token.order = getNextOrder();
   pendingDragPoint = null;
-  tokenElement.classList.add("is-dragging");
-  updateMesaTokenElementState(tokenElement, token);
+  target.tokenElement?.classList.add("is-dragging");
+  updateMesaTokenElementState(target.tokenElement, token);
+  if (mesaStageRenderer?.enabled) {
+    const stageElement = getMesaDomRef("stage");
+    stageElement.dataset.dragging = "true";
+    mesaStageRenderer.setDraggingToken(token.id);
+  }
   if (pointerId !== null && pointerId !== undefined) {
-    tokenElement.setPointerCapture?.(pointerId);
+    target.tokenElement?.setPointerCapture?.(pointerId);
+    if (!target.tokenElement) stage.setPointerCapture?.(pointerId);
   }
 }
 
@@ -260,10 +401,22 @@ function handleDragMove(event) {
 function handleDragEnd() {
   if (!state.drag) return;
   flushPendingDragPosition();
+  flushRealtimeDragMove();
+  const token = findToken(state.drag.tokenId);
   state.drag.tokenElement?.classList.remove("is-dragging");
+  const stage = getMesaDomRef("stage");
+  if (stage?.dataset) delete stage.dataset.dragging;
+  mesaStageRenderer?.setDraggingToken("");
   state.drag = null;
+  lastMesaDragEndAt = Date.now();
+  bumpMesaSceneVersion();
+  if (token) broadcastMesaTokenMove(token);
   persistState({ immediate: true });
   scheduleMesaRender({ stage: true, inspector: true });
+}
+
+function shouldIgnoreMesaStageClickAfterDrag() {
+  return Date.now() - lastMesaDragEndAt < 120;
 }
 
 function handleMouseDragMove(event) {
@@ -302,7 +455,11 @@ function updateDragPosition(clientX, clientY) {
     state.drag.tokenElement.style.top = `${token.y}%`;
     state.drag.tokenElement.style.zIndex = String(token.order || 1);
     state.drag.tokenElement.dataset.contentSignature = getTokenContentSignature(token);
+  } else if (mesaStageRenderer?.enabled) {
+    refreshCanvasStageToken();
   }
+
+  queueRealtimeDragMove(token);
 }
 
 function scheduleDragPosition(clientX, clientY) {
@@ -329,11 +486,40 @@ function flushPendingDragPosition() {
   pendingDragPoint = null;
 }
 
+function queueRealtimeDragMove(token) {
+  if (!token || !isMaster()) return;
+  pendingRealtimeDragMove = token;
+  const elapsed = Date.now() - lastRealtimeDragMoveAt;
+
+  if (elapsed >= MESA_REALTIME_DRAG_INTERVAL_MS) {
+    flushRealtimeDragMove();
+    return;
+  }
+
+  if (realtimeDragMoveTimer) return;
+  realtimeDragMoveTimer = window.setTimeout(flushRealtimeDragMove, MESA_REALTIME_DRAG_INTERVAL_MS - elapsed);
+}
+
+function flushRealtimeDragMove() {
+  if (realtimeDragMoveTimer) {
+    window.clearTimeout(realtimeDragMoveTimer);
+    realtimeDragMoveTimer = 0;
+  }
+
+  const token = pendingRealtimeDragMove;
+  pendingRealtimeDragMove = null;
+  if (!token || !isMaster()) return;
+  lastRealtimeDragMoveAt = Date.now();
+  broadcastMesaTokenMove(token);
+}
+
 function resetPrototype() {
   localStorage.removeItem(MESA_STORAGE_KEY);
   state.tokens = [];
   state.selectedTokenId = "";
   state.previewPlayerView = false;
+  bumpMesaSceneVersion();
+  broadcastMesaSceneClear();
   scheduleMesaRender({ summary: true, controls: true, roster: true, stage: true, inspector: true });
   persistState({ immediate: true });
 }
@@ -821,12 +1007,15 @@ function addTokenToStage(entry) {
 
   state.tokens = [...state.tokens, nextToken];
   state.selectedTokenId = nextToken.id;
+  bumpMesaSceneVersion();
+  broadcastMesaTokenUpsert(nextToken);
   persistState();
   scheduleMesaRender({ summary: true, controls: true, roster: true, stage: true, inspector: true });
 }
 
 function removeToken(tokenId) {
   const previousSelectedId = state.selectedTokenId;
+  const removedTokenId = String(tokenId || "");
   state.tokens = state.tokens.filter(token => token.id !== tokenId);
 
   if (previousSelectedId !== tokenId && getRenderedTokens().some(token => token.id === previousSelectedId)) {
@@ -835,6 +1024,8 @@ function removeToken(tokenId) {
     state.selectedTokenId = getNextSelectedTokenId();
   }
 
+  bumpMesaSceneVersion();
+  broadcastMesaTokenRemove(removedTokenId);
   persistState();
   scheduleMesaRender({ summary: true, controls: true, roster: true, stage: true, inspector: true });
 }

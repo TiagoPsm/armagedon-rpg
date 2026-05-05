@@ -27,6 +27,12 @@ function normalizeOrder(value) {
   return Math.max(1, Math.min(9999, numeric));
 }
 
+function normalizeSceneVersion(value) {
+  const numeric = Number.parseInt(value, 10);
+  if (Number.isNaN(numeric)) return 0;
+  return Math.max(0, numeric);
+}
+
 function parseSceneData(value) {
   if (!value) return {};
   if (typeof value === "object") return value;
@@ -63,6 +69,7 @@ function normalizeMesaScene(payload) {
     : [];
 
   return {
+    sceneVersion: normalizeSceneVersion(source?.sceneVersion),
     previewPlayerView: Boolean(source?.previewPlayerView),
     selectedTokenId: normalizeText(source?.selectedTokenId).toLowerCase(),
     tokens

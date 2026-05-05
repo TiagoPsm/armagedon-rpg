@@ -48,6 +48,7 @@ const state = {
   tokens: [],
   selectedTokenId: "",
   previewPlayerView: false,
+  sceneVersion: 0,
   search: "",
   drag: null,
   fullscreenMode: "off",
@@ -56,6 +57,13 @@ const state = {
   realtimeStatus: "offline",
   onlineUsers: []
 };
+const MESA_CLIENT_ID_KEY = "tc_mesa_client_id";
+const MESA_REALTIME_DELTA_TYPES = new Set([
+  "mesa:token:move",
+  "mesa:token:upsert",
+  "mesa:token:remove",
+  "mesa:scene:clear"
+]);
 const mesaDom = {};
 const pendingMesaRender = Object.fromEntries(MESA_RENDER_PARTS.map(part => [part, false]));
 let mesaRenderFrame = 0;
@@ -77,6 +85,8 @@ const mesaSheetSaveTimers = new Map();
 const pendingMesaSheetPatches = new Map();
 let mesaInitStarted = false;
 let mesaRealtimeBound = false;
+let mesaRealtimeMessageSequence = 0;
+const mesaClientId = getMesaClientId();
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", bootMesaPage, { once: true });
@@ -130,6 +140,7 @@ function bindEvents() {
   previewToggle?.addEventListener("change", event => {
     if (!isMaster()) return;
     state.previewPlayerView = Boolean(event.target.checked);
+    bumpMesaSceneVersion();
     persistState();
     scheduleMesaRender({ summary: true, controls: true, stage: true, inspector: true });
   });
@@ -146,9 +157,14 @@ function bindEvents() {
   fullscreenMesaBtn?.addEventListener("click", toggleMesaFullscreen);
 
   stage?.addEventListener("click", event => {
-    const tokenElement = event.target.closest("[data-token-id]");
-    if (!tokenElement) return;
-    selectToken(String(tokenElement.dataset.tokenId || ""));
+    if (typeof shouldIgnoreMesaStageClickAfterDrag === "function" && shouldIgnoreMesaStageClickAfterDrag()) return;
+    const tokenTarget = typeof resolveStagePointerTarget === "function"
+      ? resolveStagePointerTarget(event)
+      : null;
+    const tokenElement = event.target.closest?.("[data-token-id]");
+    const tokenId = tokenTarget?.tokenId || String(tokenElement?.dataset?.tokenId || "");
+    if (!tokenId) return;
+    selectToken(tokenId);
   });
   stage?.addEventListener("pointerdown", handleTokenPointerDown);
   stage?.addEventListener("mousedown", handleTokenMouseDown);
@@ -209,8 +225,30 @@ function bindMesaRealtime() {
     applyRemoteMesaSceneMessage(payload);
   });
 
+  window.APP.on("mesa:batch", payload => {
+    applyMesaRealtimeBatch(payload);
+  });
+
+  MESA_REALTIME_DELTA_TYPES.forEach(eventName => {
+    window.APP.on(eventName, payload => {
+      void applyMesaRealtimeDelta(payload);
+    });
+  });
+
   if (window.AUTH?.isBackendEnabled?.() && window.APP?.connectRealtime) {
     void window.APP.connectRealtime();
+  }
+}
+
+function getMesaClientId() {
+  try {
+    const existing = sessionStorage.getItem(MESA_CLIENT_ID_KEY);
+    if (existing) return existing;
+    const next = crypto?.randomUUID?.() || `mesa-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    sessionStorage.setItem(MESA_CLIENT_ID_KEY, next);
+    return next;
+  } catch {
+    return `mesa-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   }
 }
 
@@ -258,8 +296,128 @@ function extractMesaSceneData(payload) {
   return null;
 }
 
+function applyMesaRealtimeBatch(payload) {
+  if (payload?.clientId === mesaClientId) return;
+  const messages = Array.isArray(payload?.messages) ? payload.messages : [];
+  messages.forEach(message => {
+    if (!message || typeof message !== "object") return;
+    if (MESA_REALTIME_DELTA_TYPES.has(String(message.type || ""))) {
+      void applyMesaRealtimeDelta({
+        ...message,
+        clientId: message.clientId || payload.clientId,
+        actor: message.actor || payload.actor,
+        sentAt: message.sentAt || payload.sentAt
+      });
+    }
+  });
+}
+
+async function applyMesaRealtimeDelta(payload) {
+  const type = String(payload?.type || "");
+  if (!MESA_REALTIME_DELTA_TYPES.has(type)) return;
+  if (payload?.clientId === mesaClientId) return;
+  if (isStaleMesaSceneVersion(payload?.sceneVersion)) return;
+
+  const previousTokenIds = getMesaSceneTokenIdSet(state.tokens);
+  let needsRosterRefresh = false;
+  let changed = false;
+
+  if (type === "mesa:token:move") {
+    changed = applyMesaTokenMoveDelta(payload);
+  }
+
+  if (type === "mesa:token:remove") {
+    changed = applyMesaTokenRemoveDelta(payload);
+  }
+
+  if (type === "mesa:scene:clear") {
+    changed = applyMesaSceneClearDelta(payload);
+  }
+
+  if (type === "mesa:token:upsert") {
+    needsRosterRefresh = hasMissingMesaRosterEntries({ tokens: [payload.token] });
+    if (needsRosterRefresh) {
+      await refreshMesaDirectoryBeforeRoster();
+      setMesaRoster(buildRoster());
+    }
+    changed = applyMesaTokenUpsertDelta(payload) || changed;
+  }
+
+  if (!changed && !needsRosterRefresh) return;
+
+  const incomingVersion = asPositiveInt(payload?.sceneVersion, 0);
+  if (incomingVersion > state.sceneVersion) state.sceneVersion = incomingVersion;
+  syncSelectedToken();
+  cacheMesaSceneSnapshotLocally();
+
+  const membershipChanged = hasMesaTokenMembershipChanged(previousTokenIds, state.tokens);
+  scheduleMesaRender({
+    summary: true,
+    controls: true,
+    roster: membershipChanged || needsRosterRefresh,
+    stage: true,
+    inspector: true
+  });
+}
+
+function applyMesaTokenMoveDelta(payload) {
+  const token = findToken(payload?.tokenId);
+  if (!token) return false;
+  const nextX = roundTo(clamp(Number(payload.x), 0, 100), 2);
+  const nextY = roundTo(clamp(Number(payload.y), 0, 100), 2);
+  const nextOrder = asPositiveInt(payload.order, token.order || 1);
+  if (token.x === nextX && token.y === nextY && token.order === nextOrder) return false;
+  token.x = nextX;
+  token.y = nextY;
+  token.order = nextOrder;
+  return true;
+}
+
+function applyMesaTokenRemoveDelta(payload) {
+  const tokenId = String(payload?.tokenId || "");
+  if (!tokenId || !findToken(tokenId)) return false;
+  state.tokens = state.tokens.filter(token => token.id !== tokenId);
+  if (state.selectedTokenId === tokenId) {
+    state.selectedTokenId = getNextSelectedTokenId();
+  }
+  return true;
+}
+
+function applyMesaSceneClearDelta(payload) {
+  if (!state.tokens.length && !state.selectedTokenId) return false;
+  state.tokens = [];
+  state.selectedTokenId = "";
+  state.previewPlayerView = isMaster() ? Boolean(payload?.previewPlayerView) : false;
+  return true;
+}
+
+function applyMesaTokenUpsertDelta(payload) {
+  const incomingToken = payload?.token && typeof payload.token === "object" ? payload.token : null;
+  if (!incomingToken) return false;
+  const rosterEntry = getRosterEntryByCharacterKey(incomingToken.characterKey || incomingToken.id);
+  const mergedToken = mergeTokenWithRoster(incomingToken, rosterEntry);
+  if (!mergedToken) return false;
+
+  const index = state.tokens.findIndex(token => token.id === mergedToken.id);
+  if (index >= 0) {
+    const previousSignature = getMesaSceneSignature({ tokens: [state.tokens[index]] });
+    const nextSignature = getMesaSceneSignature({ tokens: [mergedToken] });
+    if (previousSignature === nextSignature) return false;
+    state.tokens = state.tokens.map(token => token.id === mergedToken.id ? mergedToken : token);
+  } else {
+    state.tokens = [...state.tokens, mergedToken];
+  }
+
+  state.selectedTokenId = String(payload?.selectedTokenId || state.selectedTokenId || mergedToken.id);
+  return true;
+}
+
 async function applyRemoteMesaSceneSnapshot(remoteData) {
   if (!remoteData) return;
+
+  if (isStaleMesaSceneVersion(remoteData?.sceneVersion)) {
+    return;
+  }
 
   const remoteSignature = getMesaSceneSignature(remoteData);
   if (remoteSignature && remoteSignature === lastRemoteMesaSceneSignature && hasPendingMesaScenePersist()) {
@@ -688,6 +846,7 @@ async function hydrateState() {
     && state.tokens.length
     && typeof persistState === "function"
   ) {
+    bumpMesaSceneVersion();
     persistState({ immediate: true });
   }
 }
@@ -723,6 +882,7 @@ function applyMesaSceneSnapshot(saved) {
   const seeded = !mergedTokens.length && shouldSeedMesaTokens(savedTokens.length);
   state.tokens = seeded ? seedInitialTokens() : mergedTokens;
   state.previewPlayerView = isMaster() ? Boolean(saved?.previewPlayerView) : false;
+  state.sceneVersion = asPositiveInt(saved?.sceneVersion, state.sceneVersion);
   state.selectedTokenId = pickInitialSelectedToken(saved?.selectedTokenId);
   return { seeded, savedTokenCount: savedTokens.length };
 }
@@ -786,12 +946,98 @@ function getCurrentMesaSceneSignature() {
   return getMesaSceneSignature(createMesaScenePayloadFromState());
 }
 
+function isStaleMesaSceneVersion(sceneVersion) {
+  const incomingVersion = asPositiveInt(sceneVersion, 0);
+  return Boolean(incomingVersion && state.sceneVersion && incomingVersion < state.sceneVersion);
+}
+
+function bumpMesaSceneVersion() {
+  state.sceneVersion = Math.max(asPositiveInt(state.sceneVersion, 0) + 1, Date.now());
+  return state.sceneVersion;
+}
+
+function cacheMesaSceneSnapshotLocally() {
+  const payload = createMesaScenePayloadFromState();
+  localStorage.setItem(MESA_STORAGE_KEY, JSON.stringify(payload));
+  rememberMesaSceneSignature(payload, { persisted: true });
+}
+
+function createMesaRealtimeEnvelope(type, payload = {}) {
+  return {
+    ...payload,
+    type,
+    clientId: mesaClientId,
+    messageId: `${mesaClientId}:${++mesaRealtimeMessageSequence}`,
+    sceneVersion: asPositiveInt(payload.sceneVersion, state.sceneVersion),
+    selectedTokenId: state.selectedTokenId,
+    sentAt: new Date().toISOString()
+  };
+}
+
+function sendMesaRealtimeDelta(type, payload = {}) {
+  if (!window.APP?.sendRealtime || !window.AUTH?.isBackendEnabled?.()) return false;
+  return window.APP.sendRealtime(createMesaRealtimeEnvelope(type, payload));
+}
+
+function serializeMesaRealtimeToken(token) {
+  if (!token) return null;
+  return {
+    id: token.id,
+    characterKey: token.characterKey,
+    type: token.type,
+    ownerUsername: token.ownerUsername,
+    name: token.name,
+    imageUrl: token.imageUrl,
+    currentLife: token.currentLife,
+    maxLife: token.maxLife,
+    currentIntegrity: token.currentIntegrity,
+    maxIntegrity: token.maxIntegrity,
+    visibleToPlayers: token.visibleToPlayers !== false,
+    statsVisibleToPlayers: normalizeStatsVisibility(token.type, token.statsVisibleToPlayers),
+    x: roundTo(token.x, 2),
+    y: roundTo(token.y, 2),
+    order: token.order || 1
+  };
+}
+
+function broadcastMesaTokenMove(token) {
+  if (!token || !isMaster()) return false;
+  return sendMesaRealtimeDelta("mesa:token:move", {
+    tokenId: token.id,
+    x: roundTo(token.x, 2),
+    y: roundTo(token.y, 2),
+    order: token.order || 1
+  });
+}
+
+function broadcastMesaTokenUpsert(token) {
+  if (!token || !isMaster()) return false;
+  return sendMesaRealtimeDelta("mesa:token:upsert", {
+    token: serializeMesaRealtimeToken(token)
+  });
+}
+
+function broadcastMesaTokenRemove(tokenId) {
+  if (!tokenId || !isMaster()) return false;
+  return sendMesaRealtimeDelta("mesa:token:remove", {
+    tokenId
+  });
+}
+
+function broadcastMesaSceneClear() {
+  if (!isMaster()) return false;
+  return sendMesaRealtimeDelta("mesa:scene:clear", {
+    previewPlayerView: Boolean(state.previewPlayerView)
+  });
+}
+
 function hasPendingMesaScenePersist() {
   return Boolean(pendingPersistPayload || pendingRemotePersistPayload || mesaRemotePersistInFlight);
 }
 
 function createMesaScenePayloadFromState() {
   return {
+    sceneVersion: asPositiveInt(state.sceneVersion, 0),
     previewPlayerView: Boolean(state.previewPlayerView),
     selectedTokenId: state.selectedTokenId,
     tokens: state.tokens.map(token => ({
@@ -816,6 +1062,7 @@ function rememberMesaSceneSignature(payload, options = {}) {
 function normalizeMesaScenePayload(payload = {}) {
   const tokens = Array.isArray(payload?.tokens) ? payload.tokens : [];
   return {
+    sceneVersion: asPositiveInt(payload?.sceneVersion, 0),
     previewPlayerView: Boolean(payload?.previewPlayerView),
     selectedTokenId: String(payload?.selectedTokenId || ""),
     tokens: tokens

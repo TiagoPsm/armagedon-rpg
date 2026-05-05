@@ -1,6 +1,16 @@
 import { DurableObject } from "cloudflare:workers";
 
 const ROOM_NAME = "default";
+const MASTER_ONLY_TYPES = new Set([
+  "mesa:token:move",
+  "mesa:token:upsert",
+  "mesa:token:remove",
+  "mesa:scene:clear"
+]);
+const RELAY_TYPES = new Set([
+  ...MASTER_ONLY_TYPES,
+  "mesa:batch"
+]);
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -24,6 +34,10 @@ function sendJson(ws, payload) {
   try {
     ws.send(JSON.stringify(payload));
   } catch {}
+}
+
+function isPlainObject(value) {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
 function normalizeSocketUser(request) {
@@ -105,7 +119,61 @@ class MesaRealtimeRoom extends DurableObject {
         online: this.getPresence(),
         sentAt: new Date().toISOString()
       });
+      return;
     }
+
+    if (RELAY_TYPES.has(String(payload?.type || ""))) {
+      this.handleRealtimeRelay(ws, payload);
+    }
+  }
+
+  handleRealtimeRelay(ws, payload) {
+    const attachment = readAttachment(ws) || {};
+    const type = String(payload?.type || "");
+    const messages = type === "mesa:batch" && Array.isArray(payload.messages)
+      ? payload.messages.filter(message => isPlainObject(message) && MASTER_ONLY_TYPES.has(String(message.type || "")))
+      : [];
+    const isMasterPayload = MASTER_ONLY_TYPES.has(type) || messages.length > 0;
+
+    if (isMasterPayload && attachment.role !== "master") {
+      sendJson(ws, {
+        type: "mesa:scene:ack",
+        ok: false,
+        reason: "Apenas o mestre pode alterar a cena em tempo real.",
+        messageId: payload?.messageId || "",
+        sentAt: new Date().toISOString()
+      });
+      return;
+    }
+
+    const actor = {
+      username: attachment.username || "usuario",
+      role: attachment.role || "player"
+    };
+    const relayPayload = type === "mesa:batch"
+      ? {
+          ...payload,
+          messages: messages.map(message => ({
+            ...message,
+            actor: message.actor || actor,
+            sentAt: message.sentAt || new Date().toISOString()
+          }))
+        }
+      : {
+          ...payload,
+          actor,
+          sentAt: payload?.sentAt || new Date().toISOString()
+        };
+
+    this.broadcast(relayPayload, ws);
+    sendJson(ws, {
+      type: "mesa:scene:ack",
+      ok: true,
+      relayedType: type,
+      messageId: payload?.messageId || "",
+      sceneVersion: payload?.sceneVersion || 0,
+      sentAt: new Date().toISOString()
+    });
   }
 
   async webSocketClose() {

@@ -1,0 +1,16 @@
+{
+  "name": "armagedon-rpg-site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check:js": "node tools/check-js.cjs",
+    "audit:static": "node tools/audit-static.cjs",
+    "build:pages": "node tools/build-pages.cjs",
+    "test:mesa": "playwright test tests/mesa.spec.cjs",
+    "perf:mesa": "playwright test tests/mesa.performance.spec.cjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}

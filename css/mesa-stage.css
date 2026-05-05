@@ -49,6 +49,29 @@
   contain: layout paint;
 }
 
+.mesa-stage-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.mesa-stage.is-canvas-renderer .mesa-token {
+  display: none !important;
+}
+
+.mesa-stage.is-canvas-renderer {
+  cursor: pointer;
+}
+
+.mesa-stage.is-canvas-renderer[data-dragging="true"],
+.mesa-stage.is-canvas-renderer[data-dragging="true"] .mesa-stage-canvas {
+  cursor: grabbing;
+}
+
 .mesa-token {
   position: absolute;
   width: clamp(210px, 18vw, 238px);

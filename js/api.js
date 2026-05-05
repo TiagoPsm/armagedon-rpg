@@ -168,6 +168,19 @@
     return state.socketPromise;
   }
 
+  async function sendRealtime(payload) {
+    if (!payload || typeof payload !== "object") return false;
+    const socket = await ensureSocket();
+    if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+
+    try {
+      socket.send(JSON.stringify(payload));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async function fetchWithTimeout(url, options = {}, timeoutMs = HEALTH_TIMEOUT_MS) {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
@@ -270,6 +283,7 @@
       disconnectSocket();
     },
     connectRealtime: ensureSocket,
+    sendRealtime,
     disconnectRealtime: disconnectSocket,
     on,
     async login(username, password) {

@@ -1,4 +1,7 @@
 server/node_modules/
+node_modules/
+test-results/
 server/.env
 server/*.log
 *.log
+_site/

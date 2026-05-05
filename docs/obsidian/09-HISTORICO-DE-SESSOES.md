@@ -2,6 +2,16 @@
 
 Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STATUS.md`.
 
+## 2026-05-05 - Mesa Canvas/Worker
+
+- Palco da Mesa ganhou renderer Canvas/Worker com fallback Canvas principal e DOM legado por flag local.
+- Tokens deixaram de depender de cards DOM no palco ativo, reduzindo pintura e custo de layout durante drag.
+- Drag em Canvas usa hit test por coordenadas, `requestAnimationFrame`, cache de imagens e persistencia completa apenas ao soltar.
+- Realtime recebeu deltas internos `mesa:token:*`, `mesa:scene:clear` e `mesa:batch` para reduzir payload em movimento.
+- Durable Object continua coordenando presenca e WebSocket; D1 permanece fonte duravel da cena completa.
+- Tooling gratuito adicionado: `npm run check:js`, `audit:static`, `build:pages`, `test:mesa` e `perf:mesa`.
+- Validado com Playwright funcional/performance e `wrangler deploy --dry-run`.
+
 ## 2026-05-05 - Otimizacao Leve Da Mesa
 
 - Mesa manteve visual dark atual, mas reduziu custo interno de render.

@@ -3,6 +3,8 @@
   gap: 0.9rem;
   margin-top: 1rem;
   contain: layout paint;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 360px;
 }
 
 .roster-group {
