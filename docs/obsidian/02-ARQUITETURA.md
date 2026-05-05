@@ -25,6 +25,7 @@ Pastas principais:
 
 - Plataforma: Cloudflare Workers
 - Banco: Cloudflare D1
+- Realtime: Cloudflare Durable Objects com WebSocket nativo
 - URL base configurada em `js/runtime-config.js`
 
 ## Persistencia
@@ -37,6 +38,14 @@ Fallback/cache local:
 
 - `localStorage` para sessao
 - `localStorage` para cache de fichas e diretorio
+
+## Realtime Da Mesa
+
+- Rota publica: `GET /api/mesa/realtime`
+- Autenticacao: token JWT em query string, validado pelo mesmo `requireAuth()` usado nas rotas HTTP
+- Sala: Durable Object `MesaRealtimeRoom`, binding `MESA_REALTIME`
+- Fonte de verdade da cena: D1 via `GET /api/mesa/scene` e `PUT /api/mesa/scene`
+- Fluxo: mestre salva a cena no D1; o Worker transmite `mesa:scene`; clientes conectados reidratam roster/cena e renderizam a Mesa
 
 ## Contratos Importantes
 

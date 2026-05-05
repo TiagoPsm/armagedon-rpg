@@ -2,6 +2,15 @@
 
 Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STATUS.md`.
 
+## 2026-05-04 - Realtime Da Mesa
+
+- Durable Object `MesaRealtimeRoom` criado para WebSocket da Mesa.
+- `PUT /api/mesa/scene` passou a salvar no D1 e transmitir `mesa:scene`.
+- Frontend trocou Socket.IO antigo por WebSocket nativo.
+- Mestre pode limpar a cena e adicionar tokens existentes pelo roster.
+- Worker publicado com version ID `2cab1568-cc32-4a79-81d0-07851eac7a4a`.
+- Validado: duas conexoes WebSocket receberam `mesa:ready`; broadcast `mesa:scene` chegou com 5 tokens.
+
 ## 2026-05-01 - Deploy Visual e Performance
 
 - fundo animado removido do carregamento principal

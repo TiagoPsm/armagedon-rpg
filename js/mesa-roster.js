@@ -10,8 +10,8 @@ function renderSummary() {
   if (roleBadge) roleBadge.textContent = isMaster() ? "Mestre" : "Jogador";
   if (roleSummary) {
     roleSummary.textContent = isMaster()
-      ? "Organiza a cena e move tokens; status salva na ficha quando a API esta ativa."
-      : "Ve tokens visiveis e edita apenas o proprio estado.";
+      ? "Organiza tokens e transmite a cena para jogadores conectados."
+      : "Ve a cena compartilhada e edita apenas o proprio estado.";
   }
 
   if (sceneStateTitle) {
@@ -20,9 +20,15 @@ function renderSummary() {
 
   if (sceneStateCopy) {
     if (state.scenePersistence === "remote") {
-      sceneStateCopy.textContent = isMaster()
-        ? "Cena salva no servidor. O realtime entra depois para atualizar jogadores sem recarregar."
-        : "Cena carregada do servidor; atualize a pagina para receber mudancas ate o realtime.";
+      if (state.realtimeStatus === "online") {
+        sceneStateCopy.textContent = isMaster()
+          ? "Cena salva no servidor e sincronizada em tempo real com jogadores conectados."
+          : "Cena sincronizada em tempo real com a mesa do mestre.";
+      } else {
+        sceneStateCopy.textContent = isMaster()
+          ? "Cena salva no servidor; tentando reconectar o tempo real."
+          : "Cena carregada do servidor; tentando reconectar a sincronizacao.";
+      }
     } else {
       sceneStateCopy.textContent = isMaster()
         ? "Arraste tokens e ajuste visibilidade. Sem API, a cena fica neste navegador."
@@ -74,7 +80,7 @@ function renderRoster() {
 
   const filteredRoster = getFilteredRoster();
   const availableCount = filteredRoster.filter(entry => !findToken(entry.id)).length;
-  rosterCountBadge.textContent = `${availableCount} disponiveis`;
+  rosterCountBadge.textContent = `${availableCount}/${filteredRoster.length} para colocar`;
 
   if (!filteredRoster.length) {
     rosterList.innerHTML = `

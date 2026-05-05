@@ -249,8 +249,8 @@ function flushPendingDragPosition() {
 
 function resetPrototype() {
   localStorage.removeItem(MESA_STORAGE_KEY);
-  state.tokens = seedInitialTokens();
-  state.selectedTokenId = state.tokens[0]?.id || "";
+  state.tokens = [];
+  state.selectedTokenId = "";
   state.previewPlayerView = false;
   renderAll();
   persistState({ immediate: true });

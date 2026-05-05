@@ -2,14 +2,8 @@
   const DEFAULT_BASE_URL =
     window.ARMAGEDON_CONFIG?.apiBaseUrl || localStorage.getItem("tc_api_base_url") || "http://localhost:4000/api";
   const HEALTH_TIMEOUT_MS = 1800;
+  const REALTIME_RECONNECT_DELAY_MS = 1800;
   const REALTIME_ENABLED = window.ARMAGEDON_CONFIG?.realtimeEnabled === true;
-  const REALTIME_EVENTS = [
-    "directory:changed",
-    "sheet:changed",
-    "rules:changed",
-    "inventory:changed",
-    "memory:changed"
-  ];
   const eventBus = new EventTarget();
 
   const state = {
@@ -18,20 +12,26 @@
     initialized: false,
     token: "",
     initPromise: null,
-    scriptPromise: null,
     socketPromise: null,
-    socket: null
+    socket: null,
+    socketIntent: false,
+    reconnectTimer: 0
   };
 
   function buildUrl(path) {
     return `${state.baseUrl}${path}`;
   }
 
-  function getBaseOrigin() {
+  function buildRealtimeUrl(path) {
     try {
-      return new URL(state.baseUrl).origin;
+      const url = new URL(buildUrl(path), window.location.href);
+      url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+      if (state.token) {
+        url.searchParams.set("token", state.token);
+      }
+      return url.toString();
     } catch {
-      return "http://localhost:4000";
+      return "";
     }
   }
 
@@ -52,87 +52,113 @@
     };
   }
 
-  function disconnectSocket() {
-    if (state.socket) {
-      state.socket.disconnect();
-      state.socket = null;
+  function disconnectSocket(options = {}) {
+    if (!options.keepIntent) {
+      state.socketIntent = false;
     }
+
+    if (state.reconnectTimer) {
+      window.clearTimeout(state.reconnectTimer);
+      state.reconnectTimer = 0;
+    }
+
+    if (state.socket) {
+      const socket = state.socket;
+      state.socket = null;
+      try {
+        socket.close(1000, "client disconnect");
+      } catch {}
+    }
+
     state.socketPromise = null;
   }
 
-  async function loadSocketIoScript() {
-    if (window.io) return window.io;
-    if (state.scriptPromise) return state.scriptPromise;
+  function canOpenRealtimeSocket() {
+    return Boolean(REALTIME_ENABLED && state.backendAvailable && state.token && window.WebSocket);
+  }
 
-    state.scriptPromise = new Promise((resolve, reject) => {
-      const existing = document.querySelector("script[data-armagedon-socket='1']");
-      if (existing) {
-        existing.addEventListener("load", () => resolve(window.io), { once: true });
-    existing.addEventListener("error", () => reject(new Error("Falha ao carregar o cliente de tempo real.")), {
-          once: true
-        });
-        return;
-      }
+  function emitRealtimeMessage(rawMessage) {
+    let payload = null;
+    try {
+      payload = JSON.parse(String(rawMessage || "{}"));
+    } catch {
+      payload = null;
+    }
 
-      const script = document.createElement("script");
-      script.src = `${getBaseOrigin()}/socket.io/socket.io.js`;
-      script.async = true;
-      script.dataset.armagedonSocket = "1";
-      script.onload = () => {
-        if (window.io) {
-          resolve(window.io);
-          return;
-        }
-        reject(new Error("Cliente de tempo real indisponível."));
-      };
-    script.onerror = () => reject(new Error("Falha ao carregar o cliente de tempo real."));
-      document.head.appendChild(script);
-    }).catch(error => {
-      state.scriptPromise = null;
-      throw error;
-    });
+    const eventName = String(payload?.type || "").trim();
+    if (!eventName) return;
+    emitEvent(eventName, payload);
+  }
 
-    return state.scriptPromise;
+  function scheduleSocketReconnect() {
+    if (!state.socketIntent || !canOpenRealtimeSocket() || state.reconnectTimer) return;
+
+    state.reconnectTimer = window.setTimeout(() => {
+      state.reconnectTimer = 0;
+      ensureSocket();
+    }, REALTIME_RECONNECT_DELAY_MS);
   }
 
   async function ensureSocket() {
     if (!REALTIME_ENABLED) return null;
+    state.socketIntent = true;
+
     if (!state.backendAvailable || !state.token) return null;
-    if (state.socket) return state.socket;
+
+    if (!window.WebSocket) {
+      emitEvent("socket:error", { message: "WebSocket indisponivel neste navegador." });
+      return null;
+    }
+
+    if (
+      state.socket
+      && [WebSocket.CONNECTING, WebSocket.OPEN].includes(state.socket.readyState)
+    ) {
+      return state.socket;
+    }
+
     if (state.socketPromise) return state.socketPromise;
 
     state.socketPromise = (async () => {
       try {
-        const ioFactory = await loadSocketIoScript();
-        const socket = ioFactory(getBaseOrigin(), {
-          auth: {
-            token: state.token
-          },
-          transports: ["websocket", "polling"]
+        const realtimeUrl = buildRealtimeUrl("/mesa/realtime");
+        if (!realtimeUrl) return null;
+
+        const socket = new WebSocket(realtimeUrl);
+        state.socket = socket;
+
+        socket.addEventListener("open", () => {
+          emitEvent("socket:connect", {});
         });
 
-        socket.on("connect", () => {
-          emitEvent("socket:connect", { id: socket.id });
+        socket.addEventListener("message", event => {
+          emitRealtimeMessage(event.data);
         });
-        socket.on("disconnect", reason => {
-          emitEvent("socket:disconnect", { reason });
+
+        socket.addEventListener("close", event => {
+          if (state.socket === socket) {
+            state.socket = null;
+          }
+
+          emitEvent("socket:disconnect", {
+            code: event.code,
+            reason: event.reason || ""
+          });
+          scheduleSocketReconnect();
         });
-        socket.on("connect_error", error => {
+
+        socket.addEventListener("error", () => {
           emitEvent("socket:error", {
-      message: error?.message || "Falha ao conectar ao tempo real."
+            message: "Falha ao conectar ao tempo real da Mesa."
           });
         });
 
-        REALTIME_EVENTS.forEach(eventName => {
-          socket.on(eventName, payload => emitEvent(eventName, payload || {}));
-        });
-
-        state.socket = socket;
         return socket;
       } catch (error) {
         emitEvent("socket:error", {
-      message: error?.message || "Falha ao iniciar a sincronização em tempo real."
+          message: error?.message || "Falha ao iniciar a sincronizacao em tempo real."
         });
+        scheduleSocketReconnect();
         return null;
       } finally {
         state.socketPromise = null;
@@ -167,7 +193,7 @@
           }
         });
         state.backendAvailable = response.ok;
-        if (state.backendAvailable && state.token) {
+        if (state.backendAvailable && state.token && state.socketIntent) {
           await ensureSocket();
         }
       } catch {
@@ -189,9 +215,7 @@
 
   function setToken(token) {
     state.token = String(token || "");
-    if (state.token) {
-      ensureSocket();
-    } else {
+    if (!state.token) {
       disconnectSocket();
     }
   }
@@ -217,7 +241,7 @@
     }
 
     if (!response.ok) {
-    const error = new Error(payload?.error || "Falha na comunicação com o servidor.");
+      const error = new Error(payload?.error || "Falha na comunicacao com o servidor.");
       error.status = response.status;
       error.payload = payload;
       throw error;
@@ -245,6 +269,8 @@
       state.token = "";
       disconnectSocket();
     },
+    connectRealtime: ensureSocket,
+    disconnectRealtime: disconnectSocket,
     on,
     async login(username, password) {
       return request("/auth/login", {

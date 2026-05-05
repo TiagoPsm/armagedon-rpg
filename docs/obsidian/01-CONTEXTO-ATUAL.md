@@ -9,6 +9,7 @@
 - Publicacao atual: GitHub Pages por GitHub Actions
 - API publicada: Cloudflare Workers
 - Banco publicado: Cloudflare D1
+- Realtime publicado: Cloudflare Durable Objects + WebSocket
 - Backend Express/PostgreSQL: legado, mantido em `server/`
 
 ## Workspace Oficial
@@ -46,6 +47,8 @@ Paginas principais:
 - Ajuste de 2026-05-04 na Mesa: `js/mesa-core.js` atualiza o diretorio oficial antes de montar o roster e semeia/salva tokens iniciais quando a cena remota vem vazia ou com referencias antigas.
 - Cena oficial `default` foi populada no D1 com 5 tokens iniciais apos o deploy da correcao de tokens.
 - Ajuste complementar de 2026-05-04: boot da Mesa ficou protegido contra `DOMContentLoaded` perdido para nao manter a tela em `Convidado`/`0 disponiveis`.
+- Realtime oficial da Mesa publicado em 2026-05-04: Durable Object `MesaRealtimeRoom`, rota `GET /api/mesa/realtime`, frontend com WebSocket nativo e broadcast `mesa:scene` apos `PUT /api/mesa/scene`.
+- Worker `armagedon-api` atualizado para version ID `2cab1568-cc32-4a79-81d0-07851eac7a4a`.
 
 ## Validacoes Recentes Confirmadas
 
@@ -56,6 +59,8 @@ Paginas principais:
 - GitHub Actions `Deploy GitHub Pages` com sucesso
 - paginas publicadas retornando HTTP 200
 - MP4 antigo e `assets/logo-rpg-armagedon.png` fora do pacote publicado
+- WebSocket oficial validado com duas conexoes recebendo `mesa:ready`
+- `PUT /api/mesa/scene` validado transmitindo `mesa:scene` com os 5 tokens atuais
 
 ## Direcao Visual
 
@@ -76,5 +81,5 @@ Toda etapa importante deve atualizar os `.md` relacionados, especialmente:
 
 ## Pendencia Imediata Da Mesa
 
-- validar no site publicado que mestre ve tokens de jogadores, NPCs e monstros apos hard reload
-- validar no site publicado que jogador carrega a cena salva pelo mestre
+- aguardar GitHub Pages publicar os HTML/JS com cache bust `2026-05-04-mesa-realtime-1`
+- validar visualmente no navegador real: mestre coloca/remove tokens e jogador conectado ve a mudanca sem recarregar

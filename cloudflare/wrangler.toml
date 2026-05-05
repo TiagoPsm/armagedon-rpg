@@ -7,5 +7,13 @@ binding = "DB"
 database_name = "armagedon"
 database_id = "78995a50-1521-453e-b0c1-2b1b8b19f260"
 
+[[durable_objects.bindings]]
+name = "MESA_REALTIME"
+class_name = "MesaRealtimeRoom"
+
+[[migrations]]
+tag = "v1-mesa-realtime"
+new_sqlite_classes = [ "MesaRealtimeRoom" ]
+
 [vars]
 MASTER_BOOTSTRAP_USERNAME = "mestre"

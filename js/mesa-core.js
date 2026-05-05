@@ -29,7 +29,10 @@ const state = {
   search: "",
   drag: null,
   fullscreenMode: "off",
-  scenePersistence: "local"
+  scenePersistence: "local",
+  sceneRemoteExists: false,
+  realtimeStatus: "offline",
+  onlineUsers: []
 };
 let mesaPersistTimer = null;
 let pendingPersistPayload = null;
@@ -40,6 +43,7 @@ let pendingDragPoint = null;
 const mesaSheetSaveTimers = new Map();
 const pendingMesaSheetPatches = new Map();
 let mesaInitStarted = false;
+let mesaRealtimeBound = false;
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", bootMesaPage, { once: true });
@@ -73,6 +77,7 @@ async function initMesaPage() {
   state.roster = buildRoster();
 
   await hydrateState();
+  bindMesaRealtime();
   renderAll();
 }
 
@@ -134,6 +139,78 @@ function bindEvents() {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") flushPersistState();
   });
+}
+
+function bindMesaRealtime() {
+  if (mesaRealtimeBound || !window.APP?.on) return;
+  mesaRealtimeBound = true;
+
+  window.APP.on("socket:connect", () => {
+    state.realtimeStatus = "online";
+    renderSummary();
+  });
+
+  window.APP.on("socket:disconnect", () => {
+    state.realtimeStatus = "offline";
+    renderSummary();
+  });
+
+  window.APP.on("socket:error", () => {
+    state.realtimeStatus = "error";
+    renderSummary();
+  });
+
+  window.APP.on("mesa:ready", payload => {
+    state.realtimeStatus = "online";
+    updateMesaPresence(payload);
+    renderSummary();
+  });
+
+  window.APP.on("mesa:presence", payload => {
+    updateMesaPresence(payload);
+    renderSummary();
+  });
+
+  window.APP.on("mesa:scene", payload => {
+    void applyRemoteMesaSceneMessage(payload);
+  });
+
+  if (window.AUTH?.isBackendEnabled?.() && window.APP?.connectRealtime) {
+    void window.APP.connectRealtime();
+  }
+}
+
+function updateMesaPresence(payload) {
+  const users = Array.isArray(payload?.online?.users) ? payload.online.users : [];
+  state.onlineUsers = users
+    .map(user => ({
+      username: String(user?.username || "").trim(),
+      role: String(user?.role || "player").trim() || "player",
+      connections: asPositiveInt(user?.connections, 1)
+    }))
+    .filter(user => user.username);
+}
+
+async function applyRemoteMesaSceneMessage(payload) {
+  const remoteData = payload?.scene?.data && typeof payload.scene.data === "object"
+    ? payload.scene.data
+    : payload?.data && typeof payload.data === "object"
+      ? payload.data
+      : null;
+
+  if (!remoteData) return;
+
+  try {
+    await refreshMesaDirectoryBeforeRoster();
+    state.roster = buildRoster();
+    state.scenePersistence = "remote";
+    state.sceneRemoteExists = true;
+    localStorage.setItem(MESA_STORAGE_KEY, JSON.stringify(remoteData));
+    applyMesaSceneSnapshot(remoteData);
+    renderAll();
+  } catch (error) {
+    console.warn("Falha ao aplicar cena recebida em tempo real.", error);
+  }
 }
 
 function resolveMesaSession() {
@@ -433,6 +510,7 @@ async function loadMesaSceneSnapshot() {
     try {
       const remoteScene = await window.APP.getMesaScene();
       const remoteData = remoteScene?.data && typeof remoteScene.data === "object" ? remoteScene.data : {};
+      state.sceneRemoteExists = Boolean(remoteScene?.createdAt || remoteScene?.updatedAt);
       localStorage.setItem(MESA_STORAGE_KEY, JSON.stringify(remoteData));
       state.scenePersistence = "remote";
       return remoteData;
@@ -442,6 +520,7 @@ async function loadMesaSceneSnapshot() {
   }
 
   state.scenePersistence = "local";
+  state.sceneRemoteExists = false;
   return readJsonStorage(MESA_STORAGE_KEY, {});
 }
 
@@ -452,11 +531,18 @@ function applyMesaSceneSnapshot(saved) {
     .map(token => mergeTokenWithRoster(token, rosterMap.get(String(token.characterKey || ""))))
     .filter(Boolean);
 
-  const seeded = !mergedTokens.length;
+  const seeded = !mergedTokens.length && shouldSeedMesaTokens(savedTokens.length);
   state.tokens = seeded ? seedInitialTokens() : mergedTokens;
   state.previewPlayerView = isMaster() ? Boolean(saved?.previewPlayerView) : false;
   state.selectedTokenId = pickInitialSelectedToken(saved?.selectedTokenId);
   return { seeded, savedTokenCount: savedTokens.length };
+}
+
+function shouldSeedMesaTokens(savedTokenCount) {
+  if (!state.roster.length) return false;
+  if (state.scenePersistence !== "remote") return true;
+  if (!state.sceneRemoteExists) return true;
+  return savedTokenCount > 0;
 }
 
 function seedInitialTokens() {

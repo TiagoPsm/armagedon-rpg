@@ -28,6 +28,60 @@ import {
   transferMemoryBetweenPlayers
 } from "./characters.js";
 import { getMesaScene, saveMesaScene } from "./mesa.js";
+import { MesaRealtimeRoom } from "./mesa-realtime.js";
+
+export { MesaRealtimeRoom };
+
+function getMesaRealtimeStub(env) {
+  if (!env.MESA_REALTIME?.getByName) return null;
+  return env.MESA_REALTIME.getByName("default");
+}
+
+async function handleMesaRealtime(request, env, origin) {
+  if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") {
+    return errorJson("WebSocket obrigatorio para realtime da Mesa.", 426, origin);
+  }
+
+  const session = await requireAuth(request, env);
+  const stub = getMesaRealtimeStub(env);
+  if (!stub) {
+    return errorJson("Realtime da Mesa indisponivel.", 503, origin);
+  }
+
+  const headers = new Headers(request.headers);
+  headers.set("x-armagedon-username", session.username || "usuario");
+  headers.set("x-armagedon-role", session.role || "player");
+
+  const realtimeUrl = new URL(request.url);
+  realtimeUrl.pathname = "/api/mesa/realtime";
+  return stub.fetch(new Request(realtimeUrl, { method: "GET", headers }));
+}
+
+async function broadcastMesaScene(env, scene, actor) {
+  const stub = getMesaRealtimeStub(env);
+  if (!stub) return;
+
+  try {
+    await stub.fetch("https://mesa-realtime.local/broadcast", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json; charset=utf-8"
+      },
+      body: JSON.stringify({
+        type: "mesa:scene",
+        scene,
+        actor: {
+          id: actor.sub,
+          username: actor.username,
+          role: actor.role
+        },
+        sentAt: new Date().toISOString()
+      })
+    });
+  } catch (error) {
+    console.warn("Falha ao transmitir cena da Mesa.", error);
+  }
+}
 
 function withCors(response, origin) {
   const headers = new Headers(response.headers);
@@ -93,6 +147,10 @@ export default {
     try {
       if (path === "/api/health" && request.method === "GET") {
         return withCors(json({ ok: true, service: "armagedon-cloudflare" }), origin);
+      }
+
+      if (path === "/api/mesa/realtime" && request.method === "GET") {
+        return await handleMesaRealtime(request, env, origin);
       }
 
       if (path === "/api/auth/login" && request.method === "POST") {
@@ -311,7 +369,9 @@ export default {
       if (path === "/api/mesa/scene" && request.method === "PUT") {
         const session = await requireAuth(request, env);
         const body = await readJson(request);
-        return withCors(json(await saveMesaScene(env, session, body)), origin);
+        const saved = await saveMesaScene(env, session, body);
+        await broadcastMesaScene(env, saved, session);
+        return withCors(json(saved), origin);
       }
 
       if (path === "/api/transfers/items/player-to-player" && request.method === "POST") {

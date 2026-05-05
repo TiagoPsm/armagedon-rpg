@@ -63,7 +63,7 @@
         <h1>Mesa Virtual</h1>
         <p class="mesa-lead">
           Palco oficial da campanha, conectado as fichas salvas quando a API esta ativa.
-          A cena pode ser persistida no servidor; a sincronizacao ao vivo entra na etapa realtime.
+          O mestre organiza tokens existentes e todos acompanham a cena em tempo real.
         </p>
       </div>
 
@@ -107,7 +107,7 @@
             <div class="scene-status-copy">
               <span class="scene-status-label">Estado atual</span>
               <strong id="sceneStateTitle">Mesa pronta</strong>
-              <p id="sceneStateCopy">A escalacao vem das fichas salvas; a cena ainda aguarda realtime.</p>
+              <p id="sceneStateCopy">A escalacao vem das fichas salvas e a cena sincroniza com jogadores conectados.</p>
             </div>
               <div class="scene-status-actions">
                 <button type="button" class="btn btn-ghost btn-small" id="resetMesaBtn">Limpar cena</button>
@@ -141,7 +141,7 @@
             <div class="stage-footer-copy">
               <span class="panel-kicker">Cena da mesa</span>
               <p>
-                Tokens e status usam as fichas disponiveis; o realtime da cena entra com Durable Objects.
+                Tokens e status usam as fichas disponiveis; a cena ao vivo usa Durable Objects.
               </p>
             </div>
           </div>
@@ -189,13 +189,13 @@
     </section>
   </main>
 
-  <script src="js/runtime-config.js?v=2026-04-10-home-ritual"></script>
-  <script src="js/api.js?v=2026-05-01-mesa-scene-1"></script>
+  <script src="js/runtime-config.js?v=2026-05-04-mesa-realtime-1"></script>
+  <script src="js/api.js?v=2026-05-04-mesa-realtime-1"></script>
   <script src="js/ui.js?v=2026-05-01-cursor-glow"></script>
-  <script src="js/auth.js?v=2026-04-20-site-speed-1"></script>
-  <script src="js/mesa-core.js?v=2026-05-04-mesa-init-guard-1"></script>
-  <script src="js/mesa-stage.js?v=2026-05-01-mesa-scene-1"></script>
-  <script src="js/mesa-roster.js?v=2026-05-01-mesa-scene-1"></script>
+  <script src="js/auth.js?v=2026-05-04-mesa-realtime-1"></script>
+  <script src="js/mesa-core.js?v=2026-05-04-mesa-realtime-1"></script>
+  <script src="js/mesa-stage.js?v=2026-05-04-mesa-realtime-1"></script>
+  <script src="js/mesa-roster.js?v=2026-05-04-mesa-realtime-1"></script>
   <script src="js/mesa-inspector.js?v=2026-04-25-mesa-official-1"></script>
   <script src="js/mesa-storage.js?v=2026-04-24-split-1"></script>
   <script src="js/mesa-init.js?v=2026-04-24-split-1"></script>

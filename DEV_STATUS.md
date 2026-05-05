@@ -28,6 +28,7 @@ Registro minimo esperado:
 - Frontend aponta para a API em:
   - `https://armagedon-api.tiagopsm2008.workers.dev/api`
 - Worker usa o banco D1 `armagedon`
+- Realtime da Mesa usa Cloudflare Durable Objects com WebSocket nativo
 - A ficha e armazenada principalmente em JSON dentro da tabela `characters`
 - Nao existe build/bundler nesta etapa
 - Scripts continuam carregados por `<script src="..."></script>`
@@ -67,6 +68,7 @@ Registro minimo esperado:
 - Progressao por Essencias da Alma implementada
 - Rolagem de dados na ficha implementada
 - Mesa virtual com roster, palco, inspetor e edicao local/online de status
+- Mesa virtual sincroniza cena em tempo real para mestre e jogadores conectados
 - Jogador pode alterar Integridade atual na propria ficha e na Mesa
 - Vida atual de jogador, NPC e monstro nao pode passar da Vida maxima
 - Integridade atual continua limitada pela Integridade maxima
@@ -82,6 +84,23 @@ Registro minimo esperado:
 - Home/login ja segue essa mesma linguagem visual
 
 ## Ultima Etapa Concluida
+
+- Realtime oficial da Mesa em 2026-05-04:
+  - objetivo: permitir que o mestre adicione jogadores, NPCs e monstros existentes na Mesa e que todos vejam a cena atualizada em tempo real
+  - `cloudflare/src/mesa-realtime.js`: criado Durable Object `MesaRealtimeRoom` para aceitar WebSockets, registrar presenca e transmitir eventos da cena
+  - `cloudflare/wrangler.toml`: adicionados binding `MESA_REALTIME` e migration `v1-mesa-realtime`
+  - `cloudflare/src/index.js`: adicionada rota `GET /api/mesa/realtime`; `PUT /api/mesa/scene` agora salva no D1 e transmite `mesa:scene`
+  - `cloudflare/src/auth.js`: `requireAuth()` aceita token JWT por query string para conexao WebSocket do navegador
+  - `js/api.js`: removida tentativa antiga de Socket.IO e criada conexao WebSocket nativa para `/mesa/realtime`
+  - `js/runtime-config.js`: realtime habilitado, mas a conexao so abre quando a pagina chama `APP.connectRealtime()`
+  - `js/mesa-core.js`: Mesa assina `mesa:ready`, `mesa:presence` e `mesa:scene`, atualizando roster/cena ao receber broadcast
+  - `js/mesa-stage.js`: `Limpar cena` agora deixa o palco vazio de fato para o mestre adicionar tokens manualmente pelo roster
+  - `js/mesa-roster.js` e `mesa.html`: textos atualizados para comunicar sincronizacao ao vivo e contagem `disponiveis/total`
+  - `js/auth.js`: sessao backend pode ser recuperada a partir de token salvo quando o objeto de sessao local estiver ausente
+  - `index.html`, `ficha.html`, `mesa.html` e `regras.html`: cache bust de `runtime-config.js`, `api.js` e `auth.js` atualizado para `2026-05-04-mesa-realtime-1`
+  - Worker publicado: `armagedon-api`, version ID `2cab1568-cc32-4a79-81d0-07851eac7a4a`
+  - validacoes executadas: `node --check` em `js/` e `cloudflare/src/`; `git diff --check`; varredura HTML/CSS de referencias e IDs duplicados; `wrangler deploy --dry-run`; servidor local com HTTP 200 nas quatro paginas; deploy real do Worker; login mestre HTTP 200; `GET /api/mesa/scene` HTTP 200; duas conexoes WebSocket receberam `mesa:ready`; `PUT /api/mesa/scene` transmitiu `mesa:scene` com 5 tokens para outra conexao
+  - observacao de QA: Edge headless/CDP nao iniciou neste ambiente; validar visualmente no navegador real apos GitHub Pages publicar o cache bust novo
 
 - Correcao de tokens iniciais da Mesa em 2026-05-04:
   - problema identificado: a API oficial tinha diretorio populado, mas a cena `default` estava salva com `0` tokens; em navegadores com cache/diretorio local desatualizado, a Mesa podia abrir sem tokens de jogadores, NPCs ou monstros

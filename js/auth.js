@@ -13,11 +13,30 @@ const AUTH = {
 
     this._initPromise = (async () => {
       this._backendReady = await APP.init();
-      const session = this.getSession();
+      let session = this.getSession();
+      const storedToken = String(localStorage.getItem(this.TOKEN_KEY) || "").trim();
 
       if (!this._backendReady && session?.backend) {
         this.clearSession();
         return null;
+      }
+
+      if (this._backendReady && !session?.token && storedToken) {
+        APP.setToken(storedToken);
+        try {
+          const payload = await APP.getSession();
+          this.setSessionObject({
+            username: payload.user.username,
+            role: payload.user.role,
+            token: storedToken,
+            backend: true
+          });
+          await this.refreshDirectory();
+          session = this.getSession();
+        } catch {
+          this.clearSession();
+          return null;
+        }
       }
 
       if (this._backendReady && session?.token) {

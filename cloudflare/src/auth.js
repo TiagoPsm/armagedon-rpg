@@ -163,7 +163,9 @@ async function getUserByUsername(env, username) {
 
 async function requireAuth(request, env) {
   const authorization = request.headers.get("authorization") || "";
-  const token = authorization.replace(/^Bearer\s+/i, "").trim();
+  const headerToken = authorization.replace(/^Bearer\s+/i, "").trim();
+  const queryToken = new URL(request.url).searchParams.get("token") || "";
+  const token = headerToken || queryToken.trim();
 
   if (!token) {
     throw new Response(JSON.stringify({ error: "Sessão ausente." }), { status: 401 });

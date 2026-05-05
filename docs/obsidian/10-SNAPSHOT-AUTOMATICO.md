@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-04 18:34:37 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-04 23:37:21 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,17 +13,33 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `2d7b7ea 2026-05-04 Registra seed dos tokens da mesa`
+- Ultimo commit: `be5c7db 2026-05-04 Garante inicializacao da mesa`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
+M  cloudflare/src/auth.js
+M  cloudflare/src/index.js
+A  cloudflare/src/mesa-realtime.js
+M  cloudflare/wrangler.toml
 M  docs/obsidian/01-CONTEXTO-ATUAL.md
+M  docs/obsidian/02-ARQUITETURA.md
+M  docs/obsidian/04-PENDENCIAS.md
+M  docs/obsidian/05-DEPLOY.md
 M  docs/obsidian/07-MESA.md
+M  docs/obsidian/09-HISTORICO-DE-SESSOES.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  ficha.html
+M  index.html
+M  js/api.js
+M  js/auth.js
 M  js/mesa-core.js
+M  js/mesa-roster.js
+M  js/mesa-stage.js
+M  js/runtime-config.js
 M  mesa.html
+M  regras.html
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -36,11 +52,27 @@ M  mesa.html
 
 ```text
 DEV_STATUS.md
+cloudflare/src/auth.js
+cloudflare/src/index.js
+cloudflare/src/mesa-realtime.js
+cloudflare/wrangler.toml
 docs/obsidian/01-CONTEXTO-ATUAL.md
+docs/obsidian/02-ARQUITETURA.md
+docs/obsidian/04-PENDENCIAS.md
+docs/obsidian/05-DEPLOY.md
 docs/obsidian/07-MESA.md
+docs/obsidian/09-HISTORICO-DE-SESSOES.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+ficha.html
+index.html
+js/api.js
+js/auth.js
 js/mesa-core.js
+js/mesa-roster.js
+js/mesa-stage.js
+js/runtime-config.js
 mesa.html
+regras.html
 ```
 
 ## Paginas Principais
@@ -111,10 +143,10 @@ mesa.html
 Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
-   13,08 MB  assets\sheet-fire-background.mp4
    13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
-    0,99 MB  logo-rpg-armagedon.png
+   13,08 MB  assets\sheet-fire-background.mp4
     0,99 MB  assets\logo-rpg-armagedon.png
+    0,99 MB  logo-rpg-armagedon.png
     0,19 MB  Logo app.jpg
     0,06 MB  css\ficha-inventory-memory.css
     0,05 MB  server\package-lock.json

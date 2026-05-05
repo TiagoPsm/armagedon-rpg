@@ -68,11 +68,17 @@ Confirmar:
 
 - Schema D1 aplicado no banco remoto `armagedon`.
 - Tabela `mesa_scenes` confirmada.
-- Worker `armagedon-api` publicado.
-- Version ID: `44ddb8ef-776e-4bdc-841b-9dd171af1690`
+- Worker `armagedon-api` publicado com persistencia D1 inicial.
+- Version ID inicial: `44ddb8ef-776e-4bdc-841b-9dd171af1690`
+- Worker atualizado com Durable Object realtime da Mesa.
+- Version ID realtime: `2cab1568-cc32-4a79-81d0-07851eac7a4a`
 - Validacao:
   - `GET /api/health`: HTTP 200
   - `GET /api/mesa/scene` sem sessao: HTTP 401
+  - login mestre: HTTP 200
+  - `GET /api/mesa/scene` autenticado: HTTP 200
+  - duas conexoes `wss://.../api/mesa/realtime`: receberam `mesa:ready`
+  - `PUT /api/mesa/scene`: transmitiu `mesa:scene` para outra conexao
 
 ## Deploy GitHub Pages 2026-05-04
 
@@ -83,5 +89,5 @@ Confirmar:
 
 ## Proximo Deploy Pendente
 
-- Nenhum deploy pendente para a base de persistencia da Mesa.
-- Proxima etapa de produto: validacao logada de mestre/jogador e depois realtime com Durable Objects.
+- GitHub Pages precisa publicar o frontend com cache bust `2026-05-04-mesa-realtime-1`.
+- Apos Pages concluir, validar no navegador real com mestre e jogador simultaneos.
