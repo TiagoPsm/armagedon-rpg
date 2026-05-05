@@ -1,5 +1,5 @@
 function renderInspector() {
-  const inspector = document.getElementById("tokenInspector");
+  const inspector = getMesaDomRef("tokenInspector");
   if (!inspector) return;
 
   const token = getSelectedToken();
@@ -23,7 +23,7 @@ function renderInspector() {
       <div class="token-inspector-hero">
         <div class="token-inspector-avatar">
           ${token.imageUrl
-            ? `<img src="${escapeAttribute(token.imageUrl)}" alt="${escapeAttribute(token.name)}" draggable="false" />`
+            ? `<img src="${escapeAttribute(token.imageUrl)}" alt="${escapeAttribute(token.name)}" width="120" height="120" loading="lazy" decoding="async" draggable="false" />`
             : `<span class="mesa-token-avatar-fallback">${escapeHtml(token.initials)}</span>`}
         </div>
         <div class="token-inspector-copy">

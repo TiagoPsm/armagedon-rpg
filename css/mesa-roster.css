@@ -2,6 +2,7 @@
   display: grid;
   gap: 0.9rem;
   margin-top: 1rem;
+  contain: layout paint;
 }
 
 .roster-group {

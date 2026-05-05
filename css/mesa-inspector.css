@@ -1,6 +1,7 @@
 .token-inspector {
   display: grid;
   gap: 1rem;
+  contain: layout paint;
 }
 
 .token-inspector-card {

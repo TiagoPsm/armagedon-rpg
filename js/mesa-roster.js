@@ -1,10 +1,10 @@
 function renderSummary() {
   const renderedTokens = getRenderedTokens();
-  const activeTokenCount = document.getElementById("activeTokenCount");
-  const roleBadge = document.getElementById("roleBadge");
-  const roleSummary = document.getElementById("roleSummary");
-  const sceneStateTitle = document.getElementById("sceneStateTitle");
-  const sceneStateCopy = document.getElementById("sceneStateCopy");
+  const activeTokenCount = getMesaDomRef("activeTokenCount");
+  const roleBadge = getMesaDomRef("roleBadge");
+  const roleSummary = getMesaDomRef("roleSummary");
+  const sceneStateTitle = getMesaDomRef("sceneStateTitle");
+  const sceneStateCopy = getMesaDomRef("sceneStateCopy");
 
   if (activeTokenCount) activeTokenCount.textContent = String(renderedTokens.length);
   if (roleBadge) roleBadge.textContent = isMaster() ? "Mestre" : "Jogador";
@@ -38,11 +38,11 @@ function renderSummary() {
 }
 
 function renderControls() {
-  const previewRow = document.getElementById("playerPreviewRow");
-  const previewToggle = document.getElementById("playerPreviewToggle");
-  const stageViewBadge = document.getElementById("stageViewBadge");
-  const stageHintBadge = document.getElementById("stageHintBadge");
-  const fullscreenMesaBtn = document.getElementById("fullscreenMesaBtn");
+  const previewRow = getMesaDomRef("previewRow");
+  const previewToggle = getMesaDomRef("previewToggle");
+  const stageViewBadge = getMesaDomRef("stageViewBadge");
+  const stageHintBadge = getMesaDomRef("stageHintBadge");
+  const fullscreenMesaBtn = getMesaDomRef("fullscreenMesaBtn");
 
   if (previewRow) {
     previewRow.classList.toggle("hidden", !isMaster());
@@ -74,8 +74,8 @@ function renderControls() {
 }
 
 function renderRoster() {
-  const rosterList = document.getElementById("rosterList");
-  const rosterCountBadge = document.getElementById("rosterCountBadge");
+  const rosterList = getMesaDomRef("rosterList");
+  const rosterCountBadge = getMesaDomRef("rosterCountBadge");
   if (!rosterList || !rosterCountBadge) return;
 
   const filteredRoster = getFilteredRoster();

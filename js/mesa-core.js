@@ -18,6 +18,28 @@ const STAGE_SLOT_GAP_X = 17.5;
 const STAGE_SLOT_GAP_Y = 22.5;
 const STAGE_SLOT_COLLISION_X = 8.5;
 const STAGE_SLOT_COLLISION_Y = 11.5;
+const MESA_RENDER_PARTS = ["header", "summary", "controls", "roster", "stage", "inspector"];
+const MESA_DOM_IDS = {
+  headerUser: "headerUser",
+  activeTokenCount: "activeTokenCount",
+  roleBadge: "roleBadge",
+  roleSummary: "roleSummary",
+  sceneStateTitle: "sceneStateTitle",
+  sceneStateCopy: "sceneStateCopy",
+  previewRow: "playerPreviewRow",
+  previewToggle: "playerPreviewToggle",
+  stageViewBadge: "stageViewBadge",
+  stageHintBadge: "stageHintBadge",
+  fullscreenMesaBtn: "fullscreenMesaBtn",
+  rosterSearch: "rosterSearch",
+  rosterList: "rosterList",
+  rosterCountBadge: "rosterCountBadge",
+  stage: "mesaStage",
+  emptyState: "mesaEmptyState",
+  tokenInspector: "tokenInspector",
+  resetMesaBtn: "resetMesaBtn",
+  mesaPanelStage: "mesaPanelStage"
+};
 
 const state = {
   session: null,
@@ -34,10 +56,21 @@ const state = {
   realtimeStatus: "offline",
   onlineUsers: []
 };
+const mesaDom = {};
+const pendingMesaRender = Object.fromEntries(MESA_RENDER_PARTS.map(part => [part, false]));
+let mesaRenderFrame = 0;
+let mesaRosterByCharacterKey = new Map();
+let mesaRosterById = new Map();
 let mesaPersistTimer = null;
 let pendingPersistPayload = null;
 let mesaRemotePersistInFlight = false;
 let pendingRemotePersistPayload = null;
+let pendingRemotePersistSignature = "";
+let activeRemotePersistSignature = "";
+let lastPersistedMesaSceneSignature = "";
+let lastRemoteMesaSceneSignature = "";
+let remoteMesaSceneFrame = 0;
+let pendingRemoteMesaSceneData = null;
 let dragAnimationFrame = 0;
 let pendingDragPoint = null;
 const mesaSheetSaveTimers = new Map();
@@ -60,6 +93,7 @@ function bootMesaPage() {
 }
 
 async function initMesaPage() {
+  cacheMesaDomRefs();
   bindEvents();
 
   if (window.AUTH_READY) {
@@ -74,7 +108,7 @@ async function initMesaPage() {
   state.session = session;
   state.role = resolveInitialRole(session);
   await refreshMesaDirectoryBeforeRoster();
-  state.roster = buildRoster();
+  setMesaRoster(buildRoster());
 
   await hydrateState();
   bindMesaRealtime();
@@ -85,24 +119,24 @@ function bindEvents() {
   if (document.body.dataset.mesaEventsBound === "1") return;
   document.body.dataset.mesaEventsBound = "1";
 
-  const previewToggle = document.getElementById("playerPreviewToggle");
-  const rosterSearch = document.getElementById("rosterSearch");
-  const resetMesaBtn = document.getElementById("resetMesaBtn");
-  const stage = document.getElementById("mesaStage");
-  const fullscreenMesaBtn = document.getElementById("fullscreenMesaBtn");
-  const rosterList = document.getElementById("rosterList");
-  const tokenInspector = document.getElementById("tokenInspector");
+  const previewToggle = getMesaDomRef("previewToggle");
+  const rosterSearch = getMesaDomRef("rosterSearch");
+  const resetMesaBtn = getMesaDomRef("resetMesaBtn");
+  const stage = getMesaDomRef("stage");
+  const fullscreenMesaBtn = getMesaDomRef("fullscreenMesaBtn");
+  const rosterList = getMesaDomRef("rosterList");
+  const tokenInspector = getMesaDomRef("tokenInspector");
 
   previewToggle?.addEventListener("change", event => {
     if (!isMaster()) return;
     state.previewPlayerView = Boolean(event.target.checked);
     persistState();
-    renderAll();
+    scheduleMesaRender({ summary: true, controls: true, stage: true, inspector: true });
   });
 
   rosterSearch?.addEventListener("input", event => {
     state.search = String(event.target.value || "").trim().toLowerCase();
-    renderRoster();
+    scheduleMesaRender({ roster: true });
   });
 
   resetMesaBtn?.addEventListener("click", () => {
@@ -147,32 +181,32 @@ function bindMesaRealtime() {
 
   window.APP.on("socket:connect", () => {
     state.realtimeStatus = "online";
-    renderSummary();
+    scheduleMesaRender({ summary: true });
   });
 
   window.APP.on("socket:disconnect", () => {
     state.realtimeStatus = "offline";
-    renderSummary();
+    scheduleMesaRender({ summary: true });
   });
 
   window.APP.on("socket:error", () => {
     state.realtimeStatus = "error";
-    renderSummary();
+    scheduleMesaRender({ summary: true });
   });
 
   window.APP.on("mesa:ready", payload => {
     state.realtimeStatus = "online";
     updateMesaPresence(payload);
-    renderSummary();
+    scheduleMesaRender({ summary: true });
   });
 
   window.APP.on("mesa:presence", payload => {
     updateMesaPresence(payload);
-    renderSummary();
+    scheduleMesaRender({ summary: true });
   });
 
   window.APP.on("mesa:scene", payload => {
-    void applyRemoteMesaSceneMessage(payload);
+    applyRemoteMesaSceneMessage(payload);
   });
 
   if (window.AUTH?.isBackendEnabled?.() && window.APP?.connectRealtime) {
@@ -191,23 +225,76 @@ function updateMesaPresence(payload) {
     .filter(user => user.username);
 }
 
-async function applyRemoteMesaSceneMessage(payload) {
-  const remoteData = payload?.scene?.data && typeof payload.scene.data === "object"
-    ? payload.scene.data
-    : payload?.data && typeof payload.data === "object"
-      ? payload.data
-      : null;
-
+function applyRemoteMesaSceneMessage(payload) {
+  const remoteData = extractMesaSceneData(payload);
   if (!remoteData) return;
 
+  const remoteSignature = getMesaSceneSignature(remoteData);
+  if (remoteSignature && remoteSignature === lastRemoteMesaSceneSignature && hasPendingMesaScenePersist()) {
+    return;
+  }
+
+  if (remoteSignature && remoteSignature === getCurrentMesaSceneSignature()) {
+    lastPersistedMesaSceneSignature = remoteSignature;
+    lastRemoteMesaSceneSignature = remoteSignature;
+    return;
+  }
+
+  pendingRemoteMesaSceneData = remoteData;
+  if (remoteMesaSceneFrame) return;
+
+  remoteMesaSceneFrame = requestMesaRenderFrame(() => {
+    remoteMesaSceneFrame = 0;
+    const nextRemoteData = pendingRemoteMesaSceneData;
+    pendingRemoteMesaSceneData = null;
+    void applyRemoteMesaSceneSnapshot(nextRemoteData);
+  });
+}
+
+function extractMesaSceneData(payload) {
+  if (payload?.scene?.data && typeof payload.scene.data === "object") return payload.scene.data;
+  if (payload?.data && typeof payload.data === "object") return payload.data;
+  if (payload && typeof payload === "object" && Array.isArray(payload.tokens)) return payload;
+  return null;
+}
+
+async function applyRemoteMesaSceneSnapshot(remoteData) {
+  if (!remoteData) return;
+
+  const remoteSignature = getMesaSceneSignature(remoteData);
+  if (remoteSignature && remoteSignature === lastRemoteMesaSceneSignature && hasPendingMesaScenePersist()) {
+    return;
+  }
+
+  if (remoteSignature && remoteSignature === getCurrentMesaSceneSignature()) {
+    lastPersistedMesaSceneSignature = remoteSignature;
+    lastRemoteMesaSceneSignature = remoteSignature;
+    return;
+  }
+
   try {
-    await refreshMesaDirectoryBeforeRoster();
-    state.roster = buildRoster();
+    const previousTokenIds = getMesaSceneTokenIdSet(state.tokens);
+    const needsRosterRefresh = hasMissingMesaRosterEntries(remoteData);
+    if (needsRosterRefresh) {
+      await refreshMesaDirectoryBeforeRoster();
+      setMesaRoster(buildRoster());
+    }
+
     state.scenePersistence = "remote";
     state.sceneRemoteExists = true;
     localStorage.setItem(MESA_STORAGE_KEY, JSON.stringify(remoteData));
     applyMesaSceneSnapshot(remoteData);
-    renderAll();
+    lastPersistedMesaSceneSignature = remoteSignature;
+    lastRemoteMesaSceneSignature = remoteSignature;
+
+    const membershipChanged = hasMesaTokenMembershipChanged(previousTokenIds, state.tokens);
+    scheduleMesaRender({
+      summary: true,
+      controls: true,
+      roster: membershipChanged || needsRosterRefresh,
+      stage: true,
+      inspector: true
+    });
   } catch (error) {
     console.warn("Falha ao aplicar cena recebida em tempo real.", error);
   }
@@ -242,6 +329,106 @@ async function refreshMesaDirectoryBeforeRoster() {
   } catch (error) {
     console.warn("Falha ao atualizar diretorio da mesa antes do roster.", error);
   }
+}
+
+function cacheMesaDomRefs() {
+  Object.keys(MESA_DOM_IDS).forEach(key => {
+    mesaDom[key] = document.getElementById(MESA_DOM_IDS[key]);
+  });
+}
+
+function getMesaDomRef(key) {
+  if (!MESA_DOM_IDS[key]) return null;
+  const cached = mesaDom[key];
+  if (cached && cached.isConnected !== false) return cached;
+  mesaDom[key] = document.getElementById(MESA_DOM_IDS[key]);
+  return mesaDom[key];
+}
+
+function requestMesaRenderFrame(callback) {
+  if (typeof window.requestAnimationFrame === "function") {
+    return window.requestAnimationFrame(callback);
+  }
+  return window.setTimeout(callback, 16);
+}
+
+function cancelMesaRenderFrame(frameId) {
+  if (!frameId) return;
+  if (typeof window.cancelAnimationFrame === "function") {
+    window.cancelAnimationFrame(frameId);
+    return;
+  }
+  window.clearTimeout(frameId);
+}
+
+function scheduleMesaRender(parts = {}) {
+  let hasPendingRender = false;
+
+  MESA_RENDER_PARTS.forEach(part => {
+    if (parts.all || parts[part]) {
+      pendingMesaRender[part] = true;
+      hasPendingRender = true;
+    }
+  });
+
+  if (!hasPendingRender || mesaRenderFrame) return;
+  mesaRenderFrame = requestMesaRenderFrame(flushScheduledMesaRender);
+}
+
+function flushScheduledMesaRender() {
+  mesaRenderFrame = 0;
+  const nextRender = {};
+  MESA_RENDER_PARTS.forEach(part => {
+    nextRender[part] = pendingMesaRender[part];
+    pendingMesaRender[part] = false;
+  });
+
+  syncSelectedToken();
+  if (nextRender.header) renderHeader();
+  if (nextRender.summary) renderSummary();
+  if (nextRender.controls) renderControls();
+  if (nextRender.roster) renderRoster();
+  if (nextRender.stage) renderStage();
+  if (nextRender.inspector) renderInspector();
+}
+
+function clearScheduledMesaRender() {
+  if (mesaRenderFrame) {
+    cancelMesaRenderFrame(mesaRenderFrame);
+    mesaRenderFrame = 0;
+  }
+  MESA_RENDER_PARTS.forEach(part => {
+    pendingMesaRender[part] = false;
+  });
+}
+
+function setMesaRoster(roster) {
+  state.roster = Array.isArray(roster) ? roster : [];
+  mesaRosterByCharacterKey = new Map(state.roster.map(entry => [String(entry.characterKey || ""), entry]));
+  mesaRosterById = new Map(state.roster.map(entry => [String(entry.id || ""), entry]));
+}
+
+function getRosterEntryByCharacterKey(characterKey) {
+  return mesaRosterByCharacterKey.get(String(characterKey || "")) || null;
+}
+
+function getRosterEntryById(entryId) {
+  return mesaRosterById.get(String(entryId || "")) || null;
+}
+
+function hasMissingMesaRosterEntries(sceneData) {
+  const savedTokens = Array.isArray(sceneData?.tokens) ? sceneData.tokens : [];
+  return savedTokens.some(token => !getRosterEntryByCharacterKey(token?.characterKey));
+}
+
+function getMesaSceneTokenIdSet(tokens) {
+  return new Set((Array.isArray(tokens) ? tokens : []).map(token => String(token?.id || "")).filter(Boolean));
+}
+
+function hasMesaTokenMembershipChanged(previousTokenIds, nextTokens) {
+  const nextTokenIds = getMesaSceneTokenIdSet(nextTokens);
+  if (previousTokenIds.size !== nextTokenIds.size) return true;
+  return [...previousTokenIds].some(tokenId => !nextTokenIds.has(tokenId));
 }
 
 function buildRoster() {
@@ -513,6 +700,7 @@ async function loadMesaSceneSnapshot() {
       state.sceneRemoteExists = Boolean(remoteScene?.createdAt || remoteScene?.updatedAt);
       localStorage.setItem(MESA_STORAGE_KEY, JSON.stringify(remoteData));
       state.scenePersistence = "remote";
+      rememberMesaSceneSignature(remoteData, { persisted: true, remote: true });
       return remoteData;
     } catch (error) {
       console.warn("Falha ao carregar cena oficial da mesa.", error);
@@ -521,14 +709,15 @@ async function loadMesaSceneSnapshot() {
 
   state.scenePersistence = "local";
   state.sceneRemoteExists = false;
-  return readJsonStorage(MESA_STORAGE_KEY, {});
+  const localData = readJsonStorage(MESA_STORAGE_KEY, {});
+  rememberMesaSceneSignature(localData, { persisted: true });
+  return localData;
 }
 
 function applyMesaSceneSnapshot(saved) {
-  const rosterMap = new Map(state.roster.map(entry => [entry.characterKey, entry]));
   const savedTokens = Array.isArray(saved?.tokens) ? saved.tokens : [];
   const mergedTokens = savedTokens
-    .map(token => mergeTokenWithRoster(token, rosterMap.get(String(token.characterKey || ""))))
+    .map(token => mergeTokenWithRoster(token, getRosterEntryByCharacterKey(token?.characterKey)))
     .filter(Boolean);
 
   const seeded = !mergedTokens.length && shouldSeedMesaTokens(savedTokens.length);
@@ -589,7 +778,63 @@ function pickInitialSelectedToken(savedId) {
   return visibleTokens[0].id;
 }
 
+function getMesaSceneSignature(payload) {
+  return JSON.stringify(normalizeMesaScenePayload(payload));
+}
+
+function getCurrentMesaSceneSignature() {
+  return getMesaSceneSignature(createMesaScenePayloadFromState());
+}
+
+function hasPendingMesaScenePersist() {
+  return Boolean(pendingPersistPayload || pendingRemotePersistPayload || mesaRemotePersistInFlight);
+}
+
+function createMesaScenePayloadFromState() {
+  return {
+    previewPlayerView: Boolean(state.previewPlayerView),
+    selectedTokenId: state.selectedTokenId,
+    tokens: state.tokens.map(token => ({
+      id: token.id,
+      characterKey: token.characterKey,
+      x: roundTo(token.x, 2),
+      y: roundTo(token.y, 2),
+      visibleToPlayers: token.visibleToPlayers !== false,
+      statsVisibleToPlayers: normalizeStatsVisibility(token.type, token.statsVisibleToPlayers),
+      order: token.order || 1
+    }))
+  };
+}
+
+function rememberMesaSceneSignature(payload, options = {}) {
+  const signature = getMesaSceneSignature(payload);
+  if (options.persisted) lastPersistedMesaSceneSignature = signature;
+  if (options.remote) lastRemoteMesaSceneSignature = signature;
+  return signature;
+}
+
+function normalizeMesaScenePayload(payload = {}) {
+  const tokens = Array.isArray(payload?.tokens) ? payload.tokens : [];
+  return {
+    previewPlayerView: Boolean(payload?.previewPlayerView),
+    selectedTokenId: String(payload?.selectedTokenId || ""),
+    tokens: tokens
+      .map(token => ({
+        id: String(token?.id || ""),
+        characterKey: String(token?.characterKey || ""),
+        x: roundTo(clamp(Number(token?.x), 0, 100), 2),
+        y: roundTo(clamp(Number(token?.y), 0, 100), 2),
+        visibleToPlayers: token?.visibleToPlayers !== false,
+        statsVisibleToPlayers: token?.statsVisibleToPlayers === true,
+        order: asPositiveInt(token?.order, 1)
+      }))
+      .filter(token => token.id && token.characterKey)
+      .sort((a, b) => a.id.localeCompare(b.id))
+  };
+}
+
 function renderAll() {
+  clearScheduledMesaRender();
   syncSelectedToken();
   renderHeader();
   renderSummary();
@@ -600,7 +845,7 @@ function renderAll() {
 }
 
 function renderHeader() {
-  const headerUser = document.getElementById("headerUser");
+  const headerUser = getMesaDomRef("headerUser");
   if (headerUser) {
     headerUser.textContent = state.session?.username || "Convidado";
   }

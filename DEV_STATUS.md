@@ -85,6 +85,17 @@ Registro minimo esperado:
 
 ## Ultima Etapa Concluida
 
+- Otimizacao leve da Mesa em 2026-05-05:
+  - objetivo: reduzir custo no navegador sem redesign e sem alterar o formato publico de `GET/PUT /api/mesa/scene` ou `GET /api/mesa/realtime`
+  - `js/mesa-core.js`: adicionados cache de referencias DOM, cache de roster por `characterKey`, agendador `scheduleMesaRender()` com `requestAnimationFrame`, dedupe por assinatura estavel da cena e consolidacao de broadcasts `mesa:scene` recebidos no mesmo frame
+  - `js/mesa-stage.js`: palco passou a renderizar tokens incrementalmente por `Map<tokenId, element>`; drag atualiza apenas `left/top/zIndex` durante movimento e salva apenas ao soltar
+  - `js/mesa-roster.js` e `js/mesa-inspector.js`: renders passam a usar referencias DOM cacheadas; roster so e reagendado quando busca, entrada/saida de token, roster ou fichas mudam
+  - `js/mesa-stage.js` e `js/mesa-inspector.js`: imagens de avatar renderizadas via JS agora usam `loading="lazy"`, `decoding="async"` e dimensoes estaveis
+  - `css/mesa-stage.css`, `css/mesa-roster.css` e `css/mesa-inspector.css`: adicionados `contain: layout paint` em areas pesadas; `will-change` fica limitado ao token durante drag
+  - `mesa.html`: cache bust dos arquivos alterados atualizado para `2026-05-05-mesa-light-1`
+  - comportamento preservado: mestre continua colocando, focando, movendo, removendo e limpando tokens; jogadores continuam recebendo a cena por realtime
+  - validacoes executadas: `node --check` em `js/` e `cloudflare/src/`; `git diff --check`; varredura de referencias locais e IDs duplicados; confirmacao de `window.AUTH`; servidor local com HTTP 200 nas quatro paginas principais; simulacao controlada da Mesa confirmando que selecao nao reconstrui roster/palco, drag nao salva durante movimento, drag salva uma vez ao soltar, payload repetido nao salva de novo e `mesa:scene` igual nao rerenderiza
+
 - Correcao de export global da autenticacao em 2026-05-05:
   - problema identificado apos deploy: `auth.js` declarava `const AUTH`, mas nao expunha `window.AUTH`; a Mesa consulta `window.AUTH`, entao podia ficar parada no HTML inicial (`Convidado`, `Jogador`, `0`) mesmo com API e cena corretas
   - `js/auth.js`: adicionada ponte `window.AUTH = AUTH` antes de iniciar `window.AUTH_READY`

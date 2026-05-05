@@ -66,12 +66,21 @@ Worker/D1:
 - `js/mesa-core.js` deve iniciar por `bootMesaPage()`, com guarda de execucao unica e fallback para `document.readyState !== "loading"`.
 - `Limpar cena` deixa `state.tokens = []` e salva o palco vazio, nao volta a semear tokens automaticamente.
 - `auth.js` deve manter `window.AUTH = AUTH`; a Mesa depende de `window.AUTH` para resolver sessao, diretorio e backend.
+- `renderAll()` deve ficar restrito a boot/hidratacao completa; interacoes comuns devem usar `scheduleMesaRender()` com partes especificas.
+- Selecionar token nao deve rebuildar roster; deve atualizar classe/ordem do token e inspetor.
+- Drag deve alterar apenas `left`, `top` e `zIndex` durante movimento e salvar a cena apenas ao soltar.
+- `mesa:scene` recebido deve ser ignorado quando a assinatura da cena ja for igual ao estado local; broadcasts multiplos no mesmo frame devem aplicar apenas o ultimo.
+- `AUTH.refreshDirectory()` em realtime so deve rodar quando a cena recebida trouxer `characterKey` desconhecida para o roster em cache.
+- O palco usa render incremental por `Map<tokenId, element>`; evitar voltar para `stage.innerHTML = ...` completo em toda interacao.
+- Avatares renderizados por JS devem manter `loading="lazy"`, `decoding="async"` e dimensoes estaveis.
 
 ## Visual
 
 - Mesa usa fundo preto estatico, alinhado ao restante do site.
 - Elementos de palco devem ficar legiveis sem depender de fundo animado.
 - Glow e camadas decorativas nao devem baixar MP4 ou assets grandes.
+- Areas pesadas da Mesa podem usar `contain: layout paint` quando isso nao alterar o visual.
+- `will-change` deve ficar limitado a `.mesa-token.is-dragging`, nao permanente em todos os tokens.
 
 ## Validacao Recomendada
 
@@ -85,8 +94,11 @@ Worker/D1:
 8. Abrir outra sessao conectada e confirmar recebimento de `mesa:scene` sem recarregar.
 9. Reabrir a pagina e confirmar que a cena vem de `GET /api/mesa/scene`.
 10. Conferir console sem erros.
+11. Selecionar token e confirmar que roster nao foi reconstruido.
+12. Mover token e confirmar que o save remoto acontece ao soltar, nao durante o movimento.
+13. Receber `mesa:scene` igual ao estado local e confirmar que nao ocorre rerender nem novo save.
 
 ## Pendencia Imediata
 
-- Validar visualmente no site oficial apos GitHub Pages publicar `auth.js?v=2026-05-05-mesa-auth-export-1`.
-- Conferir com mestre e jogador em navegadores/abas separadas: mestre adiciona/remove/move token e jogador ve a mudanca sem recarregar.
+- Finalizar validacao local e publicar cache bust `2026-05-05-mesa-light-1`.
+- Conferir com mestre e jogador em navegadores/abas separadas: mestre adiciona/remove/move token e jogador ve a mudanca sem recarregar, com interacao mais fluida.

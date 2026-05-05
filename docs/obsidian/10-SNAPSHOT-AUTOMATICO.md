@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-04 23:52:53 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-05 00:28:09 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,23 +13,25 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `ca5dfef 2026-05-04 Adiciona realtime da mesa`
+- Ultimo commit: `44e0c11 2026-05-04 Corrige sessao global da mesa`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
+M  css/mesa-inspector.css
+M  css/mesa-roster.css
+M  css/mesa-stage.css
 M  docs/obsidian/01-CONTEXTO-ATUAL.md
 M  docs/obsidian/04-PENDENCIAS.md
-M  docs/obsidian/05-DEPLOY.md
 M  docs/obsidian/07-MESA.md
 M  docs/obsidian/09-HISTORICO-DE-SESSOES.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  ficha.html
-M  index.html
-M  js/auth.js
+M  js/mesa-core.js
+M  js/mesa-inspector.js
+M  js/mesa-roster.js
+M  js/mesa-stage.js
 M  mesa.html
-M  regras.html
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -42,17 +44,19 @@ M  regras.html
 
 ```text
 DEV_STATUS.md
+css/mesa-inspector.css
+css/mesa-roster.css
+css/mesa-stage.css
 docs/obsidian/01-CONTEXTO-ATUAL.md
 docs/obsidian/04-PENDENCIAS.md
-docs/obsidian/05-DEPLOY.md
 docs/obsidian/07-MESA.md
 docs/obsidian/09-HISTORICO-DE-SESSOES.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-ficha.html
-index.html
-js/auth.js
+js/mesa-core.js
+js/mesa-inspector.js
+js/mesa-roster.js
+js/mesa-stage.js
 mesa.html
-regras.html
 ```
 
 ## Paginas Principais
@@ -123,8 +127,8 @@ regras.html
 Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
-   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
    13,08 MB  assets\sheet-fire-background.mp4
+   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
     0,99 MB  logo-rpg-armagedon.png
     0,99 MB  assets\logo-rpg-armagedon.png
     0,19 MB  Logo app.jpg
@@ -134,7 +138,7 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
     0,03 MB  css\ficha-dice-soul.css
     0,03 MB  apple-touch-icon.png
     0,03 MB  js\ficha-core.js
-    0,02 MB  css\index.css
+    0,03 MB  js\mesa-core.js
 ```
 
 ## Comando De Atualizacao

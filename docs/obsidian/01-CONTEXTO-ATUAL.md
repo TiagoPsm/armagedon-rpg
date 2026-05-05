@@ -50,6 +50,8 @@ Paginas principais:
 - Realtime oficial da Mesa publicado em 2026-05-04: Durable Object `MesaRealtimeRoom`, rota `GET /api/mesa/realtime`, frontend com WebSocket nativo e broadcast `mesa:scene` apos `PUT /api/mesa/scene`.
 - Worker `armagedon-api` atualizado para version ID `2cab1568-cc32-4a79-81d0-07851eac7a4a`.
 - Correcao de 2026-05-05: `js/auth.js` agora expõe `window.AUTH = AUTH`; sem isso a Mesa podia nao resolver sessao e ficar no HTML inicial `Convidado`/`0`.
+- Otimizacao leve de 2026-05-05 na Mesa: render agendado por `requestAnimationFrame`, cache DOM, cache de roster, palco incremental por token, dedupe de cena antes de `PUT /api/mesa/scene` e consolidacao de broadcasts `mesa:scene`.
+- O visual da Mesa foi preservado; os ajustes novos sao internos de performance, com `contain` CSS e `will-change` apenas durante drag.
 
 ## Validacoes Recentes Confirmadas
 
@@ -63,6 +65,9 @@ Paginas principais:
 - WebSocket oficial validado com duas conexoes recebendo `mesa:ready`
 - `PUT /api/mesa/scene` validado transmitindo `mesa:scene` com os 5 tokens atuais
 - Simulacao de Mesa com sessao real do mestre validou renderizacao de usuario, modo Mestre, 5 tokens e roster carregado apos `window.AUTH` ser exportado
+- Sintaxe da otimizacao leve da Mesa validada com `node --check` em `js/` e `cloudflare/src/`; `git diff --check` sem erros
+- Simulacao controlada da otimizacao leve confirmou: selecao nao reconstrui roster/palco, drag nao salva durante movimento, drag salva uma vez ao soltar, payload repetido nao salva e `mesa:scene` igual nao rerenderiza
+- Servidor local respondeu HTTP 200 para `index.html`, `ficha.html`, `mesa.html` e `regras.html`
 
 ## Direcao Visual
 
@@ -83,5 +88,5 @@ Toda etapa importante deve atualizar os `.md` relacionados, especialmente:
 
 ## Pendencia Imediata Da Mesa
 
-- aguardar GitHub Pages publicar os HTMLs com `auth.js?v=2026-05-05-mesa-auth-export-1`
-- validar visualmente no navegador real: mestre coloca/remove tokens e jogador conectado ve a mudanca sem recarregar
+- finalizar validacao local da otimizacao leve da Mesa e publicar cache bust `2026-05-05-mesa-light-1`
+- validar visualmente no navegador real: mestre coloca/remove/move tokens e jogador conectado ve a mudanca sem recarregar

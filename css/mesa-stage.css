@@ -9,6 +9,7 @@
 .mesa-stage-wrap {
   position: relative;
   min-height: 640px;
+  contain: layout paint;
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 30px;
   background:
@@ -45,6 +46,7 @@
 .mesa-stage {
   z-index: 2;
   user-select: none;
+  contain: layout paint;
 }
 
 .mesa-token {
@@ -74,6 +76,7 @@
 
 .mesa-token.is-dragging {
   cursor: grabbing;
+  will-change: left, top, transform;
   box-shadow:
     0 26px 52px rgba(0, 0, 0, 0.46),
     0 0 28px rgba(176, 47, 57, 0.12);

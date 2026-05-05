@@ -2,6 +2,16 @@
 
 Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STATUS.md`.
 
+## 2026-05-05 - Otimizacao Leve Da Mesa
+
+- Mesa manteve visual dark atual, mas reduziu custo interno de render.
+- `scheduleMesaRender()` passou a agrupar renders por frame e por area.
+- Palco passou a atualizar tokens incrementalmente por `Map<tokenId, element>`.
+- Drag atualiza posicao no elemento durante movimento e salva cena apenas ao soltar.
+- Dedupe por assinatura estavel evita `PUT /api/mesa/scene` e `mesa:scene` redundantes.
+- Roster em cache evita `AUTH.refreshDirectory()` em todo broadcast quando as `characterKey` ja sao conhecidas.
+- CSS recebeu containment seguro e `will-change` apenas durante drag.
+
 ## 2026-05-05 - Correcao De Sessao Da Mesa
 
 - Corrigido `auth.js` para expor `window.AUTH = AUTH`.
