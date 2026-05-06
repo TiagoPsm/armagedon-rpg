@@ -56,7 +56,7 @@ function getMesaStageRenderer() {
   if (!stage || !window.MesaRendererV2?.get) return null;
   if (mesaStageRenderer) return mesaStageRenderer;
   mesaStageRenderer = window.MesaRendererV2.get(stage, {
-    workerUrl: "js/mesa-renderer-worker.js?v=2026-05-05-canvas-v2"
+    workerUrl: "js/mesa-renderer-worker.js?v=2026-05-05-card-stability-1"
   });
   return mesaStageRenderer;
 }
@@ -819,7 +819,7 @@ function syncFullscreenState() {
   const isNative = Boolean(panel && document.fullscreenElement === panel);
   const isPseudo = Boolean(panel?.classList.contains("is-pseudo-fullscreen"));
   state.fullscreenMode = isNative ? "native" : isPseudo ? "pseudo" : "off";
-  scheduleMesaRender({ controls: true });
+  scheduleMesaRender({ controls: true, stage: true });
 }
 
 async function exitMesaFullscreen() {
@@ -836,7 +836,7 @@ async function exitMesaFullscreen() {
   panel.classList.remove("is-pseudo-fullscreen");
   document.body.classList.remove("mesa-pseudo-fullscreen");
   state.fullscreenMode = "off";
-  scheduleMesaRender({ controls: true });
+  scheduleMesaRender({ controls: true, stage: true });
 }
 
 function enterPseudoFullscreen() {
@@ -845,7 +845,7 @@ function enterPseudoFullscreen() {
   panel.classList.add("is-pseudo-fullscreen");
   document.body.classList.add("mesa-pseudo-fullscreen");
   state.fullscreenMode = "pseudo";
-  scheduleMesaRender({ controls: true });
+  scheduleMesaRender({ controls: true, stage: true });
 }
 
 function handleGlobalKeydown(event) {

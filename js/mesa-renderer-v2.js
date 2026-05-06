@@ -1,6 +1,6 @@
 (function () {
-  const RENDERER_VERSION = "2026-05-05-canvas-v2";
-  const DEFAULT_WORKER_URL = "js/mesa-renderer-worker.js?v=2026-05-05-canvas-v2";
+  const RENDERER_VERSION = "2026-05-05-card-stability-1";
+  const DEFAULT_WORKER_URL = "js/mesa-renderer-worker.js?v=2026-05-05-card-stability-1";
   const MAX_DPR = 2;
   const IMAGE_RETRY_MS = 30000;
 
@@ -51,20 +51,74 @@
     );
   }
 
-  function resolveTokenDimensions(isFullscreen) {
+  function resolveTokenDimensions() {
     const viewportWidth = Math.max(320, window.innerWidth || 1280);
     const width = viewportWidth <= 760
-      ? Math.min(viewportWidth * 0.54, 164)
-      : isFullscreen
-        ? clamp(viewportWidth * 0.17, 228, 252)
-        : clamp(viewportWidth * 0.105, 148, 170);
+      ? clamp(viewportWidth * 0.58, 164, 176)
+      : clamp(viewportWidth * 0.108, 184, 196);
 
     return {
       width,
-      height: Math.round(width * 1.44),
+      height: Math.round(width * 1.58),
       padding: Math.round(width * 0.078),
       radius: Math.round(width * 0.13)
     };
+  }
+
+  function fitCanvasText(ctx, text, maxWidth) {
+    const source = String(text || "").trim();
+    if (!source || ctx.measureText(source).width <= maxWidth) return source;
+
+    const ellipsis = "...";
+    let low = 0;
+    let high = source.length;
+    while (low < high) {
+      const mid = Math.ceil((low + high) / 2);
+      if (ctx.measureText(source.slice(0, mid).trimEnd() + ellipsis).width <= maxWidth) {
+        low = mid;
+      } else {
+        high = mid - 1;
+      }
+    }
+    return source.slice(0, low).trimEnd() + ellipsis;
+  }
+
+  function appendCanvasEllipsis(ctx, text, maxWidth) {
+    const source = String(text || "").trim();
+    if (!source) return "";
+    const ellipsis = "...";
+    if (ctx.measureText(source + ellipsis).width <= maxWidth) return source + ellipsis;
+    return fitCanvasText(ctx, source, maxWidth);
+  }
+
+  function wrapCanvasText(ctx, text, maxWidth, maxLines) {
+    const source = String(text || "").trim();
+    if (!source) return [];
+
+    const words = source.split(/\s+/).filter(Boolean);
+    const lines = [];
+    let current = "";
+
+    for (const word of words) {
+      const candidate = current ? `${current} ${word}` : word;
+      if (ctx.measureText(candidate).width <= maxWidth) {
+        current = candidate;
+        continue;
+      }
+
+      if (current) lines.push(current);
+      current = ctx.measureText(word).width <= maxWidth ? word : fitCanvasText(ctx, word, maxWidth);
+      if (lines.length >= maxLines - 1) break;
+    }
+
+    if (current && lines.length < maxLines) lines.push(current);
+
+    const usedText = lines.join(" ");
+    if (usedText.length < source.length && lines.length) {
+      lines[lines.length - 1] = appendCanvasEllipsis(ctx, lines[lines.length - 1], maxWidth);
+    }
+
+    return lines.slice(0, maxLines);
   }
 
   function normalizeSnapshot(snapshot) {
@@ -278,7 +332,7 @@
       const size = this.ensureCanvasSize();
       if (!size) return;
 
-      const metrics = resolveTokenDimensions(this.snapshot.isFullscreen);
+      const metrics = resolveTokenDimensions();
       this.layouts.clear();
       [...this.snapshot.tokens]
         .sort((a, b) => (a.order || 0) - (b.order || 0))
@@ -462,11 +516,15 @@
       ctx.font = "600 15px Cinzel, serif";
       ctx.textAlign = "left";
       ctx.textBaseline = "alphabetic";
-      ctx.fillText(String(token.name || "Sem nome"), x, y, width);
+      const nameLines = wrapCanvasText(ctx, token.name || "Sem nome", width, 2);
+      nameLines.forEach((line, index) => {
+        ctx.fillText(line, x, y + index * 15, width);
+      });
 
       ctx.fillStyle = PALETTE.textSoft;
       ctx.font = "13px Crimson Text, serif";
-      ctx.fillText(String(token.ownerCopy || ""), x, y + 17, width);
+      const ownerY = y + Math.max(1, nameLines.length) * 15 + 3;
+      ctx.fillText(fitCanvasText(ctx, token.ownerCopy || "", width), x, ownerY, width);
     }
 
     drawBars(ctx, token, x, y, width) {

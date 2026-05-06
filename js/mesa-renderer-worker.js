@@ -79,6 +79,62 @@ function drawImageCover(context, image, x, y, width, height) {
   context.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
 }
 
+function fitCanvasText(context, text, maxWidth) {
+  const source = String(text || "").trim();
+  if (!source || context.measureText(source).width <= maxWidth) return source;
+
+  const ellipsis = "...";
+  let low = 0;
+  let high = source.length;
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2);
+    if (context.measureText(source.slice(0, mid).trimEnd() + ellipsis).width <= maxWidth) {
+      low = mid;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return source.slice(0, low).trimEnd() + ellipsis;
+}
+
+function appendCanvasEllipsis(context, text, maxWidth) {
+  const source = String(text || "").trim();
+  if (!source) return "";
+  const ellipsis = "...";
+  if (context.measureText(source + ellipsis).width <= maxWidth) return source + ellipsis;
+  return fitCanvasText(context, source, maxWidth);
+}
+
+function wrapCanvasText(context, text, maxWidth, maxLines) {
+  const source = String(text || "").trim();
+  if (!source) return [];
+
+  const words = source.split(/\s+/).filter(Boolean);
+  const lines = [];
+  let current = "";
+
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (context.measureText(candidate).width <= maxWidth) {
+      current = candidate;
+      continue;
+    }
+
+    if (current) lines.push(current);
+    current = context.measureText(word).width <= maxWidth ? word : fitCanvasText(context, word, maxWidth);
+    if (lines.length >= maxLines - 1) break;
+  }
+
+  if (current && lines.length < maxLines) lines.push(current);
+
+  const usedText = lines.join(" ");
+  if (usedText.length < source.length && lines.length) {
+    lines[lines.length - 1] = appendCanvasEllipsis(context, lines[lines.length - 1], maxWidth);
+  }
+
+  return lines.slice(0, maxLines);
+}
+
 function drawStageAtmosphere(context, size) {
   context.save();
   context.globalAlpha = 0.42;
@@ -179,11 +235,15 @@ function drawTokenText(context, token, x, y, width) {
   context.font = "600 15px Cinzel, serif";
   context.textAlign = "left";
   context.textBaseline = "alphabetic";
-  context.fillText(String(token.name || "Sem nome"), x, y, width);
+  const nameLines = wrapCanvasText(context, token.name || "Sem nome", width, 2);
+  nameLines.forEach((line, index) => {
+    context.fillText(line, x, y + index * 15, width);
+  });
 
   context.fillStyle = palette.textSoft;
   context.font = "13px Crimson Text, serif";
-  context.fillText(String(token.ownerCopy || ""), x, y + 17, width);
+  const ownerY = y + Math.max(1, nameLines.length) * 15 + 3;
+  context.fillText(fitCanvasText(context, token.ownerCopy || "", width), x, ownerY, width);
 }
 
 function drawSingleBar(context, label, value, percent, x, y, width, type) {

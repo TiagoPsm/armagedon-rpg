@@ -84,12 +84,15 @@ Worker/D1:
 - O palco usa Canvas/Worker por padrao quando suportado; o renderer DOM legado continua disponivel por `localStorage.mesaRenderer = "dom"`.
 - `OffscreenCanvas` e Worker sao otimizacao progressiva; se falharem, a Mesa deve cair para Canvas 2D principal sem quebrar o uso.
 - Avatares renderizados por JS devem manter `loading="lazy"`, `decoding="async"` e dimensoes estaveis.
+- Cards/tokens do palco devem ter tamanho estavel entre selecao, tela cheia e retorno ao modo normal.
+- Texto de token, roster e inspetor deve quebrar ou truncar de forma controlada, sem compressao visual ou sobreposicao.
 
 ## Visual
 
 - Mesa usa fundo preto estatico, alinhado ao restante do site.
 - Elementos de palco devem ficar legiveis sem depender de fundo animado.
 - Glow e camadas decorativas nao devem baixar MP4 ou assets grandes.
+- Tokens Canvas usam metrica unica de card para evitar mudanca brusca de escala ao alternar fullscreen.
 - Areas pesadas da Mesa podem usar `contain: layout paint` quando isso nao alterar o visual.
 - `will-change` deve ficar limitado a `.mesa-token.is-dragging`, nao permanente em todos os tokens.
 - `content-visibility` pode ser usado em roster/inspetor, mas nunca deve ocultar o palco ativo.

@@ -24,6 +24,10 @@ test("Mesa mantem drag leve em Canvas", async ({ page }) => {
 
   await page.goto(`${baseUrl}/mesa.html`);
   await expect(page.locator("#mesaStage canvas.mesa-stage-canvas")).toHaveCount(1);
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => {
+    window.__mesaLongTasks = [];
+    resolve();
+  })));
 
   await page.locator("#mesaStage").scrollIntoViewIfNeeded();
   const stageBox = await page.locator("#mesaStage").boundingBox();

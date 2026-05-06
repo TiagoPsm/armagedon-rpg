@@ -88,6 +88,15 @@ Registro minimo esperado:
 
 ## Ultima Etapa Concluida
 
+- Estabilizacao visual dos cards da Mesa em 2026-05-05:
+  - objetivo: impedir que os cards/tokens mudem de tamanho ao selecionar, entrar em tela cheia e voltar ao modo normal
+  - `js/mesa-renderer-v2.js`: dimensoes do token Canvas passaram a ser estaveis entre modo normal e fullscreen; largura base aumentada para uma faixa maior que a anterior e altura ajustada para comportar nome, dono e barras sem colisao
+  - `js/mesa-renderer-v2.js` e `js/mesa-renderer-worker.js`: textos do token no Canvas agora usam quebra/truncamento controlado em vez de comprimir a linha dentro do `fillText`
+  - `js/mesa-stage.js`: mudanca de fullscreen tambem reagenda o redraw do palco, mantendo Canvas e estado visual sincronizados
+  - `css/mesa-responsive.css`: fallback DOM recebeu largura unica para `.mesa-token` em modo normal/fullscreen, avatar com proporcao estavel e regras de `overflow-wrap` para roster, inspetor, badges, botoes e textos longos
+  - `mesa.html`: cache bust atualizado para a correcao `2026-05-05-card-stability-1`
+  - validacoes executadas: `npm run check:js`, `npm run audit:static`, `npm run test:mesa`, `npm run perf:mesa`, `npm run build:pages` e `git diff --check`
+
 - Otimizacao leve da Mesa em 2026-05-05:
   - objetivo: reduzir custo no navegador sem redesign e sem alterar o formato publico de `GET/PUT /api/mesa/scene` ou `GET /api/mesa/realtime`
   - `js/mesa-core.js`: adicionados cache de referencias DOM, cache de roster por `characterKey`, agendador `scheduleMesaRender()` com `requestAnimationFrame`, dedupe por assinatura estavel da cena e consolidacao de broadcasts `mesa:scene` recebidos no mesmo frame

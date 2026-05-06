@@ -472,3 +472,113 @@
     max-width: none;
   }
 }
+
+/* 2026-05 Mesa: tamanho estavel dos cards e texto sem sobreposicao */
+.mesa-stage {
+  --mesa-token-card-width: clamp(184px, 10.8vw, 196px);
+}
+
+.mesa-token,
+.panel-stage:fullscreen .mesa-token,
+.panel-stage:-webkit-full-screen .mesa-token,
+.panel-stage.is-pseudo-fullscreen .mesa-token {
+  width: var(--mesa-token-card-width) !important;
+  min-height: calc(var(--mesa-token-card-width) * 1.58);
+  box-sizing: border-box;
+}
+
+.panel-stage:fullscreen .mesa-token-avatar,
+.panel-stage:-webkit-full-screen .mesa-token-avatar,
+.panel-stage.is-pseudo-fullscreen .mesa-token-avatar {
+  aspect-ratio: 1.16 / 1;
+}
+
+.mesa-token.is-selected,
+.panel-stage:fullscreen .mesa-token.is-selected,
+.panel-stage:-webkit-full-screen .mesa-token.is-selected,
+.panel-stage.is-pseudo-fullscreen .mesa-token.is-selected {
+  transform: none;
+}
+
+.mesa-token-name,
+.mesa-token-meta,
+.roster-entry-name,
+.roster-entry-meta,
+.token-inspector-name,
+.token-inspector-owner,
+.inspector-row-copy strong,
+.inspector-row-copy small,
+.inspector-meta-card strong,
+.scene-status-copy strong,
+.scene-status-copy p,
+.stage-footer-copy p {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: auto;
+}
+
+.mesa-token-name {
+  line-height: 1.12;
+  text-wrap: pretty;
+}
+
+.mesa-token-meta {
+  line-height: 1.24;
+}
+
+.roster-entry,
+.inspector-row,
+.scene-status-card,
+.token-inspector-card {
+  min-width: 0;
+}
+
+.roster-entry-copy,
+.inspector-row-copy,
+.token-inspector-copy,
+.scene-status-copy,
+.toggle-copy,
+.stage-footer-copy {
+  min-width: 0;
+}
+
+.token-type-badge,
+.token-state-pill,
+.status-chip,
+.panel-badge,
+.mini-btn {
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+
+.roster-entry-actions,
+.inspector-row .roster-entry-actions {
+  min-width: 0;
+}
+
+.status-row-head,
+.bar-label-row {
+  min-width: 0;
+}
+
+.status-row-head span,
+.bar-label-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .mesa-stage {
+    --mesa-token-card-width: min(58vw, 176px);
+  }
+
+  .roster-entry-actions,
+  .inspector-row .roster-entry-actions {
+    justify-content: flex-start;
+  }
+}

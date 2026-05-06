@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-05 16:22:47 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-05 23:53:55 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,36 +13,23 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `d7c35ef 2026-05-05 Otimiza performance da mesa`
+- Ultimo commit: `bef85a4 2026-05-05 Otimiza mesa com canvas worker`
 
 ### Alteracoes Locais
 
 ```text
-M  .github/workflows/pages.yml
-M  .gitignore
 M  DEV_STATUS.md
-M  cloudflare/src/mesa-realtime.js
-M  cloudflare/src/mesa.js
-M  css/mesa-inspector.css
-M  css/mesa-roster.css
-M  css/mesa-stage.css
+M  VISUAL_RULES.md
+M  css/mesa-responsive.css
 M  docs/obsidian/07-MESA.md
 M  docs/obsidian/09-HISTORICO-DE-SESSOES.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/api.js
-M  js/mesa-core.js
-A  js/mesa-renderer-v2.js
-A  js/mesa-renderer-worker.js
+M  js/mesa-renderer-v2.js
+M  js/mesa-renderer-worker.js
 M  js/mesa-stage.js
 M  mesa.html
-A  package-lock.json
-A  package.json
-A  tests/mesa-test-server.cjs
-A  tests/mesa.performance.spec.cjs
-A  tests/mesa.spec.cjs
-A  tools/audit-static.cjs
-A  tools/build-pages.cjs
-A  tools/check-js.cjs
+M  tests/mesa.performance.spec.cjs
+M  tests/mesa.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -54,31 +41,18 @@ A  tools/check-js.cjs
 ### Arquivos Em Stage
 
 ```text
-.github/workflows/pages.yml
-.gitignore
 DEV_STATUS.md
-cloudflare/src/mesa-realtime.js
-cloudflare/src/mesa.js
-css/mesa-inspector.css
-css/mesa-roster.css
-css/mesa-stage.css
+VISUAL_RULES.md
+css/mesa-responsive.css
 docs/obsidian/07-MESA.md
 docs/obsidian/09-HISTORICO-DE-SESSOES.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/api.js
-js/mesa-core.js
 js/mesa-renderer-v2.js
 js/mesa-renderer-worker.js
 js/mesa-stage.js
 mesa.html
-package-lock.json
-package.json
-tests/mesa-test-server.cjs
 tests/mesa.performance.spec.cjs
 tests/mesa.spec.cjs
-tools/audit-static.cjs
-tools/build-pages.cjs
-tools/check-js.cjs
 ```
 
 ## Paginas Principais
@@ -156,8 +130,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
    13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
    13,08 MB  assets\sheet-fire-background.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
-    0,99 MB  assets\logo-rpg-armagedon.png
     0,99 MB  logo-rpg-armagedon.png
+    0,99 MB  assets\logo-rpg-armagedon.png
     0,92 MB  node_modules\playwright-core\types\types.d.ts
     0,78 MB  node_modules\playwright-core\types\protocol.d.ts
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js
