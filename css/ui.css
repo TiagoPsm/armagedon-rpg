@@ -28,6 +28,10 @@ body.modal-open {
   opacity: 0.58;
 }
 
+body.mesa-drag-active .cursor-crimson-glow {
+  opacity: 0;
+}
+
 .ui-modal-root {
   position: fixed;
   inset: 0;

@@ -88,6 +88,16 @@ Registro minimo esperado:
 
 ## Ultima Etapa Concluida
 
+- Polimento de fluidez do drag da Mesa em 2026-05-06:
+  - objetivo: reduzir microtravadas ao mover tokens sem alterar a aparencia geral da Mesa
+  - `js/mesa-renderer-v2.js`: renderer passou a cachear o fundo estatico do palco em Canvas, evitando redesenhar grid/glow em todo frame; tambem passou a manter lista ordenada e layouts em cache
+  - `js/mesa-renderer-v2.js` e `js/mesa-renderer-worker.js`: drag em Canvas/Worker agora usa mensagem leve `move-token` para atualizar apenas posicao/layout do token movido, sem reconstruir snapshot completo a cada movimento
+  - `js/mesa-stage.js`: movimento local usa `updateTokenPosition()` durante drag; realtime de drag foi ajustado para intervalos menores e mais suaves sem salvar remoto antes do `pointerup`
+  - `js/ui.js` e `css/ui.css`: brilho carmesim do cursor pausa enquanto a Mesa esta em drag, reduzindo pintura concorrente no momento mais sensivel
+  - `mesa.html`: cache bust atualizado para `2026-05-06-drag-polish-1`
+  - `tests/mesa.performance.spec.cjs`: teste de performance agora confirma que o drag usa patches leves de movimento e nao render completo a cada movimento
+  - validacoes executadas: `npm run check:js`, `npm run test:mesa`, `npm run perf:mesa` e `git diff --check`
+
 - Estabilizacao visual dos cards da Mesa em 2026-05-05:
   - objetivo: impedir que os cards/tokens mudem de tamanho ao selecionar, entrar em tela cheia e voltar ao modo normal
   - `js/mesa-renderer-v2.js`: dimensoes do token Canvas passaram a ser estaveis entre modo normal e fullscreen; largura base aumentada para uma faixa maior que a anterior e altura ajustada para comportar nome, dono e barras sem colisao

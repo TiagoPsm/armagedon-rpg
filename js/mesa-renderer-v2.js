@@ -1,6 +1,6 @@
 (function () {
-  const RENDERER_VERSION = "2026-05-05-card-stability-1";
-  const DEFAULT_WORKER_URL = "js/mesa-renderer-worker.js?v=2026-05-05-card-stability-1";
+  const RENDERER_VERSION = "2026-05-06-drag-polish-1";
+  const DEFAULT_WORKER_URL = "js/mesa-renderer-worker.js?v=2026-05-06-drag-polish-1";
   const MAX_DPR = 2;
   const IMAGE_RETRY_MS = 30000;
 
@@ -194,8 +194,11 @@
       this.ownsWorkerCanvas = false;
       this.snapshot = normalizeSnapshot({});
       this.layouts = new Map();
+      this.orderedTokens = [];
       this.drawFrame = 0;
       this.resizeObserver = null;
+      this.backgroundCanvas = null;
+      this.backgroundKey = "";
       this.imageCache = new MainThreadImageCache(() => this.requestDraw());
       this.lastWidth = 0;
       this.lastHeight = 0;
@@ -281,6 +284,9 @@
       this.enabled = false;
       this.mode = "dom-legacy";
       this.layouts.clear();
+      this.orderedTokens = [];
+      this.backgroundCanvas = null;
+      this.backgroundKey = "";
     }
 
     render(snapshot) {
@@ -293,7 +299,54 @@
 
     setDraggingToken(tokenId) {
       this.snapshot.draggingTokenId = String(tokenId || "");
+      if (this.workerReady) {
+        this.worker.postMessage({
+          type: "dragging-token",
+          tokenId: this.snapshot.draggingTokenId
+        });
+        return;
+      }
       this.requestDraw();
+    }
+
+    updateTokenPosition(tokenId, xPercent, yPercent, order) {
+      if (!this.enabled) return false;
+      const id = String(tokenId || "");
+      const token = this.snapshot.tokens.find(entry => String(entry.id) === id);
+      if (!token) return false;
+
+      const nextX = clamp(Number(xPercent), 0, 100);
+      const nextY = clamp(Number(yPercent), 0, 100);
+      const nextOrder = Number.isFinite(Number(order)) ? Number(order) : token.order;
+      const orderChanged = Number(token.order || 0) !== Number(nextOrder || 0);
+      token.x = nextX;
+      token.y = nextY;
+      token.order = nextOrder;
+
+      const size = this.lastWidth && this.lastHeight
+        ? { width: this.lastWidth, height: this.lastHeight, dpr: this.dpr, changed: false }
+        : this.ensureCanvasSize();
+      const layout = this.layouts.get(id);
+      if (size && layout) {
+        layout.x = (nextX / 100) * size.width;
+        layout.y = (nextY / 100) * size.height;
+      }
+      if (orderChanged) this.sortOrderedTokens();
+
+      if (this.workerReady) {
+        this.worker.postMessage({
+          type: "move-token",
+          tokenId: id,
+          x: nextX,
+          y: nextY,
+          order: nextOrder,
+          layout: layout ? { ...layout } : null
+        });
+        return true;
+      }
+
+      this.requestDraw();
+      return true;
     }
 
     requestDraw() {
@@ -312,6 +365,7 @@
       const width = Math.max(1, Math.round(rect.width));
       const height = Math.max(1, Math.round(rect.height));
       const dpr = clamp(window.devicePixelRatio || 1, 1, MAX_DPR);
+      const changed = width !== this.lastWidth || height !== this.lastHeight || dpr !== this.dpr;
 
       if (!this.ownsWorkerCanvas) {
         const pixelWidth = Math.round(width * dpr);
@@ -325,35 +379,38 @@
       this.lastWidth = width;
       this.lastHeight = height;
       this.dpr = dpr;
-      return { width, height, dpr };
+      return { width, height, dpr, changed };
     }
 
-    computeLayouts() {
-      const size = this.ensureCanvasSize();
+    computeLayouts(size = this.ensureCanvasSize()) {
       if (!size) return;
 
       const metrics = resolveTokenDimensions();
       this.layouts.clear();
-      [...this.snapshot.tokens]
-        .sort((a, b) => (a.order || 0) - (b.order || 0))
-        .forEach(token => {
-          const x = clamp((Number(token.x) || 0) / 100, 0, 1) * size.width;
-          const y = clamp((Number(token.y) || 0) / 100, 0, 1) * size.height;
-          this.layouts.set(String(token.id), {
-            x,
-            y,
-            width: metrics.width,
-            height: metrics.height,
-            padding: metrics.padding,
-            radius: metrics.radius
-          });
+      this.sortOrderedTokens();
+      this.orderedTokens.forEach(token => {
+        const x = clamp((Number(token.x) || 0) / 100, 0, 1) * size.width;
+        const y = clamp((Number(token.y) || 0) / 100, 0, 1) * size.height;
+        this.layouts.set(String(token.id), {
+          x,
+          y,
+          width: metrics.width,
+          height: metrics.height,
+          padding: metrics.padding,
+          radius: metrics.radius
         });
+      });
+    }
+
+    sortOrderedTokens() {
+      this.orderedTokens = [...this.snapshot.tokens]
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
     }
 
     draw() {
       const size = this.ensureCanvasSize();
       if (!size) return;
-      this.computeLayouts();
+      if (size.changed) this.computeLayouts(size);
 
       if (this.workerReady) {
         this.worker.postMessage({
@@ -369,10 +426,31 @@
       if (!ctx) return;
       ctx.setTransform(size.dpr, 0, 0, size.dpr, 0, 0);
       ctx.clearRect(0, 0, size.width, size.height);
+      this.drawCachedStageAtmosphere(ctx, size);
+      this.orderedTokens.forEach(token => this.drawToken(ctx, token));
+    }
+
+    drawCachedStageAtmosphere(ctx, size) {
+      const key = `${size.width}x${size.height}@${size.dpr}`;
+      if (!this.backgroundCanvas || this.backgroundKey !== key) {
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(size.width * size.dpr));
+        canvas.height = Math.max(1, Math.round(size.height * size.dpr));
+        const backgroundCtx = canvas.getContext("2d", { alpha: true });
+        if (backgroundCtx) {
+          backgroundCtx.setTransform(size.dpr, 0, 0, size.dpr, 0, 0);
+          backgroundCtx.clearRect(0, 0, size.width, size.height);
+          this.drawStageAtmosphere(backgroundCtx, size);
+          this.backgroundCanvas = canvas;
+          this.backgroundKey = key;
+        }
+      }
+
+      if (this.backgroundCanvas) {
+        ctx.drawImage(this.backgroundCanvas, 0, 0, size.width, size.height);
+        return;
+      }
       this.drawStageAtmosphere(ctx, size);
-      [...this.snapshot.tokens]
-        .sort((a, b) => (a.order || 0) - (b.order || 0))
-        .forEach(token => this.drawToken(ctx, token));
     }
 
     drawStageAtmosphere(ctx, size) {
@@ -415,8 +493,8 @@
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.shadowColor = dragging ? "rgba(0, 0, 0, 0.46)" : "rgba(0, 0, 0, 0.34)";
-      ctx.shadowBlur = dragging ? 34 : selected ? 30 : 18;
-      ctx.shadowOffsetY = dragging ? 20 : 14;
+      ctx.shadowBlur = dragging ? 24 : selected ? 26 : 16;
+      ctx.shadowOffsetY = dragging ? 16 : 12;
 
       roundRectPath(ctx, x, y, width, height, radius);
       const fill = ctx.createLinearGradient(x, y, x + width, y + height);

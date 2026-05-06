@@ -78,6 +78,9 @@ Worker/D1:
 - Selecionar token nao deve rebuildar roster; deve atualizar classe/ordem do token e inspetor.
 - Drag deve alterar apenas `left`, `top` e `zIndex` durante movimento e salvar a cena apenas ao soltar.
 - Na rota Canvas, drag deve atualizar o desenho do token em `requestAnimationFrame`, enviar deltas throttled por WebSocket e persistir cena completa apenas ao soltar.
+- Durante drag em Canvas/Worker, preferir patches leves de posicao (`updateTokenPosition`/`move-token`) em vez de reconstruir snapshot completo da cena.
+- O fundo estatico do palco deve ficar cacheado no Canvas para evitar redesenhar grid/glow em todo frame.
+- Efeitos globais como o brilho do cursor devem pausar enquanto `body.mesa-drag-active` estiver ativo.
 - `mesa:scene` recebido deve ser ignorado quando a assinatura da cena ja for igual ao estado local; broadcasts multiplos no mesmo frame devem aplicar apenas o ultimo.
 - `AUTH.refreshDirectory()` em realtime so deve rodar quando a cena recebida trouxer `characterKey` desconhecida para o roster em cache.
 - O palco usa render incremental por `Map<tokenId, element>`; evitar voltar para `stage.innerHTML = ...` completo em toda interacao.

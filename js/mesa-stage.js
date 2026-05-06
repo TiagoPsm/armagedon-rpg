@@ -5,7 +5,7 @@ let pendingRealtimeDragMove = null;
 let realtimeDragMoveTimer = 0;
 let lastRealtimeDragMoveAt = 0;
 let lastMesaDragEndAt = 0;
-const MESA_REALTIME_DRAG_INTERVAL_MS = 66;
+const MESA_REALTIME_DRAG_INTERVAL_MS = 50;
 
 function renderStage() {
   if (renderCanvasStage()) return;
@@ -56,7 +56,7 @@ function getMesaStageRenderer() {
   if (!stage || !window.MesaRendererV2?.get) return null;
   if (mesaStageRenderer) return mesaStageRenderer;
   mesaStageRenderer = window.MesaRendererV2.get(stage, {
-    workerUrl: "js/mesa-renderer-worker.js?v=2026-05-05-card-stability-1"
+    workerUrl: "js/mesa-renderer-worker.js?v=2026-05-06-drag-polish-1"
   });
   return mesaStageRenderer;
 }
@@ -125,6 +125,15 @@ function createCanvasTokenSnapshot(token) {
 function refreshCanvasStageToken() {
   if (!mesaStageRenderer?.enabled || !lastCanvasStageSnapshot) return;
   renderCanvasStage();
+}
+
+function updateCanvasStageTokenPosition(token) {
+  if (!token || !mesaStageRenderer?.enabled || !lastCanvasStageSnapshot) return false;
+  if (typeof mesaStageRenderer.updateTokenPosition !== "function") {
+    refreshCanvasStageToken();
+    return true;
+  }
+  return mesaStageRenderer.updateTokenPosition(token.id, token.x, token.y, token.order);
 }
 
 function createMesaTokenElement(token) {
@@ -385,6 +394,7 @@ function beginTokenDrag(target, token, clientX, clientY, pointerId) {
   if (mesaStageRenderer?.enabled) {
     const stageElement = getMesaDomRef("stage");
     stageElement.dataset.dragging = "true";
+    document.body.classList.add("mesa-drag-active");
     mesaStageRenderer.setDraggingToken(token.id);
   }
   if (pointerId !== null && pointerId !== undefined) {
@@ -406,6 +416,7 @@ function handleDragEnd() {
   state.drag.tokenElement?.classList.remove("is-dragging");
   const stage = getMesaDomRef("stage");
   if (stage?.dataset) delete stage.dataset.dragging;
+  document.body.classList.remove("mesa-drag-active");
   mesaStageRenderer?.setDraggingToken("");
   state.drag = null;
   lastMesaDragEndAt = Date.now();
@@ -456,7 +467,7 @@ function updateDragPosition(clientX, clientY) {
     state.drag.tokenElement.style.zIndex = String(token.order || 1);
     state.drag.tokenElement.dataset.contentSignature = getTokenContentSignature(token);
   } else if (mesaStageRenderer?.enabled) {
-    refreshCanvasStageToken();
+    updateCanvasStageTokenPosition(token);
   }
 
   queueRealtimeDragMove(token);

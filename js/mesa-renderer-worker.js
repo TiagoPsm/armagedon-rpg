@@ -3,7 +3,11 @@ let ctx = null;
 let palette = {};
 let latestSnapshot = null;
 let latestLayouts = [];
+let latestLayoutMap = new Map();
+let latestOrderedTokens = [];
 let latestSize = { width: 1, height: 1, dpr: 1 };
+let backgroundCanvas = null;
+let backgroundKey = "";
 const imageCache = new Map();
 const IMAGE_RETRY_MS = 30000;
 
@@ -169,6 +173,28 @@ function drawStageAtmosphere(context, size) {
   context.restore();
 }
 
+function drawCachedStageAtmosphere(context, size) {
+  const key = `${size.width}x${size.height}@${size.dpr || 1}`;
+  if (!backgroundCanvas || backgroundKey !== key) {
+    const pixelWidth = Math.max(1, Math.round(size.width * (size.dpr || 1)));
+    const pixelHeight = Math.max(1, Math.round(size.height * (size.dpr || 1)));
+    backgroundCanvas = new OffscreenCanvas(pixelWidth, pixelHeight);
+    const backgroundContext = backgroundCanvas.getContext("2d", { alpha: true });
+    if (backgroundContext) {
+      backgroundContext.setTransform(size.dpr || 1, 0, 0, size.dpr || 1, 0, 0);
+      backgroundContext.clearRect(0, 0, size.width, size.height);
+      drawStageAtmosphere(backgroundContext, size);
+      backgroundKey = key;
+    }
+  }
+
+  if (backgroundCanvas) {
+    context.drawImage(backgroundCanvas, 0, 0, size.width, size.height);
+    return;
+  }
+  drawStageAtmosphere(context, size);
+}
+
 function drawPill(context, label, x, y, width, type) {
   const height = 22;
   const colors = type === "player"
@@ -329,14 +355,33 @@ function drawToken(context, token, layout, snapshot) {
 function drawLatest() {
   if (!ctx || !latestSnapshot) return;
   const size = latestSize;
-  const layouts = new Map(latestLayouts || []);
   ctx.setTransform(size.dpr || 1, 0, 0, size.dpr || 1, 0, 0);
   ctx.clearRect(0, 0, size.width, size.height);
-  drawStageAtmosphere(ctx, size);
+  drawCachedStageAtmosphere(ctx, size);
 
-  [...(latestSnapshot.tokens || [])]
-    .sort((a, b) => (a.order || 0) - (b.order || 0))
-    .forEach(token => drawToken(ctx, token, layouts.get(String(token.id)), latestSnapshot));
+  latestOrderedTokens.forEach(token => {
+    drawToken(ctx, token, latestLayoutMap.get(String(token.id)), latestSnapshot);
+  });
+}
+
+function sortLatestTokens() {
+  latestOrderedTokens = [...(latestSnapshot?.tokens || [])]
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+}
+
+function updateLatestTokenPosition(data) {
+  if (!latestSnapshot) return;
+  const tokenId = String(data.tokenId || "");
+  const token = (latestSnapshot.tokens || []).find(entry => String(entry.id) === tokenId);
+  if (!token) return;
+
+  const previousOrder = Number(token.order || 0);
+  token.x = clamp(Number(data.x), 0, 100);
+  token.y = clamp(Number(data.y), 0, 100);
+  if (Number.isFinite(Number(data.order))) token.order = Number(data.order);
+  if (data.layout) latestLayoutMap.set(tokenId, data.layout);
+  if (previousOrder !== Number(token.order || 0)) sortLatestTokens();
+  drawLatest();
 }
 
 self.onmessage = event => {
@@ -354,12 +399,24 @@ self.onmessage = event => {
     latestSize = data.size || latestSize;
     latestSnapshot = data.snapshot || latestSnapshot;
     latestLayouts = data.layouts || latestLayouts;
+    latestLayoutMap = new Map(latestLayouts || []);
+    sortLatestTokens();
     const pixelWidth = Math.max(1, Math.round(latestSize.width * latestSize.dpr));
     const pixelHeight = Math.max(1, Math.round(latestSize.height * latestSize.dpr));
     if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
       canvas.width = pixelWidth;
       canvas.height = pixelHeight;
     }
+    drawLatest();
+  }
+
+  if (data.type === "move-token") {
+    updateLatestTokenPosition(data);
+  }
+
+  if (data.type === "dragging-token") {
+    if (!latestSnapshot) return;
+    latestSnapshot.draggingTokenId = String(data.tokenId || "");
     drawLatest();
   }
 };

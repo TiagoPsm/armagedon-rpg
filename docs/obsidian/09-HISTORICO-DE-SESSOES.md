@@ -8,6 +8,7 @@ Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STA
 - Tokens deixaram de depender de cards DOM no palco ativo, reduzindo pintura e custo de layout durante drag.
 - Cards/tokens do palco foram estabilizados para manter o mesmo tamanho ao selecionar, entrar em tela cheia e voltar ao modo normal.
 - Texto longo em tokens, roster e inspetor passou a quebrar/truncar sem sobrepor outros elementos.
+- Drag recebeu polimento extra: fundo do palco cacheado, patches leves `move-token` para o Worker e pausa do brilho do cursor durante movimento.
 - Drag em Canvas usa hit test por coordenadas, `requestAnimationFrame`, cache de imagens e persistencia completa apenas ao soltar.
 - Realtime recebeu deltas internos `mesa:token:*`, `mesa:scene:clear` e `mesa:batch` para reduzir payload em movimento.
 - Durable Object continua coordenando presenca e WebSocket; D1 permanece fonte duravel da cena completa.

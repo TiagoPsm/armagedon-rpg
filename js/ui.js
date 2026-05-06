@@ -85,6 +85,10 @@
     };
 
     const handleMove = event => {
+      if (document.body.classList.contains("mesa-drag-active")) {
+        glow.classList.remove("is-visible");
+        return;
+      }
       nextX = event.clientX;
       nextY = event.clientY;
       glow.classList.add("is-visible");

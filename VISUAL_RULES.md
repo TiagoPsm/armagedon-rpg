@@ -167,6 +167,7 @@ Comportamento visual consolidado:
 - O palco deve ficar claro, responsivo e sem sobreposicao incoerente
 - Tokens/cards do palco devem manter o mesmo tamanho ao selecionar, entrar em tela cheia e voltar ao modo normal
 - Nomes, donos, badges, botoes e textos de status devem quebrar linha ou truncar de forma controlada; nunca devem comprimir ou sobrepor outros elementos
+- Durante arrasto de token, efeitos globais que competem por pintura, como o brilho do cursor, podem pausar temporariamente para preservar fluidez
 - Inspetor lateral deve ser compacto e funcional
 - Jogadores podem editar apenas valores atuais permitidos
 - Mestre pode controlar visibilidade, organizacao e valores maximos

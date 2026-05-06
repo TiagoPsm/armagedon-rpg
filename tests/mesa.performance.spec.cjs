@@ -26,6 +26,22 @@ test("Mesa mantem drag leve em Canvas", async ({ page }) => {
   await expect(page.locator("#mesaStage canvas.mesa-stage-canvas")).toHaveCount(1);
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => {
     window.__mesaLongTasks = [];
+    const renderer = window.MesaRendererV2?.get?.(document.getElementById("mesaStage"));
+    window.__mesaRenderCalls = 0;
+    window.__mesaMovePatchCalls = 0;
+    if (renderer && !renderer.__perfWrapped) {
+      const originalRender = renderer.render.bind(renderer);
+      const originalUpdateTokenPosition = renderer.updateTokenPosition?.bind(renderer);
+      renderer.render = (...args) => {
+        window.__mesaRenderCalls += 1;
+        return originalRender(...args);
+      };
+      renderer.updateTokenPosition = (...args) => {
+        window.__mesaMovePatchCalls += 1;
+        return originalUpdateTokenPosition(...args);
+      };
+      renderer.__perfWrapped = true;
+    }
     resolve();
   })));
 
@@ -48,4 +64,10 @@ test("Mesa mantem drag leve em Canvas", async ({ page }) => {
   const longTasks = await page.evaluate(() => window.__mesaLongTasks || []);
   const worst = longTasks.reduce((max, task) => Math.max(max, task.duration || 0), 0);
   expect(worst).toBeLessThan(120);
+  const counters = await page.evaluate(() => ({
+    renderCalls: window.__mesaRenderCalls || 0,
+    movePatchCalls: window.__mesaMovePatchCalls || 0
+  }));
+  expect(counters.movePatchCalls).toBeGreaterThan(0);
+  expect(counters.renderCalls).toBeLessThanOrEqual(2);
 });

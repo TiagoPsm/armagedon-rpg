@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-05 23:53:55 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-06 00:13:59 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,23 +13,23 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `bef85a4 2026-05-05 Otimiza mesa com canvas worker`
+- Ultimo commit: `4b3fc27 2026-05-05 Estabiliza cards da mesa`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
 M  VISUAL_RULES.md
-M  css/mesa-responsive.css
+M  css/ui.css
 M  docs/obsidian/07-MESA.md
 M  docs/obsidian/09-HISTORICO-DE-SESSOES.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  js/mesa-renderer-v2.js
 M  js/mesa-renderer-worker.js
 M  js/mesa-stage.js
+M  js/ui.js
 M  mesa.html
 M  tests/mesa.performance.spec.cjs
-M  tests/mesa.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -43,16 +43,16 @@ M  tests/mesa.spec.cjs
 ```text
 DEV_STATUS.md
 VISUAL_RULES.md
-css/mesa-responsive.css
+css/ui.css
 docs/obsidian/07-MESA.md
 docs/obsidian/09-HISTORICO-DE-SESSOES.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 js/mesa-renderer-v2.js
 js/mesa-renderer-worker.js
 js/mesa-stage.js
+js/ui.js
 mesa.html
 tests/mesa.performance.spec.cjs
-tests/mesa.spec.cjs
 ```
 
 ## Paginas Principais
