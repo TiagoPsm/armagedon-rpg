@@ -96,6 +96,10 @@ Comportamento visual consolidado:
 
 - habilidades e poderes devem abrir minimizados por padrao sempre que uma ficha for carregada
 - o usuario pode expandir cards durante a leitura/edicao da ficha, mas uma nova abertura deve voltar ao estado minimizado
+- cores de recurso devem permanecer consistentes entre Ficha e Mesa:
+  - Vida usa escala dinamica vermelho-verde por percentual (`hsl` com hue 0 a 120)
+  - Integridade usa escala azul (`hsl(204 ...)`)
+  - a Mesa nao deve usar amarelo/dourado para Integridade
 
 ## Home / Login
 
@@ -169,7 +173,10 @@ Comportamento visual consolidado:
 - Nomes, donos, badges, botoes e textos de status devem quebrar linha ou truncar de forma controlada; nunca devem comprimir ou sobrepor outros elementos
 - Durante arrasto de token, efeitos globais que competem por pintura, como o brilho do cursor, podem pausar temporariamente para preservar fluidez
 - Inspetor lateral deve ser compacto e funcional
-- Jogadores podem editar apenas valores atuais permitidos
+- Jogadores veem palco compartilhado, mas nao veem roster de tokens disponiveis para colocar na cena
+- Jogadores recebem painel pessoal "Meu personagem" com dados da propria ficha; itens e memorias aparecem em leitura
+- Jogadores podem editar apenas Vida atual e Integridade atual da propria ficha
+- Tokens de terceiros no inspetor do jogador devem ficar restritos, sem nome/status/dados detalhados no painel inferior
 - Mestre pode controlar visibilidade, organizacao e valores maximos
 - Visual deve seguir a mesma linguagem dark fantasy da ficha, mas com densidade maior por ser ferramenta de mesa
 

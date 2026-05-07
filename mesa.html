@@ -17,9 +17,9 @@
     rel="stylesheet"
   />
   <link rel="stylesheet" href="css/mesa-base.css?v=2026-04-24-split-1" />
-  <link rel="stylesheet" href="css/mesa-roster.css?v=2026-05-05-mesa-light-1" />
-  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-05-05-mesa-light-1" />
-  <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-05-05-mesa-light-1" />
+  <link rel="stylesheet" href="css/mesa-roster.css?v=2026-05-06-player-panel-1" />
+  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-05-06-player-panel-1" />
+  <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-05-06-player-panel-1" />
   <link rel="stylesheet" href="css/mesa-layout.css?v=2026-04-24-split-1" />
   <link rel="stylesheet" href="css/mesa-responsive.css?v=2026-05-05-card-stability-1" />
   <link rel="stylesheet" href="css/ui.css?v=2026-05-06-drag-polish-1" />
@@ -153,13 +153,13 @@
           <div class="panel-block mesa-roster-card">
             <div class="panel-head">
               <div>
-                <p class="panel-kicker">Escalacao</p>
-                <h2>Adicionar a mesa</h2>
+                <p class="panel-kicker" id="rosterPanelKicker">Escalacao</p>
+                <h2 id="rosterPanelTitle">Adicionar a mesa</h2>
               </div>
               <span class="panel-badge" id="rosterCountBadge">0 disponiveis</span>
             </div>
 
-            <label class="search-field" for="rosterSearch">
+            <label class="search-field" id="rosterSearchField" for="rosterSearch">
               <span>Buscar personagem</span>
               <input type="search" id="rosterSearch" placeholder="Nome, tipo ou dono..." autocomplete="off" />
             </label>
@@ -193,11 +193,11 @@
   <script src="js/api.js?v=2026-05-05-mesa-canvas-v2"></script>
   <script src="js/ui.js?v=2026-05-06-drag-polish-1"></script>
   <script src="js/auth.js?v=2026-05-05-mesa-auth-export-1"></script>
-  <script src="js/mesa-core.js?v=2026-05-05-mesa-canvas-v2"></script>
-  <script src="js/mesa-renderer-v2.js?v=2026-05-06-drag-polish-1"></script>
-  <script src="js/mesa-stage.js?v=2026-05-06-drag-polish-1"></script>
-  <script src="js/mesa-roster.js?v=2026-05-05-mesa-light-1"></script>
-  <script src="js/mesa-inspector.js?v=2026-05-05-mesa-light-1"></script>
+  <script src="js/mesa-core.js?v=2026-05-06-player-panel-1"></script>
+  <script src="js/mesa-renderer-v2.js?v=2026-05-06-player-panel-1"></script>
+  <script src="js/mesa-stage.js?v=2026-05-06-player-panel-1"></script>
+  <script src="js/mesa-roster.js?v=2026-05-06-player-panel-1"></script>
+  <script src="js/mesa-inspector.js?v=2026-05-06-player-panel-1"></script>
   <script src="js/mesa-storage.js?v=2026-04-24-split-1"></script>
   <script src="js/mesa-init.js?v=2026-04-24-split-1"></script>
 </body>

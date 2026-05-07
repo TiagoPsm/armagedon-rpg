@@ -1,6 +1,6 @@
 (function () {
-  const RENDERER_VERSION = "2026-05-06-drag-polish-1";
-  const DEFAULT_WORKER_URL = "js/mesa-renderer-worker.js?v=2026-05-06-drag-polish-1";
+  const RENDERER_VERSION = "2026-05-06-player-panel-1";
+  const DEFAULT_WORKER_URL = "js/mesa-renderer-worker.js?v=2026-05-06-player-panel-1";
   const MAX_DPR = 2;
   const IMAGE_RETRY_MS = 30000;
 
@@ -40,6 +40,23 @@
   function getRendererPreference() {
     const value = String(localStorage.getItem("mesaRenderer") || "auto").trim().toLowerCase();
     return ["auto", "worker", "canvas", "dom"].includes(value) ? value : "auto";
+  }
+
+  function getResourceBarColor(type, percent) {
+    const safePercent = clamp(percent, 0, 1);
+    if (type === "life") {
+      const hue = Math.round(safePercent * 120);
+      const lightness = 28 + safePercent * 22;
+      return `hsl(${hue} 78% ${lightness}%)`;
+    }
+
+    if (type === "integrity") {
+      const lightness = 14 + safePercent * 50;
+      const saturation = 48 + safePercent * 30;
+      return `hsl(204 ${saturation}% ${lightness}%)`;
+    }
+
+    return "rgba(255,255,255,0.16)";
   }
 
   function canUseWorkerCanvas(canvas) {
@@ -650,18 +667,7 @@
 
       const fillWidth = Math.max(5, width * clamp(percent, 0, 1));
       roundRectPath(ctx, x, barY, fillWidth, 7, 999);
-      const fill = ctx.createLinearGradient(x, barY, x + width, barY);
-      if (type === "life") {
-        fill.addColorStop(0, "#7d121b");
-        fill.addColorStop(1, "#cc474f");
-      } else if (type === "integrity") {
-        fill.addColorStop(0, "#7e6320");
-        fill.addColorStop(1, "#d9b45c");
-      } else {
-        fill.addColorStop(0, "rgba(255,255,255,0.08)");
-        fill.addColorStop(1, "rgba(255,255,255,0.18)");
-      }
-      ctx.fillStyle = fill;
+      ctx.fillStyle = getResourceBarColor(type, percent);
       ctx.fill();
     }
 

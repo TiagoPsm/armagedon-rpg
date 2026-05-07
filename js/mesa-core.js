@@ -5,6 +5,7 @@ const NPCS_KEY = "tc_npcs";
 const MONSTERS_KEY = "tc_monsters";
 const NPC_PREFIX = "npc:";
 const MONSTER_PREFIX = "monster:";
+const MESA_DEFAULT_INVENTORY_SLOTS = 10;
 
 const TYPE_LABELS = {
   player: "Jogador",
@@ -32,8 +33,11 @@ const MESA_DOM_IDS = {
   stageHintBadge: "stageHintBadge",
   fullscreenMesaBtn: "fullscreenMesaBtn",
   rosterSearch: "rosterSearch",
+  rosterSearchField: "rosterSearchField",
   rosterList: "rosterList",
   rosterCountBadge: "rosterCountBadge",
+  rosterPanelKicker: "rosterPanelKicker",
+  rosterPanelTitle: "rosterPanelTitle",
   stage: "mesaStage",
   emptyState: "mesaEmptyState",
   tokenInspector: "tokenInspector",
@@ -51,6 +55,7 @@ const state = {
   sceneVersion: 0,
   search: "",
   drag: null,
+  playerPanelCharacterKey: "",
   fullscreenMode: "off",
   scenePersistence: "local",
   sceneRemoteExists: false,
@@ -64,6 +69,7 @@ const MESA_REALTIME_DELTA_TYPES = new Set([
   "mesa:token:remove",
   "mesa:scene:clear"
 ]);
+const MESA_SHEET_PATCH_TYPE = "mesa:sheet:patch";
 const mesaDom = {};
 const pendingMesaRender = Object.fromEntries(MESA_RENDER_PARTS.map(part => [part, false]));
 let mesaRenderFrame = 0;
@@ -174,6 +180,7 @@ function bindEvents() {
   });
 
   rosterList?.addEventListener("click", handleRosterAction);
+  rosterList?.addEventListener("input", handlePlayerPanelStatInput);
   tokenInspector?.addEventListener("click", handleInspectorAction);
   tokenInspector?.addEventListener("input", handleInspectorStatInput);
 
@@ -233,6 +240,14 @@ function bindMesaRealtime() {
     window.APP.on(eventName, payload => {
       void applyMesaRealtimeDelta(payload);
     });
+  });
+
+  window.APP.on(MESA_SHEET_PATCH_TYPE, payload => {
+    applyMesaSheetPatchRealtime(payload);
+  });
+
+  window.APP.on("sheet:changed", payload => {
+    void handleMesaSheetChanged(payload);
   });
 
   if (window.AUTH?.isBackendEnabled?.() && window.APP?.connectRealtime) {
@@ -412,6 +427,35 @@ function applyMesaTokenUpsertDelta(payload) {
   return true;
 }
 
+function applyMesaSheetPatchRealtime(payload) {
+  if (payload?.clientId === mesaClientId) return;
+  const { characterKey, patch } = normalizeMesaSheetPatchPayload(payload);
+  if (!characterKey || !Object.keys(patch).length) return;
+  if (!canReceiveSheetPatch(characterKey)) return;
+
+  if (!applySheetPatchToMesaCaches(characterKey, patch)) return;
+  refreshMesaRosterFromSheets({ persistScene: false });
+}
+
+async function handleMesaSheetChanged(payload) {
+  const characterKey = normalizeMesaCharacterKey(payload?.characterKey || payload?.key || payload?.targetKey);
+  if (!characterKey || !canReceiveSheetPatch(characterKey)) return;
+  if (!window.AUTH?.isBackendEnabled?.() || !window.APP?.getCharacter) return;
+
+  try {
+    const bundle = await window.APP.getCharacter(characterKey);
+    if (!bundle?.data) return;
+    const remoteSheets = readJsonStorage(REMOTE_SHEETS_KEY, {});
+    remoteSheets[characterKey] = bundle.data;
+    localStorage.setItem(REMOTE_SHEETS_KEY, JSON.stringify(remoteSheets));
+    refreshMesaRosterFromSheets({ persistScene: false });
+  } catch (error) {
+    if (isMaster()) {
+      console.warn("Falha ao atualizar ficha recebida pela Mesa.", error);
+    }
+  }
+}
+
 async function applyRemoteMesaSceneSnapshot(remoteData) {
   if (!remoteData) return;
 
@@ -475,8 +519,19 @@ function resolveMesaSession() {
 }
 
 function resolveInitialRole(session) {
+  const forcedRole = getForcedMesaPreviewRole();
+  if (forcedRole) return forcedRole;
   if (isLocalMesaPreview()) return "master";
   return session?.role || "player";
+}
+
+function getForcedMesaPreviewRole() {
+  try {
+    const value = String(localStorage.getItem("mesaRolePreview") || "").trim().toLowerCase();
+    return ["master", "player"].includes(value) ? value : "";
+  } catch {
+    return "";
+  }
 }
 
 async function refreshMesaDirectoryBeforeRoster() {
@@ -783,6 +838,132 @@ function createRosterEntry(data) {
   };
 }
 
+function normalizeMesaCharacterKey(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizeMesaUsername(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizeMesaItem(item) {
+  const source = item && typeof item === "object" ? item : {};
+  return {
+    name: String(source.name || "").trim(),
+    qty: String(Math.max(0, Number.parseInt(source.qty || "1", 10) || 0)),
+    type: String(source.type || "outro").trim().toLowerCase() || "outro",
+    damage: String(source.damage || "").trim().slice(0, 24),
+    desc: String(source.desc || "").trim()
+  };
+}
+
+function normalizeMesaOwnedMemory(memory) {
+  const source = memory && typeof memory === "object" ? memory : {};
+  return {
+    name: String(source.name || "").trim(),
+    desc: String(source.desc || "").trim(),
+    source: String(source.source || "").trim()
+  };
+}
+
+function getStoredMesaSheetSnapshot(characterKey) {
+  const key = normalizeMesaCharacterKey(characterKey);
+  if (!key) return null;
+  const sheets = readMergedSheets();
+  const raw = sheets[key];
+  return raw && typeof raw === "object" ? normalizeMesaSheetSnapshot(raw) : null;
+}
+
+function buildMesaSheetSnapshotFromEntry(entry) {
+  if (!entry) return null;
+  return normalizeMesaSheetSnapshot({
+    charName: entry.name,
+    avatar: entry.imageUrl,
+    vidaAtual: entry.currentLife,
+    vidaMax: entry.maxLife,
+    integAtual: entry.currentIntegrity,
+    integMax: entry.maxIntegrity,
+    inventorySlots: MESA_DEFAULT_INVENTORY_SLOTS,
+    inv: [],
+    ownedMemories: []
+  });
+}
+
+function getOwnPlayerEntries() {
+  const username = normalizeMesaUsername(state.session?.username);
+  if (!username) return [];
+  const ownEntries = state.roster.filter(entry => (
+    entry?.type === "player"
+    && normalizeMesaUsername(entry.ownerUsername || entry.characterKey || entry.id) === username
+  ));
+  return ownEntries.length ? ownEntries : state.roster.filter(entry => (
+    entry?.type === "player"
+    && normalizeMesaCharacterKey(entry.characterKey || entry.id) === username
+  ));
+}
+
+function isOwnPlayerToken(token) {
+  const username = normalizeMesaUsername(state.session?.username);
+  if (!token || !username || token.type !== "player") return false;
+  return normalizeMesaUsername(token.ownerUsername || token.characterKey || token.id) === username;
+}
+
+function getOwnPlayerTokens() {
+  return state.tokens.filter(isOwnPlayerToken);
+}
+
+function canViewDetailedTokenInfo(token) {
+  if (!token) return false;
+  if (!isPlayerPerspective()) return true;
+  if (state.role === "player") return isOwnPlayerToken(token);
+  return false;
+}
+
+function canReceiveSheetPatch(characterKey) {
+  const key = normalizeMesaCharacterKey(characterKey);
+  if (!key) return false;
+  if (isMaster()) return true;
+  return key === normalizeMesaUsername(state.session?.username);
+}
+
+function getOwnPlayerContext(characterKey = "") {
+  const entries = getOwnPlayerEntries();
+  const ownTokens = getOwnPlayerTokens();
+  const preferredKey = normalizeMesaCharacterKey(
+    characterKey
+    || state.playerPanelCharacterKey
+    || state.selectedTokenId
+    || ownTokens[0]?.characterKey
+    || entries[0]?.characterKey
+    || state.session?.username
+  );
+  const token = ownTokens.find(entry => normalizeMesaCharacterKey(entry.characterKey || entry.id) === preferredKey)
+    || ownTokens[0]
+    || null;
+  const rosterEntry = entries.find(entry => normalizeMesaCharacterKey(entry.characterKey || entry.id) === (token?.characterKey || preferredKey))
+    || entries[0]
+    || null;
+  const resolvedKey = normalizeMesaCharacterKey(token?.characterKey || rosterEntry?.characterKey || preferredKey);
+  const sheet = getStoredMesaSheetSnapshot(resolvedKey)
+    || buildMesaSheetSnapshotFromEntry(token || rosterEntry)
+    || normalizeMesaSheetSnapshot({});
+
+  return {
+    username: normalizeMesaUsername(state.session?.username),
+    characterKey: resolvedKey,
+    entries,
+    tokens: ownTokens,
+    token,
+    rosterEntry,
+    sheet,
+    isOnStage: Boolean(token)
+  };
+}
+
+function getOwnSheetSnapshot(characterKey = "") {
+  return getOwnPlayerContext(characterKey).sheet;
+}
+
 function buildFallbackRoster(sheets = {}) {
   const username = state.session?.username || "jogador";
   const playerSheet = normalizeSheetSnapshot(sheets[username], "player");
@@ -977,6 +1158,30 @@ function createMesaRealtimeEnvelope(type, payload = {}) {
 function sendMesaRealtimeDelta(type, payload = {}) {
   if (!window.APP?.sendRealtime || !window.AUTH?.isBackendEnabled?.()) return false;
   return window.APP.sendRealtime(createMesaRealtimeEnvelope(type, payload));
+}
+
+function normalizeMesaSheetPatchPayload(payload = {}) {
+  const characterKey = normalizeMesaCharacterKey(payload.characterKey || payload.key);
+  const patch = {};
+  if (payload.vidaAtual !== undefined) {
+    patch.vidaAtual = String(asPositiveInt(payload.vidaAtual, 0));
+  }
+  if (payload.integAtual !== undefined) {
+    patch.integAtual = String(asPositiveInt(payload.integAtual, 0));
+  }
+  return { characterKey, patch };
+}
+
+function broadcastMesaSheetPatch(characterKey, patch) {
+  const payload = normalizeMesaSheetPatchPayload({
+    characterKey,
+    ...patch
+  });
+  if (!payload.characterKey || !Object.keys(payload.patch).length) return false;
+  return sendMesaRealtimeDelta(MESA_SHEET_PATCH_TYPE, {
+    characterKey: payload.characterKey,
+    ...payload.patch
+  });
 }
 
 function serializeMesaRealtimeToken(token) {

@@ -7,8 +7,11 @@ const MASTER_ONLY_TYPES = new Set([
   "mesa:token:remove",
   "mesa:scene:clear"
 ]);
+const SHEET_PATCH_TYPE = "mesa:sheet:patch";
+const SHEET_CHANGED_TYPE = "sheet:changed";
 const RELAY_TYPES = new Set([
   ...MASTER_ONLY_TYPES,
+  SHEET_PATCH_TYPE,
   "mesa:batch"
 ]);
 
@@ -47,6 +50,22 @@ function normalizeSocketUser(request) {
   };
 }
 
+function normalizeCharacterKey(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizeSheetPatchPayload(payload) {
+  const characterKey = normalizeCharacterKey(payload?.characterKey || payload?.key);
+  const patch = {};
+  if (payload?.vidaAtual !== undefined) {
+    patch.vidaAtual = String(Math.max(0, Number.parseInt(payload.vidaAtual, 10) || 0));
+  }
+  if (payload?.integAtual !== undefined) {
+    patch.integAtual = String(Math.max(0, Number.parseInt(payload.integAtual, 10) || 0));
+  }
+  return { characterKey, patch };
+}
+
 class MesaRealtimeRoom extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
@@ -59,6 +78,10 @@ class MesaRealtimeRoom extends DurableObject {
 
     if (request.method === "POST" && url.pathname === "/broadcast") {
       const payload = await request.json().catch(() => ({}));
+      if (payload?.type === SHEET_CHANGED_TYPE || payload?.type === SHEET_PATCH_TYPE) {
+        this.broadcastToCharacterAudience(payload, payload.characterKey || payload.key);
+        return json({ ok: true, room: ROOM_NAME, online: this.getPresence() });
+      }
       this.broadcast(payload);
       return json({ ok: true, room: ROOM_NAME, online: this.getPresence() });
     }
@@ -130,6 +153,11 @@ class MesaRealtimeRoom extends DurableObject {
   handleRealtimeRelay(ws, payload) {
     const attachment = readAttachment(ws) || {};
     const type = String(payload?.type || "");
+    if (type === SHEET_PATCH_TYPE) {
+      this.handleSheetPatchRelay(ws, payload, attachment);
+      return;
+    }
+
     const messages = type === "mesa:batch" && Array.isArray(payload.messages)
       ? payload.messages.filter(message => isPlainObject(message) && MASTER_ONLY_TYPES.has(String(message.type || "")))
       : [];
@@ -176,6 +204,54 @@ class MesaRealtimeRoom extends DurableObject {
     });
   }
 
+  handleSheetPatchRelay(ws, payload, attachment) {
+    const { characterKey, patch } = normalizeSheetPatchPayload(payload);
+    const actor = {
+      username: attachment.username || "usuario",
+      role: attachment.role || "player"
+    };
+
+    if (!characterKey || !Object.keys(patch).length) {
+      sendJson(ws, {
+        type: "mesa:sheet:ack",
+        ok: false,
+        reason: "Patch de ficha invalido.",
+        messageId: payload?.messageId || "",
+        sentAt: new Date().toISOString()
+      });
+      return;
+    }
+
+    if (actor.role !== "master" && normalizeCharacterKey(actor.username) !== characterKey) {
+      sendJson(ws, {
+        type: "mesa:sheet:ack",
+        ok: false,
+        reason: "Jogador so pode alterar a propria ficha.",
+        messageId: payload?.messageId || "",
+        sentAt: new Date().toISOString()
+      });
+      return;
+    }
+
+    const relayPayload = {
+      type: SHEET_PATCH_TYPE,
+      clientId: payload?.clientId || "",
+      messageId: payload?.messageId || "",
+      ...patch,
+      characterKey,
+      actor,
+      sentAt: payload?.sentAt || new Date().toISOString()
+    };
+    this.broadcastToCharacterAudience(relayPayload, characterKey, ws);
+    sendJson(ws, {
+      type: "mesa:sheet:ack",
+      ok: true,
+      messageId: payload?.messageId || "",
+      characterKey,
+      sentAt: new Date().toISOString()
+    });
+  }
+
   async webSocketClose() {
     this.broadcastPresence();
   }
@@ -193,6 +269,26 @@ class MesaRealtimeRoom extends DurableObject {
 
     this.ctx.getWebSockets().forEach(ws => {
       if (excludeSocket && ws === excludeSocket) return;
+      sendJson(ws, message);
+    });
+  }
+
+  broadcastToCharacterAudience(payload, characterKey, excludeSocket = null) {
+    const key = normalizeCharacterKey(characterKey);
+    if (!key) return;
+    const message = {
+      ...payload,
+      characterKey: key,
+      online: this.getPresence(),
+      sentAt: payload?.sentAt || new Date().toISOString()
+    };
+
+    this.ctx.getWebSockets().forEach(ws => {
+      if (excludeSocket && ws === excludeSocket) return;
+      const attachment = readAttachment(ws) || {};
+      const username = normalizeCharacterKey(attachment.username);
+      const role = String(attachment.role || "player").trim() || "player";
+      if (role !== "master" && username !== key) return;
       sendJson(ws, message);
     });
   }

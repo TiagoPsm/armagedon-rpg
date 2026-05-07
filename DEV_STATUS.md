@@ -72,7 +72,8 @@ Registro minimo esperado:
 - Mesa virtual sincroniza cena em tempo real para mestre e jogadores conectados
 - Mesa virtual usa renderer Canvas/Worker por padrao, com fallback Canvas principal e DOM legado via `localStorage.mesaRenderer = "dom"`
 - Realtime da Mesa aceita deltas incrementais de token para reduzir payload durante movimento
-- Jogador pode alterar Integridade atual na propria ficha e na Mesa
+- Mestre ve roster completo da Mesa; jogador ve palco compartilhado e painel pessoal da propria ficha, sem lista de tokens disponiveis
+- Jogador pode alterar Vida atual e Integridade atual na propria ficha e na Mesa
 - Vida atual de jogador, NPC e monstro nao pode passar da Vida maxima
 - Integridade atual continua limitada pela Integridade maxima
 
@@ -87,6 +88,21 @@ Registro minimo esperado:
 - Home/login ja segue essa mesma linguagem visual
 
 ## Ultima Etapa Concluida
+
+- Painel pessoal do jogador na Mesa em 2026-05-06:
+  - objetivo: ocultar do jogador o roster de tokens disponiveis, manter o palco compartilhado e permitir edicao apenas de Vida atual e Integridade atual da propria ficha
+  - `js/mesa-core.js`: adicionados helpers de papel/privacidade (`isOwnPlayerToken`, `getOwnPlayerTokens`, `getOwnSheetSnapshot`, `canViewDetailedTokenInfo`), cache de snapshot da propria ficha e assinatura do evento `mesa:sheet:patch`
+  - `js/mesa-roster.js` e `css/mesa-roster.css`: roster do mestre preservado; jogadores passam a ver painel "Meu personagem" com avatar, Vida, Integridade, itens, capacidade e memorias em leitura
+  - `js/mesa-stage.js`: selecao e status respeitam permissao de token; patch de ficha nao persiste cena visual; painel do jogador edita valores atuais sem reconstruir a UI a cada tecla
+  - `js/mesa-inspector.js`: jogador nao ve detalhes de token alheio no inspetor inferior; tokens nao autorizados viram leitura restrita da cena
+  - `js/mesa-renderer-v2.js`, `js/mesa-renderer-worker.js`, `css/mesa-stage.css` e `css/mesa-inspector.css`: Vida e Integridade usam a mesma formula visual da ficha original; Integridade deixou de usar fallback dourado na Mesa
+  - `cloudflare/src/mesa-realtime.js`: Durable Object aceita `mesa:sheet:patch`, valida que jogador so altera a propria ficha e retransmite patch apenas para mestre e dono da ficha
+  - `cloudflare/src/index.js`: `PUT /api/characters/:key` dispara `sheet:changed` para Mesa/Ficha atualizarem snapshot quando a ficha for salva
+  - `mesa.html`: cache bust atualizado para `2026-05-06-player-panel-1`
+  - `tests/mesa.spec.cjs`: adicionada cobertura de jogador sem roster, painel pessoal, privacidade do inspetor e edicao de Vida/Integridade
+  - Worker publicado em 2026-05-07: `armagedon-api`, version ID `f749f048-5040-4f6a-a43d-e1e5aaae48f2`
+  - validacoes executadas: `npm run check:js`, `npm run audit:static`, `npm run test:mesa`, `npm run perf:mesa`, `npx.cmd --yes wrangler@latest deploy --dry-run`, `git diff --check` e smoke visual no Browser integrado em servidor local
+  - observacao de QA: o Browser integrado bloqueou `javascript:` URL para semear `localStorage`; o fluxo especifico de jogador foi validado por Playwright, e o Browser foi usado para smoke visual seguro da Mesa local
 
 - Polimento de fluidez do drag da Mesa em 2026-05-06:
   - objetivo: reduzir microtravadas ao mover tokens sem alterar a aparencia geral da Mesa

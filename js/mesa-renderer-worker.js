@@ -34,6 +34,23 @@ function getSafePercent(current, max) {
   return clamp(Number(current) / numericMax, 0, 1);
 }
 
+function getResourceBarColor(type, percent) {
+  const safePercent = clamp(percent, 0, 1);
+  if (type === "life") {
+    const hue = Math.round(safePercent * 120);
+    const lightness = 28 + safePercent * 22;
+    return `hsl(${hue} 78% ${lightness}%)`;
+  }
+
+  if (type === "integrity") {
+    const lightness = 14 + safePercent * 50;
+    const saturation = 48 + safePercent * 30;
+    return `hsl(204 ${saturation}% ${lightness}%)`;
+  }
+
+  return "rgba(255,255,255,0.16)";
+}
+
 async function loadBitmap(url) {
   const key = String(url || "").trim();
   if (!key) return null;
@@ -288,18 +305,7 @@ function drawSingleBar(context, label, value, percent, x, y, width, type) {
 
   const fillWidth = Math.max(5, width * clamp(percent, 0, 1));
   roundRectPath(context, x, barY, fillWidth, 7, 999);
-  const fill = context.createLinearGradient(x, barY, x + width, barY);
-  if (type === "life") {
-    fill.addColorStop(0, "#7d121b");
-    fill.addColorStop(1, "#cc474f");
-  } else if (type === "integrity") {
-    fill.addColorStop(0, "#7e6320");
-    fill.addColorStop(1, "#d9b45c");
-  } else {
-    fill.addColorStop(0, "rgba(255,255,255,0.08)");
-    fill.addColorStop(1, "rgba(255,255,255,0.18)");
-  }
-  context.fillStyle = fill;
+  context.fillStyle = getResourceBarColor(type, percent);
   context.fill();
 }
 

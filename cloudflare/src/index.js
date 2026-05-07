@@ -83,6 +83,33 @@ async function broadcastMesaScene(env, scene, actor) {
   }
 }
 
+async function broadcastSheetChanged(env, characterKey, actor) {
+  const stub = getMesaRealtimeStub(env);
+  const key = String(characterKey || "").trim().toLowerCase();
+  if (!stub || !key) return;
+
+  try {
+    await stub.fetch("https://mesa-realtime.local/broadcast", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json; charset=utf-8"
+      },
+      body: JSON.stringify({
+        type: "sheet:changed",
+        characterKey: key,
+        actor: {
+          id: actor.sub,
+          username: actor.username,
+          role: actor.role
+        },
+        sentAt: new Date().toISOString()
+      })
+    });
+  } catch (error) {
+    console.warn("Falha ao transmitir alteracao de ficha.", error);
+  }
+}
+
 function withCors(response, origin) {
   const headers = new Headers(response.headers);
   const corsHeaders = createCorsHeaders(origin);
@@ -346,6 +373,7 @@ export default {
         assertCharacterAccess(session, character, "write");
         const body = await readJson(request);
         const saved = await saveCharacterBundle(env, character, body, session);
+        await broadcastSheetChanged(env, key, session);
         return withCors(json(saved), origin);
       }
 

@@ -94,4 +94,85 @@ test.describe("Mesa virtual", () => {
     expect(Math.abs(backToNormalLayout.width - normalLayout.width)).toBeLessThanOrEqual(1);
     expect(Math.abs(backToNormalLayout.height - normalLayout.height)).toBeLessThanOrEqual(1);
   });
+
+  test("jogador ve apenas painel pessoal e edita Vida/Integridade atuais", async ({ page }) => {
+    const baseUrl = await getMesaBaseUrl();
+    await page.addInitScript(() => {
+      localStorage.clear();
+      localStorage.setItem("mesaRolePreview", "player");
+      localStorage.setItem("tc_session", JSON.stringify({
+        username: "ana",
+        role: "player",
+        token: "",
+        backend: false
+      }));
+      localStorage.setItem("tc_players", JSON.stringify([
+        { username: "ana", charname: "Ana Rubra" },
+        { username: "bruno", charname: "Bruno Cinza" }
+      ]));
+      localStorage.setItem("tc_sheets", JSON.stringify({
+        ana: {
+          charName: "Ana Rubra",
+          vidaAtual: "8",
+          vidaMax: "12",
+          integAtual: "4",
+          integMax: "6",
+          inventorySlots: 12,
+          inv: [
+            { name: "Lamina curta", type: "arma", damage: "1d6", qty: "1", desc: "Afiada e discreta." }
+          ],
+          ownedMemories: [
+            { name: "Memoria do Portao", desc: "Um fragmento frio.", source: "Prologo" }
+          ]
+        },
+        bruno: {
+          charName: "Bruno Cinza",
+          vidaAtual: "10",
+          vidaMax: "10",
+          integAtual: "5",
+          integMax: "5"
+        }
+      }));
+      localStorage.setItem("tc_npcs", JSON.stringify([
+        { id: "vigia", name: "Vigia da Porta" }
+      ]));
+      localStorage.setItem("tc_virtual_mesa_mock_v1", JSON.stringify({
+        sceneVersion: 10,
+        selectedTokenId: "bruno",
+        tokens: [
+          { id: "ana", characterKey: "ana", x: 9, y: 10, visibleToPlayers: true, statsVisibleToPlayers: true, order: 1 },
+          { id: "bruno", characterKey: "bruno", x: 29, y: 10, visibleToPlayers: true, statsVisibleToPlayers: true, order: 2 },
+          { id: "npc:vigia", characterKey: "npc:vigia", x: 49, y: 10, visibleToPlayers: true, statsVisibleToPlayers: true, order: 3 }
+        ]
+      }));
+    });
+
+    await page.goto(`${baseUrl}/mesa.html`);
+    await expect(page.locator("#rosterPanelTitle")).toHaveText("Meu personagem");
+    await expect(page.locator("#rosterSearchField")).toBeHidden();
+    await expect(page.locator("#rosterCountBadge")).toHaveText("Em cena");
+
+    const playerPanel = page.locator(".player-sheet-panel");
+    await expect(playerPanel).toBeVisible();
+    await expect(playerPanel).toContainText("Ana Rubra");
+    await expect(playerPanel).toContainText("Lamina curta");
+    await expect(playerPanel).toContainText("Memoria do Portao");
+    await expect(playerPanel).not.toContainText("Bruno Cinza");
+    await expect(playerPanel).not.toContainText("Vigia da Porta");
+    await expect(page.locator("#tokenInspector")).not.toContainText("Bruno Cinza");
+
+    await page.locator('[data-player-stat-field="currentLife"]').fill("5");
+    await page.locator('[data-player-stat-field="currentIntegrity"]').fill("3");
+
+    const savedSheet = await page.evaluate(() => {
+      const sheets = JSON.parse(localStorage.getItem("tc_sheets") || "{}");
+      return sheets.ana || {};
+    });
+    expect(savedSheet.vidaAtual).toBe("5");
+    expect(savedSheet.integAtual).toBe("3");
+
+    const savedScene = await page.evaluate(() => JSON.parse(localStorage.getItem("tc_virtual_mesa_mock_v1") || "{}"));
+    expect(savedScene.tokens).toHaveLength(3);
+    expect(savedScene.tokens.find(token => token.id === "bruno")).toBeTruthy();
+  });
 });

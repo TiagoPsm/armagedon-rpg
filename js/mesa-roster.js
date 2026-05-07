@@ -76,7 +76,22 @@ function renderControls() {
 function renderRoster() {
   const rosterList = getMesaDomRef("rosterList");
   const rosterCountBadge = getMesaDomRef("rosterCountBadge");
+  const rosterSearch = getMesaDomRef("rosterSearchField");
+  const rosterKicker = getMesaDomRef("rosterPanelKicker");
+  const rosterTitle = getMesaDomRef("rosterPanelTitle");
   if (!rosterList || !rosterCountBadge) return;
+
+  if (!isMaster()) {
+    if (rosterSearch) rosterSearch.hidden = true;
+    if (rosterKicker) rosterKicker.textContent = "Ficha rapida";
+    if (rosterTitle) rosterTitle.textContent = "Meu personagem";
+    renderPlayerSheetPanel(rosterList, rosterCountBadge);
+    return;
+  }
+
+  if (rosterSearch) rosterSearch.hidden = false;
+  if (rosterKicker) rosterKicker.textContent = "Escalacao";
+  if (rosterTitle) rosterTitle.textContent = "Adicionar a mesa";
 
   const filteredRoster = getFilteredRoster();
   const availableCount = filteredRoster.filter(entry => !findToken(entry.id)).length;
@@ -151,4 +166,196 @@ function renderRosterEntry(entry) {
       </div>
     </article>
   `;
+}
+
+function renderPlayerSheetPanel(rosterList, rosterCountBadge) {
+  const context = getOwnPlayerContext();
+  const source = context.token || context.rosterEntry;
+  const sheet = context.sheet;
+  const characterName = String(sheet.charName || source?.name || state.session?.username || "Personagem").trim();
+  const avatar = String(sheet.avatar || source?.imageUrl || "").trim();
+  const initials = getInitials(characterName);
+  const currentLife = clamp(asPositiveInt(sheet.vidaAtual, source?.currentLife || 0), 0, asPositiveInt(sheet.vidaMax, source?.maxLife || 0));
+  const maxLife = Math.max(1, asPositiveInt(sheet.vidaMax, source?.maxLife || 1));
+  const currentIntegrity = clamp(asPositiveInt(sheet.integAtual, source?.currentIntegrity || 0), 0, asPositiveInt(sheet.integMax, source?.maxIntegrity || 0));
+  const maxIntegrity = Math.max(0, asPositiveInt(sheet.integMax, source?.maxIntegrity || 0));
+  const inventory = Array.isArray(sheet.inv) ? sheet.inv.filter(item => String(item.name || "").trim()) : [];
+  const memories = Array.isArray(sheet.ownedMemories) ? sheet.ownedMemories.filter(memory => String(memory.name || memory.desc || "").trim()) : [];
+  const inventorySlots = Math.max(MESA_DEFAULT_INVENTORY_SLOTS, asPositiveInt(sheet.inventorySlots, MESA_DEFAULT_INVENTORY_SLOTS), inventory.length);
+  const selectedKey = context.characterKey || normalizeMesaCharacterKey(state.session?.username);
+
+  rosterCountBadge.textContent = context.isOnStage ? "Em cena" : "Fora da cena";
+
+  rosterList.innerHTML = `
+    <section class="player-sheet-panel" data-character-key="${escapeAttribute(selectedKey)}">
+      <div class="player-sheet-hero">
+        <div class="player-sheet-avatar">
+          ${avatar
+            ? `<img src="${escapeAttribute(avatar)}" alt="${escapeAttribute(characterName)}" width="104" height="104" loading="lazy" decoding="async" draggable="false" />`
+            : `<span class="mesa-token-avatar-fallback">${escapeHtml(initials)}</span>`}
+        </div>
+        <div class="player-sheet-copy">
+          <span class="token-type-badge" data-type="player">Jogador</span>
+          <h3>${escapeHtml(characterName)}</h3>
+          <p>${context.isOnStage ? "Seu token esta no palco compartilhado." : "O mestre ainda nao colocou seu token na cena."}</p>
+        </div>
+      </div>
+
+      ${renderPlayerTokenSelector(context, selectedKey)}
+
+      <div class="player-resource-grid">
+        ${renderPlayerResourceEditor("Vida", "currentLife", currentLife, maxLife, "vida", selectedKey)}
+        ${renderPlayerResourceEditor("Integridade", "currentIntegrity", currentIntegrity, maxIntegrity, "integ", selectedKey)}
+      </div>
+
+      <div class="player-panel-meta-grid">
+        <article class="player-summary-card">
+          <span class="panel-kicker">Inventario</span>
+          <strong>${inventory.length}/${inventorySlots}</strong>
+          <small>Slots ocupados</small>
+        </article>
+        <article class="player-summary-card">
+          <span class="panel-kicker">Memorias</span>
+          <strong>${memories.length}</strong>
+          <small>Registradas na ficha</small>
+        </article>
+      </div>
+
+      ${renderPlayerInventoryList(inventory)}
+      ${renderPlayerMemoryList(memories)}
+    </section>
+  `;
+}
+
+function renderPlayerTokenSelector(context, selectedKey) {
+  const entries = context.entries || [];
+  if (entries.length <= 1) {
+    return context.isOnStage
+      ? `<button type="button" class="mini-btn player-focus-btn" data-player-panel-action="focus-own" data-character-key="${escapeAttribute(selectedKey)}">Focar meu token</button>`
+      : "";
+  }
+
+  return `
+    <div class="player-token-selector" aria-label="Selecionar personagem proprio">
+      ${entries.map(entry => {
+        const key = normalizeMesaCharacterKey(entry.characterKey || entry.id);
+        const token = context.tokens.find(item => normalizeMesaCharacterKey(item.characterKey || item.id) === key);
+        return `
+          <button
+            type="button"
+            class="mini-btn ${key === selectedKey ? "is-primary" : ""}"
+            data-player-panel-action="select-own"
+            data-character-key="${escapeAttribute(key)}"
+          >
+            ${escapeHtml(entry.name || key)}${token ? "" : " (fora)"}
+          </button>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderPlayerResourceEditor(label, field, current, max, type, characterKey) {
+  return `
+    <article class="player-resource-card">
+      <div class="bar-label-row">
+        <span class="bar-label">${escapeHtml(label)}</span>
+        <span>${current}/${max}</span>
+      </div>
+      <div class="player-stat-inputs">
+        <input
+          type="number"
+          min="0"
+          max="${max}"
+          step="1"
+          data-player-stat-field="${field}"
+          data-character-key="${escapeAttribute(characterKey)}"
+          aria-label="${escapeAttribute(`${label} atual`)}"
+          value="${current}"
+        />
+        <span>/ ${max}</span>
+      </div>
+      <div class="bar-preview is-${type === "vida" ? "life" : "integrity"}">
+        <span style="${getBarFillStyle(type, current, max)}"></span>
+      </div>
+    </article>
+  `;
+}
+
+function renderPlayerInventoryList(inventory) {
+  if (!inventory.length) {
+    return `
+      <section class="player-panel-section">
+        <div class="player-panel-section-head">
+          <h3>Itens</h3>
+        </div>
+        <p class="player-panel-empty">Nenhum item registrado na ficha.</p>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="player-panel-section">
+      <div class="player-panel-section-head">
+        <h3>Itens</h3>
+        <span>${inventory.length} item${inventory.length === 1 ? "" : "s"}</span>
+      </div>
+      <div class="player-panel-list">
+        ${inventory.map(renderPlayerInventoryItem).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderPlayerInventoryItem(item) {
+  const type = formatMesaItemType(item.type);
+  const meta = item.type === "arma" && item.damage
+    ? `${item.damage} | Qtd. ${item.qty || "1"}`
+    : `Qtd. ${item.qty || "1"}`;
+  return `
+    <article class="player-list-card">
+      <span class="token-type-badge" data-type="player">${escapeHtml(type)}</span>
+      <strong>${escapeHtml(item.name || "Item")}</strong>
+      <small>${escapeHtml(meta)}</small>
+      ${item.desc ? `<small>${escapeHtml(item.desc)}</small>` : ""}
+    </article>
+  `;
+}
+
+function renderPlayerMemoryList(memories) {
+  if (!memories.length) {
+    return `
+      <section class="player-panel-section">
+        <div class="player-panel-section-head">
+          <h3>Memorias</h3>
+        </div>
+        <p class="player-panel-empty">Nenhuma memoria possuida.</p>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="player-panel-section">
+      <div class="player-panel-section-head">
+        <h3>Memorias</h3>
+        <span>${memories.length} memoria${memories.length === 1 ? "" : "s"}</span>
+      </div>
+      <div class="player-panel-list">
+        ${memories.map(memory => `
+          <article class="player-list-card">
+            <span class="token-type-badge" data-type="npc">Memoria</span>
+            <strong>${escapeHtml(memory.name || "Memoria sem nome")}</strong>
+            <small>${escapeHtml(memory.desc || "Sem descricao.")}</small>
+            ${memory.source ? `<small>Origem: ${escapeHtml(memory.source)}</small>` : ""}
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function formatMesaItemType(type) {
+  if (type === "arma") return "Arma";
+  if (type === "acessorio") return "Acessorio";
+  return "Outro";
 }

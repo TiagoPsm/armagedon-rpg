@@ -56,7 +56,7 @@ function getMesaStageRenderer() {
   if (!stage || !window.MesaRendererV2?.get) return null;
   if (mesaStageRenderer) return mesaStageRenderer;
   mesaStageRenderer = window.MesaRendererV2.get(stage, {
-    workerUrl: "js/mesa-renderer-worker.js?v=2026-05-06-drag-polish-1"
+    workerUrl: "js/mesa-renderer-worker.js?v=2026-05-06-player-panel-1"
   });
   return mesaStageRenderer;
 }
@@ -94,9 +94,10 @@ function clearDomStageTokenElements() {
 
 function createCanvasTokenSnapshot(token) {
   const hiddenForMaster = isMaster() && !state.previewPlayerView && !token.visibleToPlayers;
+  const canViewStats = canViewTokenStats(token);
   const statePillLabel = hiddenForMaster
     ? "Oculto"
-    : token.type !== "player" && token.statsVisibleToPlayers !== true
+    : !canViewStats
       ? "Status restrito"
       : "";
 
@@ -112,11 +113,11 @@ function createCanvasTokenSnapshot(token) {
     x: token.x,
     y: token.y,
     order: token.order || 1,
-    currentLife: token.currentLife,
-    maxLife: token.maxLife,
-    currentIntegrity: token.currentIntegrity,
-    maxIntegrity: token.maxIntegrity,
-    canViewStats: canViewTokenStats(token),
+    currentLife: canViewStats ? token.currentLife : 0,
+    maxLife: canViewStats ? token.maxLife : 0,
+    currentIntegrity: canViewStats ? token.currentIntegrity : 0,
+    maxIntegrity: canViewStats ? token.maxIntegrity : 0,
+    canViewStats,
     hiddenForMaster,
     statePillLabel
   };
@@ -206,14 +207,21 @@ function renderTokenStatusRow(label, current, max, fillStyle, isConcealed = fals
 }
 
 function handleRosterAction(event) {
+  const playerButton = event.target.closest("[data-player-panel-action]");
+  if (playerButton) {
+    handlePlayerPanelAction(playerButton);
+    return;
+  }
+
   const button = event.target.closest("[data-roster-action]");
   if (!button) return;
+  if (!isMaster()) return;
   const action = String(button.dataset.rosterAction || "");
   const entryId = String(button.dataset.entryId || "");
   const entry = getRosterEntryById(entryId);
   if (!entry) return;
 
-  if (action === "add" && isMaster()) {
+  if (action === "add") {
     addTokenToStage(entry);
     return;
   }
@@ -223,12 +231,30 @@ function handleRosterAction(event) {
     return;
   }
 
-  if (action === "remove" && isMaster()) {
+  if (action === "remove") {
     removeToken(entry.id);
   }
 }
 
+function handlePlayerPanelAction(button) {
+  if (isMaster()) return;
+  const action = String(button.dataset.playerPanelAction || "");
+  const characterKey = normalizeMesaCharacterKey(button.dataset.characterKey);
+  if (!characterKey || !canReceiveSheetPatch(characterKey)) return;
+
+  state.playerPanelCharacterKey = characterKey;
+  if (action === "select-own" || action === "focus-own") {
+    const token = getOwnPlayerTokens().find(entry => normalizeMesaCharacterKey(entry.characterKey || entry.id) === characterKey);
+    if (token) {
+      selectToken(token.id);
+      return;
+    }
+  }
+  scheduleMesaRender({ roster: true, inspector: true });
+}
+
 function selectToken(tokenId) {
+  if (!isMaster() && !getRenderedTokens().some(token => token.id === tokenId)) return;
   const previousTokenId = state.selectedTokenId;
   state.selectedTokenId = tokenId;
   const token = findToken(tokenId);
@@ -242,7 +268,7 @@ function selectToken(tokenId) {
     bumpMesaSceneVersion();
     broadcastMesaTokenMove(token);
   }
-  persistState();
+  if (isMaster()) persistState();
   updateStageTokenSelection(previousTokenId, tokenId);
   scheduleMesaRender({ inspector: true });
 }
@@ -253,8 +279,9 @@ function handleInspectorAction(event) {
   const action = String(button.dataset.inspectorAction || "");
   const token = getSelectedToken();
   if (!token) return;
+  if (!isMaster()) return;
 
-  if (action === "toggle-visibility" && isMaster()) {
+  if (action === "toggle-visibility") {
     token.visibleToPlayers = !token.visibleToPlayers;
   }
 
@@ -262,14 +289,14 @@ function handleInspectorAction(event) {
     token.statsVisibleToPlayers = !token.statsVisibleToPlayers;
   }
 
-  if (action === "center" && isMaster()) {
+  if (action === "center") {
     const centerPosition = getCenterStagePosition();
     token.x = centerPosition.x;
     token.y = centerPosition.y;
     token.order = getNextOrder();
   }
 
-  if (action === "remove" && isMaster()) {
+  if (action === "remove") {
     removeToken(token.id);
     return;
   }
@@ -291,9 +318,36 @@ function handleInspectorStatInput(event) {
   const sheetPatch = buildSheetPatchFromMesa(field, nextValue, token);
   if (!sheetPatch) return;
 
-  applySheetPatchFromMesa(token.characterKey, sheetPatch);
-  broadcastMesaTokenUpsert(findToken(token.id) || token);
+  applySheetPatchFromMesa(token.characterKey, sheetPatch, { render: false });
+  broadcastMesaSheetPatch(token.characterKey, sheetPatch);
   scheduleMesaRender({ stage: true, inspector: true });
+}
+
+function handlePlayerPanelStatInput(event) {
+  const input = event.target.closest("[data-player-stat-field]");
+  if (!input || isMaster()) return;
+
+  const field = String(input.dataset.playerStatField || "");
+  const characterKey = normalizeMesaCharacterKey(input.dataset.characterKey);
+  if (!field || !characterKey || !canReceiveSheetPatch(characterKey)) return;
+
+  const context = getOwnPlayerContext(characterKey);
+  const source = context.token || context.rosterEntry || {
+    type: "player",
+    ownerUsername: state.session?.username,
+    currentLife: context.sheet.vidaAtual,
+    maxLife: context.sheet.vidaMax,
+    currentIntegrity: context.sheet.integAtual,
+    maxIntegrity: context.sheet.integMax
+  };
+  const sheetPatch = buildSheetPatchFromMesa(field, Number(input.value), source);
+  if (!sheetPatch) return;
+
+  state.playerPanelCharacterKey = characterKey;
+  applySheetPatchFromMesa(characterKey, sheetPatch, { render: false });
+  syncPlayerStatInputCard(input, field);
+  broadcastMesaSheetPatch(characterKey, sheetPatch);
+  scheduleMesaRender({ summary: true, stage: true, inspector: true });
 }
 
 function handleTokenPointerDown(event) {
@@ -647,13 +701,42 @@ function buildSheetPatchFromMesa(field, nextValue, token) {
   return Object.keys(patch).length ? patch : null;
 }
 
-function applySheetPatchFromMesa(characterKey, patch) {
+function applySheetPatchFromMesa(characterKey, patch, options = {}) {
+  if (!applySheetPatchToMesaCaches(characterKey, patch)) return;
+  scheduleMesaRemoteSheetPatch(characterKey, patch);
+  refreshMesaRosterFromSheets({
+    persistScene: false,
+    render: options.render !== false
+  });
+}
+
+function syncPlayerStatInputCard(input, field) {
+  const card = input?.closest?.(".player-resource-card");
+  if (!card) return;
+  const max = asPositiveInt(input.max, 0);
+  const current = clamp(asPositiveInt(input.value, 0), 0, max);
+  if (String(input.value) !== String(current)) input.value = String(current);
+
+  const valueLabel = card.querySelector(".bar-label-row span:last-child");
+  if (valueLabel) valueLabel.textContent = `${current}/${max}`;
+
+  const bar = card.querySelector(".bar-preview span");
+  if (bar) {
+    const type = field === "currentLife" ? "vida" : "integ";
+    bar.setAttribute("style", getBarFillStyle(type, current, max));
+  }
+}
+
+function applySheetPatchToMesaCaches(characterKey, patch) {
+  const key = normalizeMesaCharacterKey(characterKey);
+  if (!key || !patch || !Object.keys(patch).length) return false;
   const localSheets = readJsonStorage(SHEETS_KEY, {});
   const remoteSheets = readJsonStorage(REMOTE_SHEETS_KEY, {});
-  const localHasEntry = Object.prototype.hasOwnProperty.call(localSheets, characterKey);
-  const remoteHasEntry = Object.prototype.hasOwnProperty.call(remoteSheets, characterKey);
+  const localHasEntry = Object.prototype.hasOwnProperty.call(localSheets, key);
+  const remoteHasEntry = Object.prototype.hasOwnProperty.call(remoteSheets, key);
+  const rosterFallback = buildMesaSheetSnapshotFromEntry(getRosterEntryByCharacterKey(key));
   const baseSheet = normalizeMesaSheetSnapshot(
-    remoteHasEntry ? remoteSheets[characterKey] : localHasEntry ? localSheets[characterKey] : {}
+    remoteHasEntry ? remoteSheets[key] : localHasEntry ? localSheets[key] : rosterFallback || {}
   );
   const nextSheet = normalizeMesaSheetSnapshot({
     ...baseSheet,
@@ -661,43 +744,43 @@ function applySheetPatchFromMesa(characterKey, patch) {
   });
 
   if (localHasEntry || !remoteHasEntry) {
-    localSheets[characterKey] = {
-      ...localSheets[characterKey],
+    localSheets[key] = {
+      ...localSheets[key],
       ...nextSheet
     };
     localStorage.setItem(SHEETS_KEY, JSON.stringify(localSheets));
   }
 
   if (remoteHasEntry) {
-    remoteSheets[characterKey] = {
-      ...remoteSheets[characterKey],
+    remoteSheets[key] = {
+      ...remoteSheets[key],
       ...nextSheet
     };
     localStorage.setItem(REMOTE_SHEETS_KEY, JSON.stringify(remoteSheets));
   }
 
-  scheduleMesaRemoteSheetPatch(characterKey, patch);
-  refreshMesaRosterFromSheets();
+  return true;
 }
 
 function scheduleMesaRemoteSheetPatch(characterKey, patch) {
   if (!window.AUTH?.isBackendEnabled?.() || !window.APP?.saveCharacter) return;
-  if (!characterKey || !patch || !Object.keys(patch).length) return;
+  const key = normalizeMesaCharacterKey(characterKey);
+  if (!key || !patch || !Object.keys(patch).length) return;
 
-  const previousPatch = pendingMesaSheetPatches.get(characterKey) || {};
-  pendingMesaSheetPatches.set(characterKey, {
+  const previousPatch = pendingMesaSheetPatches.get(key) || {};
+  pendingMesaSheetPatches.set(key, {
     ...previousPatch,
     ...patch
   });
 
-  const existingTimer = mesaSheetSaveTimers.get(characterKey);
+  const existingTimer = mesaSheetSaveTimers.get(key);
   if (existingTimer) window.clearTimeout(existingTimer);
 
   const timer = window.setTimeout(() => {
-    mesaSheetSaveTimers.delete(characterKey);
-    persistMesaSheetPatch(characterKey);
+    mesaSheetSaveTimers.delete(key);
+    persistMesaSheetPatch(key);
   }, 500);
-  mesaSheetSaveTimers.set(characterKey, timer);
+  mesaSheetSaveTimers.set(key, timer);
 }
 
 async function persistMesaSheetPatch(characterKey) {
@@ -729,7 +812,7 @@ async function persistMesaSheetPatch(characterKey) {
           }
         : saved.data;
       localStorage.setItem(REMOTE_SHEETS_KEY, JSON.stringify(nextRemoteSheets));
-      refreshMesaRosterFromSheets();
+      refreshMesaRosterFromSheets({ persistScene: false });
       scheduleMesaRender({ summary: true, roster: true, stage: true, inspector: true });
     }
   } catch (error) {
@@ -744,11 +827,14 @@ function normalizeMesaSheetSnapshot(raw) {
     integAtual: raw?.integAtual ?? "",
     integMax: raw?.integMax ?? "",
     charName: raw?.charName ?? "",
-    avatar: raw?.avatar ?? ""
+    avatar: raw?.avatar ?? "",
+    inventorySlots: raw?.inventorySlots ?? MESA_DEFAULT_INVENTORY_SLOTS,
+    inv: Array.isArray(raw?.inv) ? raw.inv.map(normalizeMesaItem) : [],
+    ownedMemories: Array.isArray(raw?.ownedMemories) ? raw.ownedMemories.map(normalizeMesaOwnedMemory) : []
   };
 }
 
-function refreshMesaRosterFromSheets() {
+function refreshMesaRosterFromSheets(options = {}) {
   const previousSelectedId = state.selectedTokenId;
   setMesaRoster(buildRoster());
   state.tokens = state.tokens
@@ -756,13 +842,15 @@ function refreshMesaRosterFromSheets() {
     .filter(Boolean);
   state.selectedTokenId = previousSelectedId;
   syncSelectedToken();
-  persistState();
-  scheduleMesaRender({ summary: true, roster: true, stage: true, inspector: true });
+  if (options.persistScene !== false) persistState();
+  if (options.render !== false) {
+    scheduleMesaRender({ summary: true, roster: true, stage: true, inspector: true });
+  }
 }
 
 function handleMesaStorageSync(event) {
   if (![SHEETS_KEY, REMOTE_SHEETS_KEY].includes(String(event.key || ""))) return;
-  refreshMesaRosterFromSheets();
+  refreshMesaRosterFromSheets({ persistScene: false });
 }
 
 function getFilteredRoster() {
@@ -795,9 +883,7 @@ function syncSelectedToken() {
 }
 
 function getSelectedToken() {
-  return getRenderedTokens().find(token => token.id === state.selectedTokenId)
-    || state.tokens.find(token => token.id === state.selectedTokenId)
-    || null;
+  return getRenderedTokens().find(token => token.id === state.selectedTokenId) || null;
 }
 
 function findToken(tokenId) {
@@ -881,15 +967,13 @@ function canMoveTokens() {
 
 function canViewTokenStats(token) {
   if (!token) return false;
-  if (!isPlayerPerspective()) return true;
-  if (token.type === "player") return true;
-  return token.statsVisibleToPlayers === true;
+  return canViewDetailedTokenInfo(token);
 }
 
 function canEditCurrentStats(token) {
   if (!token) return false;
   if (isMaster()) return true;
-  return state.role === "player" && token.ownerUsername === state.session?.username;
+  return state.role === "player" && isOwnPlayerToken(token);
 }
 
 function canEditAllStats(token) {
@@ -943,7 +1027,7 @@ function resolveNextStageSlot(tokens) {
 
 function getNextSelectedTokenId() {
   const renderedTokens = [...getRenderedTokens()].sort((a, b) => (b.order || 0) - (a.order || 0));
-  return renderedTokens[0]?.id || state.tokens[0]?.id || "";
+  return renderedTokens[0]?.id || "";
 }
 
 function getOwnerCopy(ownerUsername) {
@@ -959,7 +1043,7 @@ function renderToken(token) {
   const canViewStats = canViewTokenStats(token);
   const statePillLabel = hiddenForMaster
     ? "Oculto"
-    : token.type !== "player" && token.statsVisibleToPlayers !== true
+    : !canViewStats
       ? "Status restrito"
       : "";
 

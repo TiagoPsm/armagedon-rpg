@@ -16,6 +16,10 @@ function renderInspector() {
   const canEditCurrent = canEditCurrentStats(token);
   const canEditAll = canEditAllStats(token);
   const canViewStats = canViewTokenStats(token);
+  if (!isMaster() && !canViewDetailedTokenInfo(token)) {
+    renderRestrictedPlayerInspector(inspector, token);
+    return;
+  }
   const isHiddenForPlayers = !token.visibleToPlayers;
 
   inspector.innerHTML = `
@@ -30,7 +34,7 @@ function renderInspector() {
           <div class="token-inspector-badges">
             <span class="token-type-badge" data-type="${token.type}">${escapeHtml(token.typeLabel)}</span>
             ${isHiddenForPlayers ? `<span class="token-state-pill">Oculto</span>` : ""}
-            ${token.type !== "player" && token.statsVisibleToPlayers !== true ? `<span class="token-state-pill">Status restrito</span>` : ""}
+            ${!canViewStats ? `<span class="token-state-pill">Status restrito</span>` : ""}
           </div>
           <h3 class="token-inspector-name">${escapeHtml(token.name)}</h3>
           <p class="token-inspector-owner">${escapeHtml(token.ownerUsername === "mestre" ? "Controlado pelo mestre" : `Pertence a ${token.ownerUsername}`)}</p>
@@ -102,6 +106,31 @@ function renderInspector() {
     </section>
 
     ${buildInspectorNote(token, canEditCurrent, canEditAll, canViewStats)}
+  `;
+}
+
+function renderRestrictedPlayerInspector(inspector, token) {
+  inspector.innerHTML = `
+    <section class="token-inspector-card" data-type="${token.type}">
+      <div class="token-inspector-hero">
+        <div class="token-inspector-avatar">
+          <span class="mesa-token-avatar-fallback">?</span>
+        </div>
+        <div class="token-inspector-copy">
+          <div class="token-inspector-badges">
+            <span class="token-type-badge" data-type="${token.type}">${escapeHtml(token.typeLabel)}</span>
+            <span class="token-state-pill">Somente cena</span>
+          </div>
+          <h3 class="token-inspector-name">Token da cena</h3>
+          <p class="token-inspector-owner">As informacoes detalhadas ficam restritas ao proprio token.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="inspector-note">
+      <strong>Painel pessoal</strong>
+      Use o painel Meu personagem para consultar e editar sua Vida e Integridade.
+    </div>
   `;
 }
 

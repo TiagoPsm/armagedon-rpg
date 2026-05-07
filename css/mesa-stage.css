@@ -255,11 +255,11 @@
 }
 
 .status-bar.is-life > span {
-  background: linear-gradient(90deg, #7d121b, #cc474f);
+  background: hsl(120 78% 50%);
 }
 
 .status-bar.is-integrity > span {
-  background: linear-gradient(90deg, #7e6320, #d9b45c);
+  background: hsl(204 78% 64%);
 }
 
 .mesa-empty-state,
