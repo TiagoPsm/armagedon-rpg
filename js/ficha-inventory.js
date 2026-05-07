@@ -263,9 +263,15 @@ async function rollItemDamage(index, options = {}) {
   }
 }
 
-function getPlayerInventoryState(username) {
+function getPlayerInventoryState(identifier) {
   if (isBackendMode()) {
-    const player = AUTH.getDirectoryCache().players.find(candidate => candidate.username === username);
+    const lookup = normalizeSheetKey(identifier);
+    const directory = AUTH.getDirectoryCache();
+    const players = Array.isArray(directory?.players) ? directory.players : [];
+    const player = players.find(candidate => (
+      normalizeSheetKey(candidate?.username) === lookup
+      || normalizeSheetKey(candidate?.key) === lookup
+    )) || {};
     const used = Number(player.usedSlots || 0);
     const capacity = Number(player.inventorySlots || DEFAULT_INVENTORY_SLOTS);
     return {
@@ -275,6 +281,7 @@ function getPlayerInventoryState(username) {
     };
   }
 
+  const username = String(identifier || "").trim();
   const sheets = readSheets();
   const playerSheet = normalizeSheetData(sheets[username] || {}, "player");
   const capacity = Math.max(
@@ -292,13 +299,17 @@ function getPlayerInventoryState(username) {
 function getItemTransferTargets() {
   if (currentSheetTarget.kind !== "player") return [];
 
+  const owner = normalizeSheetKey(currentSheetTarget.owner);
   return AUTH.getPlayers()
-    .filter(player => player.username !== currentSheetTarget.owner)
+    .filter(player => normalizeSheetKey(player.username) !== owner)
     .map(player => {
-      const inventoryState = getPlayerInventoryState(player.username);
+      const username = String(player.username || "").trim();
+      const value = isBackendMode() ? String(player.key || username).trim() : username;
+      const inventoryState = getPlayerInventoryState(value || username);
       return {
-        value: player.username,
-        label: player.charname || player.username,
+        value: value || username,
+        username,
+        label: player.charname || username,
         meta: `${inventoryState.used}/${inventoryState.capacity} slots`,
         isFull: inventoryState.available <= 0
       };
@@ -413,8 +424,8 @@ async function transferItem(index) {
 
   const availableTargets = getItemTransferTargets().filter(target => !target.isFull);
   const state = itemTransferStates[index] || {};
-  const targetUsername = state.target || availableTargets[0].value;
-  const target = availableTargets.find(candidate => candidate.value === targetUsername);
+  const targetValue = state.target || availableTargets[0]?.value || "";
+  const target = availableTargets.find(candidate => candidate.value === targetValue);
 
   if (!target) {
     itemTransferStates[index] = {
@@ -430,7 +441,7 @@ async function transferItem(index) {
     return;
   }
 
-  const targetInventoryState = getPlayerInventoryState(targetUsername);
+  const targetInventoryState = getPlayerInventoryState(target.value);
   if (targetInventoryState.available <= 0) {
     itemTransferStates[index] = {
       ...state,
@@ -461,7 +472,7 @@ async function transferItem(index) {
     try {
       await APP.transferItem({
         sourceKey: currentSheetTarget.key,
-        targetKey: targetUsername,
+        targetKey: target.value,
         itemIndex: index
       });
       await AUTH.refreshDirectory();
@@ -479,6 +490,7 @@ async function transferItem(index) {
       return;
     }
   } else {
+    const targetUsername = target.username || target.value;
     const sheets = readSheets();
     const targetSheet = normalizeSheetData(sheets[targetUsername] || {}, "player");
     const targetCapacity = Math.max(

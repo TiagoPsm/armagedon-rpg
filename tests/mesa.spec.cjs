@@ -176,6 +176,66 @@ test.describe("Mesa virtual", () => {
     expect(savedScene.tokens.find(token => token.id === "bruno")).toBeTruthy();
   });
 
+  test("mesa local ignora diretorio remoto antigo no painel pessoal", async ({ page }) => {
+    const baseUrl = await getMesaBaseUrl();
+    await page.addInitScript(() => {
+      localStorage.clear();
+      localStorage.setItem("mesaRolePreview", "player");
+      localStorage.setItem("tc_session", JSON.stringify({
+        username: "ana",
+        role: "player",
+        token: "",
+        backend: false
+      }));
+      localStorage.setItem("tc_players", JSON.stringify([
+        { username: "ana", charname: "Ana Local" }
+      ]));
+      localStorage.setItem("tc_directory_cache", JSON.stringify({
+        players: [
+          { key: "player-ana-remota", username: "ana", charname: "Ana Remota" }
+        ],
+        npcs: [],
+        monsters: []
+      }));
+      localStorage.setItem("tc_sheets", JSON.stringify({
+        ana: {
+          charName: "Ana Local",
+          vidaAtual: "6",
+          vidaMax: "10",
+          integAtual: "3",
+          integMax: "5"
+        },
+        "player-ana-remota": {
+          charName: "Ana Remota",
+          vidaAtual: "1",
+          vidaMax: "1",
+          integAtual: "1",
+          integMax: "1"
+        }
+      }));
+      localStorage.setItem("tc_virtual_mesa_mock_v1", JSON.stringify({
+        sceneVersion: 3,
+        selectedTokenId: "ana",
+        tokens: [
+          { id: "ana", characterKey: "ana", x: 9, y: 10, visibleToPlayers: true, statsVisibleToPlayers: true, order: 1 }
+        ]
+      }));
+    });
+
+    await page.goto(`${baseUrl}/mesa.html`);
+    const playerPanel = page.locator(".player-sheet-panel");
+    await expect(playerPanel).toBeVisible();
+    await expect(playerPanel).toContainText("Ana Local");
+    await expect(playerPanel).not.toContainText("Ana Remota");
+    await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("6");
+
+    await page.locator('[data-player-stat-field="currentLife"]').fill("8");
+
+    const savedSheets = await page.evaluate(() => JSON.parse(localStorage.getItem("tc_sheets") || "{}"));
+    expect(savedSheets.ana.vidaAtual).toBe("8");
+    expect(savedSheets["player-ana-remota"].vidaAtual).toBe("1");
+  });
+
   test("jogador carrega a propria ficha oficial e persiste Vida/Integridade pela Mesa", async ({ page }) => {
     const baseUrl = await getMesaBaseUrl();
     const apiBaseUrl = "https://armagedon-api.tiagopsm2008.workers.dev/api";

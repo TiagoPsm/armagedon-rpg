@@ -509,6 +509,10 @@ async function applyRemoteMesaSceneSnapshot(remoteData) {
   }
 }
 
+function isMesaBackendEnabled() {
+  return Boolean(window.AUTH?.isBackendEnabled?.());
+}
+
 function resolveMesaSession() {
   const existingSession = window.AUTH?.getSession ? window.AUTH.getSession() : null;
   if (existingSession) return existingSession;
@@ -572,6 +576,8 @@ async function hydrateOwnMesaSheetSnapshot() {
 function resolveOwnMesaCharacterKey() {
   const username = normalizeMesaUsername(state.session?.username);
   if (!username) return "";
+
+  if (!isMesaBackendEnabled()) return username;
 
   const directory = window.AUTH?.getDirectoryCache?.() || {};
   const players = Array.isArray(directory?.players) ? directory.players : [];
@@ -685,7 +691,9 @@ function hasMesaTokenMembershipChanged(previousTokenIds, nextTokens) {
 }
 
 function buildRoster() {
-  const directory = window.AUTH?.getDirectoryCache?.() || { players: [], npcs: [], monsters: [] };
+  const directory = isMesaBackendEnabled()
+    ? window.AUTH?.getDirectoryCache?.() || { players: [], npcs: [], monsters: [] }
+    : { players: [], npcs: [], monsters: [] };
   const sheets = readMergedSheets();
 
   // A Mesa tenta montar o roster a partir de duas fontes:

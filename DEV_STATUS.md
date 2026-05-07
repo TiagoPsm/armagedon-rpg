@@ -62,6 +62,7 @@ Registro minimo esperado:
 - Login com mestre e jogadores funcionando via API
 - Fichas centralizadas no servidor
 - Painel do mestre com jogadores, NPCs e monstros
+- Mestre abre e salva fichas de jogadores pelo `key` oficial do diretorio, preservando `username` como dono da ficha
 - Sistema de regras publicado
 - Transferencia de itens entre jogadores
 - Transferencia de memorias entre jogadores
@@ -88,6 +89,19 @@ Registro minimo esperado:
 - Home/login ja segue essa mesma linguagem visual
 
 ## Ultima Etapa Concluida
+
+- Correcao da edicao de fichas de jogadores pelo mestre em 2026-05-07:
+  - problema: o cache local de jogadores gerado a partir do diretorio da API descartava a `key` oficial da ficha e `createPlayerTarget()` montava o alvo apenas com `username`; isso podia abrir/salvar a ficha no identificador errado quando a API entregasse uma `key` diferente ou quando o cache local estivesse desatualizado
+  - problema adicional: handlers de realtime da ficha acessavam `currentSheetTarget.key` mesmo quando o mestre estava no painel principal, onde `currentSheetTarget` e nulo; um broadcast de ficha/inventario/memoria podia gerar erro de console antes da abertura/edicao da ficha
+  - `js/auth.js`: `AUTH.setDirectoryCache()` agora preserva `id`, `key`, `username`, `charname`, `inventorySlots` e `usedSlots` no cache `tc_players`
+  - `js/ficha-core.js`: `createPlayerTarget()` agora resolve o jogador pelo diretorio oficial ou pelo cache local, usa `player.key` como chave de API e mantem `player.username` como owner; os handlers de realtime usam guarda nula e comparacao normalizada
+  - varredura profunda encontrou outra classe de bug: cache de diretorio remoto antigo podia contaminar o modo local/offline; `js/ficha-core.js` e `js/mesa-core.js` agora so usam `tc_directory_cache` quando o backend esta ativo, preservando `username`/`tc_sheets` locais no modo local
+  - varredura extra fora do plano encontrou fragilidade em transferencias: item/memoria ainda podiam escolher destino por `username`; `js/ficha-inventory.js` e `js/ficha-memories.js` agora usam `player.key` em modo API, mantem `username` no modo local e evitam erro quando nao ha destino disponivel
+  - `index.html`, `ficha.html`, `mesa.html` e `regras.html`: cache bust de `auth.js` atualizado para `2026-05-07-master-sheet-key-1`; `ficha.html` tambem atualizou `ficha-core.js`, `ficha-inventory.js` e `ficha-memories.js`; `mesa.html` atualizou `mesa-core.js`
+  - `tests/ficha.spec.cjs`, `tests/mesa.spec.cjs` e `package.json`: adicionadas regressoes `npm run test:ficha` e `npm run test:mesa`, simulando mestre salvando uma ficha de jogador em `/api/characters/:key`, transferencia de item usando `targetKey` oficial e Mesa local salvando no `username` local mesmo com diretorio remoto antigo
+  - validacoes executadas: `npm run check:js`, `npm run audit:static`, `npm run test:ficha`, `npm run test:mesa`, `npm run perf:mesa`, `npm run build:pages`, `npx.cmd --yes wrangler@latest deploy --dry-run`, `git fsck --no-dangling`, varredura de MP4 no `_site` e `git diff --check`
+  - observacao de ambiente: `npm run test:ficha` falhou no sandbox com `spawn EPERM`; o mesmo teste passou com permissao elevada porque o Playwright precisa criar worker de teste
+  - pendencia: publicar em commit/deploy somente se esta correcao local for aprovada para ir para a `main`
 
 - Correcao da edicao da ficha pela Mesa em 2026-05-07:
   - problema: o painel do jogador podia editar o cache local da Mesa, mas a pagina nao buscava a ficha oficial do jogador antes de montar o painel; alem disso, a Ficha escutava `sheet:changed.key` enquanto o Worker emitia `sheet:changed.characterKey`

@@ -78,6 +78,7 @@ Worker/D1:
 - A Mesa deve chamar `AUTH.refreshDirectory()` antes de montar o roster quando a API esta ativa.
 - Jogador deve hidratar a propria ficha com `GET /api/characters/:key` antes de montar o painel pessoal quando a API esta ativa.
 - O painel pessoal deve usar a `key` oficial do diretorio quando existir; `username` continua fallback.
+- Em modo local/offline, a Mesa deve ignorar `tc_directory_cache` remoto antigo e usar `username`/`tc_sheets` locais para painel pessoal, roster e salvamento.
 - Patches de Vida/Integridade pendentes devem ser enviados em `pagehide` ou aba oculta para reduzir perda de edicao ao sair da pagina.
 - NPCs e monstros vindos do Worker devem usar a `key` oficial do diretorio como `characterKey`.
 - Cena remota inexistente ou com tokens antigos que nao batem mais com o roster pode ser repovoada por `seedInitialTokens()`; cena remota existente com zero tokens deve continuar vazia para permitir que o mestre monte manualmente pelo roster.
@@ -130,19 +131,20 @@ Worker/D1:
 7. Abrir como jogador e confirmar que nao aparece roster, busca, contagem de disponiveis nem acoes de colocar/focar/retirar.
 8. Confirmar que o jogador ve apenas painel "Meu personagem" com a propria ficha.
 9. Editar Vida atual e Integridade atual no painel do jogador e confirmar persistencia na ficha apos recarregar.
-10. Com API ativa, abrir a Mesa diretamente como jogador e confirmar que itens/memorias reais aparecem antes de qualquer edicao.
-11. Selecionar token alheio como jogador e confirmar que o inspetor nao mostra nome, barras ou dados detalhados.
-12. Com API ativa, mover/adicionar/remover token como mestre e confirmar `PUT /api/mesa/scene`.
-13. Abrir outra sessao conectada e confirmar recebimento de `mesa:scene` sem recarregar.
-14. Jogador altera Vida/Integridade e mestre recebe `mesa:sheet:patch`; outro jogador nao recebe painel/dados detalhados dessa ficha.
-15. Reabrir a pagina e confirmar que a cena vem de `GET /api/mesa/scene`.
-16. Conferir console sem erros.
-17. Selecionar token e confirmar que roster nao foi reconstruido.
-18. Mover token e confirmar que o save remoto acontece ao soltar, nao durante o movimento.
-19. Receber `mesa:scene` igual ao estado local e confirmar que nao ocorre rerender nem novo save.
-20. Rodar `npm run test:mesa` para validar Canvas + drag local e painel do jogador.
-21. Rodar `npm run perf:mesa` para conferir ausencia de long tasks relevantes no drag.
-22. Rodar `npx wrangler deploy --dry-run` em `cloudflare/` apos alterar Durable Object.
+10. Em modo local/offline, manter um `tc_directory_cache` remoto antigo e confirmar que a Mesa salva em `tc_sheets[username]`, nunca na `key` remota antiga.
+11. Com API ativa, abrir a Mesa diretamente como jogador e confirmar que itens/memorias reais aparecem antes de qualquer edicao.
+12. Selecionar token alheio como jogador e confirmar que o inspetor nao mostra nome, barras ou dados detalhados.
+13. Com API ativa, mover/adicionar/remover token como mestre e confirmar `PUT /api/mesa/scene`.
+14. Abrir outra sessao conectada e confirmar recebimento de `mesa:scene` sem recarregar.
+15. Jogador altera Vida/Integridade e mestre recebe `mesa:sheet:patch`; outro jogador nao recebe painel/dados detalhados dessa ficha.
+16. Reabrir a pagina e confirmar que a cena vem de `GET /api/mesa/scene`.
+17. Conferir console sem erros.
+18. Selecionar token e confirmar que roster nao foi reconstruido.
+19. Mover token e confirmar que o save remoto acontece ao soltar, nao durante o movimento.
+20. Receber `mesa:scene` igual ao estado local e confirmar que nao ocorre rerender nem novo save.
+21. Rodar `npm run test:mesa` para validar Canvas + drag local e painel do jogador.
+22. Rodar `npm run perf:mesa` para conferir ausencia de long tasks relevantes no drag.
+23. Rodar `npx wrangler deploy --dry-run` em `cloudflare/` apos alterar Durable Object.
 
 ## Pendencia Imediata
 

@@ -2,6 +2,17 @@
 
 Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STATUS.md`.
 
+## 2026-05-07 - Ficha Mestre Por Key Oficial
+
+- Corrigido o fluxo em que o mestre abre e salva fichas de jogadores pelo painel de fichas.
+- `AUTH.setDirectoryCache()` passou a preservar a `key` oficial do jogador no cache local usado pela UI.
+- `createPlayerTarget()` agora resolve o jogador pelo diretorio/cache, usa `player.key` para `GET/PUT /api/characters/:key` e mantem `player.username` como dono da ficha.
+- Handlers de realtime da Ficha receberam guardas quando `currentSheetTarget` esta nulo no painel do mestre.
+- Varredura extra corrigiu transferencias de item/memoria para usar `targetKey` oficial em modo API e evitar erro quando nao ha destino.
+- Varredura profunda corrigiu modo local/offline para ignorar cache de diretorio remoto antigo na Ficha e na Mesa, evitando salvar a ficha local na `key` remota errada.
+- Adicionado `npm run test:ficha` com regressao cobrindo mestre salvando a ficha no endpoint oficial correto e transferencia de item para `targetKey` oficial.
+- Validado com `check:js`, `audit:static`, `test:ficha`, `test:mesa`, `perf:mesa`, `build:pages`, `wrangler deploy --dry-run`, `git fsck --no-dangling` e `git diff --check`.
+
 ## 2026-05-05 - Mesa Canvas/Worker
 
 - Palco da Mesa ganhou renderer Canvas/Worker com fallback Canvas principal e DOM legado por flag local.

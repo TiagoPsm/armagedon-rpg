@@ -126,7 +126,12 @@ const AUTH = {
 
   getDirectoryCache() {
     try {
-      return JSON.parse(localStorage.getItem(this.DIRECTORY_KEY) || '{"players":[],"npcs":[],"monsters":[]}');
+      const directory = JSON.parse(localStorage.getItem(this.DIRECTORY_KEY) || "{}");
+      return {
+        players: Array.isArray(directory?.players) ? directory.players : [],
+        npcs: Array.isArray(directory?.npcs) ? directory.npcs : [],
+        monsters: Array.isArray(directory?.monsters) ? directory.monsters : []
+      };
     } catch {
       return { players: [], npcs: [], monsters: [] };
     }
@@ -141,10 +146,21 @@ const AUTH = {
 
     localStorage.setItem(this.DIRECTORY_KEY, JSON.stringify(safeDirectory));
     this.setPlayers(
-      safeDirectory.players.map(player => ({
-        username: player.username,
-        charname: player.charname || player.username
-      }))
+      safeDirectory.players
+        .map(player => {
+          const username = String(player?.username || "").trim();
+          if (!username) return null;
+          const key = String(player?.key || username).trim();
+          return {
+            id: player?.id || "",
+            key,
+            username,
+            charname: player?.charname || username,
+            inventorySlots: player?.inventorySlots,
+            usedSlots: player?.usedSlots
+          };
+        })
+        .filter(Boolean)
     );
   },
 

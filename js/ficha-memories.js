@@ -62,13 +62,19 @@ function collectOwnedMemories() {
 function getOwnedMemoryTransferTargets() {
   if (currentSheetTarget.kind !== "player") return [];
 
+  const owner = normalizeSheetKey(currentSheetTarget.owner);
   return AUTH.getPlayers()
-    .filter(player => player.username !== currentSheetTarget.owner)
-    .map(player => ({
-      value: player.username,
-      label: player.charname || player.username,
-      meta: player.username
-    }));
+    .filter(player => normalizeSheetKey(player.username) !== owner)
+    .map(player => {
+      const username = String(player.username || "").trim();
+      const value = isBackendMode() ? String(player.key || username).trim() : username;
+      return {
+        value: value || username,
+        username,
+        label: player.charname || username,
+        meta: username
+      };
+    });
 }
 
 function formatMemoryTargetLabel(value, targets, fallback) {
@@ -155,10 +161,11 @@ async function transferOwnedMemory(index) {
 
   const memory = ownedMemories[index];
   const state = ownedMemoryTransferStates[index] || {};
-  const targetUsername = state.target || getOwnedMemoryTransferTargets()[0].value;
-  if (!memory || !targetUsername) return;
+  const targets = getOwnedMemoryTransferTargets();
+  const targetValue = state.target || targets[0]?.value || "";
+  if (!memory || !targetValue) return;
 
-  const target = createPlayerTarget(targetUsername);
+  const target = createPlayerTarget(targetValue);
   const confirmed = await UI.confirm(
       `Transferir "${memory.name || "Memória sem nome"}" para ${target.label}`,
     {
@@ -211,7 +218,7 @@ async function transferOwnedMemory(index) {
 function getMemoryAwardTargets() {
   const players = AUTH.getPlayers().map(player => ({
     kind: "player",
-    value: `player:${player.username}`,
+    value: `player:${isBackendMode() ? player.key || player.username : player.username}`,
     label: player.charname || player.username,
     meta: `Jogador | ${player.username}`
   }));
@@ -229,7 +236,10 @@ function getMemoryAwardTargets() {
 function parseMemoryAwardTarget(value) {
   if (!value) return null;
 
-  const [kind, rawId] = String(value).split(":");
+  const serializedValue = String(value);
+  const separatorIndex = serializedValue.indexOf(":");
+  const kind = separatorIndex >= 0 ? serializedValue.slice(0, separatorIndex) : "";
+  const rawId = separatorIndex >= 0 ? serializedValue.slice(separatorIndex + 1) : "";
   if (!kind || !rawId) return null;
 
   if (kind === "player") {

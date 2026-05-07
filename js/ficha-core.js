@@ -235,8 +235,14 @@ function scheduleDirectoryRefresh(delay = 140) {
   }, delay);
 }
 
+function normalizeSheetKey(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
 function scheduleRealtimeSheetReload(key, delay = 180) {
-  if (!key || !currentSheetTarget.key || currentSheetTarget.key !== key) return;
+  const normalizedKey = normalizeSheetKey(key);
+  const currentKey = normalizeSheetKey(currentSheetTarget?.key);
+  if (!normalizedKey || !currentKey || currentKey !== normalizedKey) return;
   if (isRecentLocalSave(key)) return;
 
   if (hasEditableFocus()) {
@@ -247,7 +253,7 @@ function scheduleRealtimeSheetReload(key, delay = 180) {
   if (sheetRefreshTimer) window.clearTimeout(sheetRefreshTimer);
   sheetRefreshTimer = window.setTimeout(async () => {
     if (!isSheetScreenActive()) return;
-    if (!currentSheetTarget.key || currentSheetTarget.key !== key) return;
+    if (normalizeSheetKey(currentSheetTarget?.key) !== normalizedKey) return;
 
     try {
       await loadSheet(key, currentSheetTarget.kind);
@@ -274,7 +280,7 @@ function bindSheetRealtime() {
   });
 
   APP.on("sheet:changed", detail => {
-    const key = String(detail.key || detail.characterKey || detail.targetKey || "").trim().toLowerCase();
+    const key = normalizeSheetKey(detail.key || detail.characterKey || detail.targetKey);
     if (!key) return;
 
     scheduleDirectoryRefresh();
@@ -287,7 +293,8 @@ function bindSheetRealtime() {
 
     scheduleDirectoryRefresh();
 
-    if (currentSheetTarget.key === sourceKey || currentSheetTarget.key === targetKey) {
+    const currentKey = normalizeSheetKey(currentSheetTarget?.key);
+    if (currentKey && (currentKey === sourceKey || currentKey === targetKey)) {
       scheduleRealtimeSheetReload(currentSheetTarget.key);
     }
   });
@@ -298,7 +305,8 @@ function bindSheetRealtime() {
 
     scheduleDirectoryRefresh();
 
-    if (currentSheetTarget.key === sourceKey || currentSheetTarget.key === targetKey) {
+    const currentKey = normalizeSheetKey(currentSheetTarget?.key);
+    if (currentKey && (currentKey === sourceKey || currentKey === targetKey)) {
       scheduleRealtimeSheetReload(currentSheetTarget.key);
     }
   });
@@ -966,13 +974,29 @@ function getMonsterSheetKey(id) {
   return `${MONSTER_PREFIX}${id}`;
 }
 
+function findPlayerDirectoryEntry(identifier) {
+  const lookup = normalizeSheetKey(identifier);
+  const directory = AUTH.getDirectoryCache?.() || {};
+  const directoryPlayers = Array.isArray(directory.players) ? directory.players : [];
+  const localPlayers = Array.isArray(AUTH.getPlayers?.()) ? AUTH.getPlayers() : [];
+  const players = isBackendMode() ? [...directoryPlayers, ...localPlayers] : localPlayers;
+  return players.find(candidate => {
+    const username = normalizeSheetKey(candidate?.username);
+    const key = normalizeSheetKey(candidate?.key);
+    return lookup && (username === lookup || key === lookup);
+  }) || null;
+}
+
 function createPlayerTarget(username) {
-  const player = AUTH.getPlayers().find(candidate => candidate.username === username);
+  const fallbackUsername = String(username || "").trim();
+  const player = findPlayerDirectoryEntry(fallbackUsername);
+  const owner = String(player?.username || fallbackUsername).trim();
+  const key = String(player?.key || owner || fallbackUsername).trim();
   return {
     kind: "player",
-    key: username,
-    owner: username,
-    label: player.charname || username
+    key,
+    owner,
+    label: String(player?.charname || player?.username || owner || fallbackUsername || "Jogador").trim() || "Jogador"
   };
 }
 
