@@ -124,6 +124,7 @@ async function initMesaPage() {
   state.session = session;
   state.role = resolveInitialRole(session);
   await refreshMesaDirectoryBeforeRoster();
+  await hydrateOwnMesaSheetSnapshot();
   setMesaRoster(buildRoster());
 
   await hydrateState();
@@ -190,11 +191,17 @@ function bindEvents() {
   window.addEventListener("mousemove", handleMouseDragMove);
   window.addEventListener("mouseup", handleMouseDragEnd);
   window.addEventListener("pagehide", flushPersistState);
+  window.addEventListener("pagehide", () => {
+    void flushPendingMesaSheetPatches({ keepalive: true });
+  });
   window.addEventListener("storage", handleMesaStorageSync);
   document.addEventListener("fullscreenchange", syncFullscreenState);
   document.addEventListener("keydown", handleGlobalKeydown);
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") flushPersistState();
+    if (document.visibilityState === "hidden") {
+      flushPersistState();
+      void flushPendingMesaSheetPatches({ keepalive: true });
+    }
   });
 }
 
@@ -544,6 +551,39 @@ async function refreshMesaDirectoryBeforeRoster() {
   }
 }
 
+async function hydrateOwnMesaSheetSnapshot() {
+  if (isMaster()) return;
+  if (!window.AUTH?.isBackendEnabled?.() || !window.APP?.getCharacter) return;
+
+  const characterKey = resolveOwnMesaCharacterKey();
+  if (!characterKey) return;
+
+  try {
+    const bundle = await window.APP.getCharacter(characterKey);
+    if (!bundle?.data) return;
+    const remoteSheets = readJsonStorage(REMOTE_SHEETS_KEY, {});
+    remoteSheets[characterKey] = bundle.data;
+    localStorage.setItem(REMOTE_SHEETS_KEY, JSON.stringify(remoteSheets));
+  } catch (error) {
+    console.warn("Falha ao carregar ficha do jogador para a Mesa.", error);
+  }
+}
+
+function resolveOwnMesaCharacterKey() {
+  const username = normalizeMesaUsername(state.session?.username);
+  if (!username) return "";
+
+  const directory = window.AUTH?.getDirectoryCache?.() || {};
+  const players = Array.isArray(directory?.players) ? directory.players : [];
+  const ownDirectoryEntry = players.find(player => {
+    const entryUsername = normalizeMesaUsername(player?.username);
+    const entryKey = normalizeMesaCharacterKey(player?.key);
+    return entryUsername === username || entryKey === username;
+  });
+
+  return normalizeMesaCharacterKey(ownDirectoryEntry?.key || ownDirectoryEntry?.username || username);
+}
+
 function cacheMesaDomRefs() {
   Object.keys(MESA_DOM_IDS).forEach(key => {
     mesaDom[key] = document.getElementById(MESA_DOM_IDS[key]);
@@ -669,15 +709,25 @@ function buildPlayers(directory, sheets) {
   const playerMap = new Map(
     players.map((player, index) => {
       const username = String(player?.username || "").trim() || `jogador-${index + 1}`;
-      return [username, player];
+      const characterKey = normalizeMesaCharacterKey(player?.key || username);
+      return [characterKey || username, {
+        ...player,
+        username,
+        key: characterKey || username
+      }];
     })
   );
 
   Object.keys(sheets || {}).forEach(rawKey => {
-    const key = String(rawKey || "").trim();
+    const key = normalizeMesaCharacterKey(rawKey);
     if (!key || key.startsWith(NPC_PREFIX) || key.startsWith(MONSTER_PREFIX)) return;
-    if (!playerMap.has(key)) {
+    const alreadyMapped = [...playerMap.values()].some(player => (
+      normalizeMesaCharacterKey(player?.key || player?.username) === key
+      || normalizeMesaUsername(player?.username) === key
+    ));
+    if (!alreadyMapped) {
       playerMap.set(key, {
+        key,
         username: key,
         charname: String(sheets?.[key]?.charName || "").trim()
       });
@@ -686,11 +736,12 @@ function buildPlayers(directory, sheets) {
 
   return [...playerMap.values()].map((player, index) => {
     const username = String(player.username || "").trim() || `jogador-${index + 1}`;
-    const sheet = normalizeSheetSnapshot(sheets[username], "player");
+    const characterKey = normalizeMesaCharacterKey(player.key || username);
+    const sheet = normalizeSheetSnapshot(sheets[characterKey] || sheets[username], "player");
     const name = String(sheet.charName || player.charname || username).trim() || username;
     return createRosterEntry({
-      id: username,
-      characterKey: username,
+      id: characterKey || username,
+      characterKey: characterKey || username,
       type: "player",
       ownerUsername: username,
       createdBy: "mestre",
@@ -923,7 +974,21 @@ function canReceiveSheetPatch(characterKey) {
   const key = normalizeMesaCharacterKey(characterKey);
   if (!key) return false;
   if (isMaster()) return true;
-  return key === normalizeMesaUsername(state.session?.username);
+  const username = normalizeMesaUsername(state.session?.username);
+  if (!username) return false;
+  if (key === username) return true;
+
+  const entry = getRosterEntryByCharacterKey(key) || getRosterEntryById(key);
+  if (
+    entry?.type === "player"
+    && normalizeMesaUsername(entry.ownerUsername || entry.characterKey || entry.id) === username
+  ) {
+    return true;
+  }
+
+  return getOwnPlayerTokens().some(token => (
+    normalizeMesaCharacterKey(token.characterKey || token.id) === key
+  ));
 }
 
 function getOwnPlayerContext(characterKey = "") {

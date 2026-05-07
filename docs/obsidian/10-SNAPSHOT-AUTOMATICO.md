@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-07 00:14:30 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-07 15:39:11 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,25 +13,19 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `82c0cfc 2026-05-06 Poli fluidez do drag da mesa`
+- Ultimo commit: `5eb8649 2026-05-07 Adiciona painel pessoal do jogador na mesa`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
-M  VISUAL_RULES.md
 M  cloudflare/src/index.js
 M  cloudflare/src/mesa-realtime.js
-M  css/mesa-inspector.css
-M  css/mesa-roster.css
-M  css/mesa-stage.css
 M  docs/obsidian/07-MESA.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  ficha.html
+M  js/ficha-core.js
 M  js/mesa-core.js
-M  js/mesa-inspector.js
-M  js/mesa-renderer-v2.js
-M  js/mesa-renderer-worker.js
-M  js/mesa-roster.js
 M  js/mesa-stage.js
 M  mesa.html
 M  tests/mesa.spec.cjs
@@ -47,19 +41,13 @@ M  tests/mesa.spec.cjs
 
 ```text
 DEV_STATUS.md
-VISUAL_RULES.md
 cloudflare/src/index.js
 cloudflare/src/mesa-realtime.js
-css/mesa-inspector.css
-css/mesa-roster.css
-css/mesa-stage.css
 docs/obsidian/07-MESA.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+ficha.html
+js/ficha-core.js
 js/mesa-core.js
-js/mesa-inspector.js
-js/mesa-renderer-v2.js
-js/mesa-renderer-worker.js
-js/mesa-roster.js
 js/mesa-stage.js
 mesa.html
 tests/mesa.spec.cjs
@@ -139,12 +127,12 @@ tests/mesa.spec.cjs
 Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
-   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
    13,08 MB  assets\sheet-fire-background.mp4
+   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
-    0,99 MB  _site\logo-rpg-armagedon.png
     0,99 MB  logo-rpg-armagedon.png
     0,99 MB  assets\logo-rpg-armagedon.png
+    0,99 MB  _site\logo-rpg-armagedon.png
     0,92 MB  node_modules\playwright-core\types\types.d.ts
     0,78 MB  node_modules\playwright-core\types\protocol.d.ts
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js

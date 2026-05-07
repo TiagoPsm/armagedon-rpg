@@ -274,7 +274,7 @@ function bindSheetRealtime() {
   });
 
   APP.on("sheet:changed", detail => {
-    const key = String(detail.key || "").trim().toLowerCase();
+    const key = String(detail.key || detail.characterKey || detail.targetKey || "").trim().toLowerCase();
     if (!key) return;
 
     scheduleDirectoryRefresh();

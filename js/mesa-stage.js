@@ -783,7 +783,21 @@ function scheduleMesaRemoteSheetPatch(characterKey, patch) {
   mesaSheetSaveTimers.set(key, timer);
 }
 
-async function persistMesaSheetPatch(characterKey) {
+async function flushPendingMesaSheetPatches(options = {}) {
+  const keys = new Set([
+    ...pendingMesaSheetPatches.keys(),
+    ...mesaSheetSaveTimers.keys()
+  ]);
+
+  mesaSheetSaveTimers.forEach(timer => {
+    window.clearTimeout(timer);
+  });
+  mesaSheetSaveTimers.clear();
+
+  await Promise.all([...keys].map(key => persistMesaSheetPatch(key, options)));
+}
+
+async function persistMesaSheetPatch(characterKey, options = {}) {
   const patch = pendingMesaSheetPatches.get(characterKey);
   if (!patch) return;
   pendingMesaSheetPatches.delete(characterKey);
@@ -800,7 +814,9 @@ async function persistMesaSheetPatch(characterKey) {
       ...baseData,
       ...patch
     };
-    const saved = await window.APP.saveCharacter(characterKey, nextData);
+    const saved = await window.APP.saveCharacter(characterKey, nextData, {
+      keepalive: options.keepalive === true
+    });
 
     if (saved?.data) {
       const nextRemoteSheets = readJsonStorage(REMOTE_SHEETS_KEY, {});

@@ -96,6 +96,7 @@ async function broadcastSheetChanged(env, characterKey, actor) {
       },
       body: JSON.stringify({
         type: "sheet:changed",
+        key,
         characterKey: key,
         actor: {
           id: actor.sub,

@@ -89,6 +89,18 @@ Registro minimo esperado:
 
 ## Ultima Etapa Concluida
 
+- Correcao da edicao da ficha pela Mesa em 2026-05-07:
+  - problema: o painel do jogador podia editar o cache local da Mesa, mas a pagina nao buscava a ficha oficial do jogador antes de montar o painel; alem disso, a Ficha escutava `sheet:changed.key` enquanto o Worker emitia `sheet:changed.characterKey`
+  - `js/mesa-core.js`: a Mesa agora hidrata a propria ficha do jogador via `GET /api/characters/:key` antes de montar o roster/painel, usa a `key` oficial do diretorio quando existir e aceita patch de ficha propria tambem por entrada/token pertencente ao usuario
+  - `js/mesa-stage.js`: patches pendentes de Vida/Integridade sao enviados imediatamente em `pagehide`/aba oculta com `keepalive`; o save remoto continua usando debounce durante edicao normal
+  - `js/ficha-core.js`: `sheet:changed` agora aceita `key`, `characterKey` ou `targetKey`, permitindo que a ficha aberta recarregue quando a Mesa salva o status
+  - `cloudflare/src/index.js` e `cloudflare/src/mesa-realtime.js`: eventos de ficha passam a carregar `key` e `characterKey` para compatibilidade entre Mesa e Ficha
+  - `mesa.html` e `ficha.html`: cache bust atualizado para `2026-05-07-sheet-edit-1`
+  - `tests/mesa.spec.cjs`: adicionada cobertura com backend simulado confirmando que o jogador carrega a ficha oficial, ve itens/memorias reais e persiste Vida/Integridade via `PUT /api/characters/:key`
+  - validacoes executadas: `npm run check:js`, `npm run audit:static`, `npm run test:mesa`, `npm run perf:mesa`, `npm run build:pages`, `npx.cmd --yes wrangler@latest deploy --dry-run`, `git fsck --no-dangling` e `git diff --check`
+  - Worker publicado em 2026-05-07: `armagedon-api`, version ID `b89440a2-65c6-4d1e-8fcb-9b17c2236c6a`
+  - pendencia pos-push: acompanhar GitHub Pages na `main` e conferir o site oficial com jogador editando Vida/Integridade pela Mesa
+
 - Painel pessoal do jogador na Mesa em 2026-05-06:
   - objetivo: ocultar do jogador o roster de tokens disponiveis, manter o palco compartilhado e permitir edicao apenas de Vida atual e Integridade atual da propria ficha
   - `js/mesa-core.js`: adicionados helpers de papel/privacidade (`isOwnPlayerToken`, `getOwnPlayerTokens`, `getOwnSheetSnapshot`, `canViewDetailedTokenInfo`), cache de snapshot da propria ficha e assinatura do evento `mesa:sheet:patch`

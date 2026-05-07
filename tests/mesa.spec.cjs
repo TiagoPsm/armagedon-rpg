@@ -175,4 +175,165 @@ test.describe("Mesa virtual", () => {
     expect(savedScene.tokens).toHaveLength(3);
     expect(savedScene.tokens.find(token => token.id === "bruno")).toBeTruthy();
   });
+
+  test("jogador carrega a propria ficha oficial e persiste Vida/Integridade pela Mesa", async ({ page }) => {
+    const baseUrl = await getMesaBaseUrl();
+    const apiBaseUrl = "https://armagedon-api.tiagopsm2008.workers.dev/api";
+    const putRequests = [];
+    let characterData = {
+      charName: "Ana Rubra",
+      vidaAtual: "9",
+      vidaMax: "20",
+      integAtual: "5",
+      integMax: "8",
+      inventorySlots: 12,
+      inv: [
+        { name: "Rosa de Ferro", type: "acessorio", qty: "1", desc: "Marca pessoal." }
+      ],
+      ownedMemories: [
+        { name: "Juramento Rubro", desc: "Uma memoria antiga.", source: "Mesa" }
+      ]
+    };
+
+    const fulfillJson = (route, payload, status = 200) => route.fulfill({
+      status,
+      contentType: "application/json; charset=utf-8",
+      headers: {
+        "access-control-allow-origin": "*",
+        "access-control-allow-methods": "GET,POST,PUT,DELETE,OPTIONS",
+        "access-control-allow-headers": "content-type,authorization"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    await page.route("**/api/**", async route => {
+      const request = route.request();
+      const url = new URL(request.url());
+      const pathname = url.pathname;
+
+      if (request.method() === "OPTIONS") {
+        await route.fulfill({
+          status: 204,
+          headers: {
+            "access-control-allow-origin": "*",
+            "access-control-allow-methods": "GET,POST,PUT,DELETE,OPTIONS",
+            "access-control-allow-headers": "content-type,authorization"
+          },
+          body: ""
+        });
+        return;
+      }
+
+      if (pathname === "/api/health") {
+        await fulfillJson(route, { ok: true });
+        return;
+      }
+
+      if (pathname === "/api/auth/session") {
+        await fulfillJson(route, {
+          user: { id: "user-ana", username: "ana", role: "player" },
+          defaultSheetKey: "ana"
+        });
+        return;
+      }
+
+      if (pathname === "/api/directory") {
+        await fulfillJson(route, {
+          players: [
+            { id: "row-ana", key: "ana", username: "ana", charname: "Ana Rubra", inventorySlots: 12, usedSlots: 1 },
+            { id: "row-bruno", key: "bruno", username: "bruno", charname: "Bruno Cinza", inventorySlots: 10, usedSlots: 0 }
+          ],
+          npcs: [],
+          monsters: []
+        });
+        return;
+      }
+
+      if (pathname === "/api/mesa/scene") {
+        await fulfillJson(route, {
+          id: "default",
+          createdAt: "2026-05-07T00:00:00.000Z",
+          updatedAt: "2026-05-07T00:00:00.000Z",
+          data: {
+            sceneVersion: 22,
+            selectedTokenId: "ana",
+            tokens: [
+              { id: "ana", characterKey: "ana", x: 12, y: 12, visibleToPlayers: true, statsVisibleToPlayers: true, order: 1 }
+            ]
+          }
+        });
+        return;
+      }
+
+      if (pathname === "/api/characters/ana" && request.method() === "GET") {
+        await fulfillJson(route, {
+          key: "ana",
+          kind: "player",
+          ownerUsername: "ana",
+          data: characterData
+        });
+        return;
+      }
+
+      if (pathname === "/api/characters/ana" && request.method() === "PUT") {
+        const payload = request.postDataJSON();
+        putRequests.push(payload);
+        characterData = {
+          ...characterData,
+          ...(payload.data || {})
+        };
+        await fulfillJson(route, {
+          key: "ana",
+          kind: "player",
+          ownerUsername: "ana",
+          data: characterData
+        });
+        return;
+      }
+
+      await fulfillJson(route, { error: `Nao mockado: ${pathname}` }, 404);
+    });
+
+    await page.addInitScript(baseUrlForApi => {
+      window.ARMAGEDON_CONFIG = {
+        apiBaseUrl: baseUrlForApi,
+        realtimeEnabled: false
+      };
+      localStorage.clear();
+      localStorage.setItem("mesaRolePreview", "player");
+      localStorage.setItem("tc_session_token", "token-ana");
+      localStorage.setItem("tc_session", JSON.stringify({
+        username: "ana",
+        role: "player",
+        token: "token-ana",
+        backend: true
+      }));
+    }, apiBaseUrl);
+
+    await page.goto(`${baseUrl}/mesa.html`);
+    const playerPanel = page.locator(".player-sheet-panel");
+    await expect(playerPanel).toBeVisible();
+    await expect(playerPanel).toContainText("Rosa de Ferro");
+    await expect(playerPanel).toContainText("Juramento Rubro");
+    await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("9");
+    await expect(page.locator('[data-player-stat-field="currentIntegrity"]')).toHaveValue("5");
+
+    await page.locator('[data-player-stat-field="currentLife"]').fill("7");
+    await page.locator('[data-player-stat-field="currentIntegrity"]').fill("2");
+
+    await expect.poll(() => putRequests.some(payload => (
+      payload?.data?.vidaAtual === "7"
+      && payload?.data?.integAtual === "2"
+      && Array.isArray(payload?.data?.inv)
+      && payload.data.inv[0]?.name === "Rosa de Ferro"
+    )), { timeout: 4000 }).toBe(true);
+
+    const cachedRemoteSheet = await page.evaluate(() => {
+      const sheets = JSON.parse(localStorage.getItem("tc_remote_sheets") || "{}");
+      return sheets.ana || {};
+    });
+    expect(cachedRemoteSheet.vidaAtual).toBe("7");
+    expect(cachedRemoteSheet.integAtual).toBe("2");
+    expect(cachedRemoteSheet.inv[0].name).toBe("Rosa de Ferro");
+  });
 });

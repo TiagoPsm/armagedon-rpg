@@ -238,6 +238,7 @@ class MesaRealtimeRoom extends DurableObject {
       clientId: payload?.clientId || "",
       messageId: payload?.messageId || "",
       ...patch,
+      key: characterKey,
       characterKey,
       actor,
       sentAt: payload?.sentAt || new Date().toISOString()
@@ -278,6 +279,7 @@ class MesaRealtimeRoom extends DurableObject {
     if (!key) return;
     const message = {
       ...payload,
+      key,
       characterKey: key,
       online: this.getPresence(),
       sentAt: payload?.sentAt || new Date().toISOString()
