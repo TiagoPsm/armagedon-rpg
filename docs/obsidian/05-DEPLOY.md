@@ -57,6 +57,8 @@ Confirmar:
 - `ficha.html` carrega cache bust atual da ficha
 - paginas carregam `css/ui.css` e `js/ui.js` atuais
 - URLs antigas de MP4 e `/assets/logo-rpg-armagedon.png` retornam 404
+- `npm run test:mesa:online` passa ao menos nos testes publicos
+- com credenciais reais em variaveis de ambiente, `npm run test:mesa:online` tambem valida mestre/jogador autenticados
 
 ## Ultimo Deploy Confirmado
 
@@ -87,7 +89,10 @@ Confirmar:
 - `js/mesa-core.js`: HTTP 200 e contem `getMesaScene`.
 - `js/mesa-stage.js`: HTTP 200 e contem `saveMesaScene`.
 
-## Proximo Deploy Pendente
+## Mesa Online
 
-- GitHub Pages precisa publicar o frontend com `auth.js?v=2026-05-05-mesa-auth-export-1`.
-- Apos Pages concluir, validar no navegador real com mestre e jogador simultaneos.
+- Worker atual: `armagedon-api` version ID `fb0548da-a975-4804-bc54-1b740938d31d`.
+- GitHub Pages atual: `built` em `main`.
+- Comando de smoke online: `npm run test:mesa:online`.
+- Credenciais devem ser passadas somente por variaveis locais: `ARMAGEDON_MASTER_USERNAME`, `ARMAGEDON_MASTER_PASSWORD`, `ARMAGEDON_PLAYER_USERNAME`, `ARMAGEDON_PLAYER_PASSWORD`.
+- `ARMAGEDON_ONLINE_RELAY_PROBE=1` habilita prova de relay WebSocket; manter desligado quando houver risco de usuarios reais estarem conectados.

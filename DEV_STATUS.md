@@ -90,6 +90,13 @@ Registro minimo esperado:
 
 ## Ultima Etapa Concluida
 
+- Proximo passo da Mesa online em 2026-05-08:
+  - `package.json`: adicionado `npm run test:mesa:online`
+  - `tests/mesa-online.spec.cjs`: novo smoke test online para GitHub Pages e Cloudflare; sem credenciais, valida `index.html`, `mesa.html`, `ficha.html`, `regras.html`, `/api/health`, bloqueio anonimo de `/api/directory` e `/api/mesa/scene`, e resposta `426` de `/api/mesa/realtime` sem WebSocket
+  - fluxo autenticado opcional: quando `ARMAGEDON_MASTER_USERNAME`, `ARMAGEDON_MASTER_PASSWORD`, `ARMAGEDON_PLAYER_USERNAME` e `ARMAGEDON_PLAYER_PASSWORD` estiverem definidos, o teste valida login mestre/jogador, diretorio, cena oficial, WebSocket `mesa:ready`, UI da Mesa como mestre e UI da Mesa como jogador
+  - `ARMAGEDON_ONLINE_RELAY_PROBE=1` ativa uma prova extra de relay `mesa:token:move`; deixar desligado por padrao para nao transmitir evento de teste a usuarios reais conectados
+  - validacoes executadas sem credenciais reais: `node --check tests/mesa-online.spec.cjs`, `npm run audit:static`, `git diff --check` e `npm run test:mesa:online` com 2 testes passados e 1 autenticado ignorado
+
 - Correcao da edicao de fichas de jogadores pelo mestre em 2026-05-07:
   - problema: o cache local de jogadores gerado a partir do diretorio da API descartava a `key` oficial da ficha e `createPlayerTarget()` montava o alvo apenas com `username`; isso podia abrir/salvar a ficha no identificador errado quando a API entregasse uma `key` diferente ou quando o cache local estivesse desatualizado
   - problema adicional: handlers de realtime da ficha acessavam `currentSheetTarget.key` mesmo quando o mestre estava no painel principal, onde `currentSheetTarget` e nulo; um broadcast de ficha/inventario/memoria podia gerar erro de console antes da abertura/edicao da ficha
@@ -388,11 +395,11 @@ Mudancas nesses arquivos costumam impactar diretamente o funcionamento do site:
 
 ## Proximas Frentes Recomendadas
 
-1. Validar a Mesa Canvas/Worker no site publicado com mestre e jogador em abas separadas
+1. Rodar `npm run test:mesa:online` com credenciais reais de mestre/jogador em variaveis de ambiente
 2. Medir comportamento em maquina mais fraca e ajustar cap de `devicePixelRatio` se necessario
 3. Normalizar thumbnails WebP/JPEG dos avatares grandes no fluxo de salvamento da ficha
 4. Revisar responsividade da ficha, inventario e mesa
-5. Expandir os testes Playwright para mestre/jogador com API real quando for seguro usar credenciais de teste
+5. Se o teste autenticado passar, criar um usuario/ficha de teste dedicado para validar relay e persistencia sem tocar dados de campanha real
 
 ## Publicacao
 
@@ -418,6 +425,7 @@ Sempre confirmar os arquivos exatos da etapa antes do upload.
 - `npm run audit:static`
 - `npm run build:pages`
 - `npm run test:mesa`
+- `npm run test:mesa:online`
 - `npm run perf:mesa`
 - `npx wrangler deploy --dry-run` em `cloudflare/`
 - servidor estatico temporario respondeu `200` para `ficha.html` e `mesa.html`

@@ -143,11 +143,15 @@ Worker/D1:
 19. Mover token e confirmar que o save remoto acontece ao soltar, nao durante o movimento.
 20. Receber `mesa:scene` igual ao estado local e confirmar que nao ocorre rerender nem novo save.
 21. Rodar `npm run test:mesa` para validar Canvas + drag local e painel do jogador.
-22. Rodar `npm run perf:mesa` para conferir ausencia de long tasks relevantes no drag.
-23. Rodar `npx wrangler deploy --dry-run` em `cloudflare/` apos alterar Durable Object.
+22. Rodar `npm run test:mesa:online` sem credenciais para validar Pages/API publicados e protecao anonima.
+23. Rodar `npm run test:mesa:online` com `ARMAGEDON_MASTER_USERNAME`, `ARMAGEDON_MASTER_PASSWORD`, `ARMAGEDON_PLAYER_USERNAME` e `ARMAGEDON_PLAYER_PASSWORD` para validar login real, diretorio, cena, WebSocket e UI mestre/jogador.
+24. Usar `ARMAGEDON_ONLINE_RELAY_PROBE=1` somente quando for aceitavel transmitir um evento de teste `mesa:token:move` para conexoes online da sala.
+25. Rodar `npm run perf:mesa` para conferir ausencia de long tasks relevantes no drag.
+26. Rodar `npx wrangler deploy --dry-run` em `cloudflare/` apos alterar Durable Object.
 
 ## Pendencia Imediata
 
-- Conferir no site oficial apos GitHub Pages publicar a `main`: jogador carrega a propria ficha oficial ao abrir a Mesa, edita Vida/Integridade, a Ficha aberta recebe `sheet:changed` e outro jogador nao recebe dados detalhados alheios.
+- Conferir no site oficial com credenciais reais: jogador carrega a propria ficha oficial ao abrir a Mesa, edita Vida/Integridade, a Ficha aberta recebe `sheet:changed` e outro jogador nao recebe dados detalhados alheios.
+- Novo comando de apoio: `npm run test:mesa:online`.
 - Worker publicado para esta correcao: `armagedon-api` version ID `fb0548da-a975-4804-bc54-1b740938d31d`.
 - Futuro: normalizar avatars grandes para thumbnails WebP/JPEG ao salvar fichas.

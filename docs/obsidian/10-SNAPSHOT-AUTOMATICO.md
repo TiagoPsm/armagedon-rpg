@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-07 23:00:29 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-07 23:13:15 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,15 +13,18 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `23944b4 2026-05-07 Corrige chaves e cache das fichas`
+- Ultimo commit: `2880881 2026-05-07 Registra deploy da mesa online`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
+M  docs/obsidian/05-DEPLOY.md
 M  docs/obsidian/07-MESA.md
 M  docs/obsidian/09-HISTORICO-DE-SESSOES.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  package.json
+A  tests/mesa-online.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -34,9 +37,12 @@ M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 
 ```text
 DEV_STATUS.md
+docs/obsidian/05-DEPLOY.md
 docs/obsidian/07-MESA.md
 docs/obsidian/09-HISTORICO-DE-SESSOES.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+package.json
+tests/mesa-online.spec.cjs
 ```
 
 ## Paginas Principais
@@ -116,9 +122,9 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
    13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
    13,08 MB  assets\sheet-fire-background.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
-    0,99 MB  logo-rpg-armagedon.png
     0,99 MB  _site\logo-rpg-armagedon.png
     0,99 MB  assets\logo-rpg-armagedon.png
+    0,99 MB  logo-rpg-armagedon.png
     0,92 MB  node_modules\playwright-core\types\types.d.ts
     0,78 MB  node_modules\playwright-core\types\protocol.d.ts
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js

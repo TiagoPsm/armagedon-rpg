@@ -2,6 +2,13 @@
 
 Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STATUS.md`.
 
+## 2026-05-08 - Smoke Test Da Mesa Online
+
+- Adicionado `npm run test:mesa:online`.
+- Sem credenciais, o teste valida Pages/API oficiais e protecao anonima dos endpoints.
+- Com variaveis locais de mestre/jogador, o teste valida login real, diretorio, cena oficial, WebSocket `mesa:ready` e UI da Mesa para mestre e jogador.
+- `ARMAGEDON_ONLINE_RELAY_PROBE=1` fica separado para evitar relay de evento de teste quando houver usuarios reais conectados.
+
 ## 2026-05-07 - Ficha Mestre Por Key Oficial
 
 - Corrigido o fluxo em que o mestre abre e salva fichas de jogadores pelo painel de fichas.
