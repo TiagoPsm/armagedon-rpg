@@ -232,7 +232,8 @@ test.describe("Mesa online - fluxo autenticado", () => {
     });
     await masterPage.goto(`${SITE_BASE_URL}/mesa.html?online-ui=${Date.now()}`);
     await expect(masterPage.locator("#mesaStage canvas.mesa-stage-canvas")).toHaveCount(1, { timeout: 15000 });
-    await expect(masterPage.locator("#mesaRosterList")).toBeVisible({ timeout: 15000 });
+    await expect(masterPage.locator("#rosterList")).toBeVisible({ timeout: 15000 });
+    await expect(masterPage.locator("#rosterSearchField")).toBeVisible({ timeout: 15000 });
     expect(consoleErrors).toEqual([]);
     await masterContext.close();
 
@@ -254,7 +255,8 @@ test.describe("Mesa online - fluxo autenticado", () => {
     await playerPage.goto(`${SITE_BASE_URL}/mesa.html?online-player-ui=${Date.now()}`);
     await expect(playerPage.locator("#mesaStage canvas.mesa-stage-canvas")).toHaveCount(1, { timeout: 15000 });
     await expect(playerPage.locator(".player-sheet-panel")).toBeVisible({ timeout: 15000 });
-    await expect(playerPage.locator("#mesaRosterList")).toHaveCount(0);
+    await expect(playerPage.locator("#rosterSearchField")).toBeHidden({ timeout: 15000 });
+    await expect(playerPage.locator("[data-roster-action]")).toHaveCount(0);
     expect(playerConsoleErrors).toEqual([]);
     await playerContext.close();
   });

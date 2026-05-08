@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-07 23:13:15 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-07 23:29:37 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,18 +13,15 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `2880881 2026-05-07 Registra deploy da mesa online`
+- Ultimo commit: `bcb58a6 2026-05-07 Adiciona smoke test online da mesa`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
-M  docs/obsidian/05-DEPLOY.md
-M  docs/obsidian/07-MESA.md
 M  docs/obsidian/09-HISTORICO-DE-SESSOES.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  package.json
-A  tests/mesa-online.spec.cjs
+M  tests/mesa-online.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -37,11 +34,8 @@ A  tests/mesa-online.spec.cjs
 
 ```text
 DEV_STATUS.md
-docs/obsidian/05-DEPLOY.md
-docs/obsidian/07-MESA.md
 docs/obsidian/09-HISTORICO-DE-SESSOES.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-package.json
 tests/mesa-online.spec.cjs
 ```
 

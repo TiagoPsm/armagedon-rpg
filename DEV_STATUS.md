@@ -94,6 +94,7 @@ Registro minimo esperado:
   - `package.json`: adicionado `npm run test:mesa:online`
   - `tests/mesa-online.spec.cjs`: novo smoke test online para GitHub Pages e Cloudflare; sem credenciais, valida `index.html`, `mesa.html`, `ficha.html`, `regras.html`, `/api/health`, bloqueio anonimo de `/api/directory` e `/api/mesa/scene`, e resposta `426` de `/api/mesa/realtime` sem WebSocket
   - fluxo autenticado opcional: quando `ARMAGEDON_MASTER_USERNAME`, `ARMAGEDON_MASTER_PASSWORD`, `ARMAGEDON_PLAYER_USERNAME` e `ARMAGEDON_PLAYER_PASSWORD` estiverem definidos, o teste valida login mestre/jogador, diretorio, cena oficial, WebSocket `mesa:ready`, UI da Mesa como mestre e UI da Mesa como jogador
+  - ajuste posterior: seletor do roster autenticado corrigido de `#mesaRosterList` para `#rosterList`; no modo jogador o teste agora valida painel pessoal, busca oculta e ausencia de acoes `data-roster-action`
   - `ARMAGEDON_ONLINE_RELAY_PROBE=1` ativa uma prova extra de relay `mesa:token:move`; deixar desligado por padrao para nao transmitir evento de teste a usuarios reais conectados
   - validacoes executadas sem credenciais reais: `node --check tests/mesa-online.spec.cjs`, `npm run audit:static`, `git diff --check` e `npm run test:mesa:online` com 2 testes passados e 1 autenticado ignorado
 
