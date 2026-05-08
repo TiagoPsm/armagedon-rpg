@@ -243,6 +243,21 @@ function handlePlayerPanelAction(button) {
   if (!characterKey || !canReceiveSheetPatch(characterKey)) return;
 
   state.playerPanelCharacterKey = characterKey;
+  if (action === "add-inventory-item") {
+    mutatePlayerPanelInventory(characterKey, {
+      action: "add"
+    });
+    return;
+  }
+
+  if (action === "remove-inventory-item") {
+    mutatePlayerPanelInventory(characterKey, {
+      action: "remove",
+      index: Number.parseInt(button.dataset.index || "-1", 10)
+    });
+    return;
+  }
+
   if (action === "select-own" || action === "focus-own") {
     const token = getOwnPlayerTokens().find(entry => normalizeMesaCharacterKey(entry.characterKey || entry.id) === characterKey);
     if (token) {
@@ -324,23 +339,33 @@ function handleInspectorStatInput(event) {
 }
 
 function handlePlayerPanelStatInput(event) {
-  const input = event.target.closest("[data-player-stat-field]");
-  if (!input || isMaster()) return;
+  if (isMaster()) return;
 
+  const statInput = event.target.closest("[data-player-stat-field]");
+  if (statInput) {
+    handlePlayerPanelResourceInput(statInput);
+    return;
+  }
+
+  const sheetInput = event.target.closest("[data-player-sheet-field]");
+  if (sheetInput) {
+    handlePlayerPanelSheetFieldInput(sheetInput);
+    return;
+  }
+
+  const itemInput = event.target.closest("[data-player-item-field]");
+  if (itemInput) {
+    handlePlayerPanelInventoryInput(itemInput);
+  }
+}
+
+function handlePlayerPanelResourceInput(input) {
   const field = String(input.dataset.playerStatField || "");
   const characterKey = normalizeMesaCharacterKey(input.dataset.characterKey);
   if (!field || !characterKey || !canReceiveSheetPatch(characterKey)) return;
 
   const context = getOwnPlayerContext(characterKey);
-  const source = context.token || context.rosterEntry || {
-    type: "player",
-    ownerUsername: state.session?.username,
-    currentLife: context.sheet.vidaAtual,
-    maxLife: context.sheet.vidaMax,
-    currentIntegrity: context.sheet.integAtual,
-    maxIntegrity: context.sheet.integMax
-  };
-  const sheetPatch = buildSheetPatchFromMesa(field, Number(input.value), source);
+  const sheetPatch = buildPlayerPanelResourcePatch(field, Number(input.value), context);
   if (!sheetPatch) return;
 
   state.playerPanelCharacterKey = characterKey;
@@ -348,6 +373,35 @@ function handlePlayerPanelStatInput(event) {
   syncPlayerStatInputCard(input, field);
   broadcastMesaSheetPatch(characterKey, sheetPatch);
   scheduleMesaRender({ summary: true, stage: true, inspector: true });
+}
+
+function handlePlayerPanelSheetFieldInput(input) {
+  const field = String(input.dataset.playerSheetField || "");
+  const characterKey = normalizeMesaCharacterKey(input.dataset.characterKey);
+  if (!field || !characterKey || !canReceiveSheetPatch(characterKey)) return;
+
+  const context = getOwnPlayerContext(characterKey);
+  const sheetPatch = buildPlayerPanelFieldPatch(field, input.value, context);
+  if (!sheetPatch) return;
+
+  applyPlayerPanelSheetPatch(characterKey, sheetPatch, {
+    renderRoster: false,
+    sourceInput: input
+  });
+}
+
+function handlePlayerPanelInventoryInput(input) {
+  const field = String(input.dataset.playerItemField || "");
+  const characterKey = normalizeMesaCharacterKey(input.dataset.characterKey);
+  const index = Number.parseInt(input.dataset.index || "-1", 10);
+  if (!field || !characterKey || Number.isNaN(index) || index < 0 || !canReceiveSheetPatch(characterKey)) return;
+
+  mutatePlayerPanelInventory(characterKey, {
+    action: "update",
+    index,
+    field,
+    value: input.value
+  });
 }
 
 function handleTokenPointerDown(event) {
@@ -701,6 +755,152 @@ function buildSheetPatchFromMesa(field, nextValue, token) {
   return Object.keys(patch).length ? patch : null;
 }
 
+function buildPlayerPanelResourcePatch(field, nextValue, context) {
+  const sheet = normalizeMesaSheetSnapshot(context?.sheet || {});
+  const vidaMax = Math.max(1, asPositiveInt(sheet.vidaMax, context?.token?.maxLife || context?.rosterEntry?.maxLife || 1));
+  const integMax = Math.max(0, asPositiveInt(sheet.integMax, context?.token?.maxIntegrity || context?.rosterEntry?.maxIntegrity || 0));
+
+  if (field === "currentLife") {
+    return {
+      vidaAtual: String(clamp(asPositiveInt(nextValue, sheet.vidaAtual || 0), 0, vidaMax))
+    };
+  }
+
+  if (field === "currentIntegrity") {
+    return {
+      integAtual: String(clamp(asPositiveInt(nextValue, sheet.integAtual || 0), 0, integMax))
+    };
+  }
+
+  return null;
+}
+
+function buildPlayerPanelFieldPatch(field, value, context) {
+  const sheet = normalizeMesaSheetSnapshot(context?.sheet || {});
+  const patch = {};
+
+  if (MESA_SHEET_TEXT_FIELDS.has(field)) {
+    patch[field] = normalizeMesaSheetTextField(field, value);
+  }
+
+  if (field === "vidaMax") {
+    const nextMaxLife = Math.max(1, asPositiveInt(value, sheet.vidaMax || 1));
+    patch.vidaMax = String(nextMaxLife);
+    patch.vidaAtual = String(clamp(asPositiveInt(sheet.vidaAtual, 0), 0, nextMaxLife));
+  }
+
+  if (field === "vidaAtual") {
+    const maxLife = Math.max(1, asPositiveInt(sheet.vidaMax, 1));
+    patch.vidaAtual = String(clamp(asPositiveInt(value, sheet.vidaAtual || 0), 0, maxLife));
+  }
+
+  if (field === "integAtual") {
+    const maxIntegrity = Math.max(0, asPositiveInt(sheet.integMax, 0));
+    patch.integAtual = String(clamp(asPositiveInt(value, sheet.integAtual || 0), 0, maxIntegrity));
+  }
+
+  if (MESA_ATTRIBUTE_NAMES.map(attr => `attr${attr}`).includes(field)) {
+    patch[field] = normalizeMesaAttrValue(value, sheet[field] || "1");
+    if (field === "attrAlma") {
+      const nextIntegrityMax = getMesaIntegrityMaxFromSoul(patch[field], sheet.integMax || "0");
+      patch.integMax = nextIntegrityMax;
+      patch.integAtual = String(clamp(asPositiveInt(sheet.integAtual, 0), 0, asPositiveInt(nextIntegrityMax, 0)));
+    }
+  }
+
+  return Object.keys(patch).length ? patch : null;
+}
+
+function applyPlayerPanelSheetPatch(characterKey, patch, options = {}) {
+  const payload = normalizeMesaSheetPatchPayload({
+    characterKey,
+    ...patch
+  });
+  if (!payload.characterKey || !Object.keys(payload.patch).length) return;
+
+  state.playerPanelCharacterKey = payload.characterKey;
+  applySheetPatchFromMesa(payload.characterKey, payload.patch, { render: false });
+  broadcastMesaSheetPatch(payload.characterKey, payload.patch);
+
+  if (options.renderRoster) {
+    scheduleMesaRender({ summary: true, roster: true, stage: true, inspector: true });
+    return;
+  }
+
+  syncPlayerPanelFieldAfterPatch(options.sourceInput, payload.patch);
+  scheduleMesaRender({ summary: true, stage: true, inspector: true });
+}
+
+function syncPlayerPanelFieldAfterPatch(input, patch) {
+  if (!input || !patch) return;
+  const field = String(input.dataset?.playerSheetField || "");
+  if (field && patch[field] !== undefined && String(input.value) !== String(patch[field])) {
+    input.value = String(patch[field]);
+  }
+
+  if (field === "vidaMax") {
+    const card = input.closest(".player-resource-card");
+    const currentInput = card?.querySelector('[data-player-stat-field="currentLife"]');
+    if (currentInput && patch.vidaAtual !== undefined) {
+      currentInput.max = String(patch.vidaMax || currentInput.max || "0");
+      currentInput.value = String(patch.vidaAtual);
+      syncPlayerStatInputCard(currentInput, "currentLife");
+    }
+  }
+
+  if (field === "attrAlma" && patch.integMax !== undefined) {
+    const panel = input.closest(".player-sheet-panel");
+    const integrityInput = panel?.querySelector('[data-player-stat-field="currentIntegrity"]');
+    if (integrityInput) {
+      integrityInput.max = String(patch.integMax);
+      if (patch.integAtual !== undefined) {
+        integrityInput.value = String(patch.integAtual);
+      }
+      syncPlayerStatInputCard(integrityInput, "currentIntegrity");
+    }
+  }
+}
+
+function mutatePlayerPanelInventory(characterKey, mutation) {
+  const context = getOwnPlayerContext(characterKey);
+  const sheet = normalizeMesaSheetSnapshot(context.sheet || {});
+  const inventory = Array.isArray(sheet.inv) ? sheet.inv.map(normalizeMesaItem) : [];
+  const inventorySlots = Math.max(
+    MESA_DEFAULT_INVENTORY_SLOTS,
+    asPositiveInt(sheet.inventorySlots, MESA_DEFAULT_INVENTORY_SLOTS),
+    inventory.length
+  );
+
+  if (mutation.action === "add") {
+    if (inventory.length >= inventorySlots) return;
+    inventory.push(normalizeMesaItem({
+      name: "",
+      qty: "1",
+      type: "outro",
+      damage: "",
+      desc: ""
+    }));
+    applyPlayerPanelSheetPatch(characterKey, { inv: inventory }, { renderRoster: true });
+    return;
+  }
+
+  if (mutation.action === "remove") {
+    if (Number.isNaN(mutation.index) || mutation.index < 0 || mutation.index >= inventory.length) return;
+    inventory.splice(mutation.index, 1);
+    applyPlayerPanelSheetPatch(characterKey, { inv: inventory }, { renderRoster: true });
+    return;
+  }
+
+  if (mutation.action !== "update") return;
+  if (Number.isNaN(mutation.index) || mutation.index < 0 || mutation.index >= inventory.length) return;
+  const item = {
+    ...inventory[mutation.index],
+    [mutation.field]: mutation.value
+  };
+  inventory[mutation.index] = normalizeMesaItem(item);
+  applyPlayerPanelSheetPatch(characterKey, { inv: inventory }, { renderRoster: false });
+}
+
 function applySheetPatchFromMesa(characterKey, patch, options = {}) {
   if (!applySheetPatchToMesaCaches(characterKey, patch)) return;
   scheduleMesaRemoteSheetPatch(characterKey, patch);
@@ -837,13 +1037,28 @@ async function persistMesaSheetPatch(characterKey, options = {}) {
 }
 
 function normalizeMesaSheetSnapshot(raw) {
+  const attrSnapshot = Object.fromEntries(
+    MESA_ATTRIBUTE_NAMES.map(attr => {
+      const field = `attr${attr}`;
+      return [field, raw?.[field] === undefined ? "" : normalizeMesaAttrValue(raw[field], "")];
+    })
+  );
+  const derivedIntegrityMax = attrSnapshot.attrAlma
+    ? getMesaIntegrityMaxFromSoul(attrSnapshot.attrAlma, raw?.integMax ?? "0")
+    : raw?.integMax ?? "";
+
   return {
     vidaAtual: raw?.vidaAtual ?? "",
     vidaMax: raw?.vidaMax ?? "",
     integAtual: raw?.integAtual ?? "",
-    integMax: raw?.integMax ?? "",
+    integMax: derivedIntegrityMax,
     charName: raw?.charName ?? "",
+    charClass: raw?.charClass ?? "",
+    charRace: raw?.charRace ?? "",
+    charFaction: raw?.charFaction ?? "",
+    charNotes: raw?.charNotes ?? "",
     avatar: raw?.avatar ?? "",
+    ...attrSnapshot,
     inventorySlots: raw?.inventorySlots ?? MESA_DEFAULT_INVENTORY_SLOTS,
     inv: Array.isArray(raw?.inv) ? raw.inv.map(normalizeMesaItem) : [],
     ownedMemories: Array.isArray(raw?.ownedMemories) ? raw.ownedMemories.map(normalizeMesaOwnedMemory) : []

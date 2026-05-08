@@ -2,6 +2,16 @@
 
 Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STATUS.md`.
 
+## 2026-05-08 - Edicao Ampla Da Ficha Pela Mesa
+
+- Painel pessoal do jogador na Mesa agora edita dados rapidos, atributos, Vida atual, Vida maxima, Integridade atual e inventario da propria ficha.
+- Roster de tokens continua exclusivo do mestre; jogador continua sem busca, contagem de disponiveis e acoes de colocar/focar/retirar tokens alheios.
+- `attrAlma` recalcula `integMax` e clampa `integAtual`, mantendo a semantica da Ficha.
+- `mesa:sheet:patch` passou a aceitar payload amplo e sanitizado; Durable Object continua retransmitindo apenas para mestre e dono da ficha.
+- Memorias continuam em leitura no painel do jogador para preservar regras de transferencia.
+- Validado com `check:js`, `audit:static`, `test:mesa`, `test:ficha`, `perf:mesa`, `build:pages`, `test:mesa:online` publico e dry-run do Worker com `--config cloudflare/wrangler.toml`.
+- Worker `armagedon-api` publicado na version ID `d93c6c56-eaf6-4e13-855b-b5640967d7f6`.
+
 ## 2026-05-08 - Smoke Test Da Mesa Online
 
 - Adicionado `npm run test:mesa:online`.

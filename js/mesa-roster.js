@@ -179,7 +179,7 @@ function renderPlayerSheetPanel(rosterList, rosterCountBadge) {
   const maxLife = Math.max(1, asPositiveInt(sheet.vidaMax, source?.maxLife || 1));
   const currentIntegrity = clamp(asPositiveInt(sheet.integAtual, source?.currentIntegrity || 0), 0, asPositiveInt(sheet.integMax, source?.maxIntegrity || 0));
   const maxIntegrity = Math.max(0, asPositiveInt(sheet.integMax, source?.maxIntegrity || 0));
-  const inventory = Array.isArray(sheet.inv) ? sheet.inv.filter(item => String(item.name || "").trim()) : [];
+  const inventory = Array.isArray(sheet.inv) ? sheet.inv.map(normalizeMesaItem) : [];
   const memories = Array.isArray(sheet.ownedMemories) ? sheet.ownedMemories.filter(memory => String(memory.name || memory.desc || "").trim()) : [];
   const inventorySlots = Math.max(MESA_DEFAULT_INVENTORY_SLOTS, asPositiveInt(sheet.inventorySlots, MESA_DEFAULT_INVENTORY_SLOTS), inventory.length);
   const selectedKey = context.characterKey || normalizeMesaCharacterKey(state.session?.username);
@@ -203,8 +203,12 @@ function renderPlayerSheetPanel(rosterList, rosterCountBadge) {
 
       ${renderPlayerTokenSelector(context, selectedKey)}
 
+      ${renderPlayerIdentityEditor(sheet, selectedKey)}
+
+      ${renderPlayerAttributeEditor(sheet, selectedKey)}
+
       <div class="player-resource-grid">
-        ${renderPlayerResourceEditor("Vida", "currentLife", currentLife, maxLife, "vida", selectedKey)}
+        ${renderPlayerResourceEditor("Vida", "currentLife", currentLife, maxLife, "vida", selectedKey, { editableMaxField: "vidaMax" })}
         ${renderPlayerResourceEditor("Integridade", "currentIntegrity", currentIntegrity, maxIntegrity, "integ", selectedKey)}
       </div>
 
@@ -221,8 +225,87 @@ function renderPlayerSheetPanel(rosterList, rosterCountBadge) {
         </article>
       </div>
 
-      ${renderPlayerInventoryList(inventory)}
+      ${renderPlayerInventoryList(inventory, selectedKey, inventorySlots)}
       ${renderPlayerMemoryList(memories)}
+    </section>
+  `;
+}
+
+function renderPlayerIdentityEditor(sheet, characterKey) {
+  return `
+    <section class="player-panel-section">
+      <div class="player-panel-section-head">
+        <h3>Dados rapidos</h3>
+      </div>
+      <div class="player-editor-grid">
+        ${renderPlayerTextField("Nome", "charName", sheet.charName, characterKey)}
+        ${renderPlayerTextField("Classe", "charClass", sheet.charClass, characterKey)}
+        ${renderPlayerTextField("Raca", "charRace", sheet.charRace, characterKey)}
+        ${renderPlayerTextField("Faccao", "charFaction", sheet.charFaction, characterKey)}
+      </div>
+      <label class="player-inline-field is-wide">
+        <span>Anotacoes</span>
+        <textarea
+          rows="3"
+          data-player-sheet-field="charNotes"
+          data-character-key="${escapeAttribute(characterKey)}"
+          aria-label="Anotacoes do personagem"
+        >${escapeHtml(sheet.charNotes || "")}</textarea>
+      </label>
+    </section>
+  `;
+}
+
+function renderPlayerTextField(label, field, value, characterKey) {
+  return `
+    <label class="player-inline-field">
+      <span>${escapeHtml(label)}</span>
+      <input
+        type="text"
+        data-player-sheet-field="${escapeAttribute(field)}"
+        data-character-key="${escapeAttribute(characterKey)}"
+        aria-label="${escapeAttribute(label)}"
+        value="${escapeAttribute(value || "")}"
+      />
+    </label>
+  `;
+}
+
+function renderPlayerAttributeEditor(sheet, characterKey) {
+  const attributes = [
+    ["Forca", "Forca"],
+    ["Agilidade", "Agilidade"],
+    ["Inteligencia", "Inteligencia"],
+    ["Resistencia", "Resistencia"],
+    ["Alma", "Alma"]
+  ];
+
+  return `
+    <section class="player-panel-section">
+      <div class="player-panel-section-head">
+        <h3>Atributos</h3>
+        <span>Integridade maxima pela Alma</span>
+      </div>
+      <div class="player-attribute-grid">
+        ${attributes.map(([label, attr]) => {
+          const field = `attr${attr}`;
+          return `
+            <label class="player-inline-field">
+              <span>${escapeHtml(label)}</span>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                data-player-sheet-field="${escapeAttribute(field)}"
+                data-character-key="${escapeAttribute(characterKey)}"
+                aria-label="${escapeAttribute(label)}"
+                value="${escapeAttribute(sheet[field] || "")}"
+                placeholder="1"
+              />
+            </label>
+          `;
+        }).join("")}
+      </div>
     </section>
   `;
 }
@@ -255,14 +338,15 @@ function renderPlayerTokenSelector(context, selectedKey) {
   `;
 }
 
-function renderPlayerResourceEditor(label, field, current, max, type, characterKey) {
+function renderPlayerResourceEditor(label, field, current, max, type, characterKey, options = {}) {
+  const editableMaxField = String(options.editableMaxField || "");
   return `
     <article class="player-resource-card">
       <div class="bar-label-row">
         <span class="bar-label">${escapeHtml(label)}</span>
         <span>${current}/${max}</span>
       </div>
-      <div class="player-stat-inputs">
+      <div class="player-stat-inputs ${editableMaxField ? "has-editable-max" : ""}">
         <input
           type="number"
           min="0"
@@ -273,7 +357,20 @@ function renderPlayerResourceEditor(label, field, current, max, type, characterK
           aria-label="${escapeAttribute(`${label} atual`)}"
           value="${current}"
         />
-        <span>/ ${max}</span>
+        ${editableMaxField ? `
+          <label>
+            <span>Max</span>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              data-player-sheet-field="${escapeAttribute(editableMaxField)}"
+              data-character-key="${escapeAttribute(characterKey)}"
+              aria-label="${escapeAttribute(`${label} maxima`)}"
+              value="${max}"
+            />
+          </label>
+        ` : `<span>/ ${max}</span>`}
       </div>
       <div class="bar-preview is-${type === "vida" ? "life" : "integrity"}">
         <span style="${getBarFillStyle(type, current, max)}"></span>
@@ -282,12 +379,22 @@ function renderPlayerResourceEditor(label, field, current, max, type, characterK
   `;
 }
 
-function renderPlayerInventoryList(inventory) {
+function renderPlayerInventoryList(inventory, characterKey, inventorySlots) {
+  const canAdd = inventory.length < inventorySlots;
   if (!inventory.length) {
     return `
       <section class="player-panel-section">
         <div class="player-panel-section-head">
           <h3>Itens</h3>
+          <button
+            type="button"
+            class="mini-btn"
+            data-player-panel-action="add-inventory-item"
+            data-character-key="${escapeAttribute(characterKey)}"
+            ${canAdd ? "" : "disabled"}
+          >
+            Adicionar
+          </button>
         </div>
         <p class="player-panel-empty">Nenhum item registrado na ficha.</p>
       </section>
@@ -298,26 +405,95 @@ function renderPlayerInventoryList(inventory) {
     <section class="player-panel-section">
       <div class="player-panel-section-head">
         <h3>Itens</h3>
-        <span>${inventory.length} item${inventory.length === 1 ? "" : "s"}</span>
+        <div class="player-panel-section-actions">
+          <span>${inventory.length}/${inventorySlots}</span>
+          <button
+            type="button"
+            class="mini-btn"
+            data-player-panel-action="add-inventory-item"
+            data-character-key="${escapeAttribute(characterKey)}"
+            ${canAdd ? "" : "disabled"}
+          >
+            Adicionar
+          </button>
+        </div>
       </div>
       <div class="player-panel-list">
-        ${inventory.map(renderPlayerInventoryItem).join("")}
+        ${inventory.map((item, index) => renderPlayerInventoryItem(item, index, characterKey)).join("")}
       </div>
     </section>
   `;
 }
 
-function renderPlayerInventoryItem(item) {
-  const type = formatMesaItemType(item.type);
-  const meta = item.type === "arma" && item.damage
-    ? `${item.damage} | Qtd. ${item.qty || "1"}`
-    : `Qtd. ${item.qty || "1"}`;
+function renderPlayerInventoryItem(item, index, characterKey) {
   return `
-    <article class="player-list-card">
-      <span class="token-type-badge" data-type="player">${escapeHtml(type)}</span>
-      <strong>${escapeHtml(item.name || "Item")}</strong>
-      <small>${escapeHtml(meta)}</small>
-      ${item.desc ? `<small>${escapeHtml(item.desc)}</small>` : ""}
+    <article class="player-list-card player-editor-card" data-player-item-index="${index}">
+      <div class="player-editor-card-head">
+        <span class="token-type-badge" data-type="player">${escapeHtml(formatMesaItemType(item.type))}</span>
+        <button
+          type="button"
+          class="mini-btn"
+          data-player-panel-action="remove-inventory-item"
+          data-character-key="${escapeAttribute(characterKey)}"
+          data-index="${index}"
+        >
+          Remover
+        </button>
+      </div>
+      <label class="player-inline-field">
+        <span>Nome</span>
+        <input
+          type="text"
+          data-player-item-field="name"
+          data-character-key="${escapeAttribute(characterKey)}"
+          data-index="${index}"
+          value="${escapeAttribute(item.name || "")}"
+          placeholder="Item"
+        />
+      </label>
+      <div class="player-editor-grid is-compact">
+        <label class="player-inline-field">
+          <span>Tipo</span>
+          <select data-player-item-field="type" data-character-key="${escapeAttribute(characterKey)}" data-index="${index}">
+            ${["arma", "acessorio", "outro"].map(type => `
+              <option value="${type}" ${item.type === type ? "selected" : ""}>${escapeHtml(formatMesaItemType(type))}</option>
+            `).join("")}
+          </select>
+        </label>
+        <label class="player-inline-field">
+          <span>Qtd</span>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            data-player-item-field="qty"
+            data-character-key="${escapeAttribute(characterKey)}"
+            data-index="${index}"
+            value="${escapeAttribute(item.qty || "1")}"
+          />
+        </label>
+      </div>
+      <label class="player-inline-field">
+        <span>Dano</span>
+        <input
+          type="text"
+          data-player-item-field="damage"
+          data-character-key="${escapeAttribute(characterKey)}"
+          data-index="${index}"
+          value="${escapeAttribute(item.damage || "")}"
+          placeholder="Ex.: 1d6"
+        />
+      </label>
+      <label class="player-inline-field is-wide">
+        <span>Descricao</span>
+        <textarea
+          rows="2"
+          data-player-item-field="desc"
+          data-character-key="${escapeAttribute(characterKey)}"
+          data-index="${index}"
+          placeholder="Detalhes do item"
+        >${escapeHtml(item.desc || "")}</textarea>
+      </label>
     </article>
   `;
 }

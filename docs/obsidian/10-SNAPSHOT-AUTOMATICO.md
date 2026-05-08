@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-07 23:29:37 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-08 00:29:46 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,15 +13,22 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `bcb58a6 2026-05-07 Adiciona smoke test online da mesa`
+- Ultimo commit: `a2d67b6 2026-05-07 Corrige smoke test online da mesa`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
+M  cloudflare/src/mesa-realtime.js
+M  css/mesa-roster.css
+M  docs/obsidian/07-MESA.md
 M  docs/obsidian/09-HISTORICO-DE-SESSOES.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  tests/mesa-online.spec.cjs
+M  js/mesa-core.js
+M  js/mesa-roster.js
+M  js/mesa-stage.js
+M  mesa.html
+M  tests/mesa.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -34,9 +41,16 @@ M  tests/mesa-online.spec.cjs
 
 ```text
 DEV_STATUS.md
+cloudflare/src/mesa-realtime.js
+css/mesa-roster.css
+docs/obsidian/07-MESA.md
 docs/obsidian/09-HISTORICO-DE-SESSOES.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-tests/mesa-online.spec.cjs
+js/mesa-core.js
+js/mesa-roster.js
+js/mesa-stage.js
+mesa.html
+tests/mesa.spec.cjs
 ```
 
 ## Paginas Principais
@@ -71,6 +85,7 @@ tests/mesa-online.spec.cjs
 ```text
 [dir]  .githooks
 [dir]  .github
+[dir]  .wrangler
 [dir]  _site
 [dir]  assets
 [dir]  cloudflare
@@ -88,6 +103,7 @@ tests/mesa-online.spec.cjs
 [file] .server-err.log
 [file] .server-out.log
 [file] apple-touch-icon.png
+[file] debug.log
 [file] DEPLOY_FREE.md
 [file] DEV_STATUS.md
 [file] favicon.ico
@@ -113,12 +129,12 @@ tests/mesa-online.spec.cjs
 Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
-   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
    13,08 MB  assets\sheet-fire-background.mp4
+   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     0,99 MB  _site\logo-rpg-armagedon.png
-    0,99 MB  assets\logo-rpg-armagedon.png
     0,99 MB  logo-rpg-armagedon.png
+    0,99 MB  assets\logo-rpg-armagedon.png
     0,92 MB  node_modules\playwright-core\types\types.d.ts
     0,78 MB  node_modules\playwright-core\types\protocol.d.ts
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js

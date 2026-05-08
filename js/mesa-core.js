@@ -70,6 +70,10 @@ const MESA_REALTIME_DELTA_TYPES = new Set([
   "mesa:scene:clear"
 ]);
 const MESA_SHEET_PATCH_TYPE = "mesa:sheet:patch";
+const MESA_ATTRIBUTE_NAMES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"];
+const MESA_SHEET_TEXT_FIELDS = new Set(["charName", "charClass", "charRace", "charFaction", "charNotes"]);
+const MESA_SHEET_RESOURCE_FIELDS = new Set(["vidaAtual", "vidaMax", "integAtual", "integMax", "inventorySlots"]);
+const MESA_ITEM_TYPES = new Set(["arma", "acessorio", "outro"]);
 const mesaDom = {};
 const pendingMesaRender = Object.fromEntries(MESA_RENDER_PARTS.map(part => [part, false]));
 let mesaRenderFrame = 0;
@@ -182,6 +186,7 @@ function bindEvents() {
 
   rosterList?.addEventListener("click", handleRosterAction);
   rosterList?.addEventListener("input", handlePlayerPanelStatInput);
+  rosterList?.addEventListener("change", handlePlayerPanelStatInput);
   tokenInspector?.addEventListener("click", handleInspectorAction);
   tokenInspector?.addEventListener("input", handleInspectorStatInput);
 
@@ -907,22 +912,75 @@ function normalizeMesaUsername(value) {
 
 function normalizeMesaItem(item) {
   const source = item && typeof item === "object" ? item : {};
+  const type = normalizeMesaItemType(source.type);
   return {
-    name: String(source.name || "").trim(),
+    name: normalizeMesaSheetTextValue(source.name, 80),
     qty: String(Math.max(0, Number.parseInt(source.qty || "1", 10) || 0)),
-    type: String(source.type || "outro").trim().toLowerCase() || "outro",
-    damage: String(source.damage || "").trim().slice(0, 24),
-    desc: String(source.desc || "").trim()
+    type,
+    damage: type === "arma" ? normalizeMesaDamageExpression(source.damage) : "",
+    desc: normalizeMesaSheetTextValue(source.desc, 320)
   };
 }
 
 function normalizeMesaOwnedMemory(memory) {
   const source = memory && typeof memory === "object" ? memory : {};
   return {
-    name: String(source.name || "").trim(),
-    desc: String(source.desc || "").trim(),
-    source: String(source.source || "").trim()
+    name: normalizeMesaSheetTextValue(source.name, 80),
+    desc: normalizeMesaSheetTextValue(source.desc, 420),
+    source: normalizeMesaSheetTextValue(source.source, 80)
   };
+}
+
+function normalizeMesaSheetTextValue(value, maxLength = 160) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, maxLength);
+}
+
+function normalizeMesaSheetLongTextValue(value, maxLength = 1000) {
+  return String(value || "").trim().slice(0, maxLength);
+}
+
+function normalizeMesaSheetTextField(field, value) {
+  if (field === "charNotes") return normalizeMesaSheetLongTextValue(value, 1400);
+  if (field === "charName") return normalizeMesaSheetTextValue(value, 90);
+  if (field === "charClass" || field === "charRace" || field === "charFaction") {
+    return normalizeMesaSheetTextValue(value, 70);
+  }
+  return normalizeMesaSheetTextValue(value, 160);
+}
+
+function normalizeMesaResourceValue(value, fallback = "0") {
+  if (value === "" || value === null || value === undefined) return String(fallback);
+  const numeric = Number.parseInt(value, 10);
+  if (Number.isNaN(numeric)) return String(fallback);
+  return String(Math.max(0, numeric));
+}
+
+function normalizeMesaAttrValue(value, fallback = "1") {
+  if (value === "" || value === null || value === undefined) return String(fallback);
+  const numeric = Number.parseInt(value, 10);
+  if (Number.isNaN(numeric)) return String(fallback);
+  return String(Math.max(1, numeric));
+}
+
+function getMesaIntegrityMaxFromSoul(value, fallback = "0") {
+  const numeric = Number.parseInt(value, 10);
+  if (Number.isNaN(numeric)) return String(fallback);
+  return String(Math.max(0, Math.floor(numeric / 3)));
+}
+
+function normalizeMesaInventorySlotsValue(value, used = 0) {
+  const numeric = Number.parseInt(value, 10);
+  const safeValue = Number.isNaN(numeric) ? MESA_DEFAULT_INVENTORY_SLOTS : numeric;
+  return String(Math.max(Math.max(MESA_DEFAULT_INVENTORY_SLOTS, used), Math.min(120, safeValue)));
+}
+
+function normalizeMesaItemType(value) {
+  const normalized = String(value || "outro").trim().toLowerCase();
+  return MESA_ITEM_TYPES.has(normalized) ? normalized : "outro";
+}
+
+function normalizeMesaDamageExpression(value) {
+  return String(value || "").trim().replace(/\s+/g, "").slice(0, 24);
 }
 
 function getStoredMesaSheetSnapshot(characterKey) {
@@ -1236,12 +1294,45 @@ function sendMesaRealtimeDelta(type, payload = {}) {
 function normalizeMesaSheetPatchPayload(payload = {}) {
   const characterKey = normalizeMesaCharacterKey(payload.characterKey || payload.key);
   const patch = {};
-  if (payload.vidaAtual !== undefined) {
-    patch.vidaAtual = String(asPositiveInt(payload.vidaAtual, 0));
+
+  MESA_SHEET_TEXT_FIELDS.forEach(field => {
+    if (payload[field] !== undefined) {
+      patch[field] = normalizeMesaSheetTextField(field, payload[field]);
+    }
+  });
+
+  MESA_SHEET_RESOURCE_FIELDS.forEach(field => {
+    if (payload[field] === undefined) return;
+    if (field === "inventorySlots") {
+      const used = Array.isArray(payload.inv) ? payload.inv.length : 0;
+      patch[field] = normalizeMesaInventorySlotsValue(payload[field], used);
+      return;
+    }
+    patch[field] = normalizeMesaResourceValue(payload[field], "0");
+  });
+
+  MESA_ATTRIBUTE_NAMES.forEach(attr => {
+    const field = `attr${attr}`;
+    if (payload[field] !== undefined) {
+      patch[field] = normalizeMesaAttrValue(payload[field], "1");
+    }
+  });
+
+  if (patch.attrAlma !== undefined && payload.integMax === undefined) {
+    patch.integMax = getMesaIntegrityMaxFromSoul(patch.attrAlma, patch.integMax || "0");
   }
-  if (payload.integAtual !== undefined) {
-    patch.integAtual = String(asPositiveInt(payload.integAtual, 0));
+
+  if (Array.isArray(payload.inv)) {
+    patch.inv = payload.inv.slice(0, 120).map(normalizeMesaItem);
+    if (patch.inventorySlots !== undefined) {
+      patch.inventorySlots = normalizeMesaInventorySlotsValue(patch.inventorySlots, patch.inv.length);
+    }
   }
+
+  if (Array.isArray(payload.ownedMemories)) {
+    patch.ownedMemories = payload.ownedMemories.slice(0, 120).map(normalizeMesaOwnedMemory);
+  }
+
   return { characterKey, patch };
 }
 

@@ -69,12 +69,13 @@ Registro minimo esperado:
 - Drop de memoria de monstros
 - Progressao por Essencias da Alma implementada
 - Rolagem de dados na ficha implementada
-- Mesa virtual com roster, palco, inspetor e edicao local/online de status
+- Mesa virtual com roster, palco, inspetor e edicao local/online da ficha propria
 - Mesa virtual sincroniza cena em tempo real para mestre e jogadores conectados
 - Mesa virtual usa renderer Canvas/Worker por padrao, com fallback Canvas principal e DOM legado via `localStorage.mesaRenderer = "dom"`
 - Realtime da Mesa aceita deltas incrementais de token para reduzir payload durante movimento
 - Mestre ve roster completo da Mesa; jogador ve palco compartilhado e painel pessoal da propria ficha, sem lista de tokens disponiveis
-- Jogador pode alterar Vida atual e Integridade atual na propria ficha e na Mesa
+- Jogador pode alterar pela Mesa: dados rapidos, atributos, Vida atual, Vida maxima, Integridade atual e inventario da propria ficha
+- Memorias continuam em leitura no painel do jogador nesta etapa para preservar as regras de transferencia
 - Vida atual de jogador, NPC e monstro nao pode passar da Vida maxima
 - Integridade atual continua limitada pela Integridade maxima
 
@@ -89,6 +90,20 @@ Registro minimo esperado:
 - Home/login ja segue essa mesma linguagem visual
 
 ## Ultima Etapa Concluida
+
+- Painel de edicao completa do jogador na Mesa em 2026-05-08:
+  - objetivo: permitir que o jogador edite pela Mesa a propria ficha em tempo real, alem de Vida/Integridade atuais
+  - `js/mesa-roster.js` e `css/mesa-roster.css`: painel pessoal ganhou campos editaveis de dados rapidos, atributos, Vida maxima e inventario; itens podem ser adicionados, removidos e editados sem expor roster de tokens
+  - `js/mesa-stage.js`: novos handlers aplicam patches locais sem reconstruir o painel a cada tecla; `attrAlma` recalcula `integMax` e clampa `integAtual`; inventario respeita a capacidade atual
+  - `js/mesa-core.js`: `mesa:sheet:patch` passou a normalizar texto, recursos, atributos, `inv` e `ownedMemories`; cache local/remoto da Mesa preserva atributos e dados rapidos
+  - `cloudflare/src/mesa-realtime.js`: Durable Object agora aceita e sanitiza patches amplos da ficha, mantendo a regra de que jogador so transmite alteracoes da propria `characterKey` e filtrando campos nao permitidos antes do relay
+  - `mesa.html`: cache bust de `mesa-core.js`, `mesa-stage.js`, `mesa-roster.js` e `mesa-roster.css` atualizado para `2026-05-08-player-edit-1`
+  - `tests/mesa.spec.cjs`: regressao ampliada para cobrir edicao local/online de atributos, dados rapidos e inventario pelo painel do jogador
+  - validacoes executadas: `npm run check:js`, `npm run audit:static`, `npm run test:mesa`, `npm run test:ficha`, `npm run perf:mesa`, `npm run build:pages`, `npm run test:mesa:online`, `npx.cmd --yes wrangler@latest deploy --dry-run --config cloudflare/wrangler.toml` e `git diff --check`
+  - observacao de QA: o fluxo autenticado de `test:mesa:online` ficou ignorado neste processo porque as variaveis de credenciais nao estavam carregadas; testes publicos online passaram
+  - observacao de ferramenta: o Browser integrado falhou antes de abrir a pagina por erro de preparo de arquivos temporarios do runtime; a validacao renderizada especifica ficou coberta pelo Playwright do projeto
+  - Worker publicado em 2026-05-08: `armagedon-api`, version ID `d93c6c56-eaf6-4e13-855b-b5640967d7f6`
+  - status: implementado e Worker publicado; falta apenas push para GitHub Pages publicar o cache bust do frontend
 
 - Proximo passo da Mesa online em 2026-05-08:
   - `package.json`: adicionado `npm run test:mesa:online`

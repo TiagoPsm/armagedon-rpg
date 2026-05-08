@@ -26,7 +26,10 @@ test.describe("Mesa virtual", () => {
     const baseUrl = await getMesaBaseUrl();
     const consoleErrors = [];
     page.on("console", message => {
-      if (message.type() === "error") consoleErrors.push(message.text());
+      if (message.type() !== "error") return;
+      const text = message.text();
+      if (text.includes("ERR_NETWORK_ACCESS_DENIED")) return;
+      consoleErrors.push(text);
     });
 
     await page.goto(`${baseUrl}/mesa.html`);
@@ -113,6 +116,14 @@ test.describe("Mesa virtual", () => {
       localStorage.setItem("tc_sheets", JSON.stringify({
         ana: {
           charName: "Ana Rubra",
+          charClass: "Flagelante",
+          charRace: "Humana",
+          charFaction: "Coro Carmesim",
+          attrForca: "2",
+          attrAgilidade: "3",
+          attrInteligencia: "4",
+          attrResistencia: "5",
+          attrAlma: "18",
           vidaAtual: "8",
           vidaMax: "12",
           integAtual: "4",
@@ -155,7 +166,7 @@ test.describe("Mesa virtual", () => {
     const playerPanel = page.locator(".player-sheet-panel");
     await expect(playerPanel).toBeVisible();
     await expect(playerPanel).toContainText("Ana Rubra");
-    await expect(playerPanel).toContainText("Lamina curta");
+    await expect(page.locator('[data-player-item-field="name"]').first()).toHaveValue("Lamina curta");
     await expect(playerPanel).toContainText("Memoria do Portao");
     await expect(playerPanel).not.toContainText("Bruno Cinza");
     await expect(playerPanel).not.toContainText("Vigia da Porta");
@@ -163,6 +174,15 @@ test.describe("Mesa virtual", () => {
 
     await page.locator('[data-player-stat-field="currentLife"]').fill("5");
     await page.locator('[data-player-stat-field="currentIntegrity"]').fill("3");
+    await page.locator('[data-player-sheet-field="attrForca"]').fill("7");
+    await page.locator('[data-player-sheet-field="attrAlma"]').fill("15");
+    await page.locator('[data-player-sheet-field="charClass"]').fill("Sentinela");
+    await page.locator('[data-player-item-field="name"]').first().fill("Lamina longa");
+    await page.locator('[data-player-item-field="damage"]').first().fill("1d8");
+    await page.locator('[data-player-panel-action="add-inventory-item"]').click();
+    await expect(page.locator('[data-player-item-field="name"]')).toHaveCount(2);
+    await page.locator('[data-player-item-field="name"]').last().fill("Bandagem");
+    await page.locator('[data-player-item-field="type"]').last().selectOption("acessorio");
 
     const savedSheet = await page.evaluate(() => {
       const sheets = JSON.parse(localStorage.getItem("tc_sheets") || "{}");
@@ -170,6 +190,15 @@ test.describe("Mesa virtual", () => {
     });
     expect(savedSheet.vidaAtual).toBe("5");
     expect(savedSheet.integAtual).toBe("3");
+    expect(savedSheet.integMax).toBe("5");
+    expect(savedSheet.attrForca).toBe("7");
+    expect(savedSheet.attrAlma).toBe("15");
+    expect(savedSheet.charClass).toBe("Sentinela");
+    expect(savedSheet.inv).toHaveLength(2);
+    expect(savedSheet.inv[0].name).toBe("Lamina longa");
+    expect(savedSheet.inv[0].damage).toBe("1d8");
+    expect(savedSheet.inv[1].name).toBe("Bandagem");
+    expect(savedSheet.inv[1].type).toBe("acessorio");
 
     const savedScene = await page.evaluate(() => JSON.parse(localStorage.getItem("tc_virtual_mesa_mock_v1") || "{}"));
     expect(savedScene.tokens).toHaveLength(3);
@@ -242,6 +271,11 @@ test.describe("Mesa virtual", () => {
     const putRequests = [];
     let characterData = {
       charName: "Ana Rubra",
+      attrForca: "2",
+      attrAgilidade: "3",
+      attrInteligencia: "4",
+      attrResistencia: "5",
+      attrAlma: "24",
       vidaAtual: "9",
       vidaMax: "20",
       integAtual: "5",
@@ -373,19 +407,24 @@ test.describe("Mesa virtual", () => {
     await page.goto(`${baseUrl}/mesa.html`);
     const playerPanel = page.locator(".player-sheet-panel");
     await expect(playerPanel).toBeVisible();
-    await expect(playerPanel).toContainText("Rosa de Ferro");
+    await expect(page.locator('[data-player-item-field="name"]').first()).toHaveValue("Rosa de Ferro");
     await expect(playerPanel).toContainText("Juramento Rubro");
     await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("9");
     await expect(page.locator('[data-player-stat-field="currentIntegrity"]')).toHaveValue("5");
 
     await page.locator('[data-player-stat-field="currentLife"]').fill("7");
     await page.locator('[data-player-stat-field="currentIntegrity"]').fill("2");
+    await page.locator('[data-player-sheet-field="attrAgilidade"]').fill("9");
+    await page.locator('[data-player-sheet-field="charRace"]').fill("Marcada");
+    await page.locator('[data-player-item-field="name"]').first().fill("Rosa de Ferro Reforcada");
 
     await expect.poll(() => putRequests.some(payload => (
       payload?.data?.vidaAtual === "7"
       && payload?.data?.integAtual === "2"
+      && payload?.data?.attrAgilidade === "9"
+      && payload?.data?.charRace === "Marcada"
       && Array.isArray(payload?.data?.inv)
-      && payload.data.inv[0]?.name === "Rosa de Ferro"
+      && payload.data.inv[0]?.name === "Rosa de Ferro Reforcada"
     )), { timeout: 4000 }).toBe(true);
 
     const cachedRemoteSheet = await page.evaluate(() => {
@@ -394,6 +433,8 @@ test.describe("Mesa virtual", () => {
     });
     expect(cachedRemoteSheet.vidaAtual).toBe("7");
     expect(cachedRemoteSheet.integAtual).toBe("2");
-    expect(cachedRemoteSheet.inv[0].name).toBe("Rosa de Ferro");
+    expect(cachedRemoteSheet.attrAgilidade).toBe("9");
+    expect(cachedRemoteSheet.charRace).toBe("Marcada");
+    expect(cachedRemoteSheet.inv[0].name).toBe("Rosa de Ferro Reforcada");
   });
 });

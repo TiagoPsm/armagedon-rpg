@@ -206,6 +206,17 @@
   align-items: center;
 }
 
+.player-stat-inputs.has-editable-max {
+  grid-template-columns: minmax(0, 1fr) minmax(94px, 0.45fr);
+  align-items: end;
+}
+
+.player-stat-inputs label {
+  min-width: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
 .player-stat-inputs input {
   width: 100%;
   min-height: 46px;
@@ -254,6 +265,14 @@
   gap: 0.7rem;
 }
 
+.player-panel-section-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
 .player-panel-section-head h3 {
   margin: 0;
   font-family: var(--font-title);
@@ -272,9 +291,86 @@
   gap: 0.65rem;
 }
 
+.player-editor-grid,
+.player-attribute-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.player-attribute-grid {
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+}
+
+.player-editor-grid.is-compact {
+  grid-template-columns: minmax(0, 1fr) 88px;
+}
+
+.player-inline-field {
+  min-width: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.player-inline-field.is-wide {
+  width: 100%;
+}
+
+.player-inline-field > span,
+.player-stat-inputs label > span {
+  color: var(--accent-red);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.player-inline-field input,
+.player-inline-field select,
+.player-inline-field textarea,
+.player-stat-inputs label input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0.68rem 0.78rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(6, 7, 11, 0.9);
+  color: var(--text-primary);
+  font: inherit;
+  outline: none;
+}
+
+.player-inline-field textarea {
+  min-height: 78px;
+  resize: vertical;
+  line-height: 1.32;
+}
+
+.player-inline-field select {
+  cursor: pointer;
+}
+
+.player-inline-field input:focus,
+.player-inline-field select:focus,
+.player-inline-field textarea:focus,
+.player-stat-inputs label input:focus {
+  border-color: var(--border-up);
+  box-shadow: 0 0 0 3px rgba(176, 47, 57, 0.14);
+}
+
 .player-list-card {
   display: grid;
   gap: 0.35rem;
+}
+
+.player-editor-card {
+  gap: 0.65rem;
+}
+
+.player-editor-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
 }
 
 .player-list-card strong {
@@ -292,7 +388,9 @@
 @media (max-width: 760px) {
   .player-sheet-hero,
   .player-resource-grid,
-  .player-panel-meta-grid {
+  .player-panel-meta-grid,
+  .player-editor-grid,
+  .player-editor-grid.is-compact {
     grid-template-columns: 1fr;
   }
 

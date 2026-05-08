@@ -53,8 +53,10 @@ Worker/D1:
 
 - Preservar ordem dos scripts em `mesa.html`.
 - Nao quebrar drag/move de tokens.
-- Jogador pode alterar Vida atual e Integridade atual da propria ficha pela Mesa.
-- Vida maxima, Integridade maxima, itens e memorias continuam fora da edicao do jogador na Mesa.
+- Jogador pode alterar pela Mesa dados rapidos, atributos, Vida atual, Vida maxima, Integridade atual e inventario da propria ficha.
+- `attrAlma` recalcula a Integridade maxima da mesma forma que a Ficha e clampa a Integridade atual.
+- Inventario editado pela Mesa deve respeitar a capacidade atual da ficha; jogador nao aumenta capacidade nesta etapa.
+- Memorias continuam em leitura no painel do jogador nesta etapa para preservar as regras de transferencia.
 - Vida atual nao pode passar da Vida maxima.
 - Integridade atual continua limitada pela Integridade maxima.
 - Cena oficial usa `GET /api/mesa/scene` e `PUT /api/mesa/scene`.
@@ -66,20 +68,20 @@ Worker/D1:
   - `mesa:scene:clear`
   - `mesa:batch`
 - Realtime tambem aceita patch interno de ficha:
-  - `mesa:sheet:patch` com `{ characterKey, vidaAtual?, integAtual?, clientId, messageId, sentAt }`
+  - `mesa:sheet:patch` com `{ characterKey, charName?, charClass?, charRace?, charFaction?, charNotes?, attrForca?, attrAgilidade?, attrInteligencia?, attrResistencia?, attrAlma?, vidaAtual?, vidaMax?, integAtual?, integMax?, inv?, clientId, messageId, sentAt }`
   - `sheet:changed` para avisar que uma ficha foi salva via `PUT /api/characters/:key`
 - Eventos de ficha devem carregar `key` e `characterKey` para manter compatibilidade entre Ficha e Mesa.
 - `PUT /api/mesa/scene` deve persistir no D1 antes de transmitir `mesa:scene`.
 - Durable Object `MesaRealtimeRoom` coordena conexoes e presenca; ele nao substitui o D1 como fonte de verdade.
 - Jogadores podem ler a cena; apenas mestre salva posicao, ordem e visibilidade.
-- Durable Object valida `mesa:sheet:patch`: mestre pode retransmitir qualquer ficha; jogador so pode alterar `characterKey` igual ao proprio usuario e apenas valores atuais.
+- Durable Object valida `mesa:sheet:patch`: mestre pode retransmitir qualquer ficha; jogador so pode alterar `characterKey` igual ao proprio usuario; payload de jogador e sanitizado e filtrado antes do relay.
 - `mesa:sheet:patch` e `sheet:changed` devem ser transmitidos apenas para mestre e dono da ficha, nunca para outros jogadores.
 - `localStorage` continua apenas como fallback/cache quando a API nao esta ativa.
 - A Mesa deve chamar `AUTH.refreshDirectory()` antes de montar o roster quando a API esta ativa.
 - Jogador deve hidratar a propria ficha com `GET /api/characters/:key` antes de montar o painel pessoal quando a API esta ativa.
 - O painel pessoal deve usar a `key` oficial do diretorio quando existir; `username` continua fallback.
 - Em modo local/offline, a Mesa deve ignorar `tc_directory_cache` remoto antigo e usar `username`/`tc_sheets` locais para painel pessoal, roster e salvamento.
-- Patches de Vida/Integridade pendentes devem ser enviados em `pagehide` ou aba oculta para reduzir perda de edicao ao sair da pagina.
+- Patches de ficha pendentes devem ser enviados em `pagehide` ou aba oculta para reduzir perda de edicao ao sair da pagina.
 - NPCs e monstros vindos do Worker devem usar a `key` oficial do diretorio como `characterKey`.
 - Cena remota inexistente ou com tokens antigos que nao batem mais com o roster pode ser repovoada por `seedInitialTokens()`; cena remota existente com zero tokens deve continuar vazia para permitir que o mestre monte manualmente pelo roster.
 - Em 2026-05-04, a cena `default` do D1 foi encontrada com `0` tokens e populada com 5 tokens iniciais depois do deploy da correcao.
@@ -88,7 +90,7 @@ Worker/D1:
 - `auth.js` deve manter `window.AUTH = AUTH`; a Mesa depende de `window.AUTH` para resolver sessao, diretorio e backend.
 - Mestre ve roster completo, busca, contagem de disponiveis e acoes de colocar/focar/retirar.
 - Jogador nao ve busca, roster de disponiveis, contagem de disponiveis nem acoes de colocar/focar/retirar.
-- Jogador ve painel "Meu personagem" com avatar, nome, Vida, Integridade, inventario, capacidade e memorias somente da propria ficha.
+- Jogador ve painel "Meu personagem" com avatar, dados rapidos, atributos, Vida, Integridade, inventario, capacidade e memorias somente da propria ficha.
 - Se o token do jogador ainda nao estiver em cena, o painel pessoal continua visivel e informa que o mestre ainda nao colocou o token no palco.
 - `getSelectedToken()` nao deve devolver token oculto ou fora de permissao por fallback interno.
 - `renderAll()` deve ficar restrito a boot/hidratacao completa; interacoes comuns devem usar `scheduleMesaRender()` com partes especificas.
@@ -130,13 +132,13 @@ Worker/D1:
 6. Testar alteracao de status permitido.
 7. Abrir como jogador e confirmar que nao aparece roster, busca, contagem de disponiveis nem acoes de colocar/focar/retirar.
 8. Confirmar que o jogador ve apenas painel "Meu personagem" com a propria ficha.
-9. Editar Vida atual e Integridade atual no painel do jogador e confirmar persistencia na ficha apos recarregar.
+9. Editar Vida atual, Vida maxima, Integridade atual, atributos, dados rapidos e inventario no painel do jogador e confirmar persistencia na ficha apos recarregar.
 10. Em modo local/offline, manter um `tc_directory_cache` remoto antigo e confirmar que a Mesa salva em `tc_sheets[username]`, nunca na `key` remota antiga.
 11. Com API ativa, abrir a Mesa diretamente como jogador e confirmar que itens/memorias reais aparecem antes de qualquer edicao.
 12. Selecionar token alheio como jogador e confirmar que o inspetor nao mostra nome, barras ou dados detalhados.
 13. Com API ativa, mover/adicionar/remover token como mestre e confirmar `PUT /api/mesa/scene`.
 14. Abrir outra sessao conectada e confirmar recebimento de `mesa:scene` sem recarregar.
-15. Jogador altera Vida/Integridade e mestre recebe `mesa:sheet:patch`; outro jogador nao recebe painel/dados detalhados dessa ficha.
+15. Jogador altera Vida/Integridade/atributos/inventario e mestre recebe `mesa:sheet:patch`; outro jogador nao recebe painel/dados detalhados dessa ficha.
 16. Reabrir a pagina e confirmar que a cena vem de `GET /api/mesa/scene`.
 17. Conferir console sem erros.
 18. Selecionar token e confirmar que roster nao foi reconstruido.
@@ -147,11 +149,11 @@ Worker/D1:
 23. Rodar `npm run test:mesa:online` com `ARMAGEDON_MASTER_USERNAME`, `ARMAGEDON_MASTER_PASSWORD`, `ARMAGEDON_PLAYER_USERNAME` e `ARMAGEDON_PLAYER_PASSWORD` para validar login real, diretorio, cena, WebSocket e UI mestre/jogador.
 24. Usar `ARMAGEDON_ONLINE_RELAY_PROBE=1` somente quando for aceitavel transmitir um evento de teste `mesa:token:move` para conexoes online da sala.
 25. Rodar `npm run perf:mesa` para conferir ausencia de long tasks relevantes no drag.
-26. Rodar `npx wrangler deploy --dry-run` em `cloudflare/` apos alterar Durable Object.
+26. Rodar `npx wrangler deploy --dry-run --config cloudflare/wrangler.toml` apos alterar Durable Object.
 
 ## Pendencia Imediata
 
-- Conferir no site oficial com credenciais reais: jogador carrega a propria ficha oficial ao abrir a Mesa, edita Vida/Integridade, a Ficha aberta recebe `sheet:changed` e outro jogador nao recebe dados detalhados alheios.
+- Conferir no site oficial com credenciais reais: jogador carrega a propria ficha oficial ao abrir a Mesa, edita Vida/Integridade/atributos/inventario, a Ficha aberta recebe `sheet:changed` e outro jogador nao recebe dados detalhados alheios.
 - Novo comando de apoio: `npm run test:mesa:online`.
-- Worker publicado para esta correcao: `armagedon-api` version ID `fb0548da-a975-4804-bc54-1b740938d31d`.
+- Worker publicado para a edicao ampla pela Mesa: `armagedon-api` version ID `d93c6c56-eaf6-4e13-855b-b5640967d7f6`.
 - Futuro: normalizar avatars grandes para thumbnails WebP/JPEG ao salvar fichas.

@@ -9,6 +9,18 @@ const MASTER_ONLY_TYPES = new Set([
 ]);
 const SHEET_PATCH_TYPE = "mesa:sheet:patch";
 const SHEET_CHANGED_TYPE = "sheet:changed";
+const DEFAULT_INVENTORY_SLOTS = 10;
+const ATTRIBUTES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"];
+const SHEET_TEXT_FIELDS = new Set(["charName", "charClass", "charRace", "charFaction", "charNotes"]);
+const SHEET_RESOURCE_FIELDS = new Set(["vidaAtual", "vidaMax", "integAtual", "integMax", "inventorySlots"]);
+const ITEM_TYPES = new Set(["arma", "acessorio", "outro"]);
+const PLAYER_PATCH_FIELDS = new Set([
+  ...SHEET_TEXT_FIELDS,
+  "vidaAtual",
+  "vidaMax",
+  "integAtual",
+  ...ATTRIBUTES.map(attr => `attr${attr}`)
+]);
 const RELAY_TYPES = new Set([
   ...MASTER_ONLY_TYPES,
   SHEET_PATCH_TYPE,
@@ -54,16 +66,138 @@ function normalizeCharacterKey(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function normalizeTextValue(value, maxLength = 160) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, maxLength);
+}
+
+function normalizeLongTextValue(value, maxLength = 1000) {
+  return String(value || "").trim().slice(0, maxLength);
+}
+
+function normalizeTextField(field, value) {
+  if (field === "charNotes") return normalizeLongTextValue(value, 1400);
+  if (field === "charName") return normalizeTextValue(value, 90);
+  if (field === "charClass" || field === "charRace" || field === "charFaction") {
+    return normalizeTextValue(value, 70);
+  }
+  return normalizeTextValue(value, 160);
+}
+
+function normalizeResourceValue(value, fallback = "0") {
+  if (value === "" || value === null || value === undefined) return String(fallback);
+  const numeric = Number.parseInt(value, 10);
+  if (Number.isNaN(numeric)) return String(fallback);
+  return String(Math.max(0, numeric));
+}
+
+function normalizeAttrValue(value, fallback = "1") {
+  if (value === "" || value === null || value === undefined) return String(fallback);
+  const numeric = Number.parseInt(value, 10);
+  if (Number.isNaN(numeric)) return String(fallback);
+  return String(Math.max(1, numeric));
+}
+
+function getIntegrityMaxFromSoul(value, fallback = "0") {
+  const numeric = Number.parseInt(value, 10);
+  if (Number.isNaN(numeric)) return String(fallback);
+  return String(Math.max(0, Math.floor(numeric / 3)));
+}
+
+function normalizeInventorySlotsValue(value, used = 0) {
+  const numeric = Number.parseInt(value, 10);
+  const safeValue = Number.isNaN(numeric) ? DEFAULT_INVENTORY_SLOTS : numeric;
+  return String(Math.max(Math.max(DEFAULT_INVENTORY_SLOTS, used), Math.min(120, safeValue)));
+}
+
+function normalizeItemType(value) {
+  const normalized = String(value || "outro").trim().toLowerCase();
+  return ITEM_TYPES.has(normalized) ? normalized : "outro";
+}
+
+function normalizeDamageExpression(value) {
+  return String(value || "").trim().replace(/\s+/g, "").slice(0, 24);
+}
+
+function normalizeItem(item = {}) {
+  const type = normalizeItemType(item.type);
+  return {
+    name: normalizeTextValue(item.name, 80),
+    qty: String(Math.max(0, Number.parseInt(item.qty || "1", 10) || 0)),
+    desc: normalizeTextValue(item.desc, 320),
+    type,
+    damage: type === "arma" ? normalizeDamageExpression(item.damage) : ""
+  };
+}
+
+function normalizeOwnedMemory(memory = {}) {
+  return {
+    name: normalizeTextValue(memory.name, 80),
+    desc: normalizeTextValue(memory.desc, 420),
+    source: normalizeTextValue(memory.source, 80)
+  };
+}
+
 function normalizeSheetPatchPayload(payload) {
   const characterKey = normalizeCharacterKey(payload?.characterKey || payload?.key);
   const patch = {};
-  if (payload?.vidaAtual !== undefined) {
-    patch.vidaAtual = String(Math.max(0, Number.parseInt(payload.vidaAtual, 10) || 0));
+
+  SHEET_TEXT_FIELDS.forEach(field => {
+    if (payload?.[field] !== undefined) {
+      patch[field] = normalizeTextField(field, payload[field]);
+    }
+  });
+
+  SHEET_RESOURCE_FIELDS.forEach(field => {
+    if (payload?.[field] === undefined) return;
+    if (field === "inventorySlots") {
+      const used = Array.isArray(payload.inv) ? payload.inv.length : 0;
+      patch[field] = normalizeInventorySlotsValue(payload[field], used);
+      return;
+    }
+    patch[field] = normalizeResourceValue(payload[field], "0");
+  });
+
+  ATTRIBUTES.forEach(attr => {
+    const field = `attr${attr}`;
+    if (payload?.[field] !== undefined) {
+      patch[field] = normalizeAttrValue(payload[field], "1");
+    }
+  });
+
+  if (patch.attrAlma !== undefined && payload?.integMax === undefined) {
+    patch.integMax = getIntegrityMaxFromSoul(patch.attrAlma, patch.integMax || "0");
   }
-  if (payload?.integAtual !== undefined) {
-    patch.integAtual = String(Math.max(0, Number.parseInt(payload.integAtual, 10) || 0));
+
+  if (Array.isArray(payload?.inv)) {
+    patch.inv = payload.inv.slice(0, 120).map(normalizeItem);
+    if (patch.inventorySlots !== undefined) {
+      patch.inventorySlots = normalizeInventorySlotsValue(patch.inventorySlots, patch.inv.length);
+    }
   }
+
+  if (Array.isArray(payload?.ownedMemories)) {
+    patch.ownedMemories = payload.ownedMemories.slice(0, 120).map(normalizeOwnedMemory);
+  }
+
   return { characterKey, patch };
+}
+
+function filterPlayerSheetPatch(patch) {
+  const filtered = {};
+
+  PLAYER_PATCH_FIELDS.forEach(field => {
+    if (patch[field] !== undefined) filtered[field] = patch[field];
+  });
+
+  if (patch.attrAlma !== undefined && patch.integMax !== undefined) {
+    filtered.integMax = getIntegrityMaxFromSoul(patch.attrAlma, "0");
+  }
+
+  if (Array.isArray(patch.inv)) {
+    filtered.inv = patch.inv.slice(0, 120).map(normalizeItem);
+  }
+
+  return filtered;
 }
 
 class MesaRealtimeRoom extends DurableObject {
@@ -210,8 +344,9 @@ class MesaRealtimeRoom extends DurableObject {
       username: attachment.username || "usuario",
       role: attachment.role || "player"
     };
+    const safePatch = actor.role === "master" ? patch : filterPlayerSheetPatch(patch);
 
-    if (!characterKey || !Object.keys(patch).length) {
+    if (!characterKey || !Object.keys(safePatch).length) {
       sendJson(ws, {
         type: "mesa:sheet:ack",
         ok: false,
@@ -237,7 +372,7 @@ class MesaRealtimeRoom extends DurableObject {
       type: SHEET_PATCH_TYPE,
       clientId: payload?.clientId || "",
       messageId: payload?.messageId || "",
-      ...patch,
+      ...safePatch,
       key: characterKey,
       characterKey,
       actor,
