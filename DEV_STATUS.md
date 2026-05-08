@@ -100,8 +100,9 @@ Registro minimo esperado:
   - `index.html`, `ficha.html`, `mesa.html` e `regras.html`: cache bust de `auth.js` atualizado para `2026-05-07-master-sheet-key-1`; `ficha.html` tambem atualizou `ficha-core.js`, `ficha-inventory.js` e `ficha-memories.js`; `mesa.html` atualizou `mesa-core.js`
   - `tests/ficha.spec.cjs`, `tests/mesa.spec.cjs` e `package.json`: adicionadas regressoes `npm run test:ficha` e `npm run test:mesa`, simulando mestre salvando uma ficha de jogador em `/api/characters/:key`, transferencia de item usando `targetKey` oficial e Mesa local salvando no `username` local mesmo com diretorio remoto antigo
   - validacoes executadas: `npm run check:js`, `npm run audit:static`, `npm run test:ficha`, `npm run test:mesa`, `npm run perf:mesa`, `npm run build:pages`, `npx.cmd --yes wrangler@latest deploy --dry-run`, `git fsck --no-dangling`, varredura de MP4 no `_site` e `git diff --check`
+  - deploy operacional em 2026-05-07: GitHub Pages ficou `built`, `index.html`, `ficha.html`, `mesa.html` e `regras.html` responderam HTTP 200, API `/api/health` respondeu HTTP 200 e Worker `armagedon-api` foi publicado na version ID `fb0548da-a975-4804-bc54-1b740938d31d`
   - observacao de ambiente: `npm run test:ficha` falhou no sandbox com `spawn EPERM`; o mesmo teste passou com permissao elevada porque o Playwright precisa criar worker de teste
-  - pendencia: publicar em commit/deploy somente se esta correcao local for aprovada para ir para a `main`
+  - status: correcao publicada na `main`; proxima pendencia e validacao manual ponta a ponta com mestre e jogador reais no site oficial
 
 - Correcao da edicao da ficha pela Mesa em 2026-05-07:
   - problema: o painel do jogador podia editar o cache local da Mesa, mas a pagina nao buscava a ficha oficial do jogador antes de montar o painel; alem disso, a Ficha escutava `sheet:changed.key` enquanto o Worker emitia `sheet:changed.characterKey`

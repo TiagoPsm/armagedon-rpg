@@ -149,5 +149,5 @@ Worker/D1:
 ## Pendencia Imediata
 
 - Conferir no site oficial apos GitHub Pages publicar a `main`: jogador carrega a propria ficha oficial ao abrir a Mesa, edita Vida/Integridade, a Ficha aberta recebe `sheet:changed` e outro jogador nao recebe dados detalhados alheios.
-- Worker publicado para esta correcao: `armagedon-api` version ID `b89440a2-65c6-4d1e-8fcb-9b17c2236c6a`.
+- Worker publicado para esta correcao: `armagedon-api` version ID `fb0548da-a975-4804-bc54-1b740938d31d`.
 - Futuro: normalizar avatars grandes para thumbnails WebP/JPEG ao salvar fichas.

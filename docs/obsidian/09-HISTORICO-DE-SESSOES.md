@@ -12,6 +12,7 @@ Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STA
 - Varredura profunda corrigiu modo local/offline para ignorar cache de diretorio remoto antigo na Ficha e na Mesa, evitando salvar a ficha local na `key` remota errada.
 - Adicionado `npm run test:ficha` com regressao cobrindo mestre salvando a ficha no endpoint oficial correto e transferencia de item para `targetKey` oficial.
 - Validado com `check:js`, `audit:static`, `test:ficha`, `test:mesa`, `perf:mesa`, `build:pages`, `wrangler deploy --dry-run`, `git fsck --no-dangling` e `git diff --check`.
+- Deploy operacional confirmado: Pages em `built`, API `/api/health` em HTTP 200 e Worker `armagedon-api` publicado na version ID `fb0548da-a975-4804-bc54-1b740938d31d`.
 
 ## 2026-05-05 - Mesa Canvas/Worker
 
