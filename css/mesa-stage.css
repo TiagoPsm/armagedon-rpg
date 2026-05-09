@@ -312,3 +312,25 @@
   font-size: 1rem;
   line-height: 1.45;
 }
+
+/* 2026-05 mesa stage gradient polish */
+.mesa-stage-wrap {
+  background:
+    linear-gradient(135deg, rgba(117, 19, 28, 0.12) 0%, rgba(16, 8, 13, 0.16) 34%, rgba(4, 5, 9, 0.96) 70%),
+    linear-gradient(215deg, rgba(60, 44, 100, 0.08) 0%, transparent 44%),
+    rgba(5, 6, 10, 0.96);
+  border-color: rgba(202, 74, 68, 0.11);
+}
+
+.mesa-stage-grid {
+  background:
+    linear-gradient(rgba(202, 74, 68, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 248, 236, 0.018) 1px, transparent 1px);
+}
+
+.mesa-stage-glow {
+  opacity: 0.9;
+  background:
+    linear-gradient(145deg, transparent 0%, rgba(176, 47, 57, 0.055) 42%, transparent 72%),
+    linear-gradient(215deg, transparent 0%, rgba(176, 143, 50, 0.032) 48%, transparent 78%);
+}

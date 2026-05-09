@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-08 22:34:48 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-09 10:15:49 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,14 +13,15 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `5f040e7 2026-05-08 Melhora escala interna do painel da mesa`
+- Ultimo commit: `96334c9 2026-05-08 Restaura painel simples da mesa`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
 M  VISUAL_RULES.md
-M  css/mesa-layout.css
+M  css/mesa-base.css
+M  css/mesa-stage.css
 M  docs/obsidian/07-MESA.md
 M  docs/obsidian/09-HISTORICO-DE-SESSOES.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
@@ -42,7 +43,8 @@ M  tests/mesa.spec.cjs
 ```text
 DEV_STATUS.md
 VISUAL_RULES.md
-css/mesa-layout.css
+css/mesa-base.css
+css/mesa-stage.css
 docs/obsidian/07-MESA.md
 docs/obsidian/09-HISTORICO-DE-SESSOES.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md

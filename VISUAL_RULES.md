@@ -178,6 +178,8 @@ Comportamento visual consolidado:
 - Jogadores podem editar dados rapidos, atributos, Vida atual, Vida maxima, Integridade atual e inventario da propria ficha pela Mesa
 - O painel do jogador deve manter a interface simples em fluxo unico, sem abas por padrao, com secoes diretas para status, dados, atributos, inventario e memorias
 - Vida e Integridade devem usar inputs diretos e legiveis; botoes rapidos podem voltar apenas se nao deixarem a ficha visualmente pesada
+- A acao `Limpar cena` e exclusiva do mestre; jogadores nao devem ver nem acionar esse controle
+- Gradientes da Mesa devem usar carmesim, preto profundo e acentos frios muito sutis, evitando brilho excessivo ou aparencia colorida demais
 - Otimizacoes com `content-visibility` nao podem criar blocos vazios em areas imediatamente visiveis, como painel pessoal e inspetor
 - Tokens de terceiros no inspetor do jogador devem ficar restritos, sem nome/status/dados detalhados no painel inferior
 - Mestre pode controlar visibilidade, organizacao e valores maximos

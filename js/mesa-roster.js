@@ -42,6 +42,7 @@ function renderControls() {
   const previewToggle = getMesaDomRef("previewToggle");
   const stageViewBadge = getMesaDomRef("stageViewBadge");
   const stageHintBadge = getMesaDomRef("stageHintBadge");
+  const resetMesaBtn = getMesaDomRef("resetMesaBtn");
   const fullscreenMesaBtn = getMesaDomRef("fullscreenMesaBtn");
 
   if (previewRow) {
@@ -64,6 +65,12 @@ function renderControls() {
     stageHintBadge.textContent = canMoveTokens()
       ? "Arraste os tokens para organizar a cena."
       : "Selecione seu token para ajustar vida e integridade.";
+  }
+
+  if (resetMesaBtn) {
+    resetMesaBtn.hidden = !isMaster();
+    resetMesaBtn.disabled = !isMaster();
+    resetMesaBtn.setAttribute("aria-hidden", isMaster() ? "false" : "true");
   }
 
   if (fullscreenMesaBtn) {

@@ -35,6 +35,8 @@ test.describe("Mesa virtual", () => {
     await page.goto(`${baseUrl}/mesa.html`);
     await expect(page.locator("#mesaStageWrap")).toBeVisible();
     await expect(page.locator("#mesaStage canvas.mesa-stage-canvas")).toHaveCount(1);
+    await expect(page.locator("#resetMesaBtn")).toBeVisible();
+    await expect(page.locator("#resetMesaBtn")).toBeEnabled();
 
     await page.locator("#mesaStage").scrollIntoViewIfNeeded();
     const stageBox = await page.locator("#mesaStage").boundingBox();
@@ -162,6 +164,8 @@ test.describe("Mesa virtual", () => {
     await expect(page.locator("#rosterPanelTitle")).toHaveText("Meu personagem");
     await expect(page.locator("#rosterSearchField")).toBeHidden();
     await expect(page.locator("#rosterCountBadge")).toHaveText("Em cena");
+    await expect(page.locator("#resetMesaBtn")).toBeHidden();
+    await expect(page.locator("#resetMesaBtn")).toBeDisabled();
 
     const playerPanel = page.locator(".player-sheet-panel");
     await expect(playerPanel).toBeVisible();
@@ -260,6 +264,8 @@ test.describe("Mesa virtual", () => {
     await page.goto(`${baseUrl}/mesa.html`);
     const playerPanel = page.locator(".player-sheet-panel");
     await expect(playerPanel).toBeVisible();
+    await expect(page.locator("#resetMesaBtn")).toBeHidden();
+    await expect(page.locator("#resetMesaBtn")).toBeDisabled();
     await expect(playerPanel).toContainText("Ana Local");
     await expect(playerPanel).not.toContainText("Ana Remota");
     await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("6");

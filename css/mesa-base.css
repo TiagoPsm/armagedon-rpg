@@ -657,3 +657,46 @@ body::after {
   background:
     radial-gradient(circle at center, transparent 36%, rgba(0, 0, 0, 0.44) 72%, rgba(0, 0, 0, 0.94) 100%);
 }
+
+/* 2026-05 mesa gradient polish */
+body {
+  background:
+    linear-gradient(142deg, rgba(102, 10, 20, 0.22) 0%, rgba(102, 10, 20, 0.04) 28%, transparent 48%),
+    linear-gradient(218deg, rgba(43, 30, 76, 0.14) 0%, rgba(43, 30, 76, 0.035) 31%, transparent 52%),
+    linear-gradient(180deg, #010103 0%, #060509 48%, #020203 100%);
+}
+
+.bg-vignette {
+  background:
+    linear-gradient(180deg, rgba(255, 248, 236, 0.018), transparent 16%, rgba(0, 0, 0, 0.28) 58%, rgba(0, 0, 0, 0.9) 100%),
+    radial-gradient(circle at center, transparent 36%, rgba(0, 0, 0, 0.44) 72%, rgba(0, 0, 0, 0.94) 100%);
+}
+
+.mesa-hero.panel-block,
+.panel-stage,
+.mesa-roster-card,
+.token-inspector-block {
+  background:
+    linear-gradient(128deg, rgba(126, 17, 30, 0.18) 0%, rgba(30, 9, 15, 0.16) 32%, rgba(10, 12, 18, 0.94) 68%),
+    linear-gradient(218deg, rgba(71, 51, 108, 0.08) 0%, transparent 42%),
+    rgba(9, 10, 15, 0.94);
+}
+
+.meta-card,
+.scene-status-card {
+  background:
+    linear-gradient(145deg, rgba(133, 21, 32, 0.14) 0%, rgba(17, 11, 18, 0.16) 42%, rgba(10, 12, 18, 0.94) 100%),
+    rgba(12, 13, 18, 0.92);
+}
+
+.panel-block::before,
+.meta-card::before,
+.scene-status-card::before {
+  height: 160px;
+  background:
+    linear-gradient(90deg, transparent, rgba(202, 74, 68, 0.1) 34%, rgba(176, 143, 50, 0.045) 58%, transparent);
+}
+
+#resetMesaBtn[hidden] {
+  display: none !important;
+}

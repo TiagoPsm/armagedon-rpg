@@ -633,6 +633,7 @@ function flushRealtimeDragMove() {
 }
 
 function resetPrototype() {
+  if (!isMaster()) return;
   localStorage.removeItem(MESA_STORAGE_KEY);
   state.tokens = [];
   state.selectedTokenId = "";

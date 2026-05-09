@@ -163,6 +163,7 @@ function bindEvents() {
   });
 
   resetMesaBtn?.addEventListener("click", () => {
+    if (!isMaster()) return;
     resetPrototype();
   });
 

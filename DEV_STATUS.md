@@ -91,6 +91,16 @@ Registro minimo esperado:
 
 ## Ultima Etapa Concluida
 
+- Protecao de limpar cena e gradiente da Mesa em 2026-05-09:
+  - objetivo: impedir que jogadores vejam/usem `Limpar cena` e melhorar o acabamento dos gradientes da Mesa sem alterar o fluxo simples do painel do jogador
+  - `mesa.html`: botao `Limpar cena` inicia oculto e cache bust atualizado para `2026-05-09-mesa-guard-gradient-1`
+  - `js/mesa-roster.js`: controles da Mesa agora ocultam/desabilitam `Limpar cena` para jogadores e liberam apenas para mestre
+  - `js/mesa-core.js` e `js/mesa-stage.js`: clique e funcao de limpar cena receberam guardas adicionais por papel
+  - `css/mesa-base.css` e `css/mesa-stage.css`: gradientes da Mesa foram refinados com camadas carmesim, sombra escura e acento frio sutil, preservando a vibe dark fantasy
+  - `tests/mesa.spec.cjs`: regressao cobre `Limpar cena` visivel para mestre e oculto/desabilitado para jogador
+  - validacoes executadas: `npm run check:js`, `npm run audit:static`, `npm run test:mesa`, `npm run build:pages`, `npm run perf:mesa`, QA visual por Playwright em desktop/mobile e `git diff --check`
+  - status: pronto para publicacao
+
 - Retorno da interface simples do painel do jogador na Mesa em 2026-05-09:
   - objetivo: voltar ao controle simples em fluxo unico, sem abas e sem botoes rapidos, preservando a edicao ampla da propria ficha pela Mesa
   - `js/mesa-roster.js`: painel pessoal voltou a renderizar hero, Vida/Integridade, dados rapidos, atributos, inventario e memorias em secoes continuas

@@ -2,6 +2,12 @@
 
 Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STATUS.md`.
 
+## 2026-05-09 - Protecao De Limpar Cena E Gradiente Da Mesa
+
+- Jogadores deixam de ver/acionar `Limpar cena`; o botao fica oculto/desabilitado e a funcao tem guarda interna por papel.
+- Gradientes do fundo, dos paineis principais e do palco foram refinados com carmesim, preto profundo e acento frio sutil.
+- O fluxo simples do painel do jogador foi preservado, sem reintroduzir abas ou botoes rapidos.
+
 ## 2026-05-09 - Retorno Ao Painel Simples Da Mesa
 
 - Painel pessoal do jogador voltou ao fluxo unico simples, sem abas e sem botoes rapidos.
