@@ -9,6 +9,13 @@ Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STA
 - `include-hidden-files: true` mantido no upload do Pages para preservar `_site/.nojekyll`.
 - Objetivo: remover aviso de Actions em Node 20 e reduzir risco de falha futura no deploy.
 
+## 2026-05-09 - Mesa Menos Esticada Em Desktop
+
+- Workbench inferior da Mesa recebeu largura util maxima para evitar painel pessoal excessivamente largo.
+- Hero, abas, cards de Vida/Integridade, atributos e inventario do painel do jogador agora param de esticar em telas largas.
+- `content-visibility` foi desligado no painel pessoal e no inspetor visivel para evitar areas vazias durante rolagem.
+- Validado com `check:js`, `test:mesa`, `audit:static`, `build:pages`, `perf:mesa`, `git diff --check` e QA visual por Playwright em viewport larga e mobile.
+
 ## 2026-05-08 - Polimento Do Painel Do Jogador Na Mesa
 
 - Painel pessoal do jogador foi separado em abas: `Status`, `Atributos`, `Inventario`, `Memorias` e `Notas`.

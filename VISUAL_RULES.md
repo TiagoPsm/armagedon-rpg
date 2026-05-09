@@ -178,6 +178,8 @@ Comportamento visual consolidado:
 - Jogadores podem editar dados rapidos, atributos, Vida atual, Vida maxima, Integridade atual e inventario da propria ficha pela Mesa
 - O painel do jogador deve usar abas claras para reduzir rolagem longa e manter controles importantes acima da dobra
 - Vida e Integridade devem ter controles rapidos compactos sem gerar sobreposicao ou desalinhamento
+- Painel do jogador, inspetor e cards da Mesa nao devem ocupar largura ilimitada em desktop; usar largura maxima para preservar leitura
+- Otimizacoes com `content-visibility` nao podem criar blocos vazios em areas imediatamente visiveis, como painel pessoal e inspetor
 - Tokens de terceiros no inspetor do jogador devem ficar restritos, sem nome/status/dados detalhados no painel inferior
 - Mestre pode controlar visibilidade, organizacao e valores maximos
 - Visual deve seguir a mesma linguagem dark fantasy da ficha, mas com densidade maior por ser ferramenta de mesa

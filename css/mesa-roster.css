@@ -7,6 +7,11 @@
   contain-intrinsic-size: auto 360px;
 }
 
+.roster-section.is-player-panel {
+  content-visibility: visible;
+  contain-intrinsic-size: auto;
+}
+
 .roster-group {
   display: grid;
   gap: 0.65rem;

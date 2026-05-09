@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-08 21:32:04 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-08 22:00:30 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,17 +13,20 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `4cb455f 2026-05-08 Poli painel do jogador na mesa`
+- Ultimo commit: `6de4b8a 2026-05-08 Atualiza Pages para Node 24`
 
 ### Alteracoes Locais
 
 ```text
-M  .github/workflows/pages.yml
-M  DEPLOY_FREE.md
 M  DEV_STATUS.md
-M  docs/obsidian/05-DEPLOY.md
+M  VISUAL_RULES.md
+M  css/mesa-layout.css
+M  css/mesa-roster.css
+M  docs/obsidian/07-MESA.md
 M  docs/obsidian/09-HISTORICO-DE-SESSOES.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  js/mesa-roster.js
+M  mesa.html
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -35,12 +38,15 @@ M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ### Arquivos Em Stage
 
 ```text
-.github/workflows/pages.yml
-DEPLOY_FREE.md
 DEV_STATUS.md
-docs/obsidian/05-DEPLOY.md
+VISUAL_RULES.md
+css/mesa-layout.css
+css/mesa-roster.css
+docs/obsidian/07-MESA.md
 docs/obsidian/09-HISTORICO-DE-SESSOES.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+js/mesa-roster.js
+mesa.html
 ```
 
 ## Paginas Principais
@@ -119,12 +125,12 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
-   13,08 MB  assets\sheet-fire-background.mp4
    13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
+   13,08 MB  assets\sheet-fire-background.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
-    0,99 MB  logo-rpg-armagedon.png
-    0,99 MB  assets\logo-rpg-armagedon.png
     0,99 MB  _site\logo-rpg-armagedon.png
+    0,99 MB  assets\logo-rpg-armagedon.png
+    0,99 MB  logo-rpg-armagedon.png
     0,92 MB  node_modules\playwright-core\types\types.d.ts
     0,78 MB  node_modules\playwright-core\types\protocol.d.ts
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js

@@ -366,6 +366,15 @@ Registro minimo esperado:
   - consulta do `action.yml` oficial de `actions/upload-pages-artifact@v5.0.0` confirmando o input `include-hidden-files`
   - push na `main` e `gh run watch` do workflow `Deploy GitHub Pages`
 
+## 2026-05-09 - Polimento De Largura Do Painel Da Mesa
+
+- Painel pessoal do jogador deixou de esticar indefinidamente em telas largas.
+- Workbench inferior da Mesa agora limita a largura util do painel principal e preserva o inspetor lateral com largura estavel.
+- Blocos internos do painel pessoal receberam largura maxima: hero, abas, recursos, atributos, inventario e areas de texto.
+- `content-visibility` foi desligado somente no painel pessoal do jogador e no inspetor visivel para evitar blocos vazios durante rolagem/captura.
+- `mesa.html` recebeu novo cache bust para `css/mesa-layout.css`, `css/mesa-roster.css` e `js/mesa-roster.js`.
+- Validado com `npm run check:js`, `npm run test:mesa`, `npm run audit:static`, `npm run build:pages`, `npm run perf:mesa`, `git diff --check` e QA visual por Playwright em viewport larga e mobile.
+
 ## 2026-05-08 - Polimento Do Painel Do Jogador Na Mesa
 
 - Painel pessoal do jogador foi reorganizado em abas: `Status`, `Atributos`, `Inventario`, `Memorias` e `Notas`.

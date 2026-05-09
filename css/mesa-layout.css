@@ -1116,6 +1116,8 @@ body.mesa-pseudo-fullscreen .mesa-workbench {
 .mesa-inspector-shell .token-inspector {
   position: static !important;
   top: auto !important;
+  content-visibility: visible;
+  contain-intrinsic-size: auto;
 }
 
 body.mesa-pseudo-fullscreen .site-header,
@@ -1275,4 +1277,107 @@ body.mesa-pseudo-fullscreen .mesa-focus-workbench {
 .mesa-inspector-shell .token-state-pill {
   font-size: 0.62rem;
   letter-spacing: 0.12em;
+}
+
+/* 2026-05 player panel width polish */
+.mesa-focus-workbench {
+  grid-template-columns: minmax(0, 1080px) minmax(360px, 420px);
+  justify-content: center;
+}
+
+.mesa-roster-card {
+  justify-self: stretch;
+}
+
+.player-sheet-panel {
+  max-width: 940px;
+}
+
+.player-sheet-hero {
+  grid-template-columns: 88px minmax(0, 1fr);
+  max-width: 760px;
+  padding: 0.85rem;
+}
+
+.player-sheet-avatar {
+  width: 88px;
+  border-radius: 18px;
+}
+
+.player-status-panel,
+.player-panel-section {
+  max-width: 940px;
+}
+
+.player-panel-tabs {
+  width: fit-content;
+  max-width: min(100%, 780px);
+}
+
+.player-resource-grid {
+  grid-template-columns: repeat(2, minmax(280px, 420px));
+  justify-content: start;
+}
+
+.player-panel-meta-grid.is-compact {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 280px));
+  justify-content: start;
+}
+
+.player-editor-grid {
+  grid-template-columns: repeat(2, minmax(220px, 360px));
+  justify-content: start;
+}
+
+.player-editor-grid.is-compact {
+  grid-template-columns: minmax(0, 1fr) 88px;
+}
+
+.player-attribute-grid {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 160px));
+  justify-content: start;
+}
+
+.player-panel-list {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 420px));
+  justify-content: start;
+}
+
+.player-panel-section > .player-inline-field.is-wide {
+  max-width: 760px;
+}
+
+.player-editor-card .player-editor-grid {
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
+}
+
+@media (max-width: 1280px) {
+  .mesa-focus-workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .player-sheet-panel,
+  .player-status-panel,
+  .player-panel-section,
+  .player-panel-section > .player-inline-field.is-wide {
+    max-width: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .player-sheet-hero,
+  .player-resource-grid,
+  .player-editor-grid,
+  .player-editor-grid.is-compact,
+  .player-editor-card .player-editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .player-panel-tabs {
+    width: auto;
+  }
+
+  .player-panel-list {
+    grid-template-columns: 1fr;
+  }
 }

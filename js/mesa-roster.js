@@ -80,6 +80,7 @@ function renderRoster() {
   const rosterKicker = getMesaDomRef("rosterPanelKicker");
   const rosterTitle = getMesaDomRef("rosterPanelTitle");
   if (!rosterList || !rosterCountBadge) return;
+  rosterList.classList.toggle("is-player-panel", !isMaster());
 
   if (!isMaster()) {
     if (rosterSearch) rosterSearch.hidden = true;
