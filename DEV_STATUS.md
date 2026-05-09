@@ -91,6 +91,14 @@ Registro minimo esperado:
 
 ## Ultima Etapa Concluida
 
+- Escala interna do painel do jogador na Mesa em 2026-05-09:
+  - objetivo: corrigir a sensacao de conteudo pequeno e mal espacado dentro do painel pessoal, sem voltar a esticar o container geral em desktop
+  - `css/mesa-layout.css`: cards de Vida/Integridade, inputs, botoes rapidos, atributos, inventario e memorias ganharam altura, padding, gaps e limites internos mais confortaveis
+  - `mesa.html`: cache bust de `mesa-layout.css` atualizado para `2026-05-09-player-inner-1`
+  - `VISUAL_RULES.md` e `docs/obsidian/07-MESA.md`: registrada a regra de que o painel pode ter largura controlada, mas o conteudo interno precisa manter area clicavel e leitura confortaveis
+  - validacoes executadas: `npm run check:js`, `npm run test:mesa`, QA visual por Playwright em desktop/mobile, `npm run audit:static`, `npm run build:pages`, `npm run perf:mesa`, `git diff --check` e `npm run test:mesa:online`
+  - status: pronto para publicacao na `main`
+
 - Painel de edicao completa do jogador na Mesa em 2026-05-08:
   - objetivo: permitir que o jogador edite pela Mesa a propria ficha em tempo real, alem de Vida/Integridade atuais
   - `js/mesa-roster.js` e `css/mesa-roster.css`: painel pessoal ganhou campos editaveis de dados rapidos, atributos, Vida maxima e inventario; itens podem ser adicionados, removidos e editados sem expor roster de tokens

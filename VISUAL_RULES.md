@@ -179,6 +179,7 @@ Comportamento visual consolidado:
 - O painel do jogador deve usar abas claras para reduzir rolagem longa e manter controles importantes acima da dobra
 - Vida e Integridade devem ter controles rapidos compactos sem gerar sobreposicao ou desalinhamento
 - Painel do jogador, inspetor e cards da Mesa nao devem ocupar largura ilimitada em desktop; usar largura maxima para preservar leitura
+- A limitacao de largura do painel do jogador nao deve deixar o conteudo interno pequeno: cards de Vida/Integridade, atributos, inventario e memorias precisam manter inputs altos, areas clicaveis confortaveis e espacamento claro
 - Otimizacoes com `content-visibility` nao podem criar blocos vazios em areas imediatamente visiveis, como painel pessoal e inspetor
 - Tokens de terceiros no inspetor do jogador devem ficar restritos, sem nome/status/dados detalhados no painel inferior
 - Mestre pode controlar visibilidade, organizacao e valores maximos

@@ -2,6 +2,13 @@
 
 Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STATUS.md`.
 
+## 2026-05-09 - Escala Interna Do Painel Da Mesa
+
+- Ajustado o conteudo interno do painel pessoal do jogador, sem ampliar novamente o container geral.
+- Cards de Vida/Integridade, atributos, inventario e memorias ganharam inputs mais altos, botoes maiores, padding e gaps mais confortaveis.
+- Regra visual registrada: largura controlada nao pode transformar a ficha rapida da Mesa em conteudo pequeno ou mal espacado.
+- Validado com Playwright local em desktop/mobile e com a bateria de scripts do projeto antes da publicacao.
+
 ## 2026-05-09 - GitHub Pages Preparado Para Node 24
 
 - Workflow `.github/workflows/pages.yml` atualizado para `checkout@v6`, `configure-pages@v6`, `upload-pages-artifact@v5` e `deploy-pages@v5`.

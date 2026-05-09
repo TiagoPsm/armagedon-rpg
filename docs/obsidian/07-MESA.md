@@ -97,6 +97,7 @@ Worker/D1:
 - Inventario do jogador na Mesa deve ser compacto: dano aparece apenas em arma, descricao fica recolhida em detalhes e memorias continuam somente leitura.
 - Trocar abas no painel do jogador nao deve expor roster, busca, acoes de mestre ou dados de terceiros.
 - Em desktop largo, painel pessoal e grids internos devem ter largura maxima para evitar campos esticados e leitura ruim.
+- Mesmo com largura maxima, o conteudo interno do painel do jogador deve manter leitura confortavel: cards, inputs, botoes rapidos, atributos, inventario e memorias nao podem ficar pequenos ou mal espacados.
 - `content-visibility` pode continuar no roster pesado do mestre, mas deve ficar desligado no painel pessoal do jogador e no inspetor visivel para evitar blocos vazios durante rolagem.
 - Se o token do jogador ainda nao estiver em cena, o painel pessoal continua visivel e informa que o mestre ainda nao colocou o token no palco.
 - `getSelectedToken()` nao deve devolver token oculto ou fora de permissao por fallback interno.
