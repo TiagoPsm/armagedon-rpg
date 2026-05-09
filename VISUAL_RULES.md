@@ -140,7 +140,7 @@ Comportamento visual consolidado:
 - Visual compacto
 - Grid limpo
 - Pouco ruido visual
-- Abrir detalhes do item em pop-up, nao expandir o grid de forma descontrolada
+- Abrir detalhes do item em painel recolhivel ou pop-up, sem expandir o grid de forma descontrolada
 
 ## Pop-ups e Modais
 
@@ -174,8 +174,10 @@ Comportamento visual consolidado:
 - Durante arrasto de token, efeitos globais que competem por pintura, como o brilho do cursor, podem pausar temporariamente para preservar fluidez
 - Inspetor lateral deve ser compacto e funcional
 - Jogadores veem palco compartilhado, mas nao veem roster de tokens disponiveis para colocar na cena
-- Jogadores recebem painel pessoal "Meu personagem" com dados da propria ficha; itens e memorias aparecem em leitura
-- Jogadores podem editar apenas Vida atual e Integridade atual da propria ficha
+- Jogadores recebem painel pessoal "Meu personagem" com dados da propria ficha; memorias aparecem em leitura
+- Jogadores podem editar dados rapidos, atributos, Vida atual, Vida maxima, Integridade atual e inventario da propria ficha pela Mesa
+- O painel do jogador deve usar abas claras para reduzir rolagem longa e manter controles importantes acima da dobra
+- Vida e Integridade devem ter controles rapidos compactos sem gerar sobreposicao ou desalinhamento
 - Tokens de terceiros no inspetor do jogador devem ficar restritos, sem nome/status/dados detalhados no painel inferior
 - Mestre pode controlar visibilidade, organizacao e valores maximos
 - Visual deve seguir a mesma linguagem dark fantasy da ficha, mas com densidade maior por ser ferramenta de mesa

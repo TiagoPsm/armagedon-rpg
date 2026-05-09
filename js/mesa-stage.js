@@ -243,6 +243,17 @@ function handlePlayerPanelAction(button) {
   if (!characterKey || !canReceiveSheetPatch(characterKey)) return;
 
   state.playerPanelCharacterKey = characterKey;
+  if (action === "select-player-tab") {
+    state.playerPanelTab = normalizePlayerPanelTab(button.dataset.tab);
+    scheduleMesaRender({ roster: true });
+    return;
+  }
+
+  if (action === "adjust-resource") {
+    adjustPlayerPanelResource(characterKey, button);
+    return;
+  }
+
   if (action === "add-inventory-item") {
     mutatePlayerPanelInventory(characterKey, {
       action: "add"
@@ -373,6 +384,31 @@ function handlePlayerPanelResourceInput(input) {
   syncPlayerStatInputCard(input, field);
   broadcastMesaSheetPatch(characterKey, sheetPatch);
   scheduleMesaRender({ summary: true, stage: true, inspector: true });
+}
+
+function adjustPlayerPanelResource(characterKey, button) {
+  const field = String(button.dataset.resourceField || "");
+  if (!field || !characterKey || !canReceiveSheetPatch(characterKey)) return;
+
+  const context = getOwnPlayerContext(characterKey);
+  const sheet = normalizeMesaSheetSnapshot(context.sheet || {});
+  const max = field === "currentLife"
+    ? Math.max(1, asPositiveInt(sheet.vidaMax, context.token?.maxLife || context.rosterEntry?.maxLife || 1))
+    : Math.max(0, asPositiveInt(sheet.integMax, context.token?.maxIntegrity || context.rosterEntry?.maxIntegrity || 0));
+  const current = field === "currentLife"
+    ? asPositiveInt(sheet.vidaAtual, 0)
+    : asPositiveInt(sheet.integAtual, 0);
+  const mode = String(button.dataset.resourceMode || "");
+  const delta = Number.parseInt(button.dataset.delta || "0", 10) || 0;
+  const nextValue = mode === "max"
+    ? max
+    : mode === "zero"
+      ? 0
+      : current + delta;
+  const sheetPatch = buildPlayerPanelResourcePatch(field, nextValue, context);
+  if (!sheetPatch) return;
+
+  applyPlayerPanelSheetPatch(characterKey, sheetPatch, { renderRoster: true });
 }
 
 function handlePlayerPanelSheetFieldInput(input) {
@@ -898,7 +934,9 @@ function mutatePlayerPanelInventory(characterKey, mutation) {
     [mutation.field]: mutation.value
   };
   inventory[mutation.index] = normalizeMesaItem(item);
-  applyPlayerPanelSheetPatch(characterKey, { inv: inventory }, { renderRoster: false });
+  applyPlayerPanelSheetPatch(characterKey, { inv: inventory }, {
+    renderRoster: mutation.field === "type"
+  });
 }
 
 function applySheetPatchFromMesa(characterKey, patch, options = {}) {
@@ -963,9 +1001,13 @@ function applySheetPatchToMesaCaches(characterKey, patch) {
 }
 
 function scheduleMesaRemoteSheetPatch(characterKey, patch) {
-  if (!window.AUTH?.isBackendEnabled?.() || !window.APP?.saveCharacter) return;
+  if (!window.AUTH?.isBackendEnabled?.() || !window.APP?.saveCharacter) {
+    setPlayerSheetSyncStatus("local");
+    return;
+  }
   const key = normalizeMesaCharacterKey(characterKey);
   if (!key || !patch || !Object.keys(patch).length) return;
+  setPlayerSheetSyncStatus("saving");
 
   const previousPatch = pendingMesaSheetPatches.get(key) || {};
   pendingMesaSheetPatches.set(key, {
@@ -1028,12 +1070,33 @@ async function persistMesaSheetPatch(characterKey, options = {}) {
           }
         : saved.data;
       localStorage.setItem(REMOTE_SHEETS_KEY, JSON.stringify(nextRemoteSheets));
+      setPlayerSheetSyncStatus("saved");
       refreshMesaRosterFromSheets({ persistScene: false });
       scheduleMesaRender({ summary: true, roster: true, stage: true, inspector: true });
     }
   } catch (error) {
+    setPlayerSheetSyncStatus("error");
     console.warn("Falha ao salvar estado da mesa no servidor.", error);
   }
+}
+
+function setPlayerSheetSyncStatus(status) {
+  const normalizedStatus = ["idle", "local", "saving", "saved", "error"].includes(String(status))
+    ? String(status)
+    : "idle";
+  state.playerSheetSyncStatus = normalizedStatus;
+  syncPlayerSheetSyncStatusElement();
+}
+
+function syncPlayerSheetSyncStatusElement() {
+  const row = document.querySelector("[data-player-sync-status]");
+  if (!row) return;
+  const status = typeof getPlayerSheetSyncStatusCopy === "function"
+    ? getPlayerSheetSyncStatusCopy()
+    : { key: "saved", label: "Sincronizado" };
+  row.dataset.playerSyncStatus = status.key;
+  const copy = row.querySelector("[data-player-sync-copy]");
+  if (copy) copy.textContent = status.label;
 }
 
 function normalizeMesaSheetSnapshot(raw) {

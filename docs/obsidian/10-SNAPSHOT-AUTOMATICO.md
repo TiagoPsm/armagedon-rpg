@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-08 00:29:46 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-08 21:19:23 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,13 +13,13 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `a2d67b6 2026-05-07 Corrige smoke test online da mesa`
+- Ultimo commit: `b1fe90b 2026-05-08 Permite edicao ampla da ficha pela mesa`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
-M  cloudflare/src/mesa-realtime.js
+M  VISUAL_RULES.md
 M  css/mesa-roster.css
 M  docs/obsidian/07-MESA.md
 M  docs/obsidian/09-HISTORICO-DE-SESSOES.md
@@ -41,7 +41,7 @@ M  tests/mesa.spec.cjs
 
 ```text
 DEV_STATUS.md
-cloudflare/src/mesa-realtime.js
+VISUAL_RULES.md
 css/mesa-roster.css
 docs/obsidian/07-MESA.md
 docs/obsidian/09-HISTORICO-DE-SESSOES.md
@@ -132,9 +132,9 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
    13,08 MB  assets\sheet-fire-background.mp4
    13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
-    0,99 MB  _site\logo-rpg-armagedon.png
     0,99 MB  logo-rpg-armagedon.png
     0,99 MB  assets\logo-rpg-armagedon.png
+    0,99 MB  _site\logo-rpg-armagedon.png
     0,92 MB  node_modules\playwright-core\types\types.d.ts
     0,78 MB  node_modules\playwright-core\types\protocol.d.ts
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js

@@ -2,6 +2,15 @@
 
 Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STATUS.md`.
 
+## 2026-05-08 - Polimento Do Painel Do Jogador Na Mesa
+
+- Painel pessoal do jogador foi separado em abas: `Status`, `Atributos`, `Inventario`, `Memorias` e `Notas`.
+- Status ganhou botoes rapidos `-1`, `+1`, `0` e `Max` para Vida/Integridade, alem dos inputs existentes.
+- Inventario ficou mais compacto, com dano exibido apenas para armas e descricao recolhida em `Detalhes`.
+- Feedback de salvamento foi exposto no painel como `Sincronizado`, `Salvando...`, `Erro ao salvar` ou `Salvo neste navegador`.
+- `mesa.html` recebeu cache-busting novo para forcar os CSS/JS atualizados no site publicado.
+- Validado com `check:js`, `audit:static`, `test:mesa`, `test:ficha`, `perf:mesa`, `build:pages`, `git diff --check`, `git fsck --no-dangling` e QA visual por Playwright.
+
 ## 2026-05-08 - Edicao Ampla Da Ficha Pela Mesa
 
 - Painel pessoal do jogador na Mesa agora edita dados rapidos, atributos, Vida atual, Vida maxima, Integridade atual e inventario da propria ficha.

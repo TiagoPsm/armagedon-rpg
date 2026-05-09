@@ -349,6 +349,38 @@ Registro minimo esperado:
   - normalizacao de Vida/Integridade no frontend, Worker e backend legado
   - persistencia online dos ajustes de status feitos pela Mesa quando a API esta ativa
 
+## 2026-05-08 - Polimento Do Painel Do Jogador Na Mesa
+
+- Painel pessoal do jogador foi reorganizado em abas: `Status`, `Atributos`, `Inventario`, `Memorias` e `Notas`.
+- Aba `Status` agora prioriza Vida e Integridade com controles rapidos `-1`, `+1`, `0` e `Max`, mantendo os inputs numericos existentes.
+- Painel passou a exibir feedback de sincronizacao: `Sincronizado`, `Salvando...`, `Erro ao salvar` ou `Salvo neste navegador`.
+- Inventario ficou mais compacto: dano aparece apenas para itens do tipo arma e a descricao fica recolhida em `Detalhes`.
+- O cache-busting de `mesa.html` foi atualizado para carregar os novos CSS/JS da Mesa no site publicado.
+- Testes da Mesa foram atualizados para validar o fluxo real por abas, controles rapidos, inventario, memorias e persistencia online.
+- Arquivos principais alterados nesta etapa:
+  - `mesa.html`
+  - `css/mesa-roster.css`
+  - `js/mesa-core.js`
+  - `js/mesa-roster.js`
+  - `js/mesa-stage.js`
+  - `tests/mesa.spec.cjs`
+  - `DEV_STATUS.md`
+  - `VISUAL_RULES.md`
+  - `docs/obsidian/07-MESA.md`
+  - `docs/obsidian/09-HISTORICO-DE-SESSOES.md`
+- Validacoes executadas nesta etapa:
+  - `npm run check:js`
+  - `npm run audit:static`
+  - `npm run test:mesa`
+  - `npm run test:ficha`
+  - `npm run perf:mesa`
+  - `npm run build:pages`
+  - `git diff --check`
+  - `git fsck --no-dangling`
+  - QA visual por Playwright em desktop e viewport estreito
+- Pendencia da etapa antes do deploy:
+  - publicar na `main` e validar o site oficial apos o workflow do GitHub Pages.
+
 ## Ajustes de Gameplay Ja Consolidados
 
 - Integridade substituiu Sanidade
