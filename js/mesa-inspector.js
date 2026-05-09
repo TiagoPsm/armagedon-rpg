@@ -163,9 +163,9 @@ function buildInspectorStatsSection(token, canEditCurrent, canEditAll, canViewSt
             <span>${token.currentLife}/${token.maxLife}</span>
           </div>
           <div class="stat-editor-inputs">
-            <input type="number" min="0" step="1" data-stat-field="currentLife" value="${token.currentLife}" ${canEditCurrent ? "" : "disabled"} />
+            <input type="number" min="0" step="1" inputmode="numeric" data-stat-field="currentLife" value="${token.currentLife}" ${canEditCurrent ? "" : "disabled"} />
             <span class="stat-divider">/</span>
-            <input type="number" min="1" step="1" data-stat-field="maxLife" value="${token.maxLife}" ${canEditAll ? "" : "disabled"} />
+            <input type="number" min="1" step="1" inputmode="numeric" data-stat-field="maxLife" value="${token.maxLife}" ${canEditAll ? "" : "disabled"} />
           </div>
           <div class="bar-preview is-life"><span style="${getBarFillStyle("vida", token.currentLife, token.maxLife)}"></span></div>
         </div>
@@ -176,9 +176,9 @@ function buildInspectorStatsSection(token, canEditCurrent, canEditAll, canViewSt
             <span>${token.currentIntegrity}/${token.maxIntegrity}</span>
           </div>
           <div class="stat-editor-inputs">
-            <input type="number" min="0" step="1" data-stat-field="currentIntegrity" value="${token.currentIntegrity}" ${canEditCurrent ? "" : "disabled"} />
+            <input type="number" min="0" step="1" inputmode="numeric" data-stat-field="currentIntegrity" value="${token.currentIntegrity}" ${canEditCurrent ? "" : "disabled"} />
             <span class="stat-divider">/</span>
-            <input type="number" min="0" step="1" data-stat-field="maxIntegrity" value="${token.maxIntegrity}" ${canEditAll ? "" : "disabled"} />
+            <input type="number" min="0" step="1" inputmode="numeric" data-stat-field="maxIntegrity" value="${token.maxIntegrity}" ${canEditAll ? "" : "disabled"} />
           </div>
           <div class="bar-preview is-integrity"><span style="${getBarFillStyle("integ", token.currentIntegrity, token.maxIntegrity)}"></span></div>
         </div>

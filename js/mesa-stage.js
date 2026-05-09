@@ -328,14 +328,23 @@ function handleInspectorStatInput(event) {
   const field = String(input.dataset.statField || "");
   const token = getSelectedToken();
   if (!token || !field) return;
+  if (isBlankMesaNumberInput(input)) return;
 
-  const nextValue = Number(input.value);
+  const nextValue = Number.parseInt(input.value, 10);
   const sheetPatch = buildSheetPatchFromMesa(field, nextValue, token);
   if (!sheetPatch) return;
 
   applySheetPatchFromMesa(token.characterKey, sheetPatch, { render: false });
   broadcastMesaSheetPatch(token.characterKey, sheetPatch);
   scheduleMesaRender({ stage: true, inspector: true });
+}
+
+function handleMesaNumericInputCommit(event) {
+  const input = event.target.closest(
+    "input[type='number'][data-stat-field], input[type='number'][data-player-stat-field], input[type='number'][data-player-sheet-field], input[type='number'][data-player-item-field]"
+  );
+  if (!input || !isBlankMesaNumberInput(input)) return;
+  restoreBlankMesaNumberInput(input);
 }
 
 function handlePlayerPanelStatInput(event) {
@@ -363,9 +372,10 @@ function handlePlayerPanelResourceInput(input) {
   const field = String(input.dataset.playerStatField || "");
   const characterKey = normalizeMesaCharacterKey(input.dataset.characterKey);
   if (!field || !characterKey || !canReceiveSheetPatch(characterKey)) return;
+  if (isBlankMesaNumberInput(input)) return;
 
   const context = getOwnPlayerContext(characterKey);
-  const sheetPatch = buildPlayerPanelResourcePatch(field, Number(input.value), context);
+  const sheetPatch = buildPlayerPanelResourcePatch(field, Number.parseInt(input.value, 10), context);
   if (!sheetPatch) return;
 
   state.playerPanelCharacterKey = characterKey;
@@ -379,6 +389,7 @@ function handlePlayerPanelSheetFieldInput(input) {
   const field = String(input.dataset.playerSheetField || "");
   const characterKey = normalizeMesaCharacterKey(input.dataset.characterKey);
   if (!field || !characterKey || !canReceiveSheetPatch(characterKey)) return;
+  if (isBlankMesaNumberInput(input)) return;
 
   const context = getOwnPlayerContext(characterKey);
   const sheetPatch = buildPlayerPanelFieldPatch(field, input.value, context);
@@ -395,6 +406,7 @@ function handlePlayerPanelInventoryInput(input) {
   const characterKey = normalizeMesaCharacterKey(input.dataset.characterKey);
   const index = Number.parseInt(input.dataset.index || "-1", 10);
   if (!field || !characterKey || Number.isNaN(index) || index < 0 || !canReceiveSheetPatch(characterKey)) return;
+  if (isBlankMesaNumberInput(input)) return;
 
   mutatePlayerPanelInventory(characterKey, {
     action: "update",
@@ -402,6 +414,115 @@ function handlePlayerPanelInventoryInput(input) {
     field,
     value: input.value
   });
+}
+
+function isBlankMesaNumberInput(input) {
+  return input?.type === "number" && String(input.value ?? "").trim() === "";
+}
+
+function restoreBlankMesaNumberInput(input) {
+  if (input.matches("[data-stat-field]")) {
+    restoreInspectorStatInput(input);
+    return;
+  }
+
+  if (input.matches("[data-player-stat-field]")) {
+    restorePlayerPanelResourceInput(input);
+    return;
+  }
+
+  if (input.matches("[data-player-sheet-field]")) {
+    restorePlayerPanelSheetNumberInput(input);
+    return;
+  }
+
+  if (input.matches("[data-player-item-field]")) {
+    restorePlayerPanelItemNumberInput(input);
+  }
+}
+
+function restoreInspectorStatInput(input) {
+  const token = getSelectedToken();
+  const field = String(input.dataset.statField || "");
+  if (!token || !field) return;
+  const values = {
+    currentLife: token.currentLife,
+    maxLife: token.maxLife,
+    currentIntegrity: token.currentIntegrity,
+    maxIntegrity: token.maxIntegrity
+  };
+  if (values[field] === undefined) return;
+  input.value = String(values[field]);
+}
+
+function restorePlayerPanelResourceInput(input) {
+  const field = String(input.dataset.playerStatField || "");
+  const characterKey = normalizeMesaCharacterKey(input.dataset.characterKey);
+  if (!field || !characterKey) return;
+  const context = getOwnPlayerContext(characterKey);
+  const sheet = normalizeMesaSheetSnapshot(context?.sheet || {});
+  const value = getPlayerPanelResourceValue(field, sheet, context);
+  if (value === null) return;
+  input.value = String(value);
+  syncPlayerStatInputCard(input, field);
+}
+
+function restorePlayerPanelSheetNumberInput(input) {
+  const field = String(input.dataset.playerSheetField || "");
+  const characterKey = normalizeMesaCharacterKey(input.dataset.characterKey);
+  if (!field || !characterKey) return;
+  const context = getOwnPlayerContext(characterKey);
+  const sheet = normalizeMesaSheetSnapshot(context?.sheet || {});
+  const value = getPlayerPanelSheetNumberValue(field, sheet, context);
+  if (value === null) return;
+  input.value = String(value);
+}
+
+function restorePlayerPanelItemNumberInput(input) {
+  const field = String(input.dataset.playerItemField || "");
+  const characterKey = normalizeMesaCharacterKey(input.dataset.characterKey);
+  const index = Number.parseInt(input.dataset.index || "-1", 10);
+  if (field !== "qty" || !characterKey || Number.isNaN(index) || index < 0) return;
+  const context = getOwnPlayerContext(characterKey);
+  const sheet = normalizeMesaSheetSnapshot(context?.sheet || {});
+  const item = Array.isArray(sheet.inv) ? sheet.inv[index] : null;
+  input.value = String(Math.max(0, Number.parseInt(item?.qty || "1", 10) || 0));
+}
+
+function getPlayerPanelResourceValue(field, sheet, context) {
+  if (field === "currentLife") {
+    const maxLife = Math.max(1, asPositiveInt(sheet.vidaMax, context?.token?.maxLife || context?.rosterEntry?.maxLife || 1));
+    return clamp(asPositiveInt(sheet.vidaAtual, context?.token?.currentLife || context?.rosterEntry?.currentLife || 0), 0, maxLife);
+  }
+
+  if (field === "currentIntegrity") {
+    const maxIntegrity = Math.max(0, asPositiveInt(sheet.integMax, context?.token?.maxIntegrity || context?.rosterEntry?.maxIntegrity || 0));
+    return clamp(asPositiveInt(sheet.integAtual, context?.token?.currentIntegrity || context?.rosterEntry?.currentIntegrity || 0), 0, maxIntegrity);
+  }
+
+  return null;
+}
+
+function getPlayerPanelSheetNumberValue(field, sheet, context) {
+  if (field === "vidaMax") {
+    return Math.max(1, asPositiveInt(sheet.vidaMax, context?.token?.maxLife || context?.rosterEntry?.maxLife || 1));
+  }
+
+  if (field === "vidaAtual") {
+    const maxLife = Math.max(1, asPositiveInt(sheet.vidaMax, 1));
+    return clamp(asPositiveInt(sheet.vidaAtual, 0), 0, maxLife);
+  }
+
+  if (field === "integAtual") {
+    const maxIntegrity = Math.max(0, asPositiveInt(sheet.integMax, 0));
+    return clamp(asPositiveInt(sheet.integAtual, 0), 0, maxIntegrity);
+  }
+
+  if (MESA_ATTRIBUTE_NAMES.map(attr => `attr${attr}`).includes(field)) {
+    return normalizeMesaAttrValue(sheet[field], "1");
+  }
+
+  return null;
 }
 
 function handleTokenPointerDown(event) {

@@ -56,6 +56,13 @@ test.describe("Mesa virtual", () => {
     await page.mouse.move(end.x, end.y, { steps: 8 });
     await page.mouse.up();
 
+    const inspectorLife = page.locator('#tokenInspector [data-stat-field="currentLife"]').first();
+    await expect(inspectorLife).toBeVisible();
+    await inspectorLife.fill("");
+    await expect(inspectorLife).toHaveValue("");
+    await inspectorLife.fill("4");
+    await expect(inspectorLife).toHaveValue("4");
+
     const savedScene = await page.evaluate(() => JSON.parse(localStorage.getItem("tc_virtual_mesa_mock_v1") || "{}"));
     expect(Array.isArray(savedScene.tokens)).toBe(true);
     expect(savedScene.tokens.length).toBeGreaterThan(0);
@@ -176,9 +183,13 @@ test.describe("Mesa virtual", () => {
 
     await expect(page.locator('[data-player-panel-action="select-player-tab"]')).toHaveCount(0);
     await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("8");
+    await page.locator('[data-player-stat-field="currentLife"]').fill("");
+    await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("");
     await page.locator('[data-player-stat-field="currentLife"]').fill("5");
     await page.locator('[data-player-stat-field="currentIntegrity"]').fill("3");
 
+    await page.locator('[data-player-sheet-field="attrForca"]').fill("");
+    await expect(page.locator('[data-player-sheet-field="attrForca"]')).toHaveValue("");
     await page.locator('[data-player-sheet-field="attrForca"]').fill("7");
     await page.locator('[data-player-sheet-field="attrAlma"]').fill("15");
 
@@ -186,6 +197,9 @@ test.describe("Mesa virtual", () => {
 
     await expect(page.locator('[data-player-item-field="name"]').first()).toHaveValue("Lamina curta");
     await page.locator('[data-player-item-field="name"]').first().fill("Lamina longa");
+    await page.locator('[data-player-item-field="qty"]').first().fill("");
+    await expect(page.locator('[data-player-item-field="qty"]').first()).toHaveValue("");
+    await page.locator('[data-player-item-field="qty"]').first().fill("2");
     await page.locator('[data-player-item-field="damage"]').first().fill("1d8");
     await page.locator('[data-player-panel-action="add-inventory-item"]').click();
     await expect(page.locator('[data-player-item-field="name"]')).toHaveCount(2);
@@ -206,6 +220,7 @@ test.describe("Mesa virtual", () => {
     expect(savedSheet.charClass).toBe("Sentinela");
     expect(savedSheet.inv).toHaveLength(2);
     expect(savedSheet.inv[0].name).toBe("Lamina longa");
+    expect(savedSheet.inv[0].qty).toBe("2");
     expect(savedSheet.inv[0].damage).toBe("1d8");
     expect(savedSheet.inv[1].name).toBe("Bandagem");
     expect(savedSheet.inv[1].type).toBe("acessorio");

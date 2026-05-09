@@ -2,6 +2,12 @@
 
 Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STATUS.md`.
 
+## 2026-05-09 - Edicao Numerica Direta Na Mesa
+
+- Inputs numericos da Mesa agora aceitam apagar o valor inteiro e digitar outro numero sem transformar o campo vazio temporario em `0`.
+- Cobertura adicionada para inspetor do mestre, Vida do jogador, atributos e quantidade de item no painel pessoal.
+- Campos vazios ao sair do foco restauram o valor seguro atual, evitando salvamento acidental de vazio.
+
 ## 2026-05-09 - Correcao Das Quebras De Gradiente Da Mesa
 
 - Gradientes dos paineis grandes da Mesa deixaram de usar faixas lineares com cortes visiveis.

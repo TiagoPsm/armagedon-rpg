@@ -75,6 +75,7 @@ Registro minimo esperado:
 - Realtime da Mesa aceita deltas incrementais de token para reduzir payload durante movimento
 - Mestre ve roster completo da Mesa; jogador ve palco compartilhado e painel pessoal da propria ficha, sem lista de tokens disponiveis
 - Jogador pode alterar pela Mesa: dados rapidos, atributos, Vida atual, Vida maxima, Integridade atual e inventario da propria ficha
+- Campos numericos da Mesa permitem apagar o valor atual e digitar um novo numero antes de aplicar clamp/salvamento
 - Memorias continuam em leitura no painel do jogador nesta etapa para preservar as regras de transferencia
 - Vida atual de jogador, NPC e monstro nao pode passar da Vida maxima
 - Integridade atual continua limitada pela Integridade maxima
@@ -90,6 +91,16 @@ Registro minimo esperado:
 - Home/login ja segue essa mesma linguagem visual
 
 ## Ultima Etapa Concluida
+
+- Edicao direta de numeros da ficha pela Mesa em 2026-05-09:
+  - objetivo: permitir que mestre e jogador apaguem o valor de campos numericos e digitem o numero novo, sem depender apenas das setas do input
+  - `js/mesa-stage.js`: handlers de Vida, Integridade, Vida maxima, atributos e quantidade de item agora ignoram campo numerico temporariamente vazio e restauram o valor seguro apenas ao sair do campo sem preencher
+  - `js/mesa-core.js`: painel do jogador e inspetor passaram a tratar `focusout` para restaurar entradas numericas deixadas vazias sem salvar `0` por acidente
+  - `js/mesa-roster.js` e `js/mesa-inspector.js`: inputs numericos ganharam `inputmode="numeric"` mantendo o visual e os limites atuais
+  - `mesa.html`: cache bust dos scripts da Mesa atualizado para `2026-05-09-numeric-clear-1`
+  - `tests/mesa.spec.cjs`: regressao cobre apagar e redigitar Vida no inspetor do mestre, Vida no painel do jogador, atributo e quantidade de item
+  - validacoes executadas: `npm run check:js`, `npm run audit:static`, `npm run test:mesa`, `npm run perf:mesa`, `npm run build:pages`, `git diff --check` e `git fsck --no-dangling`
+  - status: pronto para publicacao
 
 - Protecao de limpar cena e gradiente da Mesa em 2026-05-09:
   - objetivo: impedir que jogadores vejam/usem `Limpar cena` e melhorar o acabamento dos gradientes da Mesa sem alterar o fluxo simples do painel do jogador

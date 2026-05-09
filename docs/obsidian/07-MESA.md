@@ -94,6 +94,7 @@ Worker/D1:
 - Jogador ve painel "Meu personagem" com avatar, dados rapidos, atributos, Vida, Integridade, inventario, capacidade e memorias somente da propria ficha.
 - Painel do jogador deve usar a interface simples em fluxo unico, sem abas por padrao.
 - Status deve priorizar Vida e Integridade com inputs diretos; os botoes rapidos ficam fora desta versao simples.
+- Inputs numericos da Mesa devem aceitar campo temporariamente vazio enquanto o usuario apaga e digita outro numero; o valor anterior so deve ser restaurado ao sair do campo vazio.
 - Salvamento/sincronizacao nao deve criar modal nem bloquear edicao.
 - Inventario do jogador na Mesa continua editavel, com dano apenas em arma e descricao recolhida em detalhes.
 - A interface simples do jogador nao deve expor roster, busca, acoes de mestre ou dados de terceiros.
@@ -144,22 +145,23 @@ Worker/D1:
 9. Confirmar que jogador nao ve nem consegue acionar `Limpar cena`.
 10. Confirmar que o painel do jogador usa fluxo unico simples, sem abas e sem expor roster ou dados de terceiros.
 11. Editar Vida atual, Vida maxima, Integridade atual, atributos, dados rapidos e inventario no painel do jogador e confirmar persistencia na ficha apos recarregar.
-12. Validar que Vida e Integridade respeitam limites `0` e `Max` pelos inputs diretos.
-13. Validar em viewport larga que painel pessoal, recursos e inspetor nao ficam vazios nem com sobreposicao.
-14. Em modo local/offline, manter um `tc_directory_cache` remoto antigo e confirmar que a Mesa salva em `tc_sheets[username]`, nunca na `key` remota antiga.
-15. Com API ativa, abrir a Mesa diretamente como jogador e confirmar que itens/memorias reais aparecem antes de qualquer edicao.
-16. Selecionar token alheio como jogador e confirmar que o inspetor nao mostra nome, barras ou dados detalhados.
-17. Com API ativa, mover/adicionar/remover token como mestre e confirmar `PUT /api/mesa/scene`.
-18. Abrir outra sessao conectada e confirmar recebimento de `mesa:scene` sem recarregar.
-19. Jogador altera Vida/Integridade/atributos/inventario e mestre recebe `mesa:sheet:patch`; outro jogador nao recebe painel/dados detalhados dessa ficha.
-20. Reabrir a pagina e confirmar que a cena vem de `GET /api/mesa/scene`.
-21. Conferir console sem erros.
-22. Selecionar token e confirmar que roster nao foi reconstruido.
-23. Mover token e confirmar que o save remoto acontece ao soltar, nao durante o movimento.
-24. Receber `mesa:scene` igual ao estado local e confirmar que nao ocorre rerender nem novo save.
-25. Rodar `npm run test:mesa` para validar Canvas + drag local e painel do jogador.
-26. Rodar `npm run test:mesa:online` sem credenciais para validar Pages/API publicados e protecao anonima.
-27. Rodar `npm run test:mesa:online` com `ARMAGEDON_MASTER_USERNAME`, `ARMAGEDON_MASTER_PASSWORD`, `ARMAGEDON_PLAYER_USERNAME` e `ARMAGEDON_PLAYER_PASSWORD` para validar login real, diretorio, cena, WebSocket e UI mestre/jogador.
+12. Apagar completamente um input numerico da Mesa, redigitar outro valor e confirmar que nao vira `0` automaticamente antes da digitacao.
+13. Validar que Vida e Integridade respeitam limites `0` e `Max` pelos inputs diretos.
+14. Validar em viewport larga que painel pessoal, recursos e inspetor nao ficam vazios nem com sobreposicao.
+15. Em modo local/offline, manter um `tc_directory_cache` remoto antigo e confirmar que a Mesa salva em `tc_sheets[username]`, nunca na `key` remota antiga.
+16. Com API ativa, abrir a Mesa diretamente como jogador e confirmar que itens/memorias reais aparecem antes de qualquer edicao.
+17. Selecionar token alheio como jogador e confirmar que o inspetor nao mostra nome, barras ou dados detalhados.
+18. Com API ativa, mover/adicionar/remover token como mestre e confirmar `PUT /api/mesa/scene`.
+19. Abrir outra sessao conectada e confirmar recebimento de `mesa:scene` sem recarregar.
+20. Jogador altera Vida/Integridade/atributos/inventario e mestre recebe `mesa:sheet:patch`; outro jogador nao recebe painel/dados detalhados dessa ficha.
+21. Reabrir a pagina e confirmar que a cena vem de `GET /api/mesa/scene`.
+22. Conferir console sem erros.
+23. Selecionar token e confirmar que roster nao foi reconstruido.
+24. Mover token e confirmar que o save remoto acontece ao soltar, nao durante o movimento.
+25. Receber `mesa:scene` igual ao estado local e confirmar que nao ocorre rerender nem novo save.
+26. Rodar `npm run test:mesa` para validar Canvas + drag local e painel do jogador.
+27. Rodar `npm run test:mesa:online` sem credenciais para validar Pages/API publicados e protecao anonima.
+28. Rodar `npm run test:mesa:online` com `ARMAGEDON_MASTER_USERNAME`, `ARMAGEDON_MASTER_PASSWORD`, `ARMAGEDON_PLAYER_USERNAME` e `ARMAGEDON_PLAYER_PASSWORD` para validar login real, diretorio, cena, WebSocket e UI mestre/jogador.
 28. Usar `ARMAGEDON_ONLINE_RELAY_PROBE=1` somente quando for aceitavel transmitir um evento de teste `mesa:token:move` para conexoes online da sala.
 29. Rodar `npm run perf:mesa` para conferir ausencia de long tasks relevantes no drag.
 30. Rodar `npx wrangler deploy --dry-run --config cloudflare/wrangler.toml` apos alterar Durable Object.

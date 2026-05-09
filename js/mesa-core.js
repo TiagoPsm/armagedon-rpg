@@ -189,8 +189,10 @@ function bindEvents() {
   rosterList?.addEventListener("click", handleRosterAction);
   rosterList?.addEventListener("input", handlePlayerPanelStatInput);
   rosterList?.addEventListener("change", handlePlayerPanelStatInput);
+  rosterList?.addEventListener("focusout", handleMesaNumericInputCommit);
   tokenInspector?.addEventListener("click", handleInspectorAction);
   tokenInspector?.addEventListener("input", handleInspectorStatInput);
+  tokenInspector?.addEventListener("focusout", handleMesaNumericInputCommit);
 
   window.addEventListener("pointermove", handleDragMove);
   window.addEventListener("pointerup", handleDragEnd);
