@@ -180,6 +180,7 @@ Comportamento visual consolidado:
 - Vida e Integridade devem usar inputs diretos e legiveis; botoes rapidos podem voltar apenas se nao deixarem a ficha visualmente pesada
 - A acao `Limpar cena` e exclusiva do mestre; jogadores nao devem ver nem acionar esse controle
 - Gradientes da Mesa devem usar carmesim, preto profundo e acentos frios muito sutis, evitando brilho excessivo ou aparencia colorida demais
+- Gradientes em paineis grandes da Mesa nao podem ter cortes, faixas com altura fixa ou emendas visiveis; preferir camadas radiais/elipticas com fade gradual
 - Otimizacoes com `content-visibility` nao podem criar blocos vazios em areas imediatamente visiveis, como painel pessoal e inspetor
 - Tokens de terceiros no inspetor do jogador devem ficar restritos, sem nome/status/dados detalhados no painel inferior
 - Mestre pode controlar visibilidade, organizacao e valores maximos

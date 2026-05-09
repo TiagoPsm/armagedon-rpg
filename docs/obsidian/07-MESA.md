@@ -125,6 +125,7 @@ Worker/D1:
 - Elementos de palco devem ficar legiveis sem depender de fundo animado.
 - Glow e camadas decorativas nao devem baixar MP4 ou assets grandes.
 - Gradientes da Mesa devem combinar carmesim, preto profundo e acento frio sutil, sem aumentar peso de assets ou criar ornamento excessivo.
+- Paineis grandes da Mesa devem evitar faixas de gradiente com corte visivel; usar camadas radiais/elipticas que desaparecem gradualmente.
 - Tokens Canvas usam metrica unica de card para evitar mudanca brusca de escala ao alternar fullscreen.
 - Areas pesadas da Mesa podem usar `contain: layout paint` quando isso nao alterar o visual.
 - `will-change` deve ficar limitado a `.mesa-token.is-dragging`, nao permanente em todos os tokens.

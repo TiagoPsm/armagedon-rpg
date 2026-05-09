@@ -2,6 +2,12 @@
 
 Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STATUS.md`.
 
+## 2026-05-09 - Correcao Das Quebras De Gradiente Da Mesa
+
+- Gradientes dos paineis grandes da Mesa deixaram de usar faixas lineares com cortes visiveis.
+- `css/mesa-base.css` e `css/mesa-stage.css` passaram a usar camadas radiais/elipticas com fade gradual.
+- Objetivo visual: preservar a atmosfera carmesim/dark sem criar blocos ou emendas de cor.
+
 ## 2026-05-09 - Protecao De Limpar Cena E Gradiente Da Mesa
 
 - Jogadores deixam de ver/acionar `Limpar cena`; o botao fica oculto/desabilitado e a funcao tem guarda interna por papel.

@@ -101,6 +101,13 @@ Registro minimo esperado:
   - validacoes executadas: `npm run check:js`, `npm run audit:static`, `npm run test:mesa`, `npm run build:pages`, `npm run perf:mesa`, QA visual por Playwright em desktop/mobile e `git diff --check`
   - status: pronto para publicacao
 
+- Correcao de quebras visuais nos gradientes da Mesa em 2026-05-09:
+  - objetivo: remover emendas/linhas visiveis entre tons escuros e carmesim nos paineis da Mesa
+  - `css/mesa-base.css`: gradientes dos paineis passaram de faixas lineares/altura fixa para elipses suaves em painel inteiro
+  - `css/mesa-stage.css`: gradiente do palco deixou de usar diagonais marcadas e passou a usar manchas radiais com fade gradual
+  - validacoes executadas: `npm run check:js`, `npm run audit:static`, `npm run test:mesa`, `npm run build:pages`, QA visual por Playwright em desktop largo e `git diff --check`
+  - status: pronto para publicacao
+
 - Retorno da interface simples do painel do jogador na Mesa em 2026-05-09:
   - objetivo: voltar ao controle simples em fluxo unico, sem abas e sem botoes rapidos, preservando a edicao ampla da propria ficha pela Mesa
   - `js/mesa-roster.js`: painel pessoal voltou a renderizar hero, Vida/Integridade, dados rapidos, atributos, inventario e memorias em secoes continuas

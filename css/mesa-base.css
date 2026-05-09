@@ -661,8 +661,8 @@ body::after {
 /* 2026-05 mesa gradient polish */
 body {
   background:
-    linear-gradient(142deg, rgba(102, 10, 20, 0.22) 0%, rgba(102, 10, 20, 0.04) 28%, transparent 48%),
-    linear-gradient(218deg, rgba(43, 30, 76, 0.14) 0%, rgba(43, 30, 76, 0.035) 31%, transparent 52%),
+    radial-gradient(ellipse 86% 72% at 4% 8%, rgba(102, 10, 20, 0.22) 0%, rgba(102, 10, 20, 0.1) 34%, transparent 78%),
+    radial-gradient(ellipse 72% 88% at 86% 4%, rgba(43, 30, 76, 0.12) 0%, rgba(43, 30, 76, 0.04) 42%, transparent 78%),
     linear-gradient(180deg, #010103 0%, #060509 48%, #020203 100%);
 }
 
@@ -677,24 +677,28 @@ body {
 .mesa-roster-card,
 .token-inspector-block {
   background:
-    linear-gradient(128deg, rgba(126, 17, 30, 0.18) 0%, rgba(30, 9, 15, 0.16) 32%, rgba(10, 12, 18, 0.94) 68%),
-    linear-gradient(218deg, rgba(71, 51, 108, 0.08) 0%, transparent 42%),
+    radial-gradient(ellipse 76% 118% at 0% 18%, rgba(126, 17, 30, 0.18) 0%, rgba(75, 12, 22, 0.12) 34%, transparent 76%),
+    radial-gradient(ellipse 58% 105% at 78% -16%, rgba(71, 51, 108, 0.075) 0%, transparent 72%),
+    linear-gradient(180deg, rgba(18, 13, 18, 0.94), rgba(8, 9, 14, 0.94)),
     rgba(9, 10, 15, 0.94);
 }
 
 .meta-card,
 .scene-status-card {
   background:
-    linear-gradient(145deg, rgba(133, 21, 32, 0.14) 0%, rgba(17, 11, 18, 0.16) 42%, rgba(10, 12, 18, 0.94) 100%),
+    radial-gradient(ellipse 86% 112% at 0% 0%, rgba(133, 21, 32, 0.13) 0%, rgba(61, 12, 22, 0.08) 42%, transparent 80%),
+    linear-gradient(180deg, rgba(18, 15, 20, 0.92), rgba(10, 12, 18, 0.94)),
     rgba(12, 13, 18, 0.92);
 }
 
 .panel-block::before,
 .meta-card::before,
 .scene-status-card::before {
-  height: 160px;
+  inset: 0;
+  height: auto;
   background:
-    linear-gradient(90deg, transparent, rgba(202, 74, 68, 0.1) 34%, rgba(176, 143, 50, 0.045) 58%, transparent);
+    radial-gradient(ellipse 62% 115% at 8% 18%, rgba(202, 74, 68, 0.075) 0%, rgba(202, 74, 68, 0.034) 38%, transparent 76%),
+    linear-gradient(90deg, rgba(255, 248, 236, 0.014), transparent 48%);
 }
 
 #resetMesaBtn[hidden] {
