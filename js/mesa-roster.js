@@ -215,7 +215,9 @@ function renderPlayerSheetPanel(rosterList, rosterCountBadge) {
         ${renderPlayerResourceEditor("Vida", "currentLife", currentLife, maxLife, "vida", selectedKey, {
           editableMaxField: "vidaMax"
         })}
-        ${renderPlayerResourceEditor("Integridade", "currentIntegrity", currentIntegrity, maxIntegrity, "integ", selectedKey)}
+        ${renderPlayerResourceEditor("Integridade", "currentIntegrity", currentIntegrity, maxIntegrity, "integ", selectedKey, {
+          editableMaxField: "integMax"
+        })}
       </div>
 
       ${renderPlayerIdentityEditor(sheet, selectedKey)}
@@ -294,7 +296,7 @@ function renderPlayerAttributeEditor(sheet, characterKey) {
     <section class="player-panel-section">
       <div class="player-panel-section-head">
         <h3>Atributos</h3>
-        <span>Integridade maxima pela Alma</span>
+        <span>Modificadores calculados</span>
       </div>
       <div class="player-attribute-grid">
         ${attributes.map(([label, attr]) => {

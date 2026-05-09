@@ -96,7 +96,8 @@ function enforceSheetRules() {
   });
 
   clampResourceInputs("vida");
-  syncIntegrityFromSoul();
+  clampResourceInputs("integ");
+  updateBar("integ");
 }
 
 function initAutoSave() {
@@ -143,38 +144,6 @@ function modScale(value) {
   return Math.floor(value / 3);
 }
 
-function getIntegrityMaxFromSoul(value, fallback = "") {
-  const numeric = Number.parseInt(value, 10);
-  if (Number.isNaN(numeric)) return fallback;
-  return String(Math.max(0, Math.floor(numeric / 3)));
-}
-
-function syncIntegrityFromSoul() {
-  const integrityMaxInput = document.getElementById("integMax");
-  const integrityCurrentInput = document.getElementById("integAtual");
-  if (!integrityMaxInput) return;
-  if (currentSheetTarget?.kind === "monster") {
-    clampResourceInputs("integ");
-    updateBar("integ");
-    return;
-  }
-
-  const nextIntegrityMax = getIntegrityMaxFromSoul(getValue("attrAlma"), "");
-  integrityMaxInput.value = nextIntegrityMax;
-
-  if (integrityCurrentInput && nextIntegrityMax !== "") {
-    const currentIntegrity = Number.parseInt(integrityCurrentInput.value, 10);
-    const maxIntegrity = Number.parseInt(nextIntegrityMax, 10);
-
-    if (!Number.isNaN(currentIntegrity) && !Number.isNaN(maxIntegrity)) {
-      integrityCurrentInput.value = String(Math.max(0, Math.min(currentIntegrity, maxIntegrity)));
-    }
-  }
-
-  clampResourceInputs("integ");
-  updateBar("integ");
-}
-
 function calcMod(attr) {
   const input = document.getElementById(`attr${attr}`);
   const target = document.getElementById(`mod${attr}`);
@@ -186,7 +155,6 @@ function calcMod(attr) {
   if (Number.isNaN(value)) {
     target.textContent = "-";
     target.style.color = "";
-    if (attr === "Alma") syncIntegrityFromSoul();
     return;
   }
 
@@ -207,9 +175,6 @@ function calcModFromVal(attr, value) {
   target.textContent = `+${mod}`;
   target.style.color = mod >= 4 ? "var(--red-mid)" : mod >= 2 ? "var(--gold)" : "var(--text-secondary)";
 
-  if (attr === "Alma") {
-    syncIntegrityFromSoul();
-  }
 }
 
 function updateBar(type) {

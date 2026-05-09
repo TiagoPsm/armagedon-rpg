@@ -17,6 +17,7 @@ test.describe("Fichas", () => {
       vidaMax: "20",
       integAtual: "5",
       integMax: "8",
+      attrAlma: "30",
       inventorySlots: 12,
       inv: []
     };
@@ -134,12 +135,16 @@ test.describe("Fichas", () => {
 
     await expect(page.locator("#sheetScreen")).toBeVisible();
     await expect(page.locator("#charName")).toHaveValue("Ana Rubra");
+    await expect(page.locator("#integMax")).toBeEditable();
+    await expect(page.locator("#integMax")).toHaveValue("8");
     await page.locator("#vidaAtual").fill("7");
+    await page.locator("#integMax").fill("13");
     await page.getByRole("button", { name: "Salvar ficha" }).click();
 
     await expect.poll(() => putRequests.some(payload => payload?.data?.vidaAtual === "7"), {
       timeout: 4000
     }).toBe(true);
+    expect(putRequests.some(payload => payload?.data?.integMax === "13")).toBe(true);
 
     expect(requestedCharacterPaths).toContain("GET /api/characters/player-ana-oficial");
     expect(requestedCharacterPaths).toContain("PUT /api/characters/player-ana-oficial");

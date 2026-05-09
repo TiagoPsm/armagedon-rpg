@@ -508,6 +508,10 @@ function getPlayerPanelSheetNumberValue(field, sheet, context) {
     return Math.max(1, asPositiveInt(sheet.vidaMax, context?.token?.maxLife || context?.rosterEntry?.maxLife || 1));
   }
 
+  if (field === "integMax") {
+    return Math.max(0, asPositiveInt(sheet.integMax, context?.token?.maxIntegrity || context?.rosterEntry?.maxIntegrity || 0));
+  }
+
   if (field === "vidaAtual") {
     const maxLife = Math.max(1, asPositiveInt(sheet.vidaMax, 1));
     return clamp(asPositiveInt(sheet.vidaAtual, 0), 0, maxLife);
@@ -921,13 +925,14 @@ function buildPlayerPanelFieldPatch(field, value, context) {
     patch.integAtual = String(clamp(asPositiveInt(value, sheet.integAtual || 0), 0, maxIntegrity));
   }
 
+  if (field === "integMax") {
+    const nextMaxIntegrity = Math.max(0, asPositiveInt(value, sheet.integMax || 0));
+    patch.integMax = String(nextMaxIntegrity);
+    patch.integAtual = String(clamp(asPositiveInt(sheet.integAtual, 0), 0, nextMaxIntegrity));
+  }
+
   if (MESA_ATTRIBUTE_NAMES.map(attr => `attr${attr}`).includes(field)) {
     patch[field] = normalizeMesaAttrValue(value, sheet[field] || "1");
-    if (field === "attrAlma") {
-      const nextIntegrityMax = getMesaIntegrityMaxFromSoul(patch[field], sheet.integMax || "0");
-      patch.integMax = nextIntegrityMax;
-      patch.integAtual = String(clamp(asPositiveInt(sheet.integAtual, 0), 0, asPositiveInt(nextIntegrityMax, 0)));
-    }
   }
 
   return Object.keys(patch).length ? patch : null;
@@ -970,15 +975,13 @@ function syncPlayerPanelFieldAfterPatch(input, patch) {
     }
   }
 
-  if (field === "attrAlma" && patch.integMax !== undefined) {
-    const panel = input.closest(".player-sheet-panel");
-    const integrityInput = panel?.querySelector('[data-player-stat-field="currentIntegrity"]');
-    if (integrityInput) {
-      integrityInput.max = String(patch.integMax);
-      if (patch.integAtual !== undefined) {
-        integrityInput.value = String(patch.integAtual);
-      }
-      syncPlayerStatInputCard(integrityInput, "currentIntegrity");
+  if (field === "integMax") {
+    const card = input.closest(".player-resource-card");
+    const currentInput = card?.querySelector('[data-player-stat-field="currentIntegrity"]');
+    if (currentInput && patch.integAtual !== undefined) {
+      currentInput.max = String(patch.integMax || currentInput.max || "0");
+      currentInput.value = String(patch.integAtual);
+      syncPlayerStatInputCard(currentInput, "currentIntegrity");
     }
   }
 }
@@ -1192,15 +1195,11 @@ function normalizeMesaSheetSnapshot(raw) {
       return [field, raw?.[field] === undefined ? "" : normalizeMesaAttrValue(raw[field], "")];
     })
   );
-  const derivedIntegrityMax = attrSnapshot.attrAlma
-    ? getMesaIntegrityMaxFromSoul(attrSnapshot.attrAlma, raw?.integMax ?? "0")
-    : raw?.integMax ?? "";
-
   return {
     vidaAtual: raw?.vidaAtual ?? "",
     vidaMax: raw?.vidaMax ?? "",
     integAtual: raw?.integAtual ?? "",
-    integMax: derivedIntegrityMax,
+    integMax: raw?.integMax ?? "",
     charName: raw?.charName ?? "",
     charClass: raw?.charClass ?? "",
     charRace: raw?.charRace ?? "",

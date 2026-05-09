@@ -187,6 +187,9 @@ test.describe("Mesa virtual", () => {
     await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("");
     await page.locator('[data-player-stat-field="currentLife"]').fill("5");
     await page.locator('[data-player-stat-field="currentIntegrity"]').fill("3");
+    await page.locator('[data-player-sheet-field="integMax"]').fill("");
+    await expect(page.locator('[data-player-sheet-field="integMax"]')).toHaveValue("");
+    await page.locator('[data-player-sheet-field="integMax"]').fill("9");
 
     await page.locator('[data-player-sheet-field="attrForca"]').fill("");
     await expect(page.locator('[data-player-sheet-field="attrForca"]')).toHaveValue("");
@@ -214,7 +217,7 @@ test.describe("Mesa virtual", () => {
     });
     expect(savedSheet.vidaAtual).toBe("5");
     expect(savedSheet.integAtual).toBe("3");
-    expect(savedSheet.integMax).toBe("5");
+    expect(savedSheet.integMax).toBe("9");
     expect(savedSheet.attrForca).toBe("7");
     expect(savedSheet.attrAlma).toBe("15");
     expect(savedSheet.charClass).toBe("Sentinela");
@@ -440,6 +443,8 @@ test.describe("Mesa virtual", () => {
 
     await page.locator('[data-player-stat-field="currentLife"]').fill("7");
     await page.locator('[data-player-stat-field="currentIntegrity"]').fill("2");
+    await page.locator('[data-player-sheet-field="vidaMax"]').fill("22");
+    await page.locator('[data-player-sheet-field="integMax"]').fill("11");
 
     await expect(page.locator('[data-player-item-field="name"]').first()).toHaveValue("Rosa de Ferro");
     await page.locator('[data-player-item-field="name"]').first().fill("Rosa de Ferro Reforcada");
@@ -453,7 +458,9 @@ test.describe("Mesa virtual", () => {
     await expect.poll(() => putRequests.length, { timeout: 4000 }).toBeGreaterThan(0);
     await expect.poll(() => (
       characterData.vidaAtual === "7"
+      && characterData.vidaMax === "22"
       && characterData.integAtual === "2"
+      && characterData.integMax === "11"
       && characterData.attrAgilidade === "9"
       && characterData.charRace === "Marcada"
       && Array.isArray(characterData.inv)
@@ -465,7 +472,9 @@ test.describe("Mesa virtual", () => {
       return sheets.ana || {};
     });
     expect(cachedRemoteSheet.vidaAtual).toBe("7");
+    expect(cachedRemoteSheet.vidaMax).toBe("22");
     expect(cachedRemoteSheet.integAtual).toBe("2");
+    expect(cachedRemoteSheet.integMax).toBe("11");
     expect(cachedRemoteSheet.attrAgilidade).toBe("9");
     expect(cachedRemoteSheet.charRace).toBe("Marcada");
     expect(cachedRemoteSheet.inv[0].name).toBe("Rosa de Ferro Reforcada");

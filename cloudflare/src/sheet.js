@@ -38,12 +38,6 @@ function clampResourceValue(value, maxValue, fallback = "") {
   ));
 }
 
-function getIntegrityMaxFromSoul(value, fallback = "") {
-  const numeric = Number.parseInt(value, 10);
-  if (Number.isNaN(numeric)) return fallback;
-  return String(Math.max(0, Math.floor(numeric / 3)));
-}
-
 function normalizeInventorySlots(kind, value, used = 0) {
   if (kind === "monster") return 0;
   if (kind === "npc") return DEFAULT_INVENTORY_SLOTS;
@@ -151,11 +145,6 @@ function normalizeSheetData(data = {}, kind = "player", charNameFallback = "") {
   ATTRIBUTES.forEach(attr => {
     normalized[`attr${attr}`] = sanitizeAttrValue(attr, data[`attr${attr}`], "");
   });
-
-  if (!isMonster) {
-    normalized.integMax = getIntegrityMaxFromSoul(normalized.attrAlma, "");
-    normalized.integAtual = clampResourceValue(normalized.integAtual, normalized.integMax);
-  }
 
   if (isMonster) {
     normalized.charFaction = "";

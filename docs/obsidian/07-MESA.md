@@ -53,8 +53,8 @@ Worker/D1:
 
 - Preservar ordem dos scripts em `mesa.html`.
 - Nao quebrar drag/move de tokens.
-- Jogador pode alterar pela Mesa dados rapidos, atributos, Vida atual, Vida maxima, Integridade atual e inventario da propria ficha.
-- `attrAlma` recalcula a Integridade maxima da mesma forma que a Ficha e clampa a Integridade atual.
+- Jogador pode alterar pela Mesa dados rapidos, atributos, Vida atual, Vida maxima, Integridade atual, Integridade maxima e inventario da propria ficha.
+- `attrAlma` continua calculando modificador, mas nao sobrescreve `integMax`; Integridade maxima e valor manual editavel.
 - Inventario editado pela Mesa deve respeitar a capacidade atual da ficha; jogador nao aumenta capacidade nesta etapa.
 - Memorias continuam em leitura no painel do jogador nesta etapa para preservar as regras de transferencia.
 - Vida atual nao pode passar da Vida maxima.
@@ -144,7 +144,7 @@ Worker/D1:
 8. Confirmar que o jogador ve apenas painel "Meu personagem" com a propria ficha.
 9. Confirmar que jogador nao ve nem consegue acionar `Limpar cena`.
 10. Confirmar que o painel do jogador usa fluxo unico simples, sem abas e sem expor roster ou dados de terceiros.
-11. Editar Vida atual, Vida maxima, Integridade atual, atributos, dados rapidos e inventario no painel do jogador e confirmar persistencia na ficha apos recarregar.
+11. Editar Vida atual, Vida maxima, Integridade atual, Integridade maxima, atributos, dados rapidos e inventario no painel do jogador e confirmar persistencia na ficha apos recarregar.
 12. Apagar completamente um input numerico da Mesa, redigitar outro valor e confirmar que nao vira `0` automaticamente antes da digitacao.
 13. Validar que Vida e Integridade respeitam limites `0` e `Max` pelos inputs diretos.
 14. Validar em viewport larga que painel pessoal, recursos e inspetor nao ficam vazios nem com sobreposicao.

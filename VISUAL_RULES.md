@@ -175,7 +175,7 @@ Comportamento visual consolidado:
 - Inspetor lateral deve ser compacto e funcional
 - Jogadores veem palco compartilhado, mas nao veem roster de tokens disponiveis para colocar na cena
 - Jogadores recebem painel pessoal "Meu personagem" com dados da propria ficha; memorias aparecem em leitura
-- Jogadores podem editar dados rapidos, atributos, Vida atual, Vida maxima, Integridade atual e inventario da propria ficha pela Mesa
+- Jogadores podem editar dados rapidos, atributos, Vida atual, Vida maxima, Integridade atual, Integridade maxima e inventario da propria ficha pela Mesa
 - O painel do jogador deve manter a interface simples em fluxo unico, sem abas por padrao, com secoes diretas para status, dados, atributos, inventario e memorias
 - Vida e Integridade devem usar inputs diretos e legiveis; botoes rapidos podem voltar apenas se nao deixarem a ficha visualmente pesada
 - Inputs numericos da Mesa devem permitir apagar o valor e redigitar um numero novo; o clamp visual deve acontecer sem transformar o campo vazio temporario em `0`

@@ -94,7 +94,7 @@ O campo `data_json` em `mesa_scenes` guarda a cena visual da Mesa: tokens ativos
 - Mestre controla jogadores, NPCs, monstros, regras e concessao de Essencia da Alma
 - Jogadores podem ler a cena da Mesa, mas apenas o mestre pode salvar posicao, ordem e visibilidade dos tokens
 - Vida atual nao pode passar da Vida maxima
-- Integridade maxima de jogador/NPC deriva de Alma no Worker e ignora `integMax` divergente enviado pelo cliente
+- Integridade maxima de jogador/NPC e editavel; o Worker preserva `integMax` enviado pelo cliente e apenas clampa Integridade atual pelo maximo salvo
 - Integridade atual nao pode passar da Integridade maxima
 - Habilidades devem preservar `id`, `name`, `type`, `trigger` e `desc` ao salvar no D1
 - Monstros nao devem ganhar inventario, faccao ou memorias possuidas

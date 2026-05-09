@@ -647,11 +647,6 @@ function normalizeSheetData(data, kind = "player") {
     normalized[`attr${attr}`] = sanitizeAttrValue(attr, data[`attr${attr}`], "");
   });
 
-  if (!isMonster) {
-    normalized.integMax = getIntegrityMaxFromSoul(normalized.attrAlma, normalized.integMax || "");
-    normalized.integAtual = clampSheetResourceValue(normalized.integAtual, normalized.integMax);
-  }
-
   if (kind === "player") {
     normalized.charLevel = String(normalized.soulCore.rank);
   }

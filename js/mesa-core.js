@@ -966,12 +966,6 @@ function normalizeMesaAttrValue(value, fallback = "1") {
   return String(Math.max(1, numeric));
 }
 
-function getMesaIntegrityMaxFromSoul(value, fallback = "0") {
-  const numeric = Number.parseInt(value, 10);
-  if (Number.isNaN(numeric)) return String(fallback);
-  return String(Math.max(0, Math.floor(numeric / 3)));
-}
-
 function normalizeMesaInventorySlotsValue(value, used = 0) {
   const numeric = Number.parseInt(value, 10);
   const safeValue = Number.isNaN(numeric) ? MESA_DEFAULT_INVENTORY_SLOTS : numeric;
@@ -1321,10 +1315,6 @@ function normalizeMesaSheetPatchPayload(payload = {}) {
       patch[field] = normalizeMesaAttrValue(payload[field], "1");
     }
   });
-
-  if (patch.attrAlma !== undefined && payload.integMax === undefined) {
-    patch.integMax = getMesaIntegrityMaxFromSoul(patch.attrAlma, patch.integMax || "0");
-  }
 
   if (Array.isArray(payload.inv)) {
     patch.inv = payload.inv.slice(0, 120).map(normalizeMesaItem);

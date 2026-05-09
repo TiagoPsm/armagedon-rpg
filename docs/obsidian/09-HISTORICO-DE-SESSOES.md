@@ -2,6 +2,12 @@
 
 Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STATUS.md`.
 
+## 2026-05-09 - Maximos De Vida E Integridade Editaveis
+
+- Painel pessoal da Mesa passou a editar Integridade maxima com campo `Max`, igual Vida.
+- Ficha, Worker e backend legado deixam de sobrescrever `integMax` pela Alma; Alma continua servindo para modificador.
+- Vida/Integridade atuais continuam clampadas pelos maximos salvos, mas os maximos agora sao valores numericos manuais.
+
 ## 2026-05-09 - Edicao Numerica Direta Na Mesa
 
 - Inputs numericos da Mesa agora aceitam apagar o valor inteiro e digitar outro numero sem transformar o campo vazio temporario em `0`.
@@ -61,7 +67,7 @@ Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STA
 
 - Painel pessoal do jogador na Mesa agora edita dados rapidos, atributos, Vida atual, Vida maxima, Integridade atual e inventario da propria ficha.
 - Roster de tokens continua exclusivo do mestre; jogador continua sem busca, contagem de disponiveis e acoes de colocar/focar/retirar tokens alheios.
-- `attrAlma` recalcula `integMax` e clampa `integAtual`, mantendo a semantica da Ficha.
+- Historico da primeira versao: `attrAlma` ainda recalculava `integMax`; isso foi substituido depois por Integridade maxima manual.
 - `mesa:sheet:patch` passou a aceitar payload amplo e sanitizado; Durable Object continua retransmitindo apenas para mestre e dono da ficha.
 - Memorias continuam em leitura no painel do jogador para preservar regras de transferencia.
 - Validado com `check:js`, `audit:static`, `test:mesa`, `test:ficha`, `perf:mesa`, `build:pages`, `test:mesa:online` publico e dry-run do Worker com `--config cloudflare/wrangler.toml`.

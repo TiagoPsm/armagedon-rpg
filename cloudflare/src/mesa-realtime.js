@@ -19,6 +19,7 @@ const PLAYER_PATCH_FIELDS = new Set([
   "vidaAtual",
   "vidaMax",
   "integAtual",
+  "integMax",
   ...ATTRIBUTES.map(attr => `attr${attr}`)
 ]);
 const RELAY_TYPES = new Set([
@@ -97,12 +98,6 @@ function normalizeAttrValue(value, fallback = "1") {
   return String(Math.max(1, numeric));
 }
 
-function getIntegrityMaxFromSoul(value, fallback = "0") {
-  const numeric = Number.parseInt(value, 10);
-  if (Number.isNaN(numeric)) return String(fallback);
-  return String(Math.max(0, Math.floor(numeric / 3)));
-}
-
 function normalizeInventorySlotsValue(value, used = 0) {
   const numeric = Number.parseInt(value, 10);
   const safeValue = Number.isNaN(numeric) ? DEFAULT_INVENTORY_SLOTS : numeric;
@@ -164,10 +159,6 @@ function normalizeSheetPatchPayload(payload) {
     }
   });
 
-  if (patch.attrAlma !== undefined && payload?.integMax === undefined) {
-    patch.integMax = getIntegrityMaxFromSoul(patch.attrAlma, patch.integMax || "0");
-  }
-
   if (Array.isArray(payload?.inv)) {
     patch.inv = payload.inv.slice(0, 120).map(normalizeItem);
     if (patch.inventorySlots !== undefined) {
@@ -188,10 +179,6 @@ function filterPlayerSheetPatch(patch) {
   PLAYER_PATCH_FIELDS.forEach(field => {
     if (patch[field] !== undefined) filtered[field] = patch[field];
   });
-
-  if (patch.attrAlma !== undefined && patch.integMax !== undefined) {
-    filtered.integMax = getIntegrityMaxFromSoul(patch.attrAlma, "0");
-  }
 
   if (Array.isArray(patch.inv)) {
     filtered.inv = patch.inv.slice(0, 120).map(normalizeItem);

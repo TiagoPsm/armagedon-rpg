@@ -148,7 +148,7 @@ CORS_ORIGIN=https://seuusuario.github.io,https://www.seudominio.com
 - NPCs e monstros sao controlados pelo mestre
 - a troca de itens entre jogadores falha se o destino estiver sem slot livre
 - Vida atual nao pode passar da Vida maxima
-- Integridade maxima de jogador/NPC deriva de Alma no servidor e ignora `integMax` divergente enviado pelo cliente
+- Integridade maxima de jogador/NPC e editavel; o servidor preserva `integMax` enviado pelo cliente e apenas clampa Integridade atual pelo maximo salvo
 - Integridade atual nao pode passar da Integridade maxima
 - jogador pode alterar Integridade atual da propria ficha
 

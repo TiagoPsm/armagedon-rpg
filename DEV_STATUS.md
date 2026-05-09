@@ -74,7 +74,7 @@ Registro minimo esperado:
 - Mesa virtual usa renderer Canvas/Worker por padrao, com fallback Canvas principal e DOM legado via `localStorage.mesaRenderer = "dom"`
 - Realtime da Mesa aceita deltas incrementais de token para reduzir payload durante movimento
 - Mestre ve roster completo da Mesa; jogador ve palco compartilhado e painel pessoal da propria ficha, sem lista de tokens disponiveis
-- Jogador pode alterar pela Mesa: dados rapidos, atributos, Vida atual, Vida maxima, Integridade atual e inventario da propria ficha
+- Jogador pode alterar pela Mesa: dados rapidos, atributos, Vida atual, Vida maxima, Integridade atual, Integridade maxima e inventario da propria ficha
 - Campos numericos da Mesa permitem apagar o valor atual e digitar um novo numero antes de aplicar clamp/salvamento
 - Memorias continuam em leitura no painel do jogador nesta etapa para preservar as regras de transferencia
 - Vida atual de jogador, NPC e monstro nao pode passar da Vida maxima
@@ -91,6 +91,16 @@ Registro minimo esperado:
 - Home/login ja segue essa mesma linguagem visual
 
 ## Ultima Etapa Concluida
+
+- Edicao livre de maximos de Vida/Integridade em 2026-05-09:
+  - objetivo: permitir que jogador e mestre editem diretamente, por numero digitado, Vida atual/maxima e Integridade atual/maxima
+  - `js/mesa-roster.js`: painel pessoal do jogador agora mostra `Max` editavel tambem para Integridade
+  - `js/mesa-stage.js` e `js/mesa-core.js`: patches da Mesa preservam `integMax` manual e `attrAlma` deixa de sobrescrever a Integridade maxima
+  - `js/ficha-core.js`, `js/ficha-sheet.js` e `ficha.html`: Integridade maxima da ficha deixou de ser somente leitura e passou a ser persistida como valor manual
+  - `cloudflare/src/sheet.js`, `cloudflare/src/mesa-realtime.js` e `server/src/utils/sheet.js`: backend/Worker preservam `integMax` enviado pelo cliente e apenas clampam Integridade atual pelo maximo salvo
+  - `mesa.html` e `ficha.html`: cache bust atualizado para `2026-05-09-free-resource-max-1`
+  - validacoes executadas: `npm run check:js`, `npm run audit:static`, `npm run test:mesa`, `npm run test:ficha`, `npm run perf:mesa`, `npm run build:pages`, `npx.cmd --yes wrangler@latest deploy --dry-run --config cloudflare/wrangler.toml`, `git diff --check` e `git fsck --no-dangling`
+  - status: pronto para publicacao
 
 - Edicao direta de numeros da ficha pela Mesa em 2026-05-09:
   - objetivo: permitir que mestre e jogador apaguem o valor de campos numericos e digitem o numero novo, sem depender apenas das setas do input
@@ -132,7 +142,7 @@ Registro minimo esperado:
 - Painel de edicao completa do jogador na Mesa em 2026-05-08:
   - objetivo: permitir que o jogador edite pela Mesa a propria ficha em tempo real, alem de Vida/Integridade atuais
   - `js/mesa-roster.js` e `css/mesa-roster.css`: painel pessoal ganhou campos editaveis de dados rapidos, atributos, Vida maxima e inventario; itens podem ser adicionados, removidos e editados sem expor roster de tokens
-  - `js/mesa-stage.js`: novos handlers aplicam patches locais sem reconstruir o painel a cada tecla; `attrAlma` recalcula `integMax` e clampa `integAtual`; inventario respeita a capacidade atual
+  - `js/mesa-stage.js`: novos handlers aplicam patches locais sem reconstruir o painel a cada tecla; inventario respeita a capacidade atual
   - `js/mesa-core.js`: `mesa:sheet:patch` passou a normalizar texto, recursos, atributos, `inv` e `ownedMemories`; cache local/remoto da Mesa preserva atributos e dados rapidos
   - `cloudflare/src/mesa-realtime.js`: Durable Object agora aceita e sanitiza patches amplos da ficha, mantendo a regra de que jogador so transmite alteracoes da propria `characterKey` e filtrando campos nao permitidos antes do relay
   - `mesa.html`: cache bust de `mesa-core.js`, `mesa-stage.js`, `mesa-roster.js` e `mesa-roster.css` atualizado para `2026-05-08-player-edit-1`
@@ -372,7 +382,7 @@ Registro minimo esperado:
 - Documentacao `.md` atualizada junto com a mudanca, conforme regra do projeto
 - Etapa anterior:
   - Worker e backend legado passaram a normalizar Vida/Integridade antes de salvar
-  - Integridade maxima e derivada de Alma no servidor, nao apenas no frontend
+  - historico antigo: nesta etapa a Integridade maxima ainda derivava de Alma no servidor; isso foi alterado em 2026-05-09 para permitir edicao manual de `integMax`
 - Antes disso:
   - transferencias de item e memoria entre jogadores no Worker passaram a validar tipo `player` e persistir origem, destino e auditoria em lote D1
 - Mesa preparada para aparecer no GitHub Pages: `.github/workflows/pages.yml` agora copia `mesa.html`
@@ -448,8 +458,8 @@ Registro minimo esperado:
 ## Ajustes de Gameplay Ja Consolidados
 
 - Integridade substituiu Sanidade
-- Integridade maxima e derivada da Alma:
-  - a cada 3 pontos de Alma, +1 de Integridade maxima
+- Integridade maxima e editavel manualmente:
+  - Alma continua gerando modificador, mas nao sobrescreve o maximo salvo de Integridade
 - Integridade atual pode ser ajustada pelo jogador na propria ficha e na Mesa
 - Vida atual nao pode ultrapassar Vida maxima
 - Integridade atual nao pode ultrapassar Integridade maxima
