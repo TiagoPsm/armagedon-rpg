@@ -176,10 +176,8 @@ Comportamento visual consolidado:
 - Jogadores veem palco compartilhado, mas nao veem roster de tokens disponiveis para colocar na cena
 - Jogadores recebem painel pessoal "Meu personagem" com dados da propria ficha; memorias aparecem em leitura
 - Jogadores podem editar dados rapidos, atributos, Vida atual, Vida maxima, Integridade atual e inventario da propria ficha pela Mesa
-- O painel do jogador deve usar abas claras para reduzir rolagem longa e manter controles importantes acima da dobra
-- Vida e Integridade devem ter controles rapidos compactos sem gerar sobreposicao ou desalinhamento
-- Painel do jogador, inspetor e cards da Mesa nao devem ocupar largura ilimitada em desktop; usar largura maxima para preservar leitura
-- A limitacao de largura do painel do jogador nao deve deixar o conteudo interno pequeno: cards de Vida/Integridade, atributos, inventario e memorias precisam manter inputs altos, areas clicaveis confortaveis e espacamento claro
+- O painel do jogador deve manter a interface simples em fluxo unico, sem abas por padrao, com secoes diretas para status, dados, atributos, inventario e memorias
+- Vida e Integridade devem usar inputs diretos e legiveis; botoes rapidos podem voltar apenas se nao deixarem a ficha visualmente pesada
 - Otimizacoes com `content-visibility` nao podem criar blocos vazios em areas imediatamente visiveis, como painel pessoal e inspetor
 - Tokens de terceiros no inspetor do jogador devem ficar restritos, sem nome/status/dados detalhados no painel inferior
 - Mestre pode controlar visibilidade, organizacao e valores maximos

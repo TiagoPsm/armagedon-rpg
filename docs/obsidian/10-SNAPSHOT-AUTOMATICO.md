@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-08 22:18:58 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-08 22:34:48 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `ea90e74 2026-05-08 Compacta painel da mesa`
+- Ultimo commit: `5f040e7 2026-05-08 Melhora escala interna do painel da mesa`
 
 ### Alteracoes Locais
 
@@ -24,7 +24,11 @@ M  css/mesa-layout.css
 M  docs/obsidian/07-MESA.md
 M  docs/obsidian/09-HISTORICO-DE-SESSOES.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  js/mesa-core.js
+M  js/mesa-roster.js
+M  js/mesa-stage.js
 M  mesa.html
+M  tests/mesa.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -42,7 +46,11 @@ css/mesa-layout.css
 docs/obsidian/07-MESA.md
 docs/obsidian/09-HISTORICO-DE-SESSOES.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+js/mesa-core.js
+js/mesa-roster.js
+js/mesa-stage.js
 mesa.html
+tests/mesa.spec.cjs
 ```
 
 ## Paginas Principais

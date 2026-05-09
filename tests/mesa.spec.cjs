@@ -170,21 +170,16 @@ test.describe("Mesa virtual", () => {
     await expect(playerPanel).not.toContainText("Vigia da Porta");
     await expect(page.locator("#tokenInspector")).not.toContainText("Bruno Cinza");
 
-    await expect(page.locator('[data-player-panel-action="select-player-tab"][data-tab="status"]')).toHaveClass(/is-active/);
+    await expect(page.locator('[data-player-panel-action="select-player-tab"]')).toHaveCount(0);
     await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("8");
-    await page.locator('[data-player-panel-action="adjust-resource"][data-resource-field="currentLife"][data-delta="1"]').click();
-    await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("9");
     await page.locator('[data-player-stat-field="currentLife"]').fill("5");
     await page.locator('[data-player-stat-field="currentIntegrity"]').fill("3");
 
-    await page.locator('[data-player-panel-action="select-player-tab"][data-tab="attributes"]').click();
     await page.locator('[data-player-sheet-field="attrForca"]').fill("7");
     await page.locator('[data-player-sheet-field="attrAlma"]').fill("15");
 
-    await page.locator('[data-player-panel-action="select-player-tab"][data-tab="notes"]').click();
     await page.locator('[data-player-sheet-field="charClass"]').fill("Sentinela");
 
-    await page.locator('[data-player-panel-action="select-player-tab"][data-tab="inventory"]').click();
     await expect(page.locator('[data-player-item-field="name"]').first()).toHaveValue("Lamina curta");
     await page.locator('[data-player-item-field="name"]').first().fill("Lamina longa");
     await page.locator('[data-player-item-field="damage"]').first().fill("1d8");
@@ -193,7 +188,6 @@ test.describe("Mesa virtual", () => {
     await page.locator('[data-player-item-field="name"]').last().fill("Bandagem");
     await page.locator('[data-player-item-field="type"]').last().selectOption("acessorio");
 
-    await page.locator('[data-player-panel-action="select-player-tab"][data-tab="memories"]').click();
     await expect(playerPanel).toContainText("Memoria do Portao");
 
     const savedSheet = await page.evaluate(() => {
@@ -419,24 +413,20 @@ test.describe("Mesa virtual", () => {
     await page.goto(`${baseUrl}/mesa.html`);
     const playerPanel = page.locator(".player-sheet-panel");
     await expect(playerPanel).toBeVisible();
-    await expect(page.locator('[data-player-panel-action="select-player-tab"][data-tab="status"]')).toHaveClass(/is-active/);
+    await expect(page.locator('[data-player-panel-action="select-player-tab"]')).toHaveCount(0);
     await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("9");
     await expect(page.locator('[data-player-stat-field="currentIntegrity"]')).toHaveValue("5");
 
     await page.locator('[data-player-stat-field="currentLife"]').fill("7");
     await page.locator('[data-player-stat-field="currentIntegrity"]').fill("2");
 
-    await page.locator('[data-player-panel-action="select-player-tab"][data-tab="inventory"]').click();
     await expect(page.locator('[data-player-item-field="name"]').first()).toHaveValue("Rosa de Ferro");
     await page.locator('[data-player-item-field="name"]').first().fill("Rosa de Ferro Reforcada");
 
-    await page.locator('[data-player-panel-action="select-player-tab"][data-tab="memories"]').click();
     await expect(playerPanel).toContainText("Juramento Rubro");
 
-    await page.locator('[data-player-panel-action="select-player-tab"][data-tab="attributes"]').click();
     await page.locator('[data-player-sheet-field="attrAgilidade"]').fill("9");
 
-    await page.locator('[data-player-panel-action="select-player-tab"][data-tab="notes"]').click();
     await page.locator('[data-player-sheet-field="charRace"]').fill("Marcada");
 
     await expect.poll(() => putRequests.length, { timeout: 4000 }).toBeGreaterThan(0);

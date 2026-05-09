@@ -184,7 +184,6 @@ function renderPlayerSheetPanel(rosterList, rosterCountBadge) {
   const memories = Array.isArray(sheet.ownedMemories) ? sheet.ownedMemories.filter(memory => String(memory.name || memory.desc || "").trim()) : [];
   const inventorySlots = Math.max(MESA_DEFAULT_INVENTORY_SLOTS, asPositiveInt(sheet.inventorySlots, MESA_DEFAULT_INVENTORY_SLOTS), inventory.length);
   const selectedKey = context.characterKey || normalizeMesaCharacterKey(state.session?.username);
-  const activeTab = normalizePlayerPanelTab(state.playerPanelTab);
 
   rosterCountBadge.textContent = context.isOnStage ? "Em cena" : "Fora da cena";
 
@@ -205,125 +204,32 @@ function renderPlayerSheetPanel(rosterList, rosterCountBadge) {
 
       ${renderPlayerTokenSelector(context, selectedKey)}
 
-      ${renderPlayerSheetSyncStatus()}
-      ${renderPlayerPanelTabs(activeTab, selectedKey)}
-      ${renderPlayerPanelTabContent(activeTab, {
-        sheet,
-        selectedKey,
-        currentLife,
-        maxLife,
-        currentIntegrity,
-        maxIntegrity,
-        inventory,
-        inventorySlots,
-        memories
-      })}
-    </section>
-  `;
-}
-
-function renderPlayerSheetSyncStatus() {
-  const status = getPlayerSheetSyncStatusCopy();
-  return `
-    <div class="player-sync-row" data-player-sync-status="${escapeAttribute(status.key)}">
-      <span class="player-sync-dot" aria-hidden="true"></span>
-      <span data-player-sync-copy>${escapeHtml(status.label)}</span>
-    </div>
-  `;
-}
-
-function getPlayerSheetSyncStatusCopy() {
-  if (!window.AUTH?.isBackendEnabled?.()) {
-    return { key: "local", label: "Salvo neste navegador" };
-  }
-
-  if (state.playerSheetSyncStatus === "saving") return { key: "saving", label: "Salvando..." };
-  if (state.playerSheetSyncStatus === "error") return { key: "error", label: "Erro ao salvar" };
-  return { key: "saved", label: "Sincronizado" };
-}
-
-function renderPlayerPanelTabs(activeTab, characterKey) {
-  return `
-    <div class="player-panel-tabs" role="tablist" aria-label="Controles da ficha">
-      ${PLAYER_PANEL_TABS.map(tab => `
-        <button
-          type="button"
-          class="player-tab-btn ${tab === activeTab ? "is-active" : ""}"
-          role="tab"
-          aria-selected="${tab === activeTab ? "true" : "false"}"
-          data-player-panel-action="select-player-tab"
-          data-character-key="${escapeAttribute(characterKey)}"
-          data-tab="${escapeAttribute(tab)}"
-        >
-          ${escapeHtml(PLAYER_PANEL_TAB_LABELS[tab] || tab)}
-        </button>
-      `).join("")}
-    </div>
-  `;
-}
-
-function renderPlayerPanelTabContent(activeTab, data) {
-  if (activeTab === "attributes") {
-    return renderPlayerAttributeEditor(data.sheet, data.selectedKey);
-  }
-
-  if (activeTab === "inventory") {
-    return `
-      <div class="player-panel-meta-grid is-compact">
-        <article class="player-summary-card">
-          <span class="panel-kicker">Inventario</span>
-          <strong>${data.inventory.length}/${data.inventorySlots}</strong>
-          <small>Slots ocupados</small>
-        </article>
-      </div>
-      ${renderPlayerInventoryList(data.inventory, data.selectedKey, data.inventorySlots)}
-    `;
-  }
-
-  if (activeTab === "memories") {
-    return `
-      <div class="player-panel-meta-grid is-compact">
-        <article class="player-summary-card">
-          <span class="panel-kicker">Memorias</span>
-          <strong>${data.memories.length}</strong>
-          <small>Registradas na ficha</small>
-        </article>
-      </div>
-      ${renderPlayerMemoryList(data.memories)}
-    `;
-  }
-
-  if (activeTab === "notes") {
-    return renderPlayerIdentityEditor(data.sheet, data.selectedKey);
-  }
-
-  return renderPlayerStatusPanel(data);
-}
-
-function renderPlayerStatusPanel(data) {
-  return `
-    <section class="player-status-panel">
       <div class="player-resource-grid">
-        ${renderPlayerResourceEditor("Vida", "currentLife", data.currentLife, data.maxLife, "vida", data.selectedKey, {
-          editableMaxField: "vidaMax",
-          quickControls: true
+        ${renderPlayerResourceEditor("Vida", "currentLife", currentLife, maxLife, "vida", selectedKey, {
+          editableMaxField: "vidaMax"
         })}
-        ${renderPlayerResourceEditor("Integridade", "currentIntegrity", data.currentIntegrity, data.maxIntegrity, "integ", data.selectedKey, {
-          quickControls: true
-        })}
+        ${renderPlayerResourceEditor("Integridade", "currentIntegrity", currentIntegrity, maxIntegrity, "integ", selectedKey)}
       </div>
-      <div class="player-panel-meta-grid is-compact">
+
+      ${renderPlayerIdentityEditor(sheet, selectedKey)}
+
+      ${renderPlayerAttributeEditor(sheet, selectedKey)}
+
+      <div class="player-panel-meta-grid">
         <article class="player-summary-card">
           <span class="panel-kicker">Inventario</span>
-          <strong>${data.inventory.length}/${data.inventorySlots}</strong>
+          <strong>${inventory.length}/${inventorySlots}</strong>
           <small>Slots ocupados</small>
         </article>
         <article class="player-summary-card">
           <span class="panel-kicker">Memorias</span>
-          <strong>${data.memories.length}</strong>
+          <strong>${memories.length}</strong>
           <small>Registradas na ficha</small>
         </article>
       </div>
+
+      ${renderPlayerInventoryList(inventory, selectedKey, inventorySlots)}
+      ${renderPlayerMemoryList(memories)}
     </section>
   `;
 }
@@ -437,9 +343,8 @@ function renderPlayerTokenSelector(context, selectedKey) {
 
 function renderPlayerResourceEditor(label, field, current, max, type, characterKey, options = {}) {
   const editableMaxField = String(options.editableMaxField || "");
-  const quickControls = options.quickControls === true;
   return `
-    <article class="player-resource-card ${quickControls ? "is-priority" : ""}">
+    <article class="player-resource-card">
       <div class="bar-label-row">
         <span class="bar-label">${escapeHtml(label)}</span>
         <span>${current}/${max}</span>
@@ -473,14 +378,6 @@ function renderPlayerResourceEditor(label, field, current, max, type, characterK
       <div class="bar-preview is-${type === "vida" ? "life" : "integrity"}">
         <span style="${getBarFillStyle(type, current, max)}"></span>
       </div>
-      ${quickControls ? `
-        <div class="player-quick-actions" aria-label="Ajustes rapidos de ${escapeAttribute(label)}">
-          <button type="button" class="mini-btn" data-player-panel-action="adjust-resource" data-character-key="${escapeAttribute(characterKey)}" data-resource-field="${escapeAttribute(field)}" data-delta="-1">-1</button>
-          <button type="button" class="mini-btn" data-player-panel-action="adjust-resource" data-character-key="${escapeAttribute(characterKey)}" data-resource-field="${escapeAttribute(field)}" data-delta="1">+1</button>
-          <button type="button" class="mini-btn" data-player-panel-action="adjust-resource" data-character-key="${escapeAttribute(characterKey)}" data-resource-field="${escapeAttribute(field)}" data-resource-mode="zero">0</button>
-          <button type="button" class="mini-btn" data-player-panel-action="adjust-resource" data-character-key="${escapeAttribute(characterKey)}" data-resource-field="${escapeAttribute(field)}" data-resource-mode="max">Max</button>
-        </div>
-      ` : ""}
     </article>
   `;
 }

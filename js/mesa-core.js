@@ -56,7 +56,6 @@ const state = {
   search: "",
   drag: null,
   playerPanelCharacterKey: "",
-  playerPanelTab: "status",
   playerSheetSyncStatus: "idle",
   fullscreenMode: "off",
   scenePersistence: "local",
@@ -76,14 +75,6 @@ const MESA_ATTRIBUTE_NAMES = ["Forca", "Agilidade", "Inteligencia", "Resistencia
 const MESA_SHEET_TEXT_FIELDS = new Set(["charName", "charClass", "charRace", "charFaction", "charNotes"]);
 const MESA_SHEET_RESOURCE_FIELDS = new Set(["vidaAtual", "vidaMax", "integAtual", "integMax", "inventorySlots"]);
 const MESA_ITEM_TYPES = new Set(["arma", "acessorio", "outro"]);
-const PLAYER_PANEL_TABS = ["status", "attributes", "inventory", "memories", "notes"];
-const PLAYER_PANEL_TAB_LABELS = {
-  status: "Status",
-  attributes: "Atributos",
-  inventory: "Inventario",
-  memories: "Memorias",
-  notes: "Notas"
-};
 const mesaDom = {};
 const pendingMesaRender = Object.fromEntries(MESA_RENDER_PARTS.map(part => [part, false]));
 let mesaRenderFrame = 0;
@@ -918,11 +909,6 @@ function normalizeMesaCharacterKey(value) {
 
 function normalizeMesaUsername(value) {
   return String(value || "").trim().toLowerCase();
-}
-
-function normalizePlayerPanelTab(value) {
-  const tab = String(value || "").trim().toLowerCase();
-  return PLAYER_PANEL_TABS.includes(tab) ? tab : "status";
 }
 
 function normalizeMesaItem(item) {

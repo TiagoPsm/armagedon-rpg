@@ -91,13 +91,11 @@ Worker/D1:
 - Mestre ve roster completo, busca, contagem de disponiveis e acoes de colocar/focar/retirar.
 - Jogador nao ve busca, roster de disponiveis, contagem de disponiveis nem acoes de colocar/focar/retirar.
 - Jogador ve painel "Meu personagem" com avatar, dados rapidos, atributos, Vida, Integridade, inventario, capacidade e memorias somente da propria ficha.
-- Painel do jogador deve ser organizado em abas: `Status`, `Atributos`, `Inventario`, `Memorias` e `Notas`.
-- Aba `Status` deve priorizar Vida e Integridade com inputs e acoes rapidas `-1`, `+1`, `0` e `Max`.
-- Painel do jogador deve exibir feedback de salvamento/sincronizacao sem criar modal ou bloquear edicao.
-- Inventario do jogador na Mesa deve ser compacto: dano aparece apenas em arma, descricao fica recolhida em detalhes e memorias continuam somente leitura.
-- Trocar abas no painel do jogador nao deve expor roster, busca, acoes de mestre ou dados de terceiros.
-- Em desktop largo, painel pessoal e grids internos devem ter largura maxima para evitar campos esticados e leitura ruim.
-- Mesmo com largura maxima, o conteudo interno do painel do jogador deve manter leitura confortavel: cards, inputs, botoes rapidos, atributos, inventario e memorias nao podem ficar pequenos ou mal espacados.
+- Painel do jogador deve usar a interface simples em fluxo unico, sem abas por padrao.
+- Status deve priorizar Vida e Integridade com inputs diretos; os botoes rapidos ficam fora desta versao simples.
+- Salvamento/sincronizacao nao deve criar modal nem bloquear edicao.
+- Inventario do jogador na Mesa continua editavel, com dano apenas em arma e descricao recolhida em detalhes.
+- A interface simples do jogador nao deve expor roster, busca, acoes de mestre ou dados de terceiros.
 - `content-visibility` pode continuar no roster pesado do mestre, mas deve ficar desligado no painel pessoal do jogador e no inspetor visivel para evitar blocos vazios durante rolagem.
 - Se o token do jogador ainda nao estiver em cena, o painel pessoal continua visivel e informa que o mestre ainda nao colocou o token no palco.
 - `getSelectedToken()` nao deve devolver token oculto ou fora de permissao por fallback interno.
@@ -140,10 +138,10 @@ Worker/D1:
 6. Testar alteracao de status permitido.
 7. Abrir como jogador e confirmar que nao aparece roster, busca, contagem de disponiveis nem acoes de colocar/focar/retirar.
 8. Confirmar que o jogador ve apenas painel "Meu personagem" com a propria ficha.
-9. Confirmar abas `Status`, `Atributos`, `Inventario`, `Memorias` e `Notas` sem expor roster ou dados de terceiros.
+9. Confirmar que o painel do jogador usa fluxo unico simples, sem abas e sem expor roster ou dados de terceiros.
 10. Editar Vida atual, Vida maxima, Integridade atual, atributos, dados rapidos e inventario no painel do jogador e confirmar persistencia na ficha apos recarregar.
-11. Usar os botoes rapidos de Vida/Integridade e confirmar que respeitam limites `0` e `Max`.
-12. Validar em viewport larga que painel pessoal, recursos e inspetor nao ficam esticados nem vazios.
+11. Validar que Vida e Integridade respeitam limites `0` e `Max` pelos inputs diretos.
+12. Validar em viewport larga que painel pessoal, recursos e inspetor nao ficam vazios nem com sobreposicao.
 13. Em modo local/offline, manter um `tc_directory_cache` remoto antigo e confirmar que a Mesa salva em `tc_sheets[username]`, nunca na `key` remota antiga.
 14. Com API ativa, abrir a Mesa diretamente como jogador e confirmar que itens/memorias reais aparecem antes de qualquer edicao.
 15. Selecionar token alheio como jogador e confirmar que o inspetor nao mostra nome, barras ou dados detalhados.

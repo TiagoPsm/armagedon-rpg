@@ -2,6 +2,13 @@
 
 Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STATUS.md`.
 
+## 2026-05-09 - Retorno Ao Painel Simples Da Mesa
+
+- Painel pessoal do jogador voltou ao fluxo unico simples, sem abas e sem botoes rapidos.
+- A edicao ampla da propria ficha foi preservada: Vida, Integridade, dados rapidos, atributos e inventario continuam editaveis.
+- Overrides recentes de largura/escala interna em `css/mesa-layout.css` foram removidos para restaurar a primeira leitura do painel.
+- Testes da Mesa passaram a validar explicitamente que nao ha abas no painel do jogador.
+
 ## 2026-05-09 - Escala Interna Do Painel Da Mesa
 
 - Ajustado o conteudo interno do painel pessoal do jogador, sem ampliar novamente o container geral.

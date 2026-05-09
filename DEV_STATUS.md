@@ -91,13 +91,15 @@ Registro minimo esperado:
 
 ## Ultima Etapa Concluida
 
-- Escala interna do painel do jogador na Mesa em 2026-05-09:
-  - objetivo: corrigir a sensacao de conteudo pequeno e mal espacado dentro do painel pessoal, sem voltar a esticar o container geral em desktop
-  - `css/mesa-layout.css`: cards de Vida/Integridade, inputs, botoes rapidos, atributos, inventario e memorias ganharam altura, padding, gaps e limites internos mais confortaveis
-  - `mesa.html`: cache bust de `mesa-layout.css` atualizado para `2026-05-09-player-inner-1`
-  - `VISUAL_RULES.md` e `docs/obsidian/07-MESA.md`: registrada a regra de que o painel pode ter largura controlada, mas o conteudo interno precisa manter area clicavel e leitura confortaveis
-  - validacoes executadas: `npm run check:js`, `npm run test:mesa`, QA visual por Playwright em desktop/mobile, `npm run audit:static`, `npm run build:pages`, `npm run perf:mesa`, `git diff --check` e `npm run test:mesa:online`
-  - status: pronto para publicacao na `main`
+- Retorno da interface simples do painel do jogador na Mesa em 2026-05-09:
+  - objetivo: voltar ao controle simples em fluxo unico, sem abas e sem botoes rapidos, preservando a edicao ampla da propria ficha pela Mesa
+  - `js/mesa-roster.js`: painel pessoal voltou a renderizar hero, Vida/Integridade, dados rapidos, atributos, inventario e memorias em secoes continuas
+  - `js/mesa-core.js` e `js/mesa-stage.js`: removidos estado/handlers mortos de abas e botoes rapidos do painel do jogador
+  - `css/mesa-layout.css`: removidos overrides recentes de largura/escala interna que mudavam a primeira leitura da ficha rapida
+  - `mesa.html`: cache bust de `mesa-core.js`, `mesa-stage.js`, `mesa-roster.js`, `mesa-roster.css` e `mesa-layout.css` atualizado para `2026-05-09-player-simple-1`
+  - `tests/mesa.spec.cjs`: regressao ajustada para garantir ausencia de abas e manter edicao de Vida, Integridade, atributos, dados rapidos e inventario
+  - validacoes executadas: `npm run check:js`, `npm run audit:static`, `npm run test:mesa`, `npm run build:pages`, `npm run perf:mesa`, QA visual por Playwright em desktop/mobile e `git diff --check`
+  - status: pronto para publicacao
 
 - Painel de edicao completa do jogador na Mesa em 2026-05-08:
   - objetivo: permitir que o jogador edite pela Mesa a propria ficha em tempo real, alem de Vida/Integridade atuais
