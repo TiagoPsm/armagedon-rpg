@@ -7,6 +7,13 @@
 - Site: `https://tiagopsm.github.io/armagedon-rpg/`
 - Fonte do Pages: GitHub Actions (`build_type: workflow`)
 - Workflow: `.github/workflows/pages.yml`
+- Workflow preparado para Node 24:
+  - `actions/checkout@v6`
+  - `actions/configure-pages@v6`
+  - `actions/upload-pages-artifact@v5`
+  - `actions/deploy-pages@v5`
+  - `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true`
+- `upload-pages-artifact@v5` deve manter `include-hidden-files: true` para preservar `_site/.nojekyll`.
 
 ## Arquivos Publicados
 
@@ -59,6 +66,7 @@ Confirmar:
 - URLs antigas de MP4 e `/assets/logo-rpg-armagedon.png` retornam 404
 - `npm run test:mesa:online` passa ao menos nos testes publicos
 - com credenciais reais em variaveis de ambiente, `npm run test:mesa:online` tambem valida mestre/jogador autenticados
+- o workflow nao deve emitir aviso de Actions rodando em Node 20
 
 ## Ultimo Deploy Confirmado
 

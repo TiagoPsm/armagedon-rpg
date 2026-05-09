@@ -2,6 +2,13 @@
 
 Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STATUS.md`.
 
+## 2026-05-09 - GitHub Pages Preparado Para Node 24
+
+- Workflow `.github/workflows/pages.yml` atualizado para `checkout@v6`, `configure-pages@v6`, `upload-pages-artifact@v5` e `deploy-pages@v5`.
+- `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` ativado para testar Node 24 antes da migracao obrigatoria do GitHub Actions.
+- `include-hidden-files: true` mantido no upload do Pages para preservar `_site/.nojekyll`.
+- Objetivo: remover aviso de Actions em Node 20 e reduzir risco de falha futura no deploy.
+
 ## 2026-05-08 - Polimento Do Painel Do Jogador Na Mesa
 
 - Painel pessoal do jogador foi separado em abas: `Status`, `Atributos`, `Inventario`, `Memorias` e `Notas`.

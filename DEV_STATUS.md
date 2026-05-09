@@ -349,6 +349,23 @@ Registro minimo esperado:
   - normalizacao de Vida/Integridade no frontend, Worker e backend legado
   - persistencia online dos ajustes de status feitos pela Mesa quando a API esta ativa
 
+## 2026-05-09 - GitHub Pages Preparado Para Node 24
+
+- Workflow `.github/workflows/pages.yml` atualizado para actions que ja publicaram releases compatíveis com Node 24:
+  - `actions/checkout@v6`
+  - `actions/configure-pages@v6`
+  - `actions/upload-pages-artifact@v5`
+  - `actions/deploy-pages@v5`
+- `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` foi ativado no workflow para testar a migracao antes de ela virar padrao no GitHub Actions.
+- `include-hidden-files: true` foi mantido no upload do Pages para garantir que `_site/.nojekyll` continue dentro do artefato publicado.
+- Objetivo: remover o aviso de Actions em Node 20 e evitar quebra futura do deploy do Pages.
+- Validacoes executadas antes do commit:
+  - `npm run build:pages`
+  - confirmar `_site/.nojekyll`
+  - `git diff --check`
+  - consulta do `action.yml` oficial de `actions/upload-pages-artifact@v5.0.0` confirmando o input `include-hidden-files`
+  - push na `main` e `gh run watch` do workflow `Deploy GitHub Pages`
+
 ## 2026-05-08 - Polimento Do Painel Do Jogador Na Mesa
 
 - Painel pessoal do jogador foi reorganizado em abas: `Status`, `Atributos`, `Inventario`, `Memorias` e `Notas`.

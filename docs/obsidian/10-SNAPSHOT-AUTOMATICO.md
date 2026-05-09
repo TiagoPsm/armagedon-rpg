@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-08 21:19:23 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-08 21:32:04 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,22 +13,17 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `b1fe90b 2026-05-08 Permite edicao ampla da ficha pela mesa`
+- Ultimo commit: `4cb455f 2026-05-08 Poli painel do jogador na mesa`
 
 ### Alteracoes Locais
 
 ```text
+M  .github/workflows/pages.yml
+M  DEPLOY_FREE.md
 M  DEV_STATUS.md
-M  VISUAL_RULES.md
-M  css/mesa-roster.css
-M  docs/obsidian/07-MESA.md
+M  docs/obsidian/05-DEPLOY.md
 M  docs/obsidian/09-HISTORICO-DE-SESSOES.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-core.js
-M  js/mesa-roster.js
-M  js/mesa-stage.js
-M  mesa.html
-M  tests/mesa.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -40,17 +35,12 @@ M  tests/mesa.spec.cjs
 ### Arquivos Em Stage
 
 ```text
+.github/workflows/pages.yml
+DEPLOY_FREE.md
 DEV_STATUS.md
-VISUAL_RULES.md
-css/mesa-roster.css
-docs/obsidian/07-MESA.md
+docs/obsidian/05-DEPLOY.md
 docs/obsidian/09-HISTORICO-DE-SESSOES.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/mesa-core.js
-js/mesa-roster.js
-js/mesa-stage.js
-mesa.html
-tests/mesa.spec.cjs
 ```
 
 ## Paginas Principais

@@ -199,6 +199,8 @@ Observacao de performance:
 - nao publique a pasta `assets/` inteira quando ela contiver arquivos grandes que nao estao em uso nas paginas
 - o workflow do GitHub Pages deve copiar somente os assets realmente usados pelo HTML/CSS publicado
 - se um asset dentro de `assets/` passar a ser usado no futuro, adicione a copia dele de forma explicita no workflow em vez de restaurar uma copia ampla da pasta inteira
+- o workflow do GitHub Pages deve usar actions compativeis com Node 24 (`checkout@v6`, `configure-pages@v6`, `upload-pages-artifact@v5`, `deploy-pages@v5` ou superiores)
+- ao usar `upload-pages-artifact@v5`, manter `include-hidden-files: true` para publicar `_site/.nojekyll`
 
 ## Observacao Sobre Realtime
 
