@@ -95,6 +95,7 @@ Worker/D1:
 - Painel do jogador deve usar a interface simples em fluxo unico, sem abas por padrao.
 - Status deve priorizar Vida e Integridade com inputs diretos; os botoes rapidos ficam fora desta versao simples.
 - Inputs numericos da Mesa devem aceitar campo temporariamente vazio enquanto o usuario apaga e digita outro numero; o valor anterior so deve ser restaurado ao sair do campo vazio.
+- A digitacao de numeros com varios digitos, como `10` ou `30`, nao pode ser interrompida por rerender do inspetor ou do painel pessoal.
 - Salvamento/sincronizacao nao deve criar modal nem bloquear edicao.
 - Inventario do jogador na Mesa continua editavel, com dano apenas em arma e descricao recolhida em detalhes.
 - A interface simples do jogador nao deve expor roster, busca, acoes de mestre ou dados de terceiros.

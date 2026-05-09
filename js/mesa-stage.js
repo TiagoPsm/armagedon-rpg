@@ -335,16 +335,22 @@ function handleInspectorStatInput(event) {
   if (!sheetPatch) return;
 
   applySheetPatchFromMesa(token.characterKey, sheetPatch, { render: false });
+  syncInspectorStatInputCard(input, field, getSelectedToken() || token);
   broadcastMesaSheetPatch(token.characterKey, sheetPatch);
-  scheduleMesaRender({ stage: true, inspector: true });
+  scheduleMesaRender({ stage: true });
 }
 
 function handleMesaNumericInputCommit(event) {
   const input = event.target.closest(
     "input[type='number'][data-stat-field], input[type='number'][data-player-stat-field], input[type='number'][data-player-sheet-field], input[type='number'][data-player-item-field]"
   );
-  if (!input || !isBlankMesaNumberInput(input)) return;
-  restoreBlankMesaNumberInput(input);
+  if (!input) return;
+  if (isBlankMesaNumberInput(input)) {
+    restoreBlankMesaNumberInput(input);
+  }
+  if (input.matches("[data-stat-field]")) {
+    scheduleMesaRender({ inspector: true });
+  }
 }
 
 function handlePlayerPanelStatInput(event) {
@@ -453,6 +459,7 @@ function restoreInspectorStatInput(input) {
   };
   if (values[field] === undefined) return;
   input.value = String(values[field]);
+  syncInspectorStatInputCard(input, field, token);
 }
 
 function restorePlayerPanelResourceInput(input) {
@@ -527,6 +534,37 @@ function getPlayerPanelSheetNumberValue(field, sheet, context) {
   }
 
   return null;
+}
+
+function syncInspectorStatInputCard(input, field, token) {
+  const card = input?.closest?.(".stat-editor");
+  if (!card || !token) return;
+  const isLife = field === "currentLife" || field === "maxLife";
+  const currentField = isLife ? "currentLife" : "currentIntegrity";
+  const maxField = isLife ? "maxLife" : "maxIntegrity";
+  const current = asPositiveInt(token[currentField], 0);
+  const max = asPositiveInt(token[maxField], 0);
+  const currentInput = card.querySelector(`[data-stat-field="${currentField}"]`);
+  const maxInput = card.querySelector(`[data-stat-field="${maxField}"]`);
+
+  if (currentInput) {
+    currentInput.max = String(max);
+    if (document.activeElement !== currentInput && String(currentInput.value) !== String(current)) {
+      currentInput.value = String(current);
+    }
+  }
+
+  if (maxInput && document.activeElement !== maxInput && String(maxInput.value) !== String(max)) {
+    maxInput.value = String(max);
+  }
+
+  const valueLabel = card.querySelector(".bar-label-row span:last-child");
+  if (valueLabel) valueLabel.textContent = `${current}/${max}`;
+
+  const bar = card.querySelector(".bar-preview span");
+  if (bar) {
+    bar.setAttribute("style", getBarFillStyle(isLife ? "vida" : "integ", current, max));
+  }
 }
 
 function handleTokenPointerDown(event) {

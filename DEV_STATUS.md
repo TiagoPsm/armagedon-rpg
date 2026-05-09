@@ -92,6 +92,13 @@ Registro minimo esperado:
 
 ## Ultima Etapa Concluida
 
+- Digitacao continua de numeros na Mesa em 2026-05-09:
+  - objetivo: permitir digitar valores com multiplos digitos, como `10` ou `30`, sem o campo travar no primeiro digito
+  - `js/mesa-stage.js`: o inspetor da Mesa deixou de reconstruir o proprio painel a cada tecla; agora atualiza barra/label localmente e renderiza o inspetor completo apenas ao sair do campo
+  - `tests/mesa.spec.cjs`: regressao usa `type("10")` e `type("30")` para cobrir digitacao real no inspetor do mestre e no painel pessoal do jogador
+  - validacoes executadas: `npm run check:js`, `npm run audit:static`, `npm run test:mesa`, `npm run perf:mesa`, `npm run build:pages`, `git diff --check` e `git fsck --no-dangling`
+  - status: pronto para publicacao
+
 - Edicao livre de maximos de Vida/Integridade em 2026-05-09:
   - objetivo: permitir que jogador e mestre editem diretamente, por numero digitado, Vida atual/maxima e Integridade atual/maxima
   - `js/mesa-roster.js`: painel pessoal do jogador agora mostra `Max` editavel tambem para Integridade

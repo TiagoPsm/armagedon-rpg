@@ -2,6 +2,12 @@
 
 Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STATUS.md`.
 
+## 2026-05-09 - Digitacao Multi Digito Na Mesa
+
+- Inspetor da Mesa deixa de se reconstruir a cada tecla em campos de Vida/Integridade.
+- Campos numericos aceitam digitacao normal de valores como `10` e `30`, sem depender das setas do input.
+- Testes cobrem digitacao real com `type()` no inspetor do mestre e painel pessoal do jogador.
+
 ## 2026-05-09 - Maximos De Vida E Integridade Editaveis
 
 - Painel pessoal da Mesa passou a editar Integridade maxima com campo `Max`, igual Vida.

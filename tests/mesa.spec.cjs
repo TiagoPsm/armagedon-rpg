@@ -56,12 +56,19 @@ test.describe("Mesa virtual", () => {
     await page.mouse.move(end.x, end.y, { steps: 8 });
     await page.mouse.up();
 
+    const inspectorMaxLife = page.locator('#tokenInspector [data-stat-field="maxLife"]').first();
+    await expect(inspectorMaxLife).toBeVisible();
+    await inspectorMaxLife.fill("");
+    await expect(inspectorMaxLife).toHaveValue("");
+    await inspectorMaxLife.type("30");
+    await expect(inspectorMaxLife).toHaveValue("30");
+
     const inspectorLife = page.locator('#tokenInspector [data-stat-field="currentLife"]').first();
     await expect(inspectorLife).toBeVisible();
     await inspectorLife.fill("");
     await expect(inspectorLife).toHaveValue("");
-    await inspectorLife.fill("4");
-    await expect(inspectorLife).toHaveValue("4");
+    await inspectorLife.type("10");
+    await expect(inspectorLife).toHaveValue("10");
 
     const savedScene = await page.evaluate(() => JSON.parse(localStorage.getItem("tc_virtual_mesa_mock_v1") || "{}"));
     expect(Array.isArray(savedScene.tokens)).toBe(true);
@@ -183,13 +190,20 @@ test.describe("Mesa virtual", () => {
 
     await expect(page.locator('[data-player-panel-action="select-player-tab"]')).toHaveCount(0);
     await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("8");
+    await page.locator('[data-player-sheet-field="vidaMax"]').fill("");
+    await expect(page.locator('[data-player-sheet-field="vidaMax"]')).toHaveValue("");
+    await page.locator('[data-player-sheet-field="vidaMax"]').type("30");
+    await expect(page.locator('[data-player-sheet-field="vidaMax"]')).toHaveValue("30");
     await page.locator('[data-player-stat-field="currentLife"]').fill("");
     await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("");
-    await page.locator('[data-player-stat-field="currentLife"]').fill("5");
-    await page.locator('[data-player-stat-field="currentIntegrity"]').fill("3");
+    await page.locator('[data-player-stat-field="currentLife"]').type("10");
     await page.locator('[data-player-sheet-field="integMax"]').fill("");
     await expect(page.locator('[data-player-sheet-field="integMax"]')).toHaveValue("");
-    await page.locator('[data-player-sheet-field="integMax"]').fill("9");
+    await page.locator('[data-player-sheet-field="integMax"]').type("30");
+    await expect(page.locator('[data-player-sheet-field="integMax"]')).toHaveValue("30");
+    await page.locator('[data-player-stat-field="currentIntegrity"]').fill("");
+    await expect(page.locator('[data-player-stat-field="currentIntegrity"]')).toHaveValue("");
+    await page.locator('[data-player-stat-field="currentIntegrity"]').type("10");
 
     await page.locator('[data-player-sheet-field="attrForca"]').fill("");
     await expect(page.locator('[data-player-sheet-field="attrForca"]')).toHaveValue("");
@@ -215,9 +229,10 @@ test.describe("Mesa virtual", () => {
       const sheets = JSON.parse(localStorage.getItem("tc_sheets") || "{}");
       return sheets.ana || {};
     });
-    expect(savedSheet.vidaAtual).toBe("5");
-    expect(savedSheet.integAtual).toBe("3");
-    expect(savedSheet.integMax).toBe("9");
+    expect(savedSheet.vidaAtual).toBe("10");
+    expect(savedSheet.vidaMax).toBe("30");
+    expect(savedSheet.integAtual).toBe("10");
+    expect(savedSheet.integMax).toBe("30");
     expect(savedSheet.attrForca).toBe("7");
     expect(savedSheet.attrAlma).toBe("15");
     expect(savedSheet.charClass).toBe("Sentinela");

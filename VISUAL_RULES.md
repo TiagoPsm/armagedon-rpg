@@ -179,6 +179,7 @@ Comportamento visual consolidado:
 - O painel do jogador deve manter a interface simples em fluxo unico, sem abas por padrao, com secoes diretas para status, dados, atributos, inventario e memorias
 - Vida e Integridade devem usar inputs diretos e legiveis; botoes rapidos podem voltar apenas se nao deixarem a ficha visualmente pesada
 - Inputs numericos da Mesa devem permitir apagar o valor e redigitar um numero novo; o clamp visual deve acontecer sem transformar o campo vazio temporario em `0`
+- Inputs numericos da Mesa devem aceitar digitacao continua de varios digitos, como `10` e `30`, sem rerender intermediario que interrompa o foco
 - A acao `Limpar cena` e exclusiva do mestre; jogadores nao devem ver nem acionar esse controle
 - Gradientes da Mesa devem usar carmesim, preto profundo e acentos frios muito sutis, evitando brilho excessivo ou aparencia colorida demais
 - Gradientes em paineis grandes da Mesa nao podem ter cortes, faixas com altura fixa ou emendas visiveis; preferir camadas radiais/elipticas com fade gradual

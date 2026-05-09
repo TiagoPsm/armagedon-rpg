@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-09 11:01:21 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-09 18:30:44 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,29 +13,17 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `1bc7811 2026-05-09 Corrige edicao numerica da mesa`
+- Ultimo commit: `be6d917 2026-05-09 Libera maximos de recursos da ficha`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
 M  VISUAL_RULES.md
-M  cloudflare/README.md
-M  cloudflare/src/mesa-realtime.js
-M  cloudflare/src/sheet.js
 M  docs/obsidian/07-MESA.md
 M  docs/obsidian/09-HISTORICO-DE-SESSOES.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  ficha.html
-M  js/ficha-core.js
-M  js/ficha-sheet.js
-M  js/mesa-core.js
-M  js/mesa-roster.js
 M  js/mesa-stage.js
-M  mesa.html
-M  server/README.md
-M  server/src/utils/sheet.js
-M  tests/ficha.spec.cjs
 M  tests/mesa.spec.cjs
 ```
 
@@ -50,22 +38,10 @@ M  tests/mesa.spec.cjs
 ```text
 DEV_STATUS.md
 VISUAL_RULES.md
-cloudflare/README.md
-cloudflare/src/mesa-realtime.js
-cloudflare/src/sheet.js
 docs/obsidian/07-MESA.md
 docs/obsidian/09-HISTORICO-DE-SESSOES.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-ficha.html
-js/ficha-core.js
-js/ficha-sheet.js
-js/mesa-core.js
-js/mesa-roster.js
 js/mesa-stage.js
-mesa.html
-server/README.md
-server/src/utils/sheet.js
-tests/ficha.spec.cjs
 tests/mesa.spec.cjs
 ```
 
