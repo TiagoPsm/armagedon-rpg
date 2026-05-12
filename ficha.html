@@ -15,10 +15,10 @@
   <link rel="stylesheet" href="css/style.css?v=2026-04-05-polish" />
   <link rel="stylesheet" href="css/ficha-base.css?v=2026-04-24-split-1" />
   <link rel="stylesheet" href="css/ficha-layout.css?v=2026-04-24-split-1" />
-  <link rel="stylesheet" href="css/ficha-inventory-memory.css?v=2026-04-24-split-1" />
+  <link rel="stylesheet" href="css/ficha-inventory-memory.css?v=2026-05-12-passives-1" />
   <link rel="stylesheet" href="css/ficha-master.css?v=2026-04-24-split-1" />
   <link rel="stylesheet" href="css/ficha-dice-soul.css?v=2026-04-24-split-1" />
-  <link rel="stylesheet" href="css/ficha-responsive.css?v=2026-05-01-sheet-polish" />
+  <link rel="stylesheet" href="css/ficha-responsive.css?v=2026-05-12-passives-1" />
   <link rel="stylesheet" href="css/ui.css?v=2026-05-01-cursor-glow" />
   <link
     href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap"
@@ -553,6 +553,15 @@
         <div id="habList"><p class="empty-msg">Nenhuma habilidade registrada.</p></div>
       </section>
 
+      <section class="sheet-block sheet-section sheet-section-passives" id="passivesSection">
+        <div class="block-title-bar">
+          <span class="section-label" style="margin:0">// Caracteristicas e efeitos permanentes</span>
+          <button class="btn-inline" onclick="addPassive()">+ Adicionar</button>
+        </div>
+
+        <div id="passiveList"><p class="empty-msg">Nenhum efeito passivo permanente registrado.</p></div>
+      </section>
+
       <section class="sheet-block sheet-section sheet-section-owned-memories" id="ownedMemoriesSection">
         <div class="block-title-bar">
           <span class="section-label" style="margin:0">// Memórias possuídas</span>
@@ -840,17 +849,18 @@
       </div>
   </div>
 
-  <script src="js/ui.js?v=2026-05-01-cursor-glow"></script>
+  <script src="js/ui.js?v=2026-05-12-ficha-prefetch-1"></script>
   <script src="js/runtime-config.js?v=2026-05-04-mesa-realtime-1"></script>
-  <script src="js/api.js?v=2026-05-04-mesa-realtime-1"></script>
+  <script src="js/api.js?v=2026-05-12-item-quantity-1"></script>
   <script src="js/auth.js?v=2026-05-07-master-sheet-key-1"></script>
   <script src="js/soul-essence.js?v=2026-04-05-polish"></script>
-  <script src="js/ficha-core.js?v=2026-05-09-free-resource-max-1"></script>
+  <script src="js/ficha-core.js?v=2026-05-12-passives-1"></script>
   <script src="js/ficha-master.js?v=2026-04-24-split-1"></script>
   <script src="js/ficha-sheet.js?v=2026-05-09-free-resource-max-1"></script>
-  <script src="js/ficha-inventory.js?v=2026-05-07-master-sheet-key-1"></script>
+  <script src="js/ficha-inventory.js?v=2026-05-12-item-quantity-1"></script>
   <script src="js/ficha-dice.js?v=2026-04-24-split-1"></script>
   <script src="js/ficha-habs.js?v=2026-04-24-split-1"></script>
+  <script src="js/ficha-passives.js?v=2026-05-12-passives-1"></script>
   <script src="js/ficha-memories.js?v=2026-05-07-master-sheet-key-1"></script>
   <script src="js/ficha-soul.js?v=2026-04-24-split-1"></script>
   <script src="js/ficha-init.js?v=2026-04-24-split-1"></script>

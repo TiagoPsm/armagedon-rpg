@@ -379,6 +379,12 @@
       });
     },
     async transferItem(payload) {
+      return request("/transfers/items/character-to-character", {
+        method: "POST",
+        body: payload
+      });
+    },
+    async transferPlayerItem(payload) {
       return request("/transfers/items/player-to-player", {
         method: "POST",
         body: payload

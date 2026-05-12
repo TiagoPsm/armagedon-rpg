@@ -141,6 +141,9 @@ function initItemEditor() {
   ["itemEditorName", "itemEditorQty", "itemEditorDamage", "itemEditorDesc"].forEach(id => {
     document.getElementById(id).addEventListener("input", () => {
       syncItemFromEditor();
+      if (itemEditorIndex >= 0) {
+        renderItemEditorTransfer(itemEditorIndex);
+      }
       if (id === "itemEditorDesc") {
         const textarea = document.getElementById(id);
         if (textarea instanceof HTMLTextAreaElement) autoGrowTextarea(textarea);
@@ -296,24 +299,123 @@ function getPlayerInventoryState(identifier) {
   };
 }
 
-function getItemTransferTargets() {
-  if (currentSheetTarget.kind !== "player") return [];
+function getCharacterInventoryState(identifier, kind = "player") {
+  if (kind === "player") return getPlayerInventoryState(identifier);
 
+  const key = normalizeSheetKey(identifier);
+  if (isBackendMode()) {
+    const directory = AUTH.getDirectoryCache();
+    const npcs = Array.isArray(directory?.npcs) ? directory.npcs : [];
+    const npc = npcs.find(candidate => normalizeSheetKey(candidate?.key || getNpcSheetKey(candidate?.id)) === key) || {};
+    const used = Number(npc.usedSlots || 0);
+    const capacity = Number(npc.inventorySlots || DEFAULT_INVENTORY_SLOTS);
+    return {
+      used,
+      capacity,
+      available: Math.max(0, capacity - used)
+    };
+  }
+
+  const sheets = readSheets();
+  const targetSheet = normalizeSheetData(sheets[key] || {}, "npc");
+  const capacity = Math.max(
+    normalizeInventorySlots("npc", targetSheet.inventorySlots),
+    targetSheet.inv.length
+  );
+
+  return {
+    used: targetSheet.inv.length,
+    capacity,
+    available: Math.max(0, capacity - targetSheet.inv.length)
+  };
+}
+
+function getItemQuantity(item) {
+  return Math.max(0, Number.parseInt(item?.qty || "0", 10) || 0);
+}
+
+function getItemMergeKey(item) {
+  const normalized = normalizeItem(item || {});
+  return [
+    normalized.type,
+    normalized.name.trim().toLowerCase(),
+    normalized.damage.trim().toLowerCase(),
+    normalized.desc.trim().toLowerCase()
+  ].join("|");
+}
+
+function findMergeableInventoryItem(inventory, item) {
+  const itemKey = getItemMergeKey(item);
+  return inventory.find(candidate => getItemMergeKey(candidate) === itemKey) || null;
+}
+
+function getTargetSheetForTransfer(target) {
+  const sheets = readSheets();
+  const data = sheets[target.value] || {};
+  return normalizeSheetData(data, target.kind);
+}
+
+function getTargetMergeState(target, item) {
+  if (!target || !item) return { canMerge: false, known: !isBackendMode() };
+  const sheets = readSheets();
+  const hasKnownSheet = Boolean(sheets[target.value]);
+  if (isBackendMode() && !hasKnownSheet) {
+    return { canMerge: false, known: false };
+  }
+  const targetSheet = getTargetSheetForTransfer(target);
+  const match = findMergeableInventoryItem(targetSheet.inv, item);
+  return {
+    canMerge: Boolean(match),
+    known: true,
+    quantity: match ? getItemQuantity(match) : 0
+  };
+}
+
+function canTargetReceiveItem(target, item) {
+  const mergeState = getTargetMergeState(target, item);
+  if (mergeState.canMerge) return true;
+  if (target.available > 0) return true;
+  return isBackendMode() && !mergeState.known;
+}
+
+function getItemTransferTargets() {
+  if (!["player", "npc"].includes(currentSheetTarget.kind)) return [];
+
+  const sourceKey = normalizeSheetKey(currentSheetTarget.key);
   const owner = normalizeSheetKey(currentSheetTarget.owner);
-  return AUTH.getPlayers()
+  const players = AUTH.getPlayers()
     .filter(player => normalizeSheetKey(player.username) !== owner)
     .map(player => {
       const username = String(player.username || "").trim();
       const value = isBackendMode() ? String(player.key || username).trim() : username;
-      const inventoryState = getPlayerInventoryState(value || username);
+      const inventoryState = getCharacterInventoryState(value || username, "player");
       return {
         value: value || username,
+        kind: "player",
         username,
         label: player.charname || username,
         meta: `${inventoryState.used}/${inventoryState.capacity} slots`,
+        available: inventoryState.available,
         isFull: inventoryState.available <= 0
       };
     });
+
+  const npcs = readNpcs()
+    .map(npc => {
+      const value = npc.key || getNpcSheetKey(npc.id);
+      const inventoryState = getCharacterInventoryState(value, "npc");
+      return {
+        value,
+        kind: "npc",
+        username: "",
+        label: npc.name,
+        meta: `${inventoryState.used}/${inventoryState.capacity} slots`,
+        available: inventoryState.available,
+        isFull: inventoryState.available <= 0
+      };
+    });
+
+  return [...players, ...npcs].filter(target => normalizeSheetKey(target.value) !== sourceKey);
 }
 
 function formatItemTransferLabel(value, targets, fallback) {
@@ -321,10 +423,32 @@ function formatItemTransferLabel(value, targets, fallback) {
   return target ? `${target.label} (${target.meta})` : fallback;
 }
 
-function renderItemTransferBlock(index, targets) {
-  const availableTargets = targets.filter(target => !target.isFull);
+function normalizeItemTransferQuantity(value, maxQuantity) {
+  const max = Math.max(0, Number.parseInt(maxQuantity, 10) || 0);
+  if (!max) return "0";
+  const numeric = Number.parseInt(value, 10);
+  if (Number.isNaN(numeric)) return String(max);
+  return String(Math.max(1, Math.min(max, numeric)));
+}
 
-  if (!availableTargets.length) {
+function updateItemTransferQuantity(index, value) {
+  const item = normalizeItem(inv[index] || {});
+  const maxQuantity = getItemQuantity(item);
+  const state = itemTransferStates[index] || {};
+  itemTransferStates[index] = {
+    ...state,
+    quantity: normalizeItemTransferQuantity(value, maxQuantity),
+    tone: "",
+    text: ""
+  };
+}
+
+function renderItemTransferBlock(index, targets) {
+  const item = normalizeItem(inv[index] || {});
+  const maxQuantity = getItemQuantity(item);
+  const availableTargets = targets.filter(target => canTargetReceiveItem(target, item));
+
+  if (!maxQuantity || !availableTargets.length) {
     return `
       <div class="item-transfer">
         <span class="item-meta">Troca de item</span>
@@ -346,17 +470,37 @@ function renderItemTransferBlock(index, targets) {
 
   itemTransferStates[index] = {
     ...state,
-    target: selectedTarget
+    target: selectedTarget,
+    quantity: normalizeItemTransferQuantity(state.quantity, maxQuantity)
   };
+  const selectedTargetData = availableTargets.find(target => target.value === selectedTarget);
+  const mergeState = getTargetMergeState(selectedTargetData, item);
+  const transferHint = mergeState.canMerge
+    ? `Vai juntar com item igual no destino (atual: ${mergeState.quantity}).`
+    : selectedTargetData?.isFull && !mergeState.known
+      ? "Destino sem slot livre conhecido; o servidor tentara juntar se ja houver item igual."
+      : "O item ocupa um novo slot no destino.";
+  if (!state.text) state.text = transferHint;
 
   return `
     <div class="item-transfer">
-      <span class="item-meta">Enviar para outro jogador</span>
+      <span class="item-meta">Enviar para jogador ou NPC</span>
       <div class="item-transfer-row">
         <button class="btn-inline memory-picker-btn item-transfer-picker" onclick="pickItemTransferTarget(${index})">
           <span class="memory-picker-label">${esc(formatItemTransferLabel(selectedTarget, availableTargets, "Escolher jogador"))}</span>
           <span class="memory-picker-hint">Alterar</span>
         </button>
+        <label class="item-transfer-qty">
+          <span>Qtd.</span>
+          <input
+            type="number"
+            min="1"
+            max="${maxQuantity}"
+            step="1"
+            value="${esc(itemTransferStates[index].quantity)}"
+            oninput="updateItemTransferQuantity(${index}, this.value)"
+          />
+        </label>
         <button class="btn-inline item-transfer-send" onclick="transferItem(${index})">Enviar</button>
       </div>
       <div class="${statusClass}">${esc(state.text || "O item só pode ser enviado para jogadores com slot livre no Inventário.")}</div>
@@ -368,7 +512,7 @@ function renderItemEditorTransfer(index) {
   const { transfer } = getItemEditorElements();
   if (!transfer) return;
 
-  if (currentSheetTarget.kind !== "player" || !inv[index]) {
+  if (!["player", "npc"].includes(currentSheetTarget.kind) || !inv[index]) {
     transfer.hidden = true;
     transfer.innerHTML = "";
     return;
@@ -379,7 +523,8 @@ function renderItemEditorTransfer(index) {
 }
 
 async function pickItemTransferTarget(index) {
-  const targets = getItemTransferTargets().filter(target => !target.isFull);
+  const item = normalizeItem(inv[index] || {});
+  const targets = getItemTransferTargets().filter(target => canTargetReceiveItem(target, item));
   if (!targets.length) return;
 
   const state = itemTransferStates[index] || {};
@@ -394,7 +539,7 @@ async function pickItemTransferTarget(index) {
     options: targets.map(target => ({
       value: target.value,
       label: target.label,
-      meta: `Jogador | ${target.meta}`,
+      meta: `${target.kind === "npc" ? "NPC" : "Jogador"} | ${target.meta}`,
       selected: target.value === currentTarget
     }))
   });
@@ -417,21 +562,25 @@ async function pickItemTransferTarget(index) {
 }
 
 async function transferItem(index) {
-  if (currentSheetTarget.kind !== "player") return;
+  if (!["player", "npc"].includes(currentSheetTarget.kind)) return;
 
-  const item = inv[index];
+  const item = normalizeItem(inv[index]);
   if (!item) return;
 
-  const availableTargets = getItemTransferTargets().filter(target => !target.isFull);
-  const state = itemTransferStates[index] || {};
-  const targetValue = state.target || availableTargets[0]?.value || "";
-  const target = availableTargets.find(candidate => candidate.value === targetValue);
+  const nextMaxQuantity = getItemQuantity(item);
+  const nextAvailableTargets = getItemTransferTargets().filter(candidate => canTargetReceiveItem(candidate, item));
+  const nextState = itemTransferStates[index] || {};
+  const nextTargetValue = nextState.target || nextAvailableTargets[0]?.value || "";
+  const nextTarget = nextAvailableTargets.find(candidate => candidate.value === nextTargetValue);
+  const nextQuantity = Number.parseInt(normalizeItemTransferQuantity(nextState.quantity, nextMaxQuantity), 10);
 
-  if (!target) {
+  if (!nextTarget || !nextQuantity) {
     itemTransferStates[index] = {
-      ...state,
+      ...nextState,
       tone: "fail",
-      text: "Nenhum jogador com slot livre está disponível para receber este item."
+      text: nextTarget
+        ? "Defina uma quantidade maior que zero para enviar."
+        : "Nenhum jogador ou NPC disponivel para receber este item."
     };
     if (itemEditorIndex === index) {
       renderItemEditorTransfer(index);
@@ -441,44 +590,31 @@ async function transferItem(index) {
     return;
   }
 
-  const targetInventoryState = getPlayerInventoryState(target.value);
-  if (targetInventoryState.available <= 0) {
-    itemTransferStates[index] = {
-      ...state,
-      tone: "fail",
-      text: `${target.label} está com a mochila cheia.`
-    };
-    if (itemEditorIndex === index) {
-      renderItemEditorTransfer(index);
-    } else {
-      renderInv(inv);
-    }
-    return;
-  }
-
-  const confirmed = await UI.confirm(
-    `Transferir "${item.name || "Item sem nome"}" para ${target.label}`,
+  const nextMergeState = getTargetMergeState(nextTarget, item);
+  const nextConfirmed = await UI.confirm(
+    `Transferir ${nextQuantity}x "${item.name || "Item sem nome"}" para ${nextTarget.label}${nextMergeState.canMerge ? " juntando com item igual" : ""}`,
     {
       title: "Transferir item",
-      kicker: "// Inventário",
+      kicker: "// Inventario",
       confirmLabel: "Transferir",
       cancelLabel: "Cancelar"
     }
   );
 
-  if (!confirmed) return;
+  if (!nextConfirmed) return;
 
   if (isBackendMode()) {
     try {
       await APP.transferItem({
         sourceKey: currentSheetTarget.key,
-        targetKey: target.value,
-        itemIndex: index
+        targetKey: nextTarget.value,
+        itemIndex: index,
+        quantity: nextQuantity
       });
       await AUTH.refreshDirectory();
     } catch (error) {
       itemTransferStates[index] = {
-        ...state,
+        ...nextState,
         tone: "fail",
         text: error.message || "Falha ao transferir o item."
       };
@@ -490,19 +626,20 @@ async function transferItem(index) {
       return;
     }
   } else {
-    const targetUsername = target.username || target.value;
-    const sheets = readSheets();
-    const targetSheet = normalizeSheetData(sheets[targetUsername] || {}, "player");
-    const targetCapacity = Math.max(
-      normalizeInventorySlots("player", targetSheet.inventorySlots),
-      targetSheet.inv.length
+    const nextTargetKey = nextTarget.value;
+    const nextSheets = readSheets();
+    const nextTargetSheet = normalizeSheetData(nextSheets[nextTargetKey] || {}, nextTarget.kind);
+    const nextTargetCapacity = Math.max(
+      normalizeInventorySlots(nextTarget.kind, nextTargetSheet.inventorySlots),
+      nextTargetSheet.inv.length
     );
+    const nextMergeIndex = nextTargetSheet.inv.findIndex(candidate => getItemMergeKey(candidate) === getItemMergeKey(item));
 
-    if (targetSheet.inv.length >= targetCapacity) {
+    if (nextMergeIndex < 0 && nextTargetSheet.inv.length >= nextTargetCapacity) {
       itemTransferStates[index] = {
-        ...state,
+        ...nextState,
         tone: "fail",
-        text: `${target.label} ficou sem slot livre para receber este item.`
+        text: `${nextTarget.label} ficou sem slot livre para receber este item.`
       };
       if (itemEditorIndex === index) {
         renderItemEditorTransfer(index);
@@ -512,16 +649,39 @@ async function transferItem(index) {
       return;
     }
 
-    targetSheet.inv = [...targetSheet.inv, normalizeItem(item)];
-    sheets[targetUsername] = targetSheet;
-    writeSheets(sheets);
+    const nextTransferredItem = normalizeItem({ ...item, qty: String(nextQuantity) });
+    if (nextMergeIndex >= 0) {
+      const existingTargetItem = normalizeItem(nextTargetSheet.inv[nextMergeIndex]);
+      nextTargetSheet.inv[nextMergeIndex] = normalizeItem({
+        ...existingTargetItem,
+        qty: String(getItemQuantity(existingTargetItem) + nextQuantity)
+      });
+    } else {
+      nextTargetSheet.inv = [...nextTargetSheet.inv, nextTransferredItem];
+    }
+    nextSheets[nextTargetKey] = nextTargetSheet;
+    writeSheets(nextSheets);
   }
 
   itemTransferStates = {};
-  inv.splice(index, 1);
+  if (nextQuantity >= nextMaxQuantity) {
+    inv.splice(index, 1);
+  } else {
+    inv[index] = normalizeItem({ ...item, qty: String(nextMaxQuantity - nextQuantity) });
+  }
   renderInv(inv);
   resetItemEditorState();
-  saveSheetSilently();
+  if (isBackendMode()) {
+    remoteSheetsCache[currentSheetTarget.key] = {
+      ...(remoteSheetsCache[currentSheetTarget.key] || {}),
+      inv: collectInv()
+    };
+    persistRemoteSheetsCache();
+  } else {
+    const sourceSheets = readSheets();
+    sourceSheets[currentSheetTarget.key] = collectSheetData(currentSheetTarget.kind);
+    writeSheets(sourceSheets);
+  }
 }
 
 function renderInv(list) {

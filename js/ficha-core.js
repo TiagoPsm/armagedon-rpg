@@ -132,6 +132,7 @@ let currentRole = null;
 let currentSheetTarget = null;
 let habs = [];
 let habCardStates = {};
+let passives = [];
 let inv = [];
 let inventorySlots = DEFAULT_INVENTORY_SLOTS;
 let memoryDrops = [];
@@ -358,6 +359,7 @@ function hasRenderableSheetData(data) {
 
   if (data.charName || data.charClass || data.charNotes || data.avatar) return true;
   if (Array.isArray(data.habs) && data.habs.length) return true;
+  if (Array.isArray(data.passives) && data.passives.length) return true;
   if (Array.isArray(data.inv) && data.inv.length) return true;
   if (Array.isArray(data.ownedMemories) && data.ownedMemories.length) return true;
   if (Array.isArray(data.memoryDrops) && data.memoryDrops.length) return true;
@@ -396,6 +398,7 @@ function applySheetData(data, kind = "player") {
   });
 
   habs = data.habs;
+  passives = data.passives;
   inv = data.inv;
   inventorySlots = data.inventorySlots;
   memoryDrops = data.memoryDrops;
@@ -411,6 +414,7 @@ function applySheetData(data, kind = "player") {
   updateBar("vida");
   updateBar("integ");
   renderHabs(habs);
+  renderPassives(passives);
   renderOwnedMemories(ownedMemories);
   renderInv(inv);
   renderMemoryDrops(memoryDrops);
@@ -547,6 +551,7 @@ function collectSheetData(kind = "player") {
       charNotes: getValue("charNotes"),
       ...attrData,
       habs: collectHabs(),
+      passives: collectPassives(),
       ownedMemories: isMonster ? [] : collectOwnedMemories(),
       inventorySlots: isMonster ? 0 : inventorySlots,
       inv: isMonster ? [] : collectInv(),
@@ -637,6 +642,7 @@ function normalizeSheetData(data, kind = "player") {
     integMax,
     charNotes: data.charNotes || "",
     habs: Array.isArray(data.habs) ? data.habs.map(normalizeHab) : [],
+    passives: Array.isArray(data.passives) ? data.passives.map(normalizePassive) : [],
     ownedMemories: isMonster ? [] : Array.isArray(data.ownedMemories) ? data.ownedMemories.map(normalizeOwnedMemory) : [],
     inventorySlots: isMonster ? 0 : normalizeInventorySlots(kind, data.inventorySlots),
     inv: isMonster ? [] : Array.isArray(data.inv) ? data.inv.map(normalizeItem) : [],
@@ -687,8 +693,21 @@ function normalizeHab(hab) {
   };
 }
 
+function normalizePassive(passive) {
+  return {
+    id: String(passive?.id || createPassiveId()),
+    name: String(passive?.name || ""),
+    source: String(passive?.source || ""),
+    effect: String(passive?.effect || passive?.desc || "")
+  };
+}
+
 function createHabId() {
   return `hab-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function createPassiveId() {
+  return `passive-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function normalizeHabType(value) {
@@ -940,9 +959,13 @@ function sanitizeChance(value, fallback = "0") {
 }
 
 function normalizeNpc(npc) {
+  const id = String(npc.id || "").trim() || createNpcId();
   return {
-    id: String(npc.id || createNpcId()),
-    name: String(npc.name || "NPC").trim() || "NPC"
+    id,
+    key: String(npc.key || getNpcSheetKey(id)).trim(),
+    name: String(npc.name || "NPC").trim() || "NPC",
+    inventorySlots: npc.inventorySlots,
+    usedSlots: npc.usedSlots
   };
 }
 
@@ -996,11 +1019,12 @@ function createPlayerTarget(username) {
 }
 
 function createNpcTarget(npc) {
+  const normalizedNpc = normalizeNpc(npc);
   return {
     kind: "npc",
-    key: getNpcSheetKey(npc.id),
-    npcId: npc.id,
-    label: npc.name
+    key: normalizedNpc.key || getNpcSheetKey(normalizedNpc.id),
+    npcId: normalizedNpc.id,
+    label: normalizedNpc.name
   };
 }
 

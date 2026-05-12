@@ -197,7 +197,9 @@ async function listDirectory(client, user) {
       npcs.push({
         id: character.id,
         key: character.key,
-        name: character.name
+        name: character.name,
+        inventorySlots,
+        usedSlots
       });
       return;
     }
@@ -302,7 +304,92 @@ async function deleteCharacterByKey(client, key, kind) {
   return result.rows[0] || null;
 }
 
-async function transferItemBetweenPlayers(client, actor, sourceKey, targetKey, itemIndex) {
+function canHoldTransferItems(character) {
+  return character?.kind === "player" || character?.kind === "npc";
+}
+
+function getItemQuantity(item) {
+  return Math.max(0, Number.parseInt(item?.qty || "0", 10) || 0);
+}
+
+function getTransferQuantity(value, availableQuantity) {
+  const max = Math.max(0, Number.parseInt(availableQuantity, 10) || 0);
+  if (value === "" || value === null || value === undefined) return max;
+  const requested = Number.parseInt(value, 10);
+  if (Number.isNaN(requested) || requested < 1) return 0;
+  return Math.max(1, Math.min(max, requested));
+}
+
+function getItemMergeKey(item) {
+  const normalized = normalizeItem(item);
+  return [
+    normalized.type,
+    normalized.name.trim().toLowerCase(),
+    normalized.damage.trim().toLowerCase(),
+    normalized.desc.trim().toLowerCase()
+  ].join("|");
+}
+
+function findMergeableItemIndex(inventory, item) {
+  const itemKey = getItemMergeKey(item);
+  return inventory.findIndex(candidate => getItemMergeKey(candidate) === itemKey);
+}
+
+function applyItemQuantityTransfer(sourceData, targetData, sourceKind, targetKind, itemIndex, quantity) {
+  const index = Number.parseInt(itemIndex, 10);
+  if (Number.isNaN(index) || index < 0 || index >= sourceData.inv.length) {
+    throw httpError(404, "Item de origem nao encontrado.");
+  }
+
+  const sourceItem = normalizeItem(sourceData.inv[index]);
+  const sourceQuantity = getItemQuantity(sourceItem);
+  if (sourceQuantity <= 0) {
+    throw httpError(400, "O item de origem nao possui quantidade disponivel.");
+  }
+
+  const transferQuantity = getTransferQuantity(quantity, sourceQuantity);
+  if (transferQuantity < 1) {
+    throw httpError(400, "Informe uma quantidade positiva para transferir.");
+  }
+  const transferredItem = normalizeItem({ ...sourceItem, qty: String(transferQuantity) });
+  const targetIndex = findMergeableItemIndex(targetData.inv, transferredItem);
+  const mergeMode = targetIndex >= 0 ? "merged" : "new-slot";
+  const targetCapacity = Math.max(
+    normalizeInventorySlots(targetKind, targetData.inventorySlots, targetData.inv.length),
+    targetData.inv.length
+  );
+
+  if (targetIndex < 0 && targetData.inv.length >= targetCapacity) {
+    throw httpError(409, "A ficha de destino esta com a mochila cheia.");
+  }
+
+  if (transferQuantity >= sourceQuantity) {
+    sourceData.inv.splice(index, 1);
+  } else {
+    sourceData.inv[index] = normalizeItem({ ...sourceItem, qty: String(sourceQuantity - transferQuantity) });
+  }
+
+  if (targetIndex >= 0) {
+    const targetItem = normalizeItem(targetData.inv[targetIndex]);
+    targetData.inv[targetIndex] = normalizeItem({
+      ...targetItem,
+      qty: String(getItemQuantity(targetItem) + transferQuantity)
+    });
+  } else {
+    targetData.inv.push(transferredItem);
+  }
+
+  sourceData.inventorySlots = normalizeInventorySlots(sourceKind, sourceData.inventorySlots, sourceData.inv.length);
+  targetData.inventorySlots = normalizeInventorySlots(targetKind, targetData.inventorySlots, targetData.inv.length);
+
+  return {
+    item: transferredItem,
+    quantity: transferQuantity,
+    mergeMode
+  };
+}
+
+async function transferItemBetweenPlayers(client, actor, sourceKey, targetKey, itemIndex, quantity) {
   const source = await getCharacterByKey(client, sourceKey, { forUpdate: true });
   const target = await getCharacterByKey(client, targetKey, { forUpdate: true });
 
@@ -318,24 +405,7 @@ async function transferItemBetweenPlayers(client, actor, sourceKey, targetKey, i
 
   const sourceData = normalizeSheetData(source.data || {}, "player", source.name);
   const targetData = normalizeSheetData(target.data || {}, "player", target.name);
-  const index = Number.parseInt(itemIndex, 10);
-
-  if (Number.isNaN(index) || index < 0 || index >= sourceData.inv.length) {
-    throw httpError(404, "Item de origem não encontrado.");
-  }
-
-  const targetCapacity = Math.max(
-    normalizeInventorySlots("player", targetData.inventorySlots, targetData.inv.length),
-    targetData.inv.length
-  );
-
-  if (targetData.inv.length >= targetCapacity) {
-    throw httpError(409, "O jogador de destino está com a mochila cheia.");
-  }
-
-  const transferredItem = normalizeItem(sourceData.inv[index]);
-  sourceData.inv.splice(index, 1);
-  targetData.inv.push(transferredItem);
+  const transfer = applyItemQuantityTransfer(sourceData, targetData, "player", "player", itemIndex, quantity);
 
   await persistCharacterData(client, source, sourceData);
   await persistCharacterData(client, target, targetData);
@@ -350,17 +420,78 @@ async function transferItemBetweenPlayers(client, actor, sourceKey, targetKey, i
       source.id,
       target.id,
       JSON.stringify({
-        item: transferredItem,
+        item: transfer.item,
+        quantity: transfer.quantity,
+        mergeMode: transfer.mergeMode,
         sourceKey: source.key,
-        targetKey: target.key
+        sourceKind: source.kind,
+        targetKey: target.key,
+        targetKind: target.kind
       })
     ]
   );
 
   return {
-    item: transferredItem,
+    item: transfer.item,
+    quantity: transfer.quantity,
+    mergeMode: transfer.mergeMode,
     sourceKey: source.key,
-    targetKey: target.key
+    sourceKind: source.kind,
+    targetKey: target.key,
+    targetKind: target.kind
+  };
+}
+
+async function transferItemBetweenCharacters(client, actor, sourceKey, targetKey, itemIndex, quantity) {
+  const source = await getCharacterByKey(client, sourceKey, { forUpdate: true });
+  const target = await getCharacterByKey(client, targetKey, { forUpdate: true });
+
+  if (!source || !target) throw httpError(404, "Ficha de origem ou destino nao encontrada.");
+  if (!canHoldTransferItems(source) || !canHoldTransferItems(target)) {
+    throw httpError(400, "A troca de item so pode acontecer entre jogadores e NPCs.");
+  }
+  if (source.id === target.id) {
+    throw httpError(400, "A origem e o destino nao podem ser a mesma ficha.");
+  }
+
+  assertCharacterAccess(actor, source, "write");
+
+  const sourceData = normalizeSheetData(source.data || {}, source.kind, source.name);
+  const targetData = normalizeSheetData(target.data || {}, target.kind, target.name);
+  const transfer = applyItemQuantityTransfer(sourceData, targetData, source.kind, target.kind, itemIndex, quantity);
+
+  await persistCharacterData(client, source, sourceData);
+  await persistCharacterData(client, target, targetData);
+
+  await client.query(
+    `
+      insert into transfer_audit (transfer_type, actor_user_id, source_character_id, target_character_id, payload)
+      values ('item-character-to-character', $1, $2, $3, $4::jsonb)
+    `,
+    [
+      actor.sub,
+      source.id,
+      target.id,
+      JSON.stringify({
+        item: transfer.item,
+        quantity: transfer.quantity,
+        mergeMode: transfer.mergeMode,
+        sourceKey: source.key,
+        sourceKind: source.kind,
+        targetKey: target.key,
+        targetKind: target.kind
+      })
+    ]
+  );
+
+  return {
+    item: transfer.item,
+    quantity: transfer.quantity,
+    mergeMode: transfer.mergeMode,
+    sourceKey: source.key,
+    sourceKind: source.kind,
+    targetKey: target.key,
+    targetKind: target.kind
   };
 }
 
@@ -511,6 +642,7 @@ module.exports = {
   listDirectory,
   rollMonsterMemoryDrop,
   saveCharacterBundle,
+  transferItemBetweenCharacters,
   transferItemBetweenPlayers,
   transferMemoryBetweenPlayers
 };

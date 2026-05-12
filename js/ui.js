@@ -100,6 +100,49 @@
     window.addEventListener("blur", () => glow.classList.remove("is-visible"));
   }
 
+  function addResourceHint(rel, href, as) {
+    if (!href || document.querySelector(`link[rel="${rel}"][href="${href}"]`)) return;
+    const link = document.createElement("link");
+    link.rel = rel;
+    link.href = href;
+    if (as) link.as = as;
+    document.head.appendChild(link);
+  }
+
+  function initFichaPrefetch() {
+    const fichaLinks = [...document.querySelectorAll('a[href$="ficha.html"]')];
+    if (!fichaLinks.length) return;
+
+    const currentPath = window.location.pathname.split("/").pop() || "index.html";
+    const prefetchFichaDocument = () => {
+      if (currentPath !== "ficha.html") {
+        addResourceHint("prefetch", "ficha.html", "document");
+      }
+    };
+    const preloadFichaAssets = () => {
+      [
+        "css/ficha-page.bundle.css?v=2026-05-12-ficha-fast-1",
+        "js/ficha-page.bundle.js?v=2026-05-12-ficha-fast-1",
+        "css/ficha-base.css?v=2026-04-24-split-1",
+        "css/ficha-inventory-memory.css?v=2026-05-12-passives-1",
+        "js/ficha-core.js?v=2026-05-12-passives-1",
+        "js/ficha-inventory.js?v=2026-05-12-item-quantity-1"
+      ].forEach(href => addResourceHint("prefetch", href, href.split("?")[0].endsWith(".css") ? "style" : "script"));
+    };
+
+    fichaLinks.forEach(link => {
+      link.addEventListener("pointerenter", preloadFichaAssets, { once: true, passive: true });
+      link.addEventListener("focus", preloadFichaAssets, { once: true });
+      link.addEventListener("touchstart", preloadFichaAssets, { once: true, passive: true });
+    });
+
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(prefetchFichaDocument, { timeout: 1600 });
+    } else {
+      window.setTimeout(prefetchFichaDocument, 700);
+    }
+  }
+
   function onKeyDown(event) {
     if (event.key === "Escape") {
       event.preventDefault();
@@ -241,9 +284,11 @@
     document.addEventListener("DOMContentLoaded", () => {
       ensureModal();
       initCursorGlow();
+      initFichaPrefetch();
     }, { once: true });
   } else {
     ensureModal();
     initCursorGlow();
+    initFichaPrefetch();
   }
 })();

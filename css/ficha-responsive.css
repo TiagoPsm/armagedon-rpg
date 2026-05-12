@@ -247,6 +247,7 @@
 }
 
 #sheetScreen #habList,
+#sheetScreen #passiveList,
 #sheetScreen #ownedMemoryList,
 #sheetScreen #memoryList {
   gap: 0.78rem;
@@ -297,6 +298,10 @@
 #sheetScreen .hab-card-grid-main {
   grid-template-columns: minmax(0, 1.65fr) minmax(180px, 0.62fr);
   gap: 0.8rem;
+}
+
+#sheetScreen .passive-card-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.45fr);
 }
 
 #sheetScreen .hab-card .hab-input,
@@ -435,6 +440,11 @@
   }
 
   #sheetScreen .hab-card-grid-main {
+    grid-template-columns: 1fr;
+  }
+
+  #sheetScreen .passive-card-grid,
+  #sheetScreen .item-transfer-row {
     grid-template-columns: 1fr;
   }
 }

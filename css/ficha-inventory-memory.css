@@ -489,6 +489,32 @@
     rgba(7, 10, 15, 0.84);
 }
 
+#sheetScreen .item-transfer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+#sheetScreen .item-transfer-qty {
+  display: inline-grid;
+  grid-template-columns: auto minmax(60px, 78px);
+  align-items: center;
+  gap: 0.35rem;
+  color: rgba(234, 225, 204, 0.78);
+  font-size: 0.76rem;
+}
+
+#sheetScreen .item-transfer-qty input {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid rgba(202, 74, 68, 0.28);
+  border-radius: 12px;
+  background: rgba(5, 7, 12, 0.84);
+  color: #f5efe1;
+  padding: 0.4rem 0.55rem;
+}
+
 #sheetScreen .sheet-section-inventory .block-title-bar {
   align-items: center;
 }
@@ -2269,12 +2295,14 @@
 }
 
 #sheetScreen .sheet-section-skills > .block-title-bar > .btn-inline,
+#sheetScreen .sheet-section-passives > .block-title-bar > .btn-inline,
 #sheetScreen .sheet-section-memory-drops > .block-title-bar > .btn-inline {
   margin-left: auto;
   align-self: center;
 }
 
 #sheetScreen #habList,
+#sheetScreen #passiveList,
 #sheetScreen #ownedMemoryList,
 #sheetScreen #memoryList {
   display: grid;
@@ -2283,6 +2311,7 @@
 }
 
 #sheetScreen .sheet-section-skills .empty-msg,
+#sheetScreen .sheet-section-passives .empty-msg,
 #sheetScreen .sheet-section-owned-memories .empty-msg,
 #sheetScreen .sheet-section-memory-drops .empty-msg {
   margin: 0;
@@ -2309,6 +2338,18 @@
 
 #sheetScreen .hab-card-meta {
   color: rgba(205, 194, 170, 0.74);
+}
+
+#sheetScreen .sheet-section-passives .hab-card {
+  border-color: rgba(218, 185, 107, 0.25);
+}
+
+#sheetScreen .passive-card-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.45fr);
+}
+
+#sheetScreen .passive-card-grid .hab-field-full {
+  grid-column: 1 / -1;
 }
 
 #sheetScreen .sheet-section-inventory .block-title-bar {

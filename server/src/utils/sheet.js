@@ -62,8 +62,21 @@ function normalizeHab(hab) {
   };
 }
 
+function normalizePassive(passive) {
+  return {
+    id: String(passive?.id || createPassiveId()),
+    name: String(passive?.name || ""),
+    source: String(passive?.source || ""),
+    effect: String(passive?.effect || passive?.desc || "")
+  };
+}
+
 function createHabId() {
   return `hab-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function createPassiveId() {
+  return `passive-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function normalizeHabType(value) {
@@ -129,6 +142,7 @@ function normalizeSheetData(data, kind = "player", charNameFallback = "") {
     integMax,
     charNotes: String(data?.charNotes || ""),
     habs: Array.isArray(data?.habs) ? data.habs.map(normalizeHab) : [],
+    passives: Array.isArray(data?.passives) ? data.passives.map(normalizePassive) : [],
     ownedMemories: isMonster
       ? []
       : Array.isArray(data?.ownedMemories)
@@ -187,6 +201,7 @@ module.exports = {
   normalizeItem,
   normalizeOwnedMemory,
   normalizeMemoryDrop,
+  normalizePassive,
   normalizeSheetData,
   sanitizeChance
 };

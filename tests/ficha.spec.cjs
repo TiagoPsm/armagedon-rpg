@@ -152,7 +152,7 @@ test.describe("Fichas", () => {
     expect(requestedCharacterPaths).not.toContain("PUT /api/characters/ana");
   });
 
-  test("transferencia de item usa targetKey oficial do jogador de destino", async ({ page }) => {
+  test("transferencia online de item envia quantidade e targetKey oficial", async ({ page }) => {
     const baseUrl = await getMesaBaseUrl();
     const apiBaseUrl = "https://armagedon-api.tiagopsm2008.workers.dev/api";
     const transferRequests = [];
@@ -164,7 +164,7 @@ test.describe("Fichas", () => {
       integMax: "8",
       inventorySlots: 12,
       inv: [
-        { name: "Lamina curta", qty: "1", type: "arma", damage: "1d6", desc: "Teste." }
+        { name: "Lamina curta", qty: "5", type: "arma", damage: "1d6", desc: "Teste." }
       ]
     };
 
@@ -259,13 +259,17 @@ test.describe("Fichas", () => {
         return;
       }
 
-      if (pathname === "/api/transfers/items/player-to-player" && request.method() === "POST") {
+      if (pathname === "/api/transfers/items/character-to-character" && request.method() === "POST") {
         const payload = request.postDataJSON();
         transferRequests.push(payload);
         await fulfillJson(route, {
-          item: characterData.inv[0],
+          item: { ...characterData.inv[0], qty: String(payload.quantity || characterData.inv[0].qty) },
+          quantity: payload.quantity,
+          mergeMode: "new-slot",
           sourceKey: payload.sourceKey,
-          targetKey: payload.targetKey
+          sourceKind: "player",
+          targetKey: payload.targetKey,
+          targetKind: "player"
         });
         return;
       }
@@ -295,6 +299,7 @@ test.describe("Fichas", () => {
 
     await page.evaluate(async () => {
       window.UI.confirm = async () => true;
+      itemTransferStates[0] = { target: "player-bruno-oficial", quantity: "2" };
       await transferItem(0);
     });
 
@@ -302,8 +307,141 @@ test.describe("Fichas", () => {
     expect(transferRequests[0]).toMatchObject({
       sourceKey: "player-ana-oficial",
       targetKey: "player-bruno-oficial",
-      itemIndex: 0
+      itemIndex: 0,
+      quantity: 2
     });
+
+    const remainingQuantity = await page.evaluate(() => inv[0]?.qty);
+    expect(remainingQuantity).toBe("3");
+  });
+
+  test("transferencia local junta item igual em NPC mesmo com inventario cheio", async ({ page }) => {
+    const baseUrl = await getMesaBaseUrl();
+
+    await page.addInitScript(() => {
+      window.ARMAGEDON_CONFIG = {
+        apiBaseUrl: `${window.location.origin}/api`,
+        realtimeEnabled: false
+      };
+      const fillerItems = Array.from({ length: 9 }, (_item, index) => ({
+        name: `Carga ${index + 1}`,
+        qty: "1",
+        type: "outro",
+        damage: "",
+        desc: ""
+      }));
+      localStorage.clear();
+      localStorage.setItem("tc_session", JSON.stringify({
+        username: "mestre",
+        role: "master",
+        token: "",
+        backend: false
+      }));
+      localStorage.setItem("tc_players", JSON.stringify([
+        { username: "ana", password: "123", charname: "Ana Rubra" }
+      ]));
+      localStorage.setItem("tc_npcs", JSON.stringify([
+        { id: "mercador", name: "Mercador Cinza" }
+      ]));
+      localStorage.setItem("tc_monsters", JSON.stringify([
+        { id: "eco", name: "Eco Rubro" }
+      ]));
+      localStorage.setItem("tc_sheets", JSON.stringify({
+        ana: {
+          charName: "Ana Rubra",
+          inventorySlots: 10,
+          inv: [
+            { name: "Pocao rubra", qty: "3", type: "outro", damage: "", desc: "Cura leve." }
+          ]
+        },
+        "npc:mercador": {
+          charName: "Mercador Cinza",
+          inventorySlots: 10,
+          inv: [
+            { name: "Pocao rubra", qty: "4", type: "outro", damage: "", desc: "Cura leve." },
+            ...fillerItems
+          ]
+        },
+        "monster:eco": {
+          charName: "Eco Rubro",
+          memoryDrops: []
+        }
+      }));
+    });
+
+    await page.goto(`${baseUrl}/ficha.html`);
+    await expect(page.locator("#masterScreen")).toBeVisible();
+    await page.locator(".player-row", { hasText: "Ana Rubra" }).getByRole("button", { name: "Ver ficha" }).click();
+    await expect(page.locator("#charName")).toHaveValue("Ana Rubra");
+
+    const targetValues = await page.evaluate(() => getItemTransferTargets().map(target => target.value));
+    expect(targetValues).toContain("npc:mercador");
+    expect(targetValues).not.toContain("monster:eco");
+
+    await page.evaluate(async () => {
+      window.UI.confirm = async () => true;
+      itemTransferStates[0] = { target: "npc:mercador", quantity: "2" };
+      await transferItem(0);
+    });
+
+    const sheets = await page.evaluate(() => JSON.parse(localStorage.getItem("tc_sheets") || "{}"));
+    expect(sheets.ana.inv[0].qty).toBe("1");
+    expect(sheets["npc:mercador"].inv[0].qty).toBe("6");
+    expect(sheets["npc:mercador"].inv).toHaveLength(10);
+  });
+
+  test("passivos permanentes persistem em jogador NPC e monstro", async ({ page }) => {
+    const baseUrl = await getMesaBaseUrl();
+
+    await page.addInitScript(() => {
+      window.ARMAGEDON_CONFIG = {
+        apiBaseUrl: `${window.location.origin}/api`,
+        realtimeEnabled: false
+      };
+      localStorage.clear();
+      localStorage.setItem("tc_session", JSON.stringify({
+        username: "mestre",
+        role: "master",
+        token: "",
+        backend: false
+      }));
+      localStorage.setItem("tc_players", JSON.stringify([
+        { username: "ana", password: "123", charname: "Ana Rubra" }
+      ]));
+      localStorage.setItem("tc_npcs", JSON.stringify([
+        { id: "vigia", name: "Vigia" }
+      ]));
+      localStorage.setItem("tc_monsters", JSON.stringify([
+        { id: "eco", name: "Eco Rubro" }
+      ]));
+      localStorage.setItem("tc_sheets", JSON.stringify({
+        ana: { charName: "Ana Rubra" },
+        "npc:vigia": { charName: "Vigia" },
+        "monster:eco": { charName: "Eco Rubro" }
+      }));
+    });
+
+    await page.goto(`${baseUrl}/ficha.html`);
+    await expect(page.locator("#masterScreen")).toBeVisible();
+
+    await page.evaluate(async () => {
+      await openSheet(createPlayerTarget("ana"), true);
+      renderPassives([{ id: "passive-player", name: "Olhar atento", source: "Treino", effect: "+1 em vigilia." }]);
+      await saveCurrentSheet({ silent: true });
+
+      await openSheet(createNpcTarget({ id: "vigia", name: "Vigia" }), true);
+      renderPassives([{ id: "passive-npc", name: "Postura firme", source: "Guarda", effect: "Nao recua facil." }]);
+      await saveCurrentSheet({ silent: true });
+
+      await openSheet(createMonsterTarget({ id: "eco", name: "Eco Rubro" }), true);
+      renderPassives([{ id: "passive-monster", name: "Fome antiga", source: "Aberracao", effect: "Persegue sangue." }]);
+      await saveCurrentSheet({ silent: true });
+    });
+
+    const sheets = await page.evaluate(() => JSON.parse(localStorage.getItem("tc_sheets") || "{}"));
+    expect(sheets.ana.passives[0]).toMatchObject({ name: "Olhar atento", source: "Treino" });
+    expect(sheets["npc:vigia"].passives[0]).toMatchObject({ name: "Postura firme", source: "Guarda" });
+    expect(sheets["monster:eco"].passives[0]).toMatchObject({ name: "Fome antiga", source: "Aberracao" });
   });
 
   test("modo local ignora diretorio remoto antigo ao abrir a propria ficha", async ({ page }) => {

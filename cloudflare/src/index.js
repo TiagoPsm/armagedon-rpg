@@ -24,6 +24,7 @@ import {
   normalizeUsername,
   rollMonsterMemoryDrop,
   saveCharacterBundle,
+  transferItemBetweenCharacters,
   transferItemBetweenPlayers,
   transferMemoryBetweenPlayers
 } from "./characters.js";
@@ -409,12 +410,28 @@ export default {
         const sourceKey = String(body.sourceKey || "").trim().toLowerCase();
         const targetKey = String(body.targetKey || "").trim().toLowerCase();
         const itemIndex = body.itemIndex;
+        const quantity = body.quantity;
 
         if (!sourceKey || !targetKey) {
           return errorJson("Origem e destino são obrigatórios.", 400, origin);
         }
 
-        return withCors(json(await transferItemBetweenPlayers(env, session, sourceKey, targetKey, itemIndex)), origin);
+        return withCors(json(await transferItemBetweenPlayers(env, session, sourceKey, targetKey, itemIndex, quantity)), origin);
+      }
+
+      if (path === "/api/transfers/items/character-to-character" && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        const body = await readJson(request);
+        const sourceKey = String(body.sourceKey || "").trim().toLowerCase();
+        const targetKey = String(body.targetKey || "").trim().toLowerCase();
+        const itemIndex = body.itemIndex;
+        const quantity = body.quantity;
+
+        if (!sourceKey || !targetKey) {
+          return errorJson("Origem e destino sao obrigatorios.", 400, origin);
+        }
+
+        return withCors(json(await transferItemBetweenCharacters(env, session, sourceKey, targetKey, itemIndex, quantity)), origin);
       }
 
       if (path === "/api/transfers/memories/player-to-player" && request.method === "POST") {

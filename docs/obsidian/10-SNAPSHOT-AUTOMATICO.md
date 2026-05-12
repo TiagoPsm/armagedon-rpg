@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-12 01:34:17 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-12 16:36:17 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,20 +13,31 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `42801a4 2026-05-09 Corrige digitacao multi digito na mesa`
+- Ultimo commit: `42894e4 2026-05-12 Estabiliza sincronizacao da Mesa`
 
 ### Alteracoes Locais
 
 ```text
-M  DEV_STATUS.md
-M  VISUAL_RULES.md
-M  docs/obsidian/07-MESA.md
-M  docs/obsidian/09-HISTORICO-DE-SESSOES.md
-M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-core.js
-M  js/mesa-stage.js
+M  cloudflare/src/characters.js
+M  cloudflare/src/index.js
+M  cloudflare/src/sheet.js
+M  css/ficha-inventory-memory.css
+M  css/ficha-responsive.css
+M  ficha.html
+M  index.html
+M  js/api.js
+M  js/ficha-core.js
+M  js/ficha-inventory.js
+A  js/ficha-passives.js
+M  js/ficha.js
+M  js/ui.js
 M  mesa.html
-M  tests/mesa.spec.cjs
+M  regras.html
+M  server/src/routes/transfers.js
+M  server/src/services/characters.js
+M  server/src/utils/sheet.js
+M  tests/ficha.spec.cjs
+M  tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -38,15 +49,26 @@ M  tests/mesa.spec.cjs
 ### Arquivos Em Stage
 
 ```text
-DEV_STATUS.md
-VISUAL_RULES.md
-docs/obsidian/07-MESA.md
-docs/obsidian/09-HISTORICO-DE-SESSOES.md
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/mesa-core.js
-js/mesa-stage.js
+cloudflare/src/characters.js
+cloudflare/src/index.js
+cloudflare/src/sheet.js
+css/ficha-inventory-memory.css
+css/ficha-responsive.css
+ficha.html
+index.html
+js/api.js
+js/ficha-core.js
+js/ficha-inventory.js
+js/ficha-passives.js
+js/ficha.js
+js/ui.js
 mesa.html
-tests/mesa.spec.cjs
+regras.html
+server/src/routes/transfers.js
+server/src/services/characters.js
+server/src/utils/sheet.js
+tests/ficha.spec.cjs
+tools/build-pages.cjs
 ```
 
 ## Paginas Principais
@@ -58,7 +80,7 @@ tests/mesa.spec.cjs
 
 ## Contagem Rapida
 
-- JavaScript em `js/`: 27 arquivo(s)
+- JavaScript em `js/`: 28 arquivo(s)
 - CSS em `css/`: 18 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
@@ -125,12 +147,12 @@ tests/mesa.spec.cjs
 Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
-   13,08 MB  assets\sheet-fire-background.mp4
    13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
+   13,08 MB  assets\sheet-fire-background.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
-    0,99 MB  _site\logo-rpg-armagedon.png
-    0,99 MB  assets\logo-rpg-armagedon.png
     0,99 MB  logo-rpg-armagedon.png
+    0,99 MB  assets\logo-rpg-armagedon.png
+    0,99 MB  _site\logo-rpg-armagedon.png
     0,92 MB  node_modules\playwright-core\types\types.d.ts
     0,78 MB  node_modules\playwright-core\types\protocol.d.ts
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js

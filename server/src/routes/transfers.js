@@ -5,6 +5,7 @@ const { httpError } = require("../utils/http-error");
 const { withTransaction } = require("../db");
 const {
   awardMonsterMemoryDrop,
+  transferItemBetweenCharacters,
   transferItemBetweenPlayers,
   transferMemoryBetweenPlayers,
   rollMonsterMemoryDrop
@@ -20,13 +21,14 @@ router.post(
     const sourceKey = String(req.body?.sourceKey || "").trim().toLowerCase();
     const targetKey = String(req.body?.targetKey || "").trim().toLowerCase();
     const itemIndex = req.body?.itemIndex;
+    const quantity = req.body?.quantity;
 
     if (!sourceKey || !targetKey) {
-    throw httpError(400, "Origem e destino são obrigatórios.");
+      throw httpError(400, "Origem e destino são obrigatórios.");
     }
 
     const result = await withTransaction(client =>
-      transferItemBetweenPlayers(client, req.user, sourceKey, targetKey, itemIndex)
+      transferItemBetweenPlayers(client, req.user, sourceKey, targetKey, itemIndex, quantity)
     );
 
     req.app.get("io")?.emit("inventory:changed", {
@@ -35,6 +37,33 @@ router.post(
     });
     req.app.get("io")?.emit("sheet:changed", { key: result.sourceKey, kind: "player" });
     req.app.get("io")?.emit("sheet:changed", { key: result.targetKey, kind: "player" });
+
+    res.json(result);
+  })
+);
+
+router.post(
+  "/items/character-to-character",
+  asyncHandler(async (req, res) => {
+    const sourceKey = String(req.body?.sourceKey || "").trim().toLowerCase();
+    const targetKey = String(req.body?.targetKey || "").trim().toLowerCase();
+    const itemIndex = req.body?.itemIndex;
+    const quantity = req.body?.quantity;
+
+    if (!sourceKey || !targetKey) {
+      throw httpError(400, "Origem e destino sao obrigatorios.");
+    }
+
+    const result = await withTransaction(client =>
+      transferItemBetweenCharacters(client, req.user, sourceKey, targetKey, itemIndex, quantity)
+    );
+
+    req.app.get("io")?.emit("inventory:changed", {
+      sourceKey: result.sourceKey,
+      targetKey: result.targetKey
+    });
+    req.app.get("io")?.emit("sheet:changed", { key: result.sourceKey, kind: result.sourceKind || "player-or-npc" });
+    req.app.get("io")?.emit("sheet:changed", { key: result.targetKey, kind: result.targetKind || "player-or-npc" });
 
     res.json(result);
   })

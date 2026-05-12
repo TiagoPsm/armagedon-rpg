@@ -7,6 +7,7 @@
     "js/ficha-inventory.js",
     "js/ficha-dice.js",
     "js/ficha-habs.js",
+    "js/ficha-passives.js",
     "js/ficha-memories.js",
     "js/ficha-soul.js",
     "js/ficha-init.js"
