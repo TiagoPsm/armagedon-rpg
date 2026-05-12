@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-09 18:30:44 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-12 01:34:17 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `be6d917 2026-05-09 Libera maximos de recursos da ficha`
+- Ultimo commit: `42801a4 2026-05-09 Corrige digitacao multi digito na mesa`
 
 ### Alteracoes Locais
 
@@ -23,7 +23,9 @@ M  VISUAL_RULES.md
 M  docs/obsidian/07-MESA.md
 M  docs/obsidian/09-HISTORICO-DE-SESSOES.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  js/mesa-core.js
 M  js/mesa-stage.js
+M  mesa.html
 M  tests/mesa.spec.cjs
 ```
 
@@ -41,7 +43,9 @@ VISUAL_RULES.md
 docs/obsidian/07-MESA.md
 docs/obsidian/09-HISTORICO-DE-SESSOES.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+js/mesa-core.js
 js/mesa-stage.js
+mesa.html
 tests/mesa.spec.cjs
 ```
 
@@ -121,8 +125,8 @@ tests/mesa.spec.cjs
 Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
-   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
    13,08 MB  assets\sheet-fire-background.mp4
+   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     0,99 MB  _site\logo-rpg-armagedon.png
     0,99 MB  assets\logo-rpg-armagedon.png

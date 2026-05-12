@@ -274,7 +274,7 @@ function selectToken(tokenId) {
   state.selectedTokenId = tokenId;
   const token = findToken(tokenId);
   let orderChanged = false;
-  if (token && isMaster()) {
+  if (token && isMaster() && tokenId !== previousTokenId) {
     const previousOrder = token.order || 1;
     token.order = getNextOrder();
     orderChanged = token.order !== previousOrder;
@@ -283,7 +283,7 @@ function selectToken(tokenId) {
     bumpMesaSceneVersion();
     broadcastMesaTokenMove(token);
   }
-  if (isMaster()) persistState();
+  if (isMaster() && orderChanged) persistState();
   updateStageTokenSelection(previousTokenId, tokenId);
   scheduleMesaRender({ inspector: true });
 }
@@ -349,8 +349,51 @@ function handleMesaNumericInputCommit(event) {
     restoreBlankMesaNumberInput(input);
   }
   if (input.matches("[data-stat-field]")) {
+    commitInspectorMaxInputClamp(input);
     scheduleMesaRender({ inspector: true });
   }
+
+  if (input.matches("[data-player-sheet-field]")) {
+    commitPlayerPanelMaxInputClamp(input);
+  }
+}
+
+function commitInspectorMaxInputClamp(input) {
+  const field = String(input.dataset.statField || "");
+  if (field !== "maxLife" && field !== "maxIntegrity") return;
+  const token = getSelectedToken();
+  if (!token || !canEditAllStats(token)) return;
+  const sheet = getStoredMesaSheetSnapshot(token.characterKey) || buildMesaSheetSnapshotFromEntry(token) || {};
+  const isLife = field === "maxLife";
+  const max = Math.max(isLife ? 1 : 0, asPositiveInt(input.value, isLife ? token.maxLife : token.maxIntegrity));
+  const rawCurrent = asPositiveInt(isLife ? sheet.vidaAtual : sheet.integAtual, isLife ? token.currentLife : token.currentIntegrity);
+  const current = clamp(rawCurrent, 0, max);
+  if (rawCurrent === current) return;
+
+  const patch = isLife ? { vidaAtual: String(current) } : { integAtual: String(current) };
+  applySheetPatchFromMesa(token.characterKey, patch, { render: false });
+  broadcastMesaSheetPatch(token.characterKey, patch);
+  syncInspectorStatInputCard(input, field, getSelectedToken() || token);
+  scheduleMesaRender({ stage: true });
+}
+
+function commitPlayerPanelMaxInputClamp(input) {
+  const field = String(input.dataset.playerSheetField || "");
+  if (field !== "vidaMax" && field !== "integMax") return;
+  const characterKey = normalizeMesaCharacterKey(input.dataset.characterKey);
+  if (!characterKey || !canReceiveSheetPatch(characterKey)) return;
+  const context = getOwnPlayerContext(characterKey);
+  const sheet = normalizeMesaSheetSnapshot(context?.sheet || {});
+  const isLife = field === "vidaMax";
+  const max = Math.max(isLife ? 1 : 0, asPositiveInt(input.value, isLife ? sheet.vidaMax || 1 : sheet.integMax || 0));
+  const rawCurrent = asPositiveInt(isLife ? sheet.vidaAtual : sheet.integAtual, isLife ? context?.token?.currentLife || 0 : context?.token?.currentIntegrity || 0);
+  const current = clamp(rawCurrent, 0, max);
+  if (rawCurrent === current) return;
+
+  applyPlayerPanelSheetPatch(characterKey, isLife ? { vidaAtual: String(current) } : { integAtual: String(current) }, {
+    renderRoster: false,
+    sourceInput: input
+  });
 }
 
 function handlePlayerPanelStatInput(event) {
@@ -903,7 +946,6 @@ function buildSheetPatchFromMesa(field, nextValue, token) {
   if (field === "maxLife" && canEditAllStats(token)) {
     const nextMaxLife = Math.max(1, asPositiveInt(nextValue, token.maxLife));
     patch.vidaMax = String(nextMaxLife);
-    patch.vidaAtual = String(clamp(token.currentLife, 0, nextMaxLife));
   }
 
   if (field === "currentIntegrity" && canEditCurrentStats(token)) {
@@ -913,7 +955,6 @@ function buildSheetPatchFromMesa(field, nextValue, token) {
   if (field === "maxIntegrity" && canEditAllStats(token)) {
     const nextMaxIntegrity = asPositiveInt(nextValue, token.maxIntegrity);
     patch.integMax = String(nextMaxIntegrity);
-    patch.integAtual = String(clamp(token.currentIntegrity, 0, nextMaxIntegrity));
   }
 
   return Object.keys(patch).length ? patch : null;
@@ -950,7 +991,6 @@ function buildPlayerPanelFieldPatch(field, value, context) {
   if (field === "vidaMax") {
     const nextMaxLife = Math.max(1, asPositiveInt(value, sheet.vidaMax || 1));
     patch.vidaMax = String(nextMaxLife);
-    patch.vidaAtual = String(clamp(asPositiveInt(sheet.vidaAtual, 0), 0, nextMaxLife));
   }
 
   if (field === "vidaAtual") {
@@ -966,7 +1006,6 @@ function buildPlayerPanelFieldPatch(field, value, context) {
   if (field === "integMax") {
     const nextMaxIntegrity = Math.max(0, asPositiveInt(value, sheet.integMax || 0));
     patch.integMax = String(nextMaxIntegrity);
-    patch.integAtual = String(clamp(asPositiveInt(sheet.integAtual, 0), 0, nextMaxIntegrity));
   }
 
   if (MESA_ATTRIBUTE_NAMES.map(attr => `attr${attr}`).includes(field)) {
@@ -1006,9 +1045,11 @@ function syncPlayerPanelFieldAfterPatch(input, patch) {
   if (field === "vidaMax") {
     const card = input.closest(".player-resource-card");
     const currentInput = card?.querySelector('[data-player-stat-field="currentLife"]');
-    if (currentInput && patch.vidaAtual !== undefined) {
+    if (currentInput) {
       currentInput.max = String(patch.vidaMax || currentInput.max || "0");
-      currentInput.value = String(patch.vidaAtual);
+      if (patch.vidaAtual !== undefined) {
+        currentInput.value = String(patch.vidaAtual);
+      }
       syncPlayerStatInputCard(currentInput, "currentLife");
     }
   }
@@ -1016,9 +1057,11 @@ function syncPlayerPanelFieldAfterPatch(input, patch) {
   if (field === "integMax") {
     const card = input.closest(".player-resource-card");
     const currentInput = card?.querySelector('[data-player-stat-field="currentIntegrity"]');
-    if (currentInput && patch.integAtual !== undefined) {
+    if (currentInput) {
       currentInput.max = String(patch.integMax || currentInput.max || "0");
-      currentInput.value = String(patch.integAtual);
+      if (patch.integAtual !== undefined) {
+        currentInput.value = String(patch.integAtual);
+      }
       syncPlayerStatInputCard(currentInput, "currentIntegrity");
     }
   }
@@ -1068,11 +1111,9 @@ function mutatePlayerPanelInventory(characterKey, mutation) {
 
 function applySheetPatchFromMesa(characterKey, patch, options = {}) {
   if (!applySheetPatchToMesaCaches(characterKey, patch)) return;
+  rememberMesaOptimisticSheetPatch(characterKey, patch);
   scheduleMesaRemoteSheetPatch(characterKey, patch);
-  refreshMesaRosterFromSheets({
-    persistScene: false,
-    render: options.render !== false
-  });
+  applySheetPatchToMesaState(characterKey, options);
 }
 
 function syncPlayerStatInputCard(input, field) {
@@ -1090,6 +1131,73 @@ function syncPlayerStatInputCard(input, field) {
     const type = field === "currentLife" ? "vida" : "integ";
     bar.setAttribute("style", getBarFillStyle(type, current, max));
   }
+}
+
+function buildMesaRosterEntryFromSheet(characterKey, existingEntry = null) {
+  const key = normalizeMesaCharacterKey(characterKey);
+  if (!key) return null;
+  const fallbackSheet = buildMesaSheetSnapshotFromEntry(existingEntry);
+  const sheet = getStoredMesaSheetSnapshot(key) || fallbackSheet;
+  if (!sheet) return existingEntry || null;
+  const type = existingEntry?.type
+    || (key.startsWith(NPC_PREFIX) ? "npc" : key.startsWith(MONSTER_PREFIX) ? "monster" : "player");
+  const ownerUsername = existingEntry?.ownerUsername || (type === "player" ? key : "mestre");
+  const name = String(sheet.charName || existingEntry?.name || ownerUsername || key).trim() || "Sem nome";
+
+  return createRosterEntry({
+    id: existingEntry?.id || key,
+    characterKey: key,
+    type,
+    ownerUsername,
+    createdBy: existingEntry?.createdBy || "mestre",
+    name,
+    imageUrl: sheet.avatar || existingEntry?.imageUrl || "",
+    currentLife: sheet.vidaAtual,
+    maxLife: sheet.vidaMax,
+    currentIntegrity: sheet.integAtual,
+    maxIntegrity: sheet.integMax,
+    statsVisibleToPlayers: existingEntry?.statsVisibleToPlayers
+  });
+}
+
+function applySheetPatchToMesaState(characterKey, options = {}) {
+  const key = normalizeMesaCharacterKey(characterKey);
+  if (!key) return false;
+  const currentEntry = getRosterEntryByCharacterKey(key) || getRosterEntryById(key);
+  const nextEntry = buildMesaRosterEntryFromSheet(key, currentEntry);
+  if (!nextEntry) return false;
+
+  let entryFound = false;
+  const nextRoster = state.roster.map(entry => {
+    if (normalizeMesaCharacterKey(entry.characterKey || entry.id) !== key) return entry;
+    entryFound = true;
+    return nextEntry;
+  });
+
+  if (entryFound) {
+    setMesaRoster(nextRoster);
+  }
+
+  let tokensChanged = false;
+  state.tokens = state.tokens.map(token => {
+    if (normalizeMesaCharacterKey(token.characterKey || token.id) !== key) return token;
+    const mergedToken = mergeTokenWithRoster(token, nextEntry) || token;
+    tokensChanged = tokensChanged || JSON.stringify(token) !== JSON.stringify(mergedToken);
+    return mergedToken;
+  });
+
+  syncSelectedToken();
+
+  if (options.render !== false) {
+    scheduleMesaRender({
+      summary: true,
+      roster: entryFound,
+      stage: tokensChanged,
+      inspector: true
+    });
+  }
+
+  return true;
 }
 
 function applySheetPatchToMesaCaches(characterKey, patch) {
@@ -1190,16 +1298,17 @@ async function persistMesaSheetPatch(characterKey, options = {}) {
     if (saved?.data) {
       const nextRemoteSheets = readJsonStorage(REMOTE_SHEETS_KEY, {});
       const newerPatch = pendingMesaSheetPatches.get(characterKey);
-      nextRemoteSheets[characterKey] = newerPatch
+      const savedData = newerPatch
         ? {
             ...saved.data,
             ...newerPatch
           }
         : saved.data;
+      nextRemoteSheets[characterKey] = mergeMesaOptimisticSheetPatch(characterKey, savedData);
       localStorage.setItem(REMOTE_SHEETS_KEY, JSON.stringify(nextRemoteSheets));
       setPlayerSheetSyncStatus("saved");
-      refreshMesaRosterFromSheets({ persistScene: false });
-      scheduleMesaRender({ summary: true, roster: true, stage: true, inspector: true });
+      applySheetPatchToMesaState(characterKey, { render: false });
+      scheduleMesaRender({ summary: true, stage: true, inspector: true });
     }
   } catch (error) {
     setPlayerSheetSyncStatus("error");

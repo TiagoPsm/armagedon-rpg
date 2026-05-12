@@ -87,6 +87,17 @@ Este arquivo resume marcos importantes. Detalhes completos continuam em `DEV_STA
 - Corrigido o seletor do roster autenticado para `#rosterList`; em modo jogador, o mesmo container vira painel pessoal e nao deve expor acoes de roster.
 - `ARMAGEDON_ONLINE_RELAY_PROBE=1` fica separado para evitar relay de evento de teste quando houver usuarios reais conectados.
 
+## 2026-05-09 - Estabilizacao Anti-Rollback Da Mesa
+
+- Investigado gargalo em que edicoes pela Mesa podiam oscilar, aparentar rollback ou atrasar selecao.
+- Causa confirmada: refresh remoto de ficha (`sheet:changed`) podia chegar com snapshot antigo enquanto havia patch local pendente, e o fluxo antigo ainda reconstruia roster/tokens de forma ampla.
+- `js/mesa-core.js` passou a manter patch otimista recente por ficha e mesclar esse patch antes de aceitar dados remotos.
+- `js/mesa-stage.js` passou a aplicar patch de ficha de forma incremental no roster/token afetado, sem reprocessar todos os tokens a cada tecla.
+- Se houver patch local recente, eventos remotos atualizam cache/palco sem reconstruir o painel pessoal, evitando flicker e perda de foco.
+- Selecionar o token ja selecionado deixou de gerar nova ordem, persistencia da cena ou broadcast.
+- Validacao apos queda de energia confirmou Git integro e revelou/corrigiu rollback ao digitar maximos: `30` nao pode reduzir Vida atual para `3` pelo primeiro digito.
+- Validado com `check:js`, `audit:static`, `test:mesa`, `test:ficha`, `perf:mesa`, `build:pages`, `git diff --check` e `git fsck --no-dangling`.
+
 ## 2026-05-07 - Ficha Mestre Por Key Oficial
 
 - Corrigido o fluxo em que o mestre abre e salva fichas de jogadores pelo painel de fichas.

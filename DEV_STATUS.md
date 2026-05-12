@@ -92,6 +92,17 @@ Registro minimo esperado:
 
 ## Ultima Etapa Concluida
 
+- Estabilizacao de sincronizacao da Mesa em 2026-05-09:
+  - objetivo: remover gargalo/oscillacao em que valores recem editados pela Mesa podiam receber refresh antigo e aparentar rollback ou demora na selecao
+  - causa encontrada: `sheet:changed` e `mesa:sheet:patch` podiam recarregar cache remoto antigo enquanto havia patch local pendente; alem disso, cada patch de ficha reprocessava roster/tokens inteiros
+  - `js/mesa-core.js`: adicionada janela curta de patch otimista por ficha; eventos remotos agora mesclam esse patch local recente antes de atualizar cache/render
+  - `js/mesa-stage.js`: patches da ficha atualizam roster/tokens de forma incremental, sem `refreshMesaRosterFromSheets()` completo em cada tecla; selecionar o mesmo token nao dispara nova ordem nem save de cena
+  - `js/mesa-stage.js`: maxima de Vida/Integridade deixou de aplicar clamp no valor atual a cada digito intermediario; o clamp final acontece no `focusout`, evitando rollback ao digitar `30`
+  - `mesa.html`: cache bust de `mesa-core.js` e `mesa-stage.js` atualizado para `2026-05-09-sync-lag-1`
+  - `tests/mesa.spec.cjs`: regressao simula refresh remoto antigo logo apos edicao local e confirma que Vida/Integridade nao voltam para o valor antigo; tambem cobre clamp visual final quando Vida/Integridade maxima ficam abaixo do valor atual
+  - validacoes executadas: `npm run check:js`, `npm run audit:static`, `npm run test:mesa`, `npm run test:ficha`, `npm run perf:mesa`, `npm run build:pages`, `git diff --check` e `git fsck --no-dangling`
+  - status: pronto para publicacao
+
 - Digitacao continua de numeros na Mesa em 2026-05-09:
   - objetivo: permitir digitar valores com multiplos digitos, como `10` ou `30`, sem o campo travar no primeiro digito
   - `js/mesa-stage.js`: o inspetor da Mesa deixou de reconstruir o proprio painel a cada tecla; agora atualiza barra/label localmente e renderiza o inspetor completo apenas ao sair do campo

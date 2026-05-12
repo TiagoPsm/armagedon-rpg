@@ -94,6 +94,8 @@ let dragAnimationFrame = 0;
 let pendingDragPoint = null;
 const mesaSheetSaveTimers = new Map();
 const pendingMesaSheetPatches = new Map();
+const recentMesaSheetPatches = new Map();
+const MESA_SHEET_OPTIMISTIC_TTL_MS = 4000;
 let mesaInitStarted = false;
 let mesaRealtimeBound = false;
 let mesaRealtimeMessageSequence = 0;
@@ -449,7 +451,17 @@ function applyMesaSheetPatchRealtime(payload) {
   if (!characterKey || !Object.keys(patch).length) return;
   if (!canReceiveSheetPatch(characterKey)) return;
 
-  if (!applySheetPatchToMesaCaches(characterKey, patch)) return;
+  const optimisticPatch = getRecentMesaOptimisticSheetPatch(characterKey);
+  const nextPatch = {
+    ...patch,
+    ...(optimisticPatch || {})
+  };
+  if (!applySheetPatchToMesaCaches(characterKey, nextPatch)) return;
+  if (typeof applySheetPatchToMesaState === "function") {
+    applySheetPatchToMesaState(characterKey, { render: false });
+    scheduleMesaRender({ summary: true, roster: !optimisticPatch, stage: true, inspector: true });
+    return;
+  }
   refreshMesaRosterFromSheets({ persistScene: false });
 }
 
@@ -461,9 +473,15 @@ async function handleMesaSheetChanged(payload) {
   try {
     const bundle = await window.APP.getCharacter(characterKey);
     if (!bundle?.data) return;
+    const optimisticPatch = getRecentMesaOptimisticSheetPatch(characterKey);
     const remoteSheets = readJsonStorage(REMOTE_SHEETS_KEY, {});
-    remoteSheets[characterKey] = bundle.data;
+    remoteSheets[characterKey] = optimisticPatch ? { ...bundle.data, ...optimisticPatch } : bundle.data;
     localStorage.setItem(REMOTE_SHEETS_KEY, JSON.stringify(remoteSheets));
+    if (typeof applySheetPatchToMesaState === "function") {
+      applySheetPatchToMesaState(characterKey, { render: false });
+      scheduleMesaRender({ summary: true, roster: !optimisticPatch, stage: true, inspector: true });
+      return;
+    }
     refreshMesaRosterFromSheets({ persistScene: false });
   } catch (error) {
     if (isMaster()) {
@@ -682,6 +700,36 @@ function getRosterEntryByCharacterKey(characterKey) {
 
 function getRosterEntryById(entryId) {
   return mesaRosterById.get(String(entryId || "")) || null;
+}
+
+function rememberMesaOptimisticSheetPatch(characterKey, patch) {
+  const key = normalizeMesaCharacterKey(characterKey);
+  if (!key || !patch || !Object.keys(patch).length) return;
+  const existing = getRecentMesaOptimisticSheetPatch(key) || {};
+  recentMesaSheetPatches.set(key, {
+    patch: {
+      ...existing,
+      ...patch
+    },
+    updatedAt: Date.now()
+  });
+}
+
+function getRecentMesaOptimisticSheetPatch(characterKey) {
+  const key = normalizeMesaCharacterKey(characterKey);
+  if (!key) return null;
+  const entry = recentMesaSheetPatches.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.updatedAt > MESA_SHEET_OPTIMISTIC_TTL_MS) {
+    recentMesaSheetPatches.delete(key);
+    return null;
+  }
+  return { ...entry.patch };
+}
+
+function mergeMesaOptimisticSheetPatch(characterKey, data) {
+  const optimisticPatch = getRecentMesaOptimisticSheetPatch(characterKey);
+  return optimisticPatch ? { ...(data || {}), ...optimisticPatch } : data;
 }
 
 function hasMissingMesaRosterEntries(sceneData) {

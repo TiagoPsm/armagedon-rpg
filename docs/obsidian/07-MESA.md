@@ -96,7 +96,12 @@ Worker/D1:
 - Status deve priorizar Vida e Integridade com inputs diretos; os botoes rapidos ficam fora desta versao simples.
 - Inputs numericos da Mesa devem aceitar campo temporariamente vazio enquanto o usuario apaga e digita outro numero; o valor anterior so deve ser restaurado ao sair do campo vazio.
 - A digitacao de numeros com varios digitos, como `10` ou `30`, nao pode ser interrompida por rerender do inspetor ou do painel pessoal.
+- Ao digitar Vida maxima ou Integridade maxima, o valor atual nao deve ser clampado por digitos intermediarios; clamp definitivo so no `focusout`.
 - Salvamento/sincronizacao nao deve criar modal nem bloquear edicao.
+- Edicoes locais da ficha pela Mesa devem ficar protegidas por uma janela otimista curta: se `sheet:changed` ou `mesa:sheet:patch` chegar com dados antigos logo apos a digitacao, o cache e o palco preservam o patch local recente.
+- Eventos remotos de ficha so devem reconstruir o painel pessoal/roster quando nao houver edicao local recente para a mesma ficha.
+- Patches de ficha devem atualizar roster/tokens de forma incremental; evitar `refreshMesaRosterFromSheets()` completo a cada tecla.
+- Selecionar o token ja selecionado nao deve alterar ordem, salvar cena nem emitir delta realtime.
 - Inventario do jogador na Mesa continua editavel, com dano apenas em arma e descricao recolhida em detalhes.
 - A interface simples do jogador nao deve expor roster, busca, acoes de mestre ou dados de terceiros.
 - `content-visibility` pode continuar no roster pesado do mestre, mas deve ficar desligado no painel pessoal do jogador e no inspetor visivel para evitar blocos vazios durante rolagem.

@@ -197,6 +197,11 @@ test.describe("Mesa virtual", () => {
     await page.locator('[data-player-stat-field="currentLife"]').fill("");
     await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("");
     await page.locator('[data-player-stat-field="currentLife"]').type("10");
+    await page.locator('[data-player-sheet-field="vidaMax"]').fill("6");
+    await page.locator('[data-player-sheet-field="integMax"]').focus();
+    await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("6");
+    await page.locator('[data-player-sheet-field="vidaMax"]').fill("30");
+    await page.locator('[data-player-stat-field="currentLife"]').fill("10");
     await page.locator('[data-player-sheet-field="integMax"]').fill("");
     await expect(page.locator('[data-player-sheet-field="integMax"]')).toHaveValue("");
     await page.locator('[data-player-sheet-field="integMax"]').type("30");
@@ -204,6 +209,11 @@ test.describe("Mesa virtual", () => {
     await page.locator('[data-player-stat-field="currentIntegrity"]').fill("");
     await expect(page.locator('[data-player-stat-field="currentIntegrity"]')).toHaveValue("");
     await page.locator('[data-player-stat-field="currentIntegrity"]').type("10");
+    await page.locator('[data-player-sheet-field="integMax"]').fill("6");
+    await page.locator('[data-player-sheet-field="attrForca"]').focus();
+    await expect(page.locator('[data-player-stat-field="currentIntegrity"]')).toHaveValue("6");
+    await page.locator('[data-player-sheet-field="integMax"]').fill("30");
+    await page.locator('[data-player-stat-field="currentIntegrity"]').fill("10");
 
     await page.locator('[data-player-sheet-field="attrForca"]').fill("");
     await expect(page.locator('[data-player-sheet-field="attrForca"]')).toHaveValue("");
@@ -333,6 +343,8 @@ test.describe("Mesa virtual", () => {
         { name: "Juramento Rubro", desc: "Uma memoria antiga.", source: "Mesa" }
       ]
     };
+    const staleCharacterData = JSON.parse(JSON.stringify(characterData));
+    let forceStaleCharacterGet = false;
 
     const fulfillJson = (route, payload, status = 200) => route.fulfill({
       status,
@@ -409,7 +421,7 @@ test.describe("Mesa virtual", () => {
           key: "ana",
           kind: "player",
           ownerUsername: "ana",
-          data: characterData
+          data: forceStaleCharacterGet ? staleCharacterData : characterData
         });
         return;
       }
@@ -460,6 +472,24 @@ test.describe("Mesa virtual", () => {
     await page.locator('[data-player-stat-field="currentIntegrity"]').fill("2");
     await page.locator('[data-player-sheet-field="vidaMax"]').fill("22");
     await page.locator('[data-player-sheet-field="integMax"]').fill("11");
+
+    forceStaleCharacterGet = true;
+    await page.evaluate(async () => {
+      if (typeof window.handleMesaSheetChanged !== "function") {
+        throw new Error("handleMesaSheetChanged indisponivel");
+      }
+      await window.handleMesaSheetChanged({ characterKey: "ana" });
+    });
+    forceStaleCharacterGet = false;
+
+    const cachedAfterStaleRefresh = await page.evaluate(() => {
+      const sheets = JSON.parse(localStorage.getItem("tc_remote_sheets") || "{}");
+      return sheets.ana || {};
+    });
+    expect(cachedAfterStaleRefresh.vidaAtual).toBe("7");
+    expect(cachedAfterStaleRefresh.vidaMax).toBe("22");
+    expect(cachedAfterStaleRefresh.integAtual).toBe("2");
+    expect(cachedAfterStaleRefresh.integMax).toBe("11");
 
     await expect(page.locator('[data-player-item-field="name"]').first()).toHaveValue("Rosa de Ferro");
     await page.locator('[data-player-item-field="name"]').first().fill("Rosa de Ferro Reforcada");
