@@ -41,6 +41,17 @@ create table if not exists rules_posts (
   updated_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
+create table if not exists suggestions (
+  id text primary key,
+  title text not null,
+  category text not null default '',
+  description text not null,
+  created_by_user_id text references users(id) on delete set null,
+  updated_by_user_id text references users(id) on delete set null,
+  created_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
 create table if not exists transfer_audit (
   id text primary key,
   transfer_type text not null check (

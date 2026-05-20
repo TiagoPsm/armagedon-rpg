@@ -8,6 +8,7 @@ const files = [
   "ficha.html",
   "mesa.html",
   "regras.html",
+  "sugestoes.html",
   ".nojekyll",
   "logo-rpg-site.jpg",
   "logo-rpg-armagedon.png",

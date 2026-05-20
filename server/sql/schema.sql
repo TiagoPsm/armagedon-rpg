@@ -53,6 +53,17 @@ create table if not exists rules_posts (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists suggestions (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  category text not null default '',
+  description text not null,
+  created_by_user_id uuid references users(id) on delete set null,
+  updated_by_user_id uuid references users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists transfer_audit (
   id uuid primary key default gen_random_uuid(),
   transfer_type text not null check (
@@ -84,5 +95,11 @@ execute function set_row_updated_at();
 drop trigger if exists trg_rules_posts_updated_at on rules_posts;
 create trigger trg_rules_posts_updated_at
 before update on rules_posts
+for each row
+execute function set_row_updated_at();
+
+drop trigger if exists trg_suggestions_updated_at on suggestions;
+create trigger trg_suggestions_updated_at
+before update on suggestions
 for each row
 execute function set_row_updated_at();

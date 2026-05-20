@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "armagedon-site",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", ".", "--listen", "8000", "--no-clipboard"],
+      "port": 8000
+    }
+  ]
+}

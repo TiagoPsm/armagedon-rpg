@@ -381,7 +381,13 @@ function applySoulExperience(data = {}, kind = "player", payload = {}, random = 
   const appliedExperience = application.appliedExperience;
   const nextXp = application.xpAfter;
   const caps = before.attributeCaps.byRank[before.rank] || {};
-  const attributeProgress = applyAttributeGainProgress(attributes, caps, before.attributeGainProgress, application.rankExperience, random);
+  const attributeProgress = applyAttributeGainProgress(
+    attributes,
+    caps,
+    before.attributeGainProgress,
+    application.rankExperience,
+    random
+  );
 
   ATTRIBUTES.forEach(attr => {
     nextData[attrKey(attr)] = String(attributes[attr]);
@@ -427,8 +433,8 @@ function applySoulExperience(data = {}, kind = "player", payload = {}, random = 
     data: nextData,
     core: nextCore,
     summary: {
-      before,
-      after: nextCore,
+        before,
+        after: nextCore,
         calculation,
         totalExperience: calculation.totalXp,
         appliedExperience,
@@ -573,7 +579,7 @@ function buildProgressLabel(core) {
   return `${formatXp(normalized.xp)} / ${formatXp(normalized.xpLimit)} XP`;
 }
 
-export {
+module.exports = {
   RANKS,
   ATTRIBUTES,
   XP_LIMIT,

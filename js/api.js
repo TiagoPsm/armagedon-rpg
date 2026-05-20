@@ -263,6 +263,21 @@
     return payload;
   }
 
+  function normalizeRulePayload(payload = {}) {
+    const tags = Array.isArray(payload.tags)
+      ? payload.tags
+      : String(payload.tag || "").split(",");
+    const normalizedTags = tags
+      .map(tag => String(tag || "").trim())
+      .filter(Boolean)
+      .filter((tag, index, list) => list.findIndex(candidate => candidate.toLowerCase() === tag.toLowerCase()) === index);
+    return {
+      ...payload,
+      tags: normalizedTags,
+      tag: normalizedTags.join(", ")
+    };
+  }
+
   window.APP = {
     init,
     isEnabled,
@@ -348,6 +363,12 @@
         body: payload
       });
     },
+    async completeSoulNightmare(key) {
+      return request(`/characters/${encodeURIComponent(key)}/soul-nightmare`, {
+        method: "POST",
+        body: {}
+      });
+    },
     async getMesaScene() {
       return request("/mesa/scene");
     },
@@ -364,17 +385,37 @@
     async createRule(payload) {
       return request("/rules", {
         method: "POST",
-        body: payload
+        body: normalizeRulePayload(payload)
       });
     },
     async updateRule(id, payload) {
       return request(`/rules/${encodeURIComponent(id)}`, {
         method: "PUT",
-        body: payload
+        body: normalizeRulePayload(payload)
       });
     },
     async deleteRule(id) {
       return request(`/rules/${encodeURIComponent(id)}`, {
+        method: "DELETE"
+      });
+    },
+    async listSuggestions() {
+      return request("/suggestions");
+    },
+    async createSuggestion(payload) {
+      return request("/suggestions", {
+        method: "POST",
+        body: payload
+      });
+    },
+    async updateSuggestion(id, payload) {
+      return request(`/suggestions/${encodeURIComponent(id)}`, {
+        method: "PUT",
+        body: payload
+      });
+    },
+    async deleteSuggestion(id) {
+      return request(`/suggestions/${encodeURIComponent(id)}`, {
         method: "DELETE"
       });
     },

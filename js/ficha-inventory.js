@@ -10,6 +10,11 @@ function getItemEditorElements() {
     damageWrap: document.getElementById("itemEditorDamageWrap"),
     damage: document.getElementById("itemEditorDamage"),
     damageLabel: document.getElementById("itemEditorDamageLabel"),
+    armorWrap: document.getElementById("itemEditorArmorWrap"),
+    armorEquipped: document.getElementById("itemEditorArmorEquipped"),
+    armorMitigation: document.getElementById("itemEditorArmorMitigation"),
+    armorResistances: document.getElementById("itemEditorArmorResistances"),
+    armorNotes: document.getElementById("itemEditorArmorNotes"),
     rollBox: document.getElementById("itemEditorRollBox"),
     transfer: document.getElementById("itemEditorTransfer"),
     desc: document.getElementById("itemEditorDesc"),
@@ -18,17 +23,22 @@ function getItemEditorElements() {
 }
 
 function resetItemEditorState() {
-  const { root, name, qty, type, damage, transfer, desc } = getItemEditorElements();
+  const { root, name, qty, type, damage, transfer, desc, armorEquipped, armorMitigation, armorResistances, armorNotes } = getItemEditorElements();
 
   itemEditorIndex = -1;
   itemEditorSnapshot = null;
   itemEditorIsNew = false;
 
   if (root) root.hidden = true;
+  if (window.UI?.deactivateModal) window.UI.deactivateModal(root);
   if (name) name.value = "";
   if (qty) qty.value = "1";
   if (type) type.value = "outro";
   if (damage) damage.value = "";
+  if (armorEquipped) armorEquipped.checked = false;
+  if (armorMitigation) armorMitigation.value = "";
+  if (armorResistances) armorResistances.value = "";
+  if (armorNotes) armorNotes.value = "";
   if (transfer) {
     transfer.hidden = true;
     transfer.innerHTML = "";
@@ -36,6 +46,7 @@ function resetItemEditorState() {
   if (desc) desc.value = "";
   updateItemEditorTypeUI("outro");
   updateItemEditorDamageUI("outro", "");
+  updateItemEditorArmorUI("outro");
 }
 
 function updateItemEditorTypeUI(type = "outro") {
@@ -57,21 +68,33 @@ function updateItemEditorDamageUI(type = "outro", damage = "") {
   }
 }
 
+function updateItemEditorArmorUI(type = "outro") {
+  const { armorWrap } = getItemEditorElements();
+  if (armorWrap) armorWrap.hidden = normalizeItemType(type) !== "armadura";
+}
+
 function syncItemFromEditor() {
   if (itemEditorIndex < 0 || !inv[itemEditorIndex]) return;
 
-  const { name, qty, type, damage, desc } = getItemEditorElements();
+  const { name, qty, type, damage, desc, armorEquipped, armorMitigation, armorResistances, armorNotes } = getItemEditorElements();
   const nextItem = normalizeItem({
     name: name.value || "",
     qty: qty.value || "1",
     type: type.value || "outro",
     damage: damage.value || "",
-    desc: desc.value || ""
+    desc: desc.value || "",
+    armor: {
+      equipped: Boolean(armorEquipped?.checked),
+      mitigation: armorMitigation?.value || "0",
+      resistances: armorResistances?.value || "",
+      notes: armorNotes?.value || ""
+    }
   });
 
   inv[itemEditorIndex] = nextItem;
   updateItemEditorTypeUI(nextItem.type);
   updateItemEditorDamageUI(nextItem.type, nextItem.damage);
+  updateItemEditorArmorUI(nextItem.type);
 }
 
 async function openItemTypePicker() {
@@ -89,6 +112,7 @@ async function openItemTypePicker() {
     options: [
       { value: "outro", label: "Outro", meta: "Item geral", selected: currentType === "outro" },
       { value: "arma", label: "Arma", meta: "Permite rolagem de dano", selected: currentType === "arma" },
+      { value: "armadura", label: "Armadura", meta: "Conta em mitigacao quando equipada", selected: currentType === "armadura" },
       { value: "acessorio", label: "Acessório", meta: "Equipável ou passivo", selected: currentType === "acessorio" }
     ]
   });
@@ -104,6 +128,7 @@ async function openItemTypePicker() {
   }
 
   syncItemFromEditor();
+  updateItemEditorArmorUI(type.value);
   typeBtn.focus();
 }
 
@@ -125,7 +150,7 @@ function initItemEditor() {
   root.addEventListener("click", event => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
-    if (target.dataset.itemEditorClose) {
+    if (target.closest("[data-item-editor-close]")) {
       closeEditor(false);
     }
   });
@@ -138,7 +163,7 @@ function initItemEditor() {
     openItemTypePicker();
   });
 
-  ["itemEditorName", "itemEditorQty", "itemEditorDamage", "itemEditorDesc"].forEach(id => {
+  ["itemEditorName", "itemEditorQty", "itemEditorDamage", "itemEditorDesc", "itemEditorArmorMitigation", "itemEditorArmorResistances", "itemEditorArmorNotes"].forEach(id => {
     document.getElementById(id).addEventListener("input", () => {
       syncItemFromEditor();
       if (itemEditorIndex >= 0) {
@@ -149,6 +174,13 @@ function initItemEditor() {
         if (textarea instanceof HTMLTextAreaElement) autoGrowTextarea(textarea);
       }
     });
+  });
+
+  document.getElementById("itemEditorArmorEquipped").addEventListener("change", () => {
+    syncItemFromEditor();
+    if (itemEditorIndex >= 0) {
+      renderItemEditorTransfer(itemEditorIndex);
+    }
   });
 
   document.addEventListener("keydown", event => {
@@ -162,28 +194,41 @@ function initItemEditor() {
 
 function openItemEditor(index, { isNew = false } = {}) {
   const item = inv[index];
-  const { root, dialog, name, qty, type, damage, desc } = getItemEditorElements();
+  const { root, dialog, name, qty, type, damage, desc, armorEquipped, armorMitigation, armorResistances, armorNotes } = getItemEditorElements();
   if (!item || !root || !dialog || !name || !qty || !type || !damage || !desc) return;
+  const normalizedItem = normalizeItem(item);
 
   itemEditorIndex = index;
   itemEditorIsNew = isNew;
-  itemEditorSnapshot = normalizeItem(item);
+  itemEditorSnapshot = normalizedItem;
 
-  name.value = item.name;
-  qty.value = item.qty;
-  type.value = item.type;
-  damage.value = item.damage;
-  desc.value = item.desc;
+  name.value = normalizedItem.name;
+  qty.value = normalizedItem.qty;
+  type.value = normalizedItem.type;
+  damage.value = normalizedItem.damage;
+  desc.value = normalizedItem.desc;
+  if (armorEquipped) armorEquipped.checked = Boolean(normalizedItem.armor?.equipped);
+  if (armorMitigation) armorMitigation.value = normalizedItem.armor?.mitigation || "0";
+  if (armorResistances) armorResistances.value = normalizedItem.armor?.resistances || "";
+  if (armorNotes) armorNotes.value = normalizedItem.armor?.notes || "";
   autoGrowTextarea(desc);
-  updateItemEditorTypeUI(item.type);
-  updateItemEditorDamageUI(item.type, item.damage);
+  updateItemEditorTypeUI(normalizedItem.type);
+  updateItemEditorDamageUI(normalizedItem.type, normalizedItem.damage);
+  updateItemEditorArmorUI(normalizedItem.type);
   renderItemEditorTransfer(index);
 
   root.hidden = false;
-  window.requestAnimationFrame(() => {
-    dialog.focus();
-    name.focus();
-  });
+  if (window.UI?.activateModal) {
+    window.UI.activateModal(root, dialog, {
+      initialFocus: name,
+      onDismiss: () => closeEditor(false)
+    });
+  } else {
+    window.requestAnimationFrame(() => {
+      dialog.focus();
+      name.focus();
+    });
+  }
 }
 
 function commitItemEditor() {
@@ -336,11 +381,16 @@ function getItemQuantity(item) {
 
 function getItemMergeKey(item) {
   const normalized = normalizeItem(item || {});
+  const armor = normalized.armor || {};
   return [
     normalized.type,
     normalized.name.trim().toLowerCase(),
     normalized.damage.trim().toLowerCase(),
-    normalized.desc.trim().toLowerCase()
+    normalized.desc.trim().toLowerCase(),
+    armor.equipped ? "equipped" : "stored",
+    String(armor.mitigation || "0").trim(),
+    String(armor.resistances || "").trim().toLowerCase(),
+    String(armor.notes || "").trim().toLowerCase()
   ].join("|");
 }
 
@@ -649,7 +699,13 @@ async function transferItem(index) {
       return;
     }
 
-    const nextTransferredItem = normalizeItem({ ...item, qty: String(nextQuantity) });
+    const nextTransferredItem = normalizeItem({
+      ...item,
+      qty: String(nextQuantity),
+      armor: item.type === "armadura"
+        ? { ...(item.armor || {}), equipped: false }
+        : item.armor
+    });
     if (nextMergeIndex >= 0) {
       const existingTargetItem = normalizeItem(nextTargetSheet.inv[nextMergeIndex]);
       nextTargetSheet.inv[nextMergeIndex] = normalizeItem({
@@ -730,10 +786,14 @@ function renderInv(list) {
     const itemType = normalizeItemType(item.type);
     const primaryMeta = itemType === "arma" && item.damage
       ? item.damage
-      : `Qtd. ${item.qty}`;
+      : itemType === "armadura"
+        ? `Mitigacao ${item.armor?.mitigation || "0"}`
+        : `Qtd. ${item.qty}`;
     const secondaryMeta = itemType === "arma"
       ? `Qtd. ${item.qty}`
-      : formatItemType(itemType);
+      : itemType === "armadura"
+        ? (item.armor?.equipped ? "Equipada" : "Guardada")
+        : formatItemType(itemType);
 
     return `
       <article class="item-card item-card-compact" data-index="${index}">
@@ -756,6 +816,7 @@ function renderInv(list) {
     `;
   }).join("");
 
+  renderArmorStats();
   syncAutoGrowTextareas(grid);
 }
 
@@ -807,6 +868,77 @@ function removeItem(index) {
 
 function collectInv() {
   return inv.map(normalizeItem);
+}
+
+function parseArmorResistances(value) {
+  const seen = new Set();
+  return String(value || "")
+    .split(",")
+    .map(entry => entry.trim())
+    .filter(Boolean)
+    .filter(entry => {
+      const key = entry.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function buildArmorStats(list = inv) {
+  const equippedArmors = list
+    .map(normalizeItem)
+    .filter(item => item.type === "armadura" && item.armor?.equipped);
+  const resistanceMap = new Map();
+  let mitigation = 0;
+
+  equippedArmors.forEach(item => {
+    mitigation += Math.max(0, Number.parseInt(item.armor?.mitigation || "0", 10) || 0);
+    parseArmorResistances(item.armor?.resistances).forEach(resistance => {
+      const key = resistance.toLowerCase();
+      if (!resistanceMap.has(key)) resistanceMap.set(key, resistance);
+    });
+  });
+
+  return {
+    equippedArmors,
+    mitigation,
+    resistances: [...resistanceMap.values()]
+  };
+}
+
+function renderArmorStats() {
+  const panel = document.getElementById("armorStatsPanel");
+  if (!panel) return;
+  const summary = document.getElementById("armorStatsSummary");
+  const count = document.getElementById("armorEquippedCount");
+  const total = document.getElementById("armorMitigationTotal");
+  const resistanceList = document.getElementById("armorResistanceList");
+  const equippedList = document.getElementById("armorEquippedList");
+  const stats = buildArmorStats(inv);
+
+  if (summary) {
+    summary.textContent = stats.equippedArmors.length
+      ? `${stats.equippedArmors.length} equipada(s), mitigacao ${stats.mitigation}`
+      : "Nenhuma armadura equipada.";
+  }
+  if (count) count.textContent = String(stats.equippedArmors.length);
+  if (total) total.textContent = String(stats.mitigation);
+  if (resistanceList) {
+    resistanceList.innerHTML = stats.resistances.length
+      ? stats.resistances.map(resistance => `<span class="armor-resistance-chip">${esc(resistance)}</span>`).join("")
+      : '<span class="armor-empty">Nenhuma</span>';
+  }
+  if (equippedList) {
+    equippedList.innerHTML = stats.equippedArmors.length
+      ? stats.equippedArmors.map(item => `
+          <article class="armor-equipped-item">
+            <strong>${esc(item.name || "Armadura")}</strong>
+            <span>Mitigacao ${esc(item.armor?.mitigation || "0")}</span>
+            ${item.armor?.notes ? `<small>${esc(item.armor.notes)}</small>` : ""}
+          </article>
+        `).join("")
+      : '<p class="empty-msg">Equipe uma armadura no inventario para ver os detalhes aqui.</p>';
+  }
 }
 
 function getInventorySlotDelta() {

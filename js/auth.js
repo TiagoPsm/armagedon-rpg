@@ -482,6 +482,19 @@ async function onLoginSuccess(username, role = "player") {
   updateHomeSummary();
 }
 
+function showLoginScreen() {
+  const loginScreen = document.getElementById("loginScreen");
+  const homeScreen = document.getElementById("homeScreen");
+
+  if (homeScreen) homeScreen.classList.remove("active");
+  if (loginScreen) loginScreen.classList.add("active");
+}
+
+function finishAuthLoading() {
+  document.body?.classList.remove("auth-loading");
+  document.body?.classList.add("auth-ready");
+}
+
 async function handleLogout() {
   const sheetScreen = document.getElementById("sheetScreen");
   const shouldAttemptSave =
@@ -534,5 +547,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (session && document.getElementById("homeScreen")) {
     await onLoginSuccess(session.username, session.role);
+  } else if (document.getElementById("loginScreen")) {
+    showLoginScreen();
   }
+
+  finishAuthLoading();
 });

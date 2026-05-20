@@ -1078,8 +1078,8 @@
 
 /* 2026-04 dice tray hidden history and reordered panels */
 #sheetScreen .dice-tray-dialog {
-  width: min(940px, calc(100vw - 2rem));
-  max-height: min(84vh, 760px);
+  width: min(1240px, calc(100vw - 1.2rem));
+  max-height: min(94vh, 900px);
 }
 
 #sheetScreen .dice-tray-controls {
@@ -1101,7 +1101,7 @@
 
 #sheetScreen .dice-tray-panel-row {
   display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.72rem;
 }
 
@@ -1191,7 +1191,7 @@
 @media (max-width: 920px) {
   #sheetScreen .dice-tray-dialog {
     width: min(100%, calc(100vw - 1rem));
-    max-height: calc(100vh - 1.6rem);
+    max-height: calc(100vh - 1rem);
   }
 
   #sheetScreen .dice-tray-quick-row,
@@ -1203,6 +1203,49 @@
   #sheetScreen .dice-history-card,
   #sheetScreen .dice-history-list {
     max-height: none;
+  }
+}
+
+/* Dice tray workspace pass: leave room for upcoming controls without desktop scrolling. */
+#sheetScreen .dice-tray-root {
+  padding: clamp(0.45rem, 1.2vh, 0.8rem);
+}
+
+#sheetScreen .dice-tray-dialog {
+  width: min(1280px, calc(100vw - 0.9rem));
+  max-height: calc(100vh - 0.9rem);
+  padding: clamp(1.1rem, 1.35vw, 1.45rem);
+}
+
+#sheetScreen .dice-tray-header {
+  margin-bottom: 0.78rem;
+}
+
+#sheetScreen .dice-tray-layout,
+#sheetScreen .dice-tray-controls {
+  gap: 0.68rem;
+}
+
+#sheetScreen .dice-tray-quick-row {
+  grid-template-columns: minmax(0, 1.12fr) minmax(340px, 0.88fr);
+  gap: 0.78rem;
+}
+
+#sheetScreen .dice-option-grid {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+#sheetScreen .dice-tray-panel-row {
+  gap: 0.78rem;
+}
+
+#sheetScreen .dice-tray-advanced-panel:not([hidden]) {
+  display: grid;
+}
+
+@media (min-width: 921px) {
+  #sheetScreen .dice-tray-dialog {
+    overflow: visible;
   }
 }
 

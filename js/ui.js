@@ -3,8 +3,11 @@
     root: null,
     resolve: null,
     lastFocused: null,
+    focusTimer: 0,
     type: "confirm"
   };
+  const managedModals = new Map();
+  let bodyLockCount = 0;
 
   function escapeHtml(value) {
     return String(value || "")
@@ -22,12 +25,12 @@
     if (state.root) return state.root;
 
     const root = document.createElement("div");
-    root.className = "ui-modal-root";
+    root.className = "ui-modal-root app-modal-root";
     root.setAttribute("aria-hidden", "true");
     root.innerHTML = `
-      <div class="ui-modal-backdrop" data-modal-close="backdrop"></div>
-      <section class="ui-modal-panel" role="dialog" aria-modal="true" aria-labelledby="uiModalTitle" tabindex="-1">
-        <button type="button" class="ui-modal-close" data-modal-close="button" aria-label="Fechar popup">
+      <div class="ui-modal-backdrop app-modal-backdrop" data-modal-close="backdrop"></div>
+      <section class="ui-modal-panel app-modal-panel app-modal-panel-compact" role="dialog" aria-modal="true" aria-labelledby="uiModalTitle" tabindex="-1">
+        <button type="button" class="ui-modal-close app-modal-close" data-modal-close="button" aria-label="Fechar popup">
           <span>x</span>
         </button>
         <p class="ui-modal-kicker" id="uiModalKicker">// Confirmação</p>
@@ -51,7 +54,7 @@
         return;
       }
 
-      if (target.hasAttribute("data-modal-cancel") || target.dataset.modalClose) {
+      if (target.closest("[data-modal-cancel], [data-modal-close]")) {
         close(getDismissResult());
       }
     });
@@ -147,7 +150,86 @@
     if (event.key === "Escape") {
       event.preventDefault();
       close(getDismissResult());
+      return;
     }
+
+    if (event.key === "Tab") {
+      trapModalFocus(event);
+    }
+  }
+
+  function onFocusIn(event) {
+    const root = state.root;
+    const panel = root?.querySelector(".ui-modal-panel");
+    if (!(root instanceof HTMLElement) || !(panel instanceof HTMLElement) || !root.classList.contains("is-open")) return;
+    if (panel.contains(event.target)) return;
+
+    const focusable = getFocusableElements(panel);
+    (focusable[0] || panel).focus();
+  }
+
+  function isCentralModalOpen() {
+    return Boolean(state.root?.classList.contains("is-open"));
+  }
+
+  function lockModalBody() {
+    bodyLockCount += 1;
+    document.body.classList.add("modal-open");
+  }
+
+  function unlockModalBody() {
+    bodyLockCount = Math.max(0, bodyLockCount - 1);
+    if (!bodyLockCount) {
+      document.body.classList.remove("modal-open");
+    }
+  }
+
+  function getFocusableElements(root) {
+    if (!root) return [];
+    return [...root.querySelectorAll(
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )].filter(element => {
+      if (!(element instanceof HTMLElement)) return false;
+      if (element.hidden || element.getAttribute("aria-hidden") === "true") return false;
+      const style = window.getComputedStyle(element);
+      return style.display !== "none" && style.visibility !== "hidden";
+    });
+  }
+
+  function trapModalFocus(event) {
+    const root = state.root;
+    const panel = root?.querySelector(".ui-modal-panel");
+    if (!(root instanceof HTMLElement) || !(panel instanceof HTMLElement) || !root.classList.contains("is-open")) return;
+
+    const focusable = getFocusableElements(panel);
+    if (!focusable.length) {
+      event.preventDefault();
+      panel.focus();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+
+    if (!panel.contains(active)) {
+      event.preventDefault();
+      first.focus();
+      return;
+    }
+
+    event.preventDefault();
+    const activeIndex = focusable.indexOf(active);
+    if (event.shiftKey) {
+      const previous = activeIndex <= 0 ? last : focusable[activeIndex - 1];
+      previous.focus();
+      return;
+    }
+
+    const next = activeIndex < 0 || activeIndex >= focusable.length - 1
+      ? first
+      : focusable[activeIndex + 1];
+    next.focus();
   }
 
   function open(options) {
@@ -208,20 +290,30 @@
 
     state.lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
-    document.body.classList.add("modal-open");
+    lockModalBody();
     root.classList.add("is-open");
     root.setAttribute("aria-hidden", "false");
     document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("focusin", onFocusIn);
 
     return new Promise(resolve => {
       state.resolve = resolve;
-      window.requestAnimationFrame(() => {
+      const focusInitialElement = () => {
+        if (!root.classList.contains("is-open") || state.root !== root) return;
         if (isSelect) {
           optionList.querySelector(".ui-modal-option.is-selected, .ui-modal-option")?.focus();
           return;
         }
         (isAlert ? confirmButton : cancelButton).focus();
-      });
+      };
+
+      focusInitialElement();
+      window.requestAnimationFrame(focusInitialElement);
+      if (state.focusTimer) window.clearTimeout(state.focusTimer);
+      state.focusTimer = window.setTimeout(() => {
+        state.focusTimer = 0;
+        focusInitialElement();
+      }, 60);
     });
   }
 
@@ -233,17 +325,111 @@
 
     state.root.classList.remove("is-open");
     state.root.setAttribute("aria-hidden", "true");
-    document.body.classList.remove("modal-open");
+    if (state.focusTimer) {
+      window.clearTimeout(state.focusTimer);
+      state.focusTimer = 0;
+    }
+    unlockModalBody();
     document.removeEventListener("keydown", onKeyDown);
+    document.removeEventListener("focusin", onFocusIn);
 
-    if (state.lastFocused instanceof HTMLElement) {
-      state.lastFocused.focus();
+    const focusTarget = state.lastFocused instanceof HTMLElement ? state.lastFocused : null;
+    if (focusTarget) {
+      focusTarget.focus();
+      window.requestAnimationFrame(() => {
+        if (document.activeElement !== focusTarget) focusTarget.focus();
+      });
     }
 
     resolve(result);
   }
 
   window.UI = {
+    activateModal(root, panel, options = {}) {
+      if (!(root instanceof HTMLElement) || !(panel instanceof HTMLElement)) return null;
+      if (managedModals.has(root)) return managedModals.get(root);
+
+      const controller = {
+        lastFocused: document.activeElement instanceof HTMLElement ? document.activeElement : null,
+        onDismiss: typeof options.onDismiss === "function" ? options.onDismiss : null,
+        onKeyDown: null,
+        onFocusIn: null
+      };
+
+      controller.onKeyDown = event => {
+        if (root.hidden || !managedModals.has(root) || isCentralModalOpen()) return;
+        if (event.key === "Escape" && options.closeOnEscape !== false) {
+          event.preventDefault();
+          if (controller.onDismiss) controller.onDismiss("escape");
+          return;
+        }
+        if (event.key === "Tab") {
+          const focusable = getFocusableElements(panel);
+          if (!focusable.length) {
+            event.preventDefault();
+            panel.focus();
+            return;
+          }
+
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          const active = document.activeElement;
+
+          if (!panel.contains(active)) {
+            event.preventDefault();
+            first.focus();
+            return;
+          }
+
+          const activeIndex = focusable.indexOf(active);
+          if (event.shiftKey && activeIndex <= 0) {
+            event.preventDefault();
+            last.focus();
+            return;
+          }
+
+          if (!event.shiftKey && activeIndex === focusable.length - 1) {
+            event.preventDefault();
+            first.focus();
+          }
+        }
+      };
+
+      controller.onFocusIn = event => {
+        if (root.hidden || !managedModals.has(root) || isCentralModalOpen()) return;
+        if (panel.contains(event.target)) return;
+
+        const focusable = getFocusableElements(panel);
+        (focusable[0] || panel).focus();
+      };
+
+      managedModals.set(root, controller);
+      root.setAttribute("aria-hidden", "false");
+      document.addEventListener("keydown", controller.onKeyDown);
+      document.addEventListener("focusin", controller.onFocusIn);
+      lockModalBody();
+
+      const initialFocus = options.initialFocus instanceof HTMLElement ? options.initialFocus : panel;
+      window.requestAnimationFrame(() => initialFocus.focus());
+      return controller;
+    },
+
+    deactivateModal(root, options = {}) {
+      if (!(root instanceof HTMLElement)) return;
+      const controller = managedModals.get(root);
+      if (!controller) return;
+
+      document.removeEventListener("keydown", controller.onKeyDown);
+      document.removeEventListener("focusin", controller.onFocusIn);
+      managedModals.delete(root);
+      root.setAttribute("aria-hidden", "true");
+      unlockModalBody();
+
+      if (options.restoreFocus !== false && controller.lastFocused instanceof HTMLElement) {
+        controller.lastFocused.focus();
+      }
+    },
+
     confirm(message, options = {}) {
       return open({
         type: "confirm",

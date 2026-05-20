@@ -369,6 +369,62 @@
   box-shadow: 0 0 16px rgba(201, 93, 52, 0.22);
 }
 
+.soul-core-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.soul-core-detail-card,
+.level-detail-panel {
+  min-width: 0;
+  padding: 0.72rem 0.78rem;
+  border-radius: 14px;
+  border: 1px solid rgba(195, 170, 105, 0.12);
+  background: rgba(255, 255, 255, 0.025);
+  display: grid;
+  gap: 0.24rem;
+}
+
+.soul-core-detail-card strong,
+.level-detail-panel strong {
+  color: var(--text-bright);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  line-height: 1.1;
+}
+
+.level-detail-panel span:last-child {
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.soul-rank-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+}
+
+.soul-rank-pill {
+  min-height: 26px;
+  padding: 0.32rem 0.52rem;
+  border-radius: 999px;
+  border: 1px solid rgba(195, 170, 105, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.soul-rank-pill.is-current {
+  border-color: rgba(235, 135, 71, 0.32);
+  color: #ffe0d1;
+  background: rgba(201, 93, 52, 0.12);
+}
+
 .soul-core-action,
 .dice-launcher-btn {
   width: 44px;
@@ -906,6 +962,197 @@
 .notes-input {
   resize: none;
   overflow: hidden;
+}
+
+.notes-card-head,
+.notes-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.notes-card-head {
+  justify-content: space-between;
+}
+
+.notes-card-actions {
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.notes-collapse-summary {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid rgba(236, 223, 196, 0.1);
+  border-radius: 999px;
+  color: rgba(236, 223, 196, 0.72);
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.notes-toggle-btn {
+  min-height: 34px;
+}
+
+.notes-collapsible.is-collapsed .notes-input,
+.notes-collapsible.is-collapsed .identity-lore-label,
+.notes-collapsible.is-collapsed .identity-note-copy {
+  display: none;
+}
+
+.notes-collapsible.is-collapsed {
+  padding-bottom: 1rem;
+}
+
+#sheetScreen .inventory-master-controls[hidden],
+.item-editor-armor[hidden] {
+  display: none !important;
+}
+
+.item-editor-dialog,
+.dice-tray-dialog,
+.soul-award-dialog {
+  max-height: min(88vh, 820px);
+  overflow: auto;
+  overflow-wrap: anywhere;
+  scrollbar-width: thin;
+}
+
+.item-editor-root:not([hidden]),
+.dice-tray-root:not([hidden]),
+.soul-award-root:not([hidden]) {
+  padding: 1rem;
+}
+
+@media (max-width: 640px) {
+  .item-editor-root:not([hidden]),
+  .dice-tray-root:not([hidden]),
+  .soul-award-root:not([hidden]) {
+    align-items: end;
+    padding: 0.75rem;
+  }
+
+  .item-editor-dialog,
+  .dice-tray-dialog,
+  .soul-award-dialog {
+    width: min(100%, calc(100vw - 1rem));
+    max-height: calc(100vh - 1.5rem);
+    border-radius: 22px;
+  }
+}
+
+.item-editor-armor {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(195, 170, 105, 0.18);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(195, 170, 105, 0.08), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.025);
+}
+
+.item-editor-armor-head,
+.item-editor-check {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.item-editor-armor-head {
+  justify-content: space-between;
+}
+
+.item-editor-check {
+  min-height: 38px;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid rgba(236, 223, 196, 0.12);
+  border-radius: 999px;
+  color: var(--text, #f1ead7);
+  cursor: pointer;
+}
+
+.item-editor-field-full {
+  grid-column: 1 / -1;
+}
+
+.item-type-badge.is-armor {
+  border-color: rgba(195, 170, 105, 0.32);
+  color: #ddc982;
+  background: rgba(195, 170, 105, 0.1);
+}
+
+.armor-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.armor-stat-card,
+.armor-equipped-item {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.95rem;
+  border: 1px solid rgba(236, 223, 196, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.armor-stat-card span,
+.armor-equipped-item span,
+.armor-equipped-item small,
+.armor-empty {
+  color: rgba(236, 223, 196, 0.68);
+}
+
+.armor-stat-card strong {
+  font-family: var(--font-display, serif);
+  font-size: 1.55rem;
+  color: var(--text, #f1ead7);
+}
+
+.armor-resistance-list,
+.armor-equipped-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.armor-equipped-list {
+  margin-top: 0.9rem;
+}
+
+.armor-resistance-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid rgba(195, 170, 105, 0.22);
+  border-radius: 999px;
+  color: #ddc982;
+  background: rgba(195, 170, 105, 0.08);
+}
+
+@media (max-width: 760px) {
+  .armor-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .notes-card-actions {
+    width: 100%;
+    justify-content: flex-start;
+    margin-left: 0;
+  }
 }
 
 .hab-desc {

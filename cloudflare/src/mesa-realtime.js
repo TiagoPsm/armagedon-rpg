@@ -11,9 +11,9 @@ const SHEET_PATCH_TYPE = "mesa:sheet:patch";
 const SHEET_CHANGED_TYPE = "sheet:changed";
 const DEFAULT_INVENTORY_SLOTS = 10;
 const ATTRIBUTES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"];
-const SHEET_TEXT_FIELDS = new Set(["charName", "charClass", "charRace", "charFaction", "charNotes"]);
+const SHEET_TEXT_FIELDS = new Set(["charName", "charClass", "charRace", "charFaction", "charNotes", "sheetNotes"]);
 const SHEET_RESOURCE_FIELDS = new Set(["vidaAtual", "vidaMax", "integAtual", "integMax", "inventorySlots"]);
-const ITEM_TYPES = new Set(["arma", "acessorio", "outro"]);
+const ITEM_TYPES = new Set(["arma", "armadura", "acessorio", "outro"]);
 const PLAYER_PATCH_FIELDS = new Set([
   ...SHEET_TEXT_FIELDS,
   "vidaAtual",
@@ -115,12 +115,24 @@ function normalizeDamageExpression(value) {
 
 function normalizeItem(item = {}) {
   const type = normalizeItemType(item.type);
+  const armor = type === "armadura" ? normalizeArmorData(item.armor) : normalizeArmorData({});
   return {
     name: normalizeTextValue(item.name, 80),
     qty: String(Math.max(0, Number.parseInt(item.qty || "1", 10) || 0)),
     desc: normalizeTextValue(item.desc, 320),
     type,
-    damage: type === "arma" ? normalizeDamageExpression(item.damage) : ""
+    damage: type === "arma" ? normalizeDamageExpression(item.damage) : "",
+    armor
+  };
+}
+
+function normalizeArmorData(armor = {}) {
+  const mitigation = Math.max(0, Number.parseInt(armor.mitigation || "0", 10) || 0);
+  return {
+    equipped: Boolean(armor.equipped),
+    mitigation: String(mitigation),
+    resistances: normalizeTextValue(armor.resistances, 180),
+    notes: normalizeTextValue(armor.notes, 180)
   };
 }
 

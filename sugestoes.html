@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Armagedon | Sugest&otilde;es</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico?v=2026-04-19-logo-fallback-3" />
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=2026-04-19-logo-fallback-3" />
+  <link rel="shortcut icon" href="favicon.ico?v=2026-04-19-logo-fallback-3" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2026-04-19-logo-fallback-3" />
+  <link rel="dns-prefetch" href="//armagedon-api.tiagopsm2008.workers.dev" />
+  <link rel="preconnect" href="https://armagedon-api.tiagopsm2008.workers.dev" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="css/style.css?v=2026-04-05-darkred" />
+  <link rel="stylesheet" href="css/regras.css?v=2026-05-12-sugestoes-1" />
+  <link rel="stylesheet" href="css/ui.css?v=2026-05-01-cursor-glow" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap"
+    rel="stylesheet"
+  />
+</head>
+<body class="rules-page suggestions-page">
+  <div class="bg-fixed bg-noise"></div>
+  <div class="bg-fixed bg-vignette"></div>
+  <div class="bg-fixed bg-blackfire"></div>
+  <div class="bg-fixed bg-cinders"></div>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-mark" aria-hidden="true">
+          <img src="logo-rpg-site.jpg?v=2026-04-20-site-speed-1" alt="" class="site-logo-img" width="256" height="256" decoding="async" onerror="if(!this.dataset.fallbackStep){this.dataset.fallbackStep='1';this.src='logo-rpg-armagedon.png?v=2026-04-19-logo-fallback-3';}else if(this.dataset.fallbackStep==='1'){this.dataset.fallbackStep='2';this.src='Logo%20app.jpg?v=2026-04-19-logo-fallback-3';}else{this.onerror=null;}" />
+        </span>
+        <span class="logo-copy">
+          <strong>Armagedon</strong>
+          <small id="suggestionsHeaderRole">Sugest&otilde;es</small>
+        </span>
+      </div>
+
+      <nav class="main-nav" aria-label="Navegacao principal">
+        <a href="index.html" class="nav-link">Inicio</a>
+        <a href="ficha.html" class="nav-link">Fichas</a>
+        <a href="mesa.html" class="nav-link">Mesa</a>
+        <a href="regras.html" class="nav-link">Regras</a>
+        <a href="sugestoes.html" class="nav-link active">Sugestoes</a>
+      </nav>
+
+      <div class="header-right">
+        <span class="header-user" id="suggestionsUser">Convidado</span>
+        <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sair</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-main page-main-rules">
+    <section class="rules-hero">
+      <div class="page-heading">
+        <span class="section-label">// Melhorias do site</span>
+        <h1 class="page-title">Sugestoes</h1>
+        <p class="page-copy" id="suggestionsIntro">
+          Jogadores podem registrar ideias de melhoria para o site. O mestre organiza e remove o que ja foi tratado.
+        </p>
+      </div>
+
+      <div class="rules-status-panel" aria-label="Resumo da pagina">
+        <div class="rules-status-grid">
+          <article class="rules-status-card">
+            <span>Sugestoes</span>
+            <strong id="suggestionCount">0</strong>
+          </article>
+          <article class="rules-status-card">
+            <span>Seu acesso</span>
+            <strong id="suggestionsRoleLabel">Jogador</strong>
+          </article>
+          <article class="rules-status-card">
+            <span>Ultima atualizacao</span>
+            <strong id="lastSuggestionUpdate">Nenhuma</strong>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="rules-block" id="suggestionsEditor">
+      <div class="rules-block-head">
+        <div>
+          <span class="section-label" id="suggestionFormKicker">// Enviar sugestao</span>
+          <h2 class="rules-block-title" id="suggestionFormTitle">Nova sugestao</h2>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="cancelSuggestionEditBtn" onclick="resetSuggestionForm()" hidden>Cancelar edicao</button>
+      </div>
+
+      <div class="rules-form-grid">
+        <div class="form-group">
+          <label class="form-label" for="suggestionTitle">Titulo</label>
+          <input type="text" id="suggestionTitle" class="form-input" placeholder="Ex: Filtro rapido na ficha" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="suggestionCategory">Categoria</label>
+          <input type="text" id="suggestionCategory" class="form-input" placeholder="Opcional: Ficha, Mesa, visual..." />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="suggestionContent">Descricao</label>
+        <textarea
+          id="suggestionContent"
+          class="rules-textarea auto-grow"
+          rows="7"
+          placeholder="Descreva a melhoria, problema ou ideia com o maximo de contexto util..."
+        ></textarea>
+      </div>
+
+      <p class="form-error" id="suggestionFormError"></p>
+      <p class="rules-form-status" id="suggestionFormStatus"></p>
+
+      <div class="rules-editor-actions">
+        <button class="btn btn-primary" id="saveSuggestionBtn" onclick="saveSuggestion()">Enviar sugestao</button>
+      </div>
+    </section>
+
+    <section class="rules-block">
+      <div class="rules-block-head">
+        <div>
+          <span class="section-label">// Ideias enviadas</span>
+          <h2 class="rules-block-title">Lista de sugestoes</h2>
+        </div>
+        <span class="rules-updated" id="suggestionsUpdatedText">Nenhuma sugestao enviada.</span>
+      </div>
+
+      <div id="suggestionsList" class="rules-list">
+        <p class="empty-msg">Nenhuma sugestao enviada.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/ui.js?v=2026-05-12-ficha-prefetch-1"></script>
+  <script src="js/runtime-config.js?v=2026-05-04-mesa-realtime-1"></script>
+  <script src="js/api.js?v=2026-05-12-sugestoes-1"></script>
+  <script src="js/auth.js?v=2026-05-12-index-auth-loading-1"></script>
+  <script src="js/sugestoes.js?v=2026-05-12-sugestoes-1"></script>
+</body>
+</html>

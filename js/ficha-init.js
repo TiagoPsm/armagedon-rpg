@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   initAutoSave();
   initItemEditor();
+  initNotesCollapse();
   initSoulAwardModal();
   initDiceTray();
   initSheetMouseGlow();

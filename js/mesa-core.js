@@ -661,6 +661,17 @@ function scheduleMesaRender(parts = {}) {
   mesaRenderFrame = requestMesaRenderFrame(flushScheduledMesaRender);
 }
 
+function shouldDeferMesaInspectorRender() {
+  const inspector = getMesaDomRef("tokenInspector");
+  const activeElement = document.activeElement;
+  return Boolean(
+    inspector
+    && activeElement
+    && inspector.contains(activeElement)
+    && activeElement.matches?.("input, textarea, select")
+  );
+}
+
 function flushScheduledMesaRender() {
   mesaRenderFrame = 0;
   const nextRender = {};
@@ -675,7 +686,7 @@ function flushScheduledMesaRender() {
   if (nextRender.controls) renderControls();
   if (nextRender.roster) renderRoster();
   if (nextRender.stage) renderStage();
-  if (nextRender.inspector) renderInspector();
+  if (nextRender.inspector && !shouldDeferMesaInspectorRender()) renderInspector();
 }
 
 function clearScheduledMesaRender() {

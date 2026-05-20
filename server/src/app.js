@@ -10,6 +10,7 @@ const authRoutes = require("./routes/auth");
 const directoryRoutes = require("./routes/directory");
 const characterRoutes = require("./routes/characters");
 const rulesRoutes = require("./routes/rules");
+const suggestionsRoutes = require("./routes/suggestions");
 const transferRoutes = require("./routes/transfers");
 
 function resolveCorsOrigin(origin, callback) {
@@ -59,6 +60,7 @@ async function main() {
   app.use("/api/directory", directoryRoutes);
   app.use("/api/characters", characterRoutes);
   app.use("/api/rules", rulesRoutes);
+  app.use("/api/suggestions", suggestionsRoutes);
   app.use("/api/transfers", transferRoutes);
 
   app.use((_req, res) => {

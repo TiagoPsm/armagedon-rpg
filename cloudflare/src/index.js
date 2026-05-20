@@ -10,9 +10,10 @@ import {
 } from "./auth.js";
 import {
   assertCharacterAccess,
-  awardSoulEssenceToPlayer,
+  awardSoulExperienceToCharacter,
   awardMonsterMemoryDrop,
   buildCharacterKey,
+  completeSoulNightmareForCharacter,
   createMonsterCharacter,
   createNpcCharacter,
   createPlayerCharacter,
@@ -135,6 +136,26 @@ function decodePathParam(value) {
   }
 }
 
+function normalizeRuleTags(value) {
+  const rawTags = Array.isArray(value)
+    ? value
+    : String(value || "").split(",");
+  const seen = new Set();
+  return rawTags
+    .map(tag => String(tag || "").trim())
+    .filter(Boolean)
+    .filter(tag => {
+      const key = tag.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function serializeRuleTags(body = {}) {
+  return normalizeRuleTags(body.tags || body.tag).join(", ");
+}
+
 async function listRules(env) {
   const { results } = await env.DB.prepare(
     `
@@ -151,6 +172,31 @@ async function listRules(env) {
       left join users creator on creator.id = r.created_by_user_id
       left join users updater on updater.id = r.updated_by_user_id
       order by r.updated_at desc
+    `
+  ).all();
+
+  return (results || []).map(rule => ({
+    ...rule,
+    tags: normalizeRuleTags(rule.tag)
+  }));
+}
+
+async function listSuggestions(env) {
+  const { results } = await env.DB.prepare(
+    `
+      select
+        s.id,
+        s.title,
+        s.category,
+        s.description,
+        s.created_at as createdAt,
+        s.updated_at as updatedAt,
+        creator.username as author,
+        updater.username as updatedBy
+      from suggestions s
+      left join users creator on creator.id = s.created_by_user_id
+      left join users updater on updater.id = s.updated_by_user_id
+      order by s.updated_at desc
     `
   ).all();
 
@@ -386,7 +432,18 @@ export default {
         const body = await readJson(request);
 
         return withCors(
-          json(await awardSoulEssenceToPlayer(env, session, key, body.essenceRank, body.amount)),
+          json(await awardSoulExperienceToCharacter(env, session, key, body)),
+          origin
+        );
+      }
+
+      const characterNightmareMatch = path.match(/^\/api\/characters\/([^/]+)\/soul-nightmare$/);
+      if (characterNightmareMatch && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        const key = decodePathParam(characterNightmareMatch[1]);
+
+        return withCors(
+          json(await completeSoulNightmareForCharacter(env, session, key)),
           origin
         );
       }
@@ -492,7 +549,8 @@ export default {
 
         const body = await readJson(request);
         const title = String(body.title || "").trim();
-        const tag = String(body.tag || "").trim();
+        const tag = serializeRuleTags(body);
+        const tags = normalizeRuleTags(tag);
         const content = String(body.content || "").trim();
         if (!title || !content) return errorJson("Título e conteúdo são obrigatórios.", 400, origin);
 
@@ -505,7 +563,7 @@ export default {
           `
         ).bind(id, title, tag, content, session.sub, session.sub, now, now).run();
 
-        return withCors(json({ id, title, tag, content, createdAt: now, updatedAt: now }, { status: 201 }), origin);
+        return withCors(json({ id, title, tag, tags, content, createdAt: now, updatedAt: now }, { status: 201 }), origin);
       }
 
       const ruleMatch = path.match(/^\/api\/rules\/([^/]+)$/);
@@ -515,7 +573,8 @@ export default {
 
         const body = await readJson(request);
         const title = String(body.title || "").trim();
-        const tag = String(body.tag || "").trim();
+        const tag = serializeRuleTags(body);
+        const tags = normalizeRuleTags(tag);
         const content = String(body.content || "").trim();
         if (!title || !content) return errorJson("Título e conteúdo são obrigatórios.", 400, origin);
 
@@ -530,7 +589,7 @@ export default {
         ).bind(title, tag, content, session.sub, now, ruleId).run();
 
         if (!result.meta.changes) return errorJson("Postagem não encontrada.", 404, origin);
-        return withCors(json({ id: ruleId, title, tag, content, updatedAt: now }), origin);
+        return withCors(json({ id: ruleId, title, tag, tags, content, updatedAt: now }), origin);
       }
 
       if (ruleMatch && request.method === "DELETE") {
@@ -541,6 +600,79 @@ export default {
         const result = await env.DB.prepare("delete from rules_posts where id = ?").bind(ruleId).run();
         if (!result.meta.changes) return errorJson("Postagem não encontrada.", 404, origin);
         return withCors(json({ ok: true, id: ruleId }), origin);
+      }
+
+      if (path === "/api/suggestions" && request.method === "GET") {
+        await requireAuth(request, env);
+        return withCors(json(await listSuggestions(env)), origin);
+      }
+
+      if (path === "/api/suggestions" && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        const body = await readJson(request);
+        const title = String(body.title || "").trim();
+        const category = String(body.category || "").trim();
+        const description = String(body.description || "").trim();
+        if (!title || !description) return errorJson("Titulo e descricao sao obrigatorios.", 400, origin);
+
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+        await env.DB.prepare(
+          `
+            insert into suggestions (
+              id, title, category, description, created_by_user_id, updated_by_user_id, created_at, updated_at
+            )
+            values (?, ?, ?, ?, ?, ?, ?, ?)
+          `
+        ).bind(id, title, category, description, session.sub, session.sub, now, now).run();
+
+        return withCors(
+          json({
+            id,
+            title,
+            category,
+            description,
+            author: session.username,
+            createdAt: now,
+            updatedAt: now
+          }, { status: 201 }),
+          origin
+        );
+      }
+
+      const suggestionMatch = path.match(/^\/api\/suggestions\/([^/]+)$/);
+      if (suggestionMatch && request.method === "PUT") {
+        const session = await requireAuth(request, env);
+        if (session.role !== "master") return errorJson("Apenas o mestre pode editar sugestoes.", 403, origin);
+
+        const body = await readJson(request);
+        const title = String(body.title || "").trim();
+        const category = String(body.category || "").trim();
+        const description = String(body.description || "").trim();
+        if (!title || !description) return errorJson("Titulo e descricao sao obrigatorios.", 400, origin);
+
+        const suggestionId = suggestionMatch[1];
+        const now = new Date().toISOString();
+        const result = await env.DB.prepare(
+          `
+            update suggestions
+            set title = ?, category = ?, description = ?, updated_by_user_id = ?, updated_at = ?
+            where id = ?
+          `
+        ).bind(title, category, description, session.sub, now, suggestionId).run();
+
+        if (!result.meta.changes) return errorJson("Sugestao nao encontrada.", 404, origin);
+        return withCors(json({ id: suggestionId, title, category, description, updatedAt: now }), origin);
+      }
+
+      if (suggestionMatch && request.method === "DELETE") {
+        const session = await requireAuth(request, env);
+        if (session.role !== "master") return errorJson("Apenas o mestre pode excluir sugestoes.", 403, origin);
+
+        const suggestionId = suggestionMatch[1];
+        const result = await env.DB.prepare("delete from suggestions where id = ?").bind(suggestionId).run();
+        if (!result.meta.changes) return errorJson("Sugestao nao encontrada.", 404, origin);
+        return withCors(json({ ok: true, id: suggestionId }), origin);
       }
 
       return errorJson("Rota ainda não migrada para Cloudflare.", 404, origin);

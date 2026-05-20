@@ -7,8 +7,10 @@ const MONSTER_PREFIX = "monster:";
 const ATTRIBUTES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"];
 const DEFAULT_INVENTORY_SLOTS = 10;
 const HAB_CARD_STATE_KEY = "tc_hab_card_states";
+const NOTES_COLLAPSE_KEY = "tc_sheet_textarea_collapsed";
 const ITEM_TYPES = {
   arma: "Arma",
+  armadura: "Armadura",
   acessorio: "Acessório",
   outro: "Outro"
 };
@@ -41,20 +43,31 @@ const DICE_TRAY_TIME_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
 });
 const SOUL = window.SOUL_ESSENCE || null;
 
-function normalizeSoulCoreState(value, legacyRank = 1) {
-  if (SOUL.normalizeSoulCore) {
-    return SOUL.normalizeSoulCore(value, legacyRank);
+function normalizeSoulCoreState(value, legacyRank = 1, options = {}) {
+  if (SOUL?.normalizeSoulCore) {
+    return SOUL.normalizeSoulCore(value, legacyRank, options);
   }
 
   const rankSource = value && typeof value === "object" ? (value.rank ?? legacyRank) : legacyRank;
   const xpSource = value && typeof value === "object" ? value.xp : 0;
   const rank = Math.min(7, Math.max(1, Number.parseInt(rankSource, 10) || 1));
   const xp = Math.max(0, Number.parseInt(xpSource, 10) || 0);
-  return { rank, xp };
+  return {
+    rank,
+    xp,
+    xpLimit: 250,
+    saturation: Math.min(1, xp / 250),
+    pendingNightmare: xp >= 250 && rank < 7,
+    attributeGainProgress: 0,
+    weakKillsToday: 0,
+    attributeCaps: { kind: options.kind === "monster" ? "monster" : "mortal", byRank: {} },
+    lastAttributeGain: [],
+    history: []
+  };
 }
 
 function getSoulRankName(rank) {
-  if (SOUL.getRankName) {
+  if (SOUL?.getRankName) {
     return SOUL.getRankName(rank);
   }
 
@@ -72,7 +85,7 @@ function getSoulRankName(rank) {
 }
 
 function getSoulNextRankRequirement(rank) {
-  if (SOUL.getNextRankRequirement) {
+  if (SOUL?.getNextRankRequirement) {
     return SOUL.getNextRankRequirement(rank);
   }
 
@@ -95,7 +108,7 @@ function getSoulNextRankRequirement(rank) {
 }
 
 function calculateSoulEssenceExperience(characterRank, essenceRank) {
-  if (SOUL.calculateEssenceExperience) {
+  if (SOUL?.calculateEssenceExperience) {
     return SOUL.calculateEssenceExperience(characterRank, essenceRank);
   }
 
@@ -103,7 +116,7 @@ function calculateSoulEssenceExperience(characterRank, essenceRank) {
 }
 
 function absorbSoulEssencesState(core, essenceRank, amount = 1) {
-  if (SOUL.absorbSoulEssences) {
+  if (SOUL?.absorbSoulEssences) {
     return SOUL.absorbSoulEssences(core, essenceRank, amount);
   }
 
@@ -118,13 +131,71 @@ function absorbSoulEssencesState(core, essenceRank, amount = 1) {
 }
 
 function buildSoulProgressLabel(core) {
-  if (SOUL.buildProgressLabel) {
+  if (SOUL?.buildProgressLabel) {
     return SOUL.buildProgressLabel(core);
   }
 
   const normalized = normalizeSoulCoreState(core);
   const requirement = getSoulNextRankRequirement(normalized.rank);
   return requirement ? `${normalized.xp} / ${requirement} XP` : "Rank máximo alcançado";
+}
+
+function getSoulAttributesSnapshot(source = {}) {
+  return Object.fromEntries(
+    ATTRIBUTES.map(attr => [attr, source[`attr${attr}`] ?? source[attr] ?? "1"])
+  );
+}
+
+function getSoulAttributesFromForm() {
+  return Object.fromEntries(ATTRIBUTES.map(attr => [attr, getValue(`attr${attr}`) || "0"]));
+}
+
+function buildSoulNormalizeOptions(kind = currentSheetTarget?.kind || "player", source = {}) {
+  return {
+    kind,
+    attributes: getSoulAttributesSnapshot(source),
+    seed: currentSheetTarget?.key || source.charName || kind || "soul-core"
+  };
+}
+
+function calculateSoulCreatureExperienceState(core, creatureRank, creatureClass, amount = 1) {
+  if (SOUL?.calculateCreatureExperience) {
+    return SOUL.calculateCreatureExperience(core, creatureRank, creatureClass, amount);
+  }
+
+  return {
+    creatureRank: Number.parseInt(creatureRank, 10) || 1,
+    creatureClass: creatureClass || "Beast",
+    amount: Number.parseInt(amount, 10) || 1,
+    baseXp: 0,
+    totalXp: 0,
+    applications: []
+  };
+}
+
+function applySoulExperienceState(data, kind, payload) {
+  if (SOUL?.applySoulExperience) {
+    return SOUL.applySoulExperience(data, kind, payload);
+  }
+
+  return {
+    data,
+    core: normalizeSoulCoreState(data.soulCore, data.charLevel || 1, buildSoulNormalizeOptions(kind, data)),
+    summary: null
+  };
+}
+
+function completeSoulNightmareState(data, kind) {
+  if (SOUL?.completeSoulNightmare) {
+    return SOUL.completeSoulNightmare(data, kind);
+  }
+
+  return {
+    completed: false,
+    data,
+    core: normalizeSoulCoreState(data.soulCore, data.charLevel || 1, buildSoulNormalizeOptions(kind, data)),
+    summary: null
+  };
 }
 
 let currentUser = null;
@@ -147,7 +218,8 @@ let itemEditorIsNew = false;
 let soulCore = normalizeSoulCoreState(null, 1);
 let soulAwardState = {
   open: false,
-  essenceRank: 1,
+  creatureRank: 1,
+  creatureClass: "Beast",
   amount: 1
 };
 let diceTrayState = {
@@ -171,6 +243,7 @@ let directoryRefreshTimer = null;
 let sheetRefreshTimer = null;
 let pendingRealtimeSheetKey = "";
 let diceTrayCloseTimer = 0;
+let notesCollapseBound = false;
 const RECENT_LOCAL_SAVE_MS = 1500;
 const recentLocalSaveMap = {};
 
@@ -357,7 +430,7 @@ async function loadSheet(username, kind = "player") {
 function hasRenderableSheetData(data) {
   if (!data) return false;
 
-  if (data.charName || data.charClass || data.charNotes || data.avatar) return true;
+  if (data.charName || data.charClass || data.charNotes || data.sheetNotes || data.avatar) return true;
   if (Array.isArray(data.habs) && data.habs.length) return true;
   if (Array.isArray(data.passives) && data.passives.length) return true;
   if (Array.isArray(data.inv) && data.inv.length) return true;
@@ -377,6 +450,7 @@ function applySheetData(data, kind = "player") {
   setValue("integAtual", data.integAtual);
   setValue("integMax", data.integMax);
   setValue("charNotes", data.charNotes);
+  setValue("sheetNotes", data.sheetNotes);
 
   const avatarImg = document.getElementById("avatarImg");
   const avatarPlaceholder = document.getElementById("avatarPlaceholder");
@@ -403,7 +477,11 @@ function applySheetData(data, kind = "player") {
   inventorySlots = data.inventorySlots;
   memoryDrops = data.memoryDrops;
   ownedMemories = data.ownedMemories;
-  soulCore = normalizeSoulCoreState(data.soulCore, data.charLevel || 1);
+  soulCore = normalizeSoulCoreState(
+    data.soulCore,
+    data.charLevel || 1,
+    buildSoulNormalizeOptions(kind, data)
+  );
   memoryRollStates = {};
   ownedMemoryTransferStates = {};
   itemTransferStates = {};
@@ -418,8 +496,113 @@ function applySheetData(data, kind = "player") {
   renderOwnedMemories(ownedMemories);
   renderInv(inv);
   renderMemoryDrops(memoryDrops);
+  renderSheetNotesField(kind);
+  updateNotesCollapseUI();
   renderProgressionField(kind);
   syncAutoGrowTextareas();
+}
+
+function renderSheetNotesField(kind = "player") {
+  const hint = document.getElementById("sheetNotesHint");
+  const notes = document.getElementById("sheetNotes");
+
+  if (hint) {
+    hint.textContent = kind === "npc"
+      ? "Lembretes, planos e observacoes praticas do NPC."
+      : "Lembretes, planos e observacoes praticas da ficha.";
+  }
+
+  if (notes) {
+    notes.placeholder = kind === "npc"
+      ? "Anotacoes finais do NPC, pendencias, planos ou observacoes de mesa..."
+      : "Anotacoes finais, lembretes de sessao, pendencias ou observacoes praticas...";
+  }
+}
+
+function getNotesCollapseStorageKey() {
+  return `${NOTES_COLLAPSE_KEY}:${currentUser || "anon"}`;
+}
+
+function readNotesCollapseState() {
+  try {
+    const parsed = JSON.parse(
+      localStorage.getItem(getNotesCollapseStorageKey())
+        || localStorage.getItem(NOTES_COLLAPSE_KEY)
+        || "{}"
+    );
+    return {
+      charNotes: Boolean(parsed.charNotes),
+      sheetNotes: Boolean(parsed.sheetNotes)
+    };
+  } catch {
+    return { charNotes: false, sheetNotes: false };
+  }
+}
+
+function writeNotesCollapseState(state) {
+  const payload = JSON.stringify({
+    charNotes: Boolean(state.charNotes),
+    sheetNotes: Boolean(state.sheetNotes)
+  });
+  localStorage.setItem(getNotesCollapseStorageKey(), payload);
+  localStorage.setItem(NOTES_COLLAPSE_KEY, payload);
+}
+
+function getNotesFieldSummary(field) {
+  const value = String(document.getElementById(field)?.value || "").trim();
+  return value ? "Com conteudo" : "Sem conteudo";
+}
+
+function updateNotesCollapseField(field) {
+  const state = readNotesCollapseState();
+  const collapsed = Boolean(state[field]);
+  const section = document.querySelector(`[data-notes-section="${field}"]`);
+  const button = document.querySelector(`[data-notes-toggle="${field}"]`);
+  const summary = document.querySelector(`[data-notes-summary="${field}"]`);
+  const textarea = document.getElementById(field);
+
+  if (section) section.classList.toggle("is-collapsed", collapsed);
+  if (button) {
+    button.textContent = collapsed ? "Expandir" : "Minimizar";
+    button.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  }
+  if (summary) summary.textContent = getNotesFieldSummary(field);
+  if (!collapsed && textarea instanceof HTMLTextAreaElement) {
+    autoGrowTextarea(textarea);
+  }
+}
+
+function updateNotesCollapseUI() {
+  updateNotesCollapseField("charNotes");
+  updateNotesCollapseField("sheetNotes");
+}
+
+function toggleNotesCollapse(field) {
+  const state = readNotesCollapseState();
+  writeNotesCollapseState({
+    ...state,
+    [field]: !state[field]
+  });
+  updateNotesCollapseField(field);
+}
+
+function initNotesCollapse() {
+  if (notesCollapseBound) return;
+  notesCollapseBound = true;
+
+  document.addEventListener("click", event => {
+    const button = event.target.closest?.("[data-notes-toggle]");
+    if (!(button instanceof HTMLElement)) return;
+    const field = button.dataset.notesToggle;
+    if (field !== "charNotes" && field !== "sheetNotes") return;
+    toggleNotesCollapse(field);
+  });
+
+  ["charNotes", "sheetNotes"].forEach(field => {
+    const textarea = document.getElementById(field);
+    if (!(textarea instanceof HTMLTextAreaElement)) return;
+    textarea.addEventListener("input", () => updateNotesCollapseField(field));
+  });
 }
 
 async function saveSheet() {
@@ -475,7 +658,11 @@ async function saveCurrentSheet(options = {}) {
 
   enforceSheetRules();
   const data = collectSheetData(currentSheetTarget.kind);
-  soulCore = normalizeSoulCoreState(data.soulCore, data.charLevel || 1);
+  soulCore = normalizeSoulCoreState(
+    data.soulCore,
+    data.charLevel || 1,
+    buildSoulNormalizeOptions(currentSheetTarget.kind, data)
+  );
 
   if (isBackendMode()) {
     const requestId = ++saveRequestId;
@@ -490,7 +677,8 @@ async function saveCurrentSheet(options = {}) {
       persistRemoteSheetsCache();
       soulCore = normalizeSoulCoreState(
         remoteSheetsCache[currentSheetTarget.key].soulCore,
-        remoteSheetsCache[currentSheetTarget.key].charLevel || 1
+        remoteSheetsCache[currentSheetTarget.key].charLevel || 1,
+        buildSoulNormalizeOptions(currentSheetTarget.kind, remoteSheetsCache[currentSheetTarget.key])
       );
       renderProgressionField(currentSheetTarget.kind);
       if (currentSheetTarget.kind === "player" || currentSheetTarget.kind === "npc" || currentSheetTarget.kind === "monster") {
@@ -520,26 +708,26 @@ function collectSheetData(kind = "player") {
   const avatarImg = document.getElementById("avatarImg");
   const attrData = {};
   const isMonster = kind === "monster";
-  const isPlayer = kind === "player";
-  const nextSoulCore = normalizeSoulCoreState(
-    isPlayer
-      ? soulCore
-      : {
-          rank: getValue("charLevel") || 1,
-          xp: 0
-        },
-    getValue("charLevel") || 1
-  );
 
   ATTRIBUTES.forEach(attr => {
     attrData[`attr${attr}`] = getValue(`attr${attr}`);
   });
 
+  const nextSoulCore = normalizeSoulCoreState(
+    soulCore,
+    getValue("charLevel") || soulCore?.rank || 1,
+    {
+      kind,
+      attributes: getSoulAttributesSnapshot(attrData),
+      seed: currentSheetTarget?.key || getValue("charName") || kind
+    }
+  );
+
   return normalizeSheetData(
     {
       charName: getValue("charName"),
       charClass: getValue("charClass"),
-      charLevel: isPlayer ? String(nextSoulCore.rank) : getValue("charLevel"),
+      charLevel: String(nextSoulCore.rank),
       soulCore: nextSoulCore,
       charRace: getValue("charRace"),
       charFaction: isMonster ? "" : getValue("charFaction"),
@@ -549,6 +737,7 @@ function collectSheetData(kind = "player") {
       integAtual: getValue("integAtual"),
       integMax: getValue("integMax"),
       charNotes: getValue("charNotes"),
+      sheetNotes: getValue("sheetNotes"),
       ...attrData,
       habs: collectHabs(),
       passives: collectPassives(),
@@ -625,13 +814,27 @@ function writeMonsters(monsters) {
 
 function normalizeSheetData(data, kind = "player") {
   const isMonster = kind === "monster";
-  const nextSoulCore = normalizeSoulCoreState(data.soulCore, data.charLevel || 1);
   const vidaMax = normalizeSheetResourceValue(data.vidaMax);
   const integMax = normalizeSheetResourceValue(data.integMax);
+  const attrData = {};
+
+  ATTRIBUTES.forEach(attr => {
+    attrData[`attr${attr}`] = sanitizeAttrValue(attr, data[`attr${attr}`], "");
+  });
+
+  const nextSoulCore = normalizeSoulCoreState(
+    data.soulCore,
+    data.charLevel || 1,
+    {
+      kind,
+      attributes: getSoulAttributesSnapshot(attrData),
+      seed: data.charName || data.key || currentSheetTarget?.key || kind
+    }
+  );
   const normalized = {
     charName: data.charName || "",
     charClass: data.charClass || "",
-    charLevel: String(data.charLevel || nextSoulCore.rank || ""),
+    charLevel: String(nextSoulCore.rank || data.charLevel || "1"),
     soulCore: nextSoulCore,
     charRace: data.charRace || "",
     charFaction: isMonster ? "" : data.charFaction || "",
@@ -641,21 +844,15 @@ function normalizeSheetData(data, kind = "player") {
     integAtual: clampSheetResourceValue(data.integAtual, integMax),
     integMax,
     charNotes: data.charNotes || "",
+    sheetNotes: data.sheetNotes || "",
     habs: Array.isArray(data.habs) ? data.habs.map(normalizeHab) : [],
     passives: Array.isArray(data.passives) ? data.passives.map(normalizePassive) : [],
     ownedMemories: isMonster ? [] : Array.isArray(data.ownedMemories) ? data.ownedMemories.map(normalizeOwnedMemory) : [],
     inventorySlots: isMonster ? 0 : normalizeInventorySlots(kind, data.inventorySlots),
     inv: isMonster ? [] : Array.isArray(data.inv) ? data.inv.map(normalizeItem) : [],
-    memoryDrops: isMonster ? (Array.isArray(data.memoryDrops) ? data.memoryDrops.map(normalizeMemoryDrop) : []) : []
+    memoryDrops: isMonster ? (Array.isArray(data.memoryDrops) ? data.memoryDrops.map(normalizeMemoryDrop) : []) : [],
+    ...attrData
   };
-
-  ATTRIBUTES.forEach(attr => {
-    normalized[`attr${attr}`] = sanitizeAttrValue(attr, data[`attr${attr}`], "");
-  });
-
-  if (kind === "player") {
-    normalized.charLevel = String(normalized.soulCore.rank);
-  }
 
   return normalized;
 }
@@ -829,12 +1026,24 @@ function mergeSheetHabDraft(incomingData, fallbackData) {
 
 function normalizeItem(item) {
   const type = normalizeItemType(item.type);
+  const armor = type === "armadura" ? normalizeArmorData(item.armor) : normalizeArmorData({});
   return {
     name: String(item.name || ""),
     qty: String(Math.max(0, Number.parseInt(item.qty || "1", 10) || 0)),
     desc: String(item.desc || ""),
     type,
-    damage: type === "arma" ? normalizeDamageExpression(item.damage) : ""
+    damage: type === "arma" ? normalizeDamageExpression(item.damage) : "",
+    armor
+  };
+}
+
+function normalizeArmorData(armor = {}) {
+  const mitigation = Math.max(0, Number.parseInt(armor?.mitigation || "0", 10) || 0);
+  return {
+    equipped: Boolean(armor?.equipped),
+    mitigation: String(mitigation),
+    resistances: String(armor?.resistances || "").trim(),
+    notes: String(armor?.notes || "").trim()
   };
 }
 
@@ -880,6 +1089,12 @@ function itemHasContent(item) {
     String(item.name || "").trim() ||
       String(item.desc || "").trim() ||
       (normalizeItemType(item.type) === "arma" && String(item.damage || "").trim()) ||
+      (normalizeItemType(item.type) === "armadura" && (
+        Boolean(item.armor?.equipped) ||
+        Number.parseInt(item.armor?.mitigation || "0", 10) > 0 ||
+        String(item.armor?.resistances || "").trim() ||
+        String(item.armor?.notes || "").trim()
+      )) ||
       Number.parseInt(item.qty || "0", 10) > 1
   );
 }
@@ -890,6 +1105,7 @@ function formatItemType(type) {
 
 function getItemTypeBadgeClass(type) {
   if (type === "arma") return "item-type-badge is-weapon";
+  if (type === "armadura") return "item-type-badge is-armor";
   if (type === "acessorio") return "item-type-badge is-accessory";
   return "item-type-badge";
 }

@@ -45,7 +45,7 @@ function sanitizeAttrValue(attr, value, fallback) {
   const numeric = Number.parseInt(value, 10);
   if (Number.isNaN(numeric)) return fallback;
 
-  const clamped = Math.max(1, numeric);
+  const clamped = Math.max(0, numeric);
   return String(clamped);
 }
 

@@ -23,6 +23,7 @@ O workflow prepara `_site` com:
 - `ficha.html`
 - `mesa.html`
 - `regras.html`
+- `sugestoes.html`
 - `.nojekyll`
 - logos e icones usados
 - `css/`
@@ -50,10 +51,18 @@ Para varredura completa, usar:
 - `node --check` em todos os `.js`
 - checar referencias locais em HTML/CSS
 - checar IDs duplicados
-- abrir as quatro paginas localmente
+- abrir as cinco paginas localmente
 - validar console sem erros
 
-Quando houver mudanca em `cloudflare/d1/schema.sql`, aplicar o schema no D1 remoto antes de depender da rota publicada. Para a Mesa oficial, a tabela necessaria e `mesa_scenes`.
+## Regra de Layout Para Proximos Upgrades
+
+- Toda alteracao visual precisa preservar layout organizado em desktop e mobile antes de publicar.
+- Painel alto nao deve dividir a mesma linha com campos curtos se isso empurrar os campos para baixo ou deixar uma coluna vazia.
+- Textos longos devem virar resumo curto, chips, lista ou area recolhivel. Nao deixar frases extensas espremidas em cards estreitos.
+- Novos controles devem ter largura minima, quebra responsiva e teste visual quando afetarem Ficha, Mesa, Regras ou Sugestoes.
+- Para a Ficha, validar pelo menos desktop largo (1440 x 820) e mobile estreito antes de considerar a mudanca pronta.
+
+Quando houver mudanca em `cloudflare/d1/schema.sql`, aplicar o schema no D1 remoto antes de depender da rota publicada. Para a Mesa oficial, a tabela necessaria e `mesa_scenes`. Para a pagina de Sugestoes, a tabela necessaria e `suggestions`.
 
 ## Validacao Apos Deploy
 

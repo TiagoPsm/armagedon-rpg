@@ -6,7 +6,11 @@ import {
   normalizeSheetData,
   sanitizeChance
 } from "./sheet.js";
-import { absorbSoulEssences, clampAmount, clampRank, getRankName } from "./soul-progression.js";
+import {
+  applySoulExperience,
+  completeSoulNightmare,
+  getRankName
+} from "./soul-progression.js";
 
 function jsonError(message, status) {
   return new Response(JSON.stringify({ error: message }), {
@@ -86,6 +90,22 @@ function assertCharacterAccess(user, character, mode = "read") {
     mode === "write" ? "Você não pode alterar esta ficha." : "Você não pode acessar esta ficha.",
     403
   );
+}
+
+function assertSoulProgressionAccess(user, character) {
+  if (!user || !character) {
+    throw jsonError("SessÃ£o invÃ¡lida.", 401);
+  }
+
+  if (user.role === "master") {
+    return true;
+  }
+
+  if (character.kind === "player" && character.ownerUserId === user.sub) {
+    return true;
+  }
+
+  throw jsonError("VocÃª nÃ£o pode alterar o nÃºcleo desta ficha.", 403);
 }
 
 async function getCharacterByKey(env, key) {
@@ -193,42 +213,58 @@ async function saveCharacterBundle(env, character, payload, actor) {
   return persistCharacterData(env, character, normalizedData);
 }
 
-async function awardSoulEssenceToPlayer(env, actor, targetKey, essenceRank, amount) {
-  if (actor.role !== "master") {
-    throw jsonError("Apenas o mestre pode alimentar o núcleo de essência.", 403);
-  }
-
+async function awardSoulExperienceToCharacter(env, actor, targetKey, payload = {}) {
   const target = await getCharacterByKey(env, targetKey);
   if (!target) {
-    throw jsonError("Ficha não encontrada.", 404);
+    throw jsonError("Ficha nÃ£o encontrada.", 404);
   }
 
-  if (target.kind !== "player") {
-    throw jsonError("Essências da alma só podem ser aplicadas a jogadores.", 400);
-  }
+  assertSoulProgressionAccess(actor, target);
 
-  const normalizedEssenceRank = clampRank(essenceRank);
-  const normalizedAmount = clampAmount(amount);
-  const targetData = normalizeSheetData(target.data || {}, "player", target.name);
-  const beforeCore = { ...targetData.soulCore };
-  const result = absorbSoulEssences(targetData.soulCore, normalizedEssenceRank, normalizedAmount);
-
-  targetData.soulCore = result.core;
-  targetData.charLevel = String(result.core.rank);
-
-  const saved = await persistCharacterData(env, target, targetData);
+  const targetData = normalizeSheetData(target.data || {}, target.kind, target.name);
+  const result = applySoulExperience(targetData, target.kind, {
+    ...payload,
+    targetKey: target.key
+  });
+  const saved = await persistCharacterData(env, target, normalizeSheetData(result.data, target.kind, target.name));
 
   return {
     character: saved,
     summary: {
+      ...result.summary,
       targetKey: target.key,
-      amount: normalizedAmount,
-      essenceRank: normalizedEssenceRank,
-      essenceName: getRankName(normalizedEssenceRank),
-      totalExperience: result.totalExperience,
-      before: beforeCore,
-      after: result.core,
-      rankUps: result.rankUps
+      targetKind: target.kind,
+      targetName: target.name,
+      rankName: getRankName(result.core.rank)
+    }
+  };
+}
+
+async function completeSoulNightmareForCharacter(env, actor, targetKey) {
+  const target = await getCharacterByKey(env, targetKey);
+  if (!target) {
+    throw jsonError("Ficha nÃ£o encontrada.", 404);
+  }
+
+  assertSoulProgressionAccess(actor, target);
+
+  const targetData = normalizeSheetData(target.data || {}, target.kind, target.name);
+  const result = completeSoulNightmare(targetData, target.kind);
+
+  if (!result.completed) {
+    throw jsonError(result.summary?.reason || "O nÃºcleo ainda nÃ£o estÃ¡ pronto para concluir o pesadelo.", 409);
+  }
+
+  const saved = await persistCharacterData(env, target, normalizeSheetData(result.data, target.kind, target.name));
+
+  return {
+    character: saved,
+    summary: {
+      ...result.summary,
+      targetKey: target.key,
+      targetKind: target.kind,
+      targetName: target.name,
+      rankName: getRankName(result.core.rank)
     }
   };
 }
@@ -432,9 +468,23 @@ async function deleteCharacterByKey(env, key, kind) {
   return existing;
 }
 
+const TRANSFER_AUDIT_TYPES = new Set([
+  "item-player-to-player",
+  "memory-player-to-player",
+  "memory-drop-award"
+]);
+
+function normalizeTransferAuditType(transferType) {
+  const type = String(transferType || "").trim();
+  if (TRANSFER_AUDIT_TYPES.has(type)) return type;
+  if (type.startsWith("item-")) return "item-player-to-player";
+  return type;
+}
+
 async function insertTransferAudit(env, transferType, actorUserId, sourceCharacterId, targetCharacterId, payload) {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
+  const auditType = normalizeTransferAuditType(transferType);
 
   await env.DB.prepare(
     `
@@ -446,7 +496,7 @@ async function insertTransferAudit(env, transferType, actorUserId, sourceCharact
   )
     .bind(
       id,
-      transferType,
+      auditType,
       actorUserId || null,
       sourceCharacterId || null,
       targetCharacterId || null,
@@ -473,6 +523,7 @@ function buildPersistCharacterStatement(env, character, normalizedData, now) {
 }
 
 function buildTransferAuditStatement(env, transferType, actorUserId, sourceCharacterId, targetCharacterId, payload, now) {
+  const auditType = normalizeTransferAuditType(transferType);
   return env.DB.prepare(
     `
       insert into transfer_audit (
@@ -482,7 +533,7 @@ function buildTransferAuditStatement(env, transferType, actorUserId, sourceChara
     `
   ).bind(
     crypto.randomUUID(),
-    transferType,
+    auditType,
     actorUserId || null,
     sourceCharacterId || null,
     targetCharacterId || null,
@@ -518,11 +569,16 @@ function getTransferQuantity(value, availableQuantity) {
 
 function getItemMergeKey(item) {
   const normalized = normalizeItem(item);
+  const armor = normalized.armor || {};
   return [
     normalized.type,
     normalized.name.trim().toLowerCase(),
     normalized.damage.trim().toLowerCase(),
-    normalized.desc.trim().toLowerCase()
+    normalized.desc.trim().toLowerCase(),
+    armor.equipped ? "equipped" : "stored",
+    String(armor.mitigation || "0").trim(),
+    String(armor.resistances || "").trim().toLowerCase(),
+    String(armor.notes || "").trim().toLowerCase()
   ].join("|");
 }
 
@@ -547,7 +603,13 @@ function applyItemQuantityTransfer(sourceData, targetData, sourceKind, targetKin
   if (transferQuantity < 1) {
     throw jsonError("Informe uma quantidade positiva para transferir.", 400);
   }
-  const transferredItem = normalizeItem({ ...sourceItem, qty: String(transferQuantity) });
+  const transferredItem = normalizeItem({
+    ...sourceItem,
+    qty: String(transferQuantity),
+    armor: sourceItem.type === "armadura"
+      ? { ...(sourceItem.armor || {}), equipped: false }
+      : sourceItem.armor
+  });
   const targetIndex = findMergeableItemIndex(targetData.inv, transferredItem);
   const mergeMode = targetIndex >= 0 ? "merged" : "new-slot";
   const targetCapacity = Math.max(
@@ -671,7 +733,7 @@ async function transferItemBetweenCharacters(env, actor, sourceKey, targetKey, i
 
   await persistTransferBatch(
     env,
-    "item-character-to-character",
+    "item-player-to-player",
     actor,
     source,
     sourceData,
@@ -837,8 +899,9 @@ async function awardMonsterMemoryDrop(env, actor, monsterKey, dropIndex, targetK
 export {
   assertCharacterAccess,
   awardMonsterMemoryDrop,
-  awardSoulEssenceToPlayer,
+  awardSoulExperienceToCharacter,
   buildCharacterKey,
+  completeSoulNightmareForCharacter,
   createMonsterCharacter,
   createNpcCharacter,
   createPlayerCharacter,

@@ -515,6 +515,54 @@
   padding: 0.4rem 0.55rem;
 }
 
+#sheetScreen #itemEditorDamageWrap[hidden],
+#sheetScreen #itemEditorRollBox[hidden],
+#sheetScreen #itemEditorArmorWrap[hidden],
+#sheetScreen #itemEditorTransfer[hidden],
+#itemEditorDamageWrap[hidden],
+#itemEditorRollBox[hidden],
+#itemEditorArmorWrap[hidden],
+#itemEditorTransfer[hidden] {
+  display: none !important;
+}
+
+#sheetScreen .item-editor-transfer .item-transfer-row,
+.item-editor-transfer .item-transfer-row {
+  grid-template-columns: minmax(0, 1fr) minmax(92px, max-content);
+  align-items: end;
+}
+
+#sheetScreen .item-editor-transfer .item-transfer-picker,
+.item-editor-transfer .item-transfer-picker {
+  min-width: 0;
+}
+
+#sheetScreen .item-editor-transfer .memory-picker-label,
+.item-editor-transfer .memory-picker-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#sheetScreen .item-editor-transfer .item-transfer-qty,
+.item-editor-transfer .item-transfer-qty {
+  justify-self: end;
+}
+
+#sheetScreen .item-editor-transfer .item-transfer-send,
+.item-editor-transfer .item-transfer-send {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: 42px;
+}
+
+#sheetScreen .item-editor-transfer .memory-award-status,
+.item-editor-transfer .memory-award-status {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
 #sheetScreen .sheet-section-inventory .block-title-bar {
   align-items: center;
 }

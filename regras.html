@@ -43,6 +43,7 @@
         <a href="ficha.html" class="nav-link">Fichas</a>
         <a href="mesa.html" class="nav-link">Mesa</a>
         <a href="regras.html" class="nav-link active">Regras</a>
+        <a href="sugestoes.html" class="nav-link">Sugestões</a>
       </nav>
 
       <div class="header-right">
@@ -134,6 +135,20 @@
           <h2 class="rules-block-title">Grimório de regras</h2>
         </div>
         <span class="rules-updated" id="rulesUpdatedText">Nenhuma regra publicada.</span>
+      </div>
+
+      <div class="rules-filter-panel">
+        <div class="form-group rules-search-group">
+          <label class="form-label" for="rulesSearch">Buscar no grimorio</label>
+          <input type="search" id="rulesSearch" class="form-input" placeholder="Buscar por titulo, conteudo ou tag..." />
+        </div>
+        <div class="rules-tag-filter-wrap">
+          <span class="form-label">Filtrar por tag</span>
+          <div class="rules-tag-filters" id="rulesTagFilters">
+            <span class="empty-msg">Nenhuma tag publicada.</span>
+          </div>
+        </div>
+        <button type="button" class="rule-btn" id="clearRulesFilters">Limpar filtros</button>
       </div>
 
       <div id="rulesList" class="rules-list">

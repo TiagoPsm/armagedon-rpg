@@ -8,6 +8,11 @@ const {
   normalizeSheetData,
   sanitizeChance
 } = require("../utils/sheet");
+const {
+  applySoulExperience,
+  completeSoulNightmare,
+  getRankName
+} = require("../utils/soul-progression");
 
 function buildCharacterKey(kind, idOrUsername) {
   if (kind === "player") return String(idOrUsername || "").trim().toLowerCase();
@@ -91,6 +96,20 @@ function assertCharacterAccess(user, character, mode = "read") {
   );
 }
 
+function assertSoulProgressionAccess(user, character) {
+  if (!user || !character) {
+    throw httpError(401, "Sessão inválida.");
+  }
+
+  if (user.role === "master") return true;
+
+  if (character.kind === "player" && character.ownerUserId === user.sub) {
+    return true;
+  }
+
+  throw httpError(403, "Você não pode alterar o núcleo desta ficha.");
+}
+
 function persistNameFromData(currentName, normalizedData) {
   return String(normalizedData.charName || currentName || "").trim() || currentName || "Sem nome";
 }
@@ -110,6 +129,35 @@ async function persistCharacterData(client, character, normalizedData) {
   );
 
   return getCharacterBundleByKey(client, character.key);
+}
+
+const TRANSFER_AUDIT_TYPES = new Set([
+  "item-player-to-player",
+  "memory-player-to-player",
+  "memory-drop-award"
+]);
+
+function normalizeTransferAuditType(transferType) {
+  const type = String(transferType || "").trim();
+  if (TRANSFER_AUDIT_TYPES.has(type)) return type;
+  if (type.startsWith("item-")) return "item-player-to-player";
+  return type;
+}
+
+async function insertTransferAudit(client, transferType, actorUserId, sourceCharacterId, targetCharacterId, payload) {
+  await client.query(
+    `
+      insert into transfer_audit (transfer_type, actor_user_id, source_character_id, target_character_id, payload)
+      values ($1, $2, $3, $4, $5::jsonb)
+    `,
+    [
+      normalizeTransferAuditType(transferType),
+      actorUserId,
+      sourceCharacterId,
+      targetCharacterId,
+      JSON.stringify(payload || {})
+    ]
+  );
 }
 
 async function saveCharacterBundle(client, character, payload, actor) {
@@ -135,16 +183,75 @@ async function saveCharacterBundle(client, character, payload, actor) {
         : currentSlots;
     normalizedData.ownedMemories =
       actor?.role === "master" ? normalizedData.ownedMemories : currentData.ownedMemories;
+    normalizedData.soulCore =
+      actor?.role === "master" ? normalizedData.soulCore : currentData.soulCore;
+    normalizedData.charLevel = String(normalizedData.soulCore.rank);
   }
 
   if (character.kind === "npc") {
     normalizedData.inventorySlots = normalizeInventorySlots("npc", normalizedData.inventorySlots);
+    normalizedData.charLevel = String(normalizedData.soulCore.rank);
     if (normalizedData.inv.length > normalizedData.inventorySlots) {
       throw httpError(409, "NPCs não podem ultrapassar o limite padrão de 10 slots.");
     }
   }
 
+  if (character.kind === "monster") {
+    normalizedData.inventorySlots = 0;
+    normalizedData.charLevel = String(normalizedData.soulCore.rank);
+  }
+
   return persistCharacterData(client, character, normalizedData);
+}
+
+async function awardSoulExperienceToCharacter(client, actor, targetKey, payload) {
+  const target = await getCharacterByKey(client, targetKey, { forUpdate: true });
+  if (!target) throw httpError(404, "Ficha não encontrada.");
+  assertSoulProgressionAccess(actor, target);
+
+  const targetData = normalizeSheetData(target.data || {}, target.kind, target.name);
+  const result = applySoulExperience(targetData, target.kind, {
+    ...payload,
+    targetKey: target.key
+  });
+  const saved = await persistCharacterData(client, target, normalizeSheetData(result.data, target.kind, target.name));
+
+  return {
+    character: saved,
+    summary: {
+      ...result.summary,
+      targetKey: target.key,
+      targetKind: target.kind,
+      targetName: target.name,
+      rankName: getRankName(result.core.rank)
+    }
+  };
+}
+
+async function completeSoulNightmareForCharacter(client, actor, targetKey) {
+  const target = await getCharacterByKey(client, targetKey, { forUpdate: true });
+  if (!target) throw httpError(404, "Ficha não encontrada.");
+  assertSoulProgressionAccess(actor, target);
+
+  const targetData = normalizeSheetData(target.data || {}, target.kind, target.name);
+  const result = completeSoulNightmare(targetData, target.kind);
+
+  if (!result.completed) {
+    throw httpError(409, result.summary?.reason || "O núcleo ainda não está pronto para concluir o pesadelo.");
+  }
+
+  const saved = await persistCharacterData(client, target, normalizeSheetData(result.data, target.kind, target.name));
+
+  return {
+    character: saved,
+    summary: {
+      ...result.summary,
+      targetKey: target.key,
+      targetKind: target.kind,
+      targetName: target.name,
+      rankName: getRankName(result.core.rank)
+    }
+  };
 }
 
 async function listDirectory(client, user) {
@@ -322,11 +429,16 @@ function getTransferQuantity(value, availableQuantity) {
 
 function getItemMergeKey(item) {
   const normalized = normalizeItem(item);
+  const armor = normalized.armor || {};
   return [
     normalized.type,
     normalized.name.trim().toLowerCase(),
     normalized.damage.trim().toLowerCase(),
-    normalized.desc.trim().toLowerCase()
+    normalized.desc.trim().toLowerCase(),
+    armor.equipped ? "equipped" : "stored",
+    String(armor.mitigation || "0").trim(),
+    String(armor.resistances || "").trim().toLowerCase(),
+    String(armor.notes || "").trim().toLowerCase()
   ].join("|");
 }
 
@@ -351,7 +463,13 @@ function applyItemQuantityTransfer(sourceData, targetData, sourceKind, targetKin
   if (transferQuantity < 1) {
     throw httpError(400, "Informe uma quantidade positiva para transferir.");
   }
-  const transferredItem = normalizeItem({ ...sourceItem, qty: String(transferQuantity) });
+  const transferredItem = normalizeItem({
+    ...sourceItem,
+    qty: String(transferQuantity),
+    armor: sourceItem.type === "armadura"
+      ? { ...(sourceItem.armor || {}), equipped: false }
+      : sourceItem.armor
+  });
   const targetIndex = findMergeableItemIndex(targetData.inv, transferredItem);
   const mergeMode = targetIndex >= 0 ? "merged" : "new-slot";
   const targetCapacity = Math.max(
@@ -410,26 +528,15 @@ async function transferItemBetweenPlayers(client, actor, sourceKey, targetKey, i
   await persistCharacterData(client, source, sourceData);
   await persistCharacterData(client, target, targetData);
 
-  await client.query(
-    `
-      insert into transfer_audit (transfer_type, actor_user_id, source_character_id, target_character_id, payload)
-      values ('item-player-to-player', $1, $2, $3, $4::jsonb)
-    `,
-    [
-      actor.sub,
-      source.id,
-      target.id,
-      JSON.stringify({
-        item: transfer.item,
-        quantity: transfer.quantity,
-        mergeMode: transfer.mergeMode,
-        sourceKey: source.key,
-        sourceKind: source.kind,
-        targetKey: target.key,
-        targetKind: target.kind
-      })
-    ]
-  );
+  await insertTransferAudit(client, "item-player-to-player", actor.sub, source.id, target.id, {
+    item: transfer.item,
+    quantity: transfer.quantity,
+    mergeMode: transfer.mergeMode,
+    sourceKey: source.key,
+    sourceKind: source.kind,
+    targetKey: target.key,
+    targetKind: target.kind
+  });
 
   return {
     item: transfer.item,
@@ -463,26 +570,15 @@ async function transferItemBetweenCharacters(client, actor, sourceKey, targetKey
   await persistCharacterData(client, source, sourceData);
   await persistCharacterData(client, target, targetData);
 
-  await client.query(
-    `
-      insert into transfer_audit (transfer_type, actor_user_id, source_character_id, target_character_id, payload)
-      values ('item-character-to-character', $1, $2, $3, $4::jsonb)
-    `,
-    [
-      actor.sub,
-      source.id,
-      target.id,
-      JSON.stringify({
-        item: transfer.item,
-        quantity: transfer.quantity,
-        mergeMode: transfer.mergeMode,
-        sourceKey: source.key,
-        sourceKind: source.kind,
-        targetKey: target.key,
-        targetKind: target.kind
-      })
-    ]
-  );
+  await insertTransferAudit(client, "item-player-to-player", actor.sub, source.id, target.id, {
+    item: transfer.item,
+    quantity: transfer.quantity,
+    mergeMode: transfer.mergeMode,
+    sourceKey: source.key,
+    sourceKind: source.kind,
+    targetKey: target.key,
+    targetKind: target.kind
+  });
 
   return {
     item: transfer.item,
@@ -524,22 +620,11 @@ async function transferMemoryBetweenPlayers(client, actor, sourceKey, targetKey,
   await persistCharacterData(client, source, sourceData);
   await persistCharacterData(client, target, targetData);
 
-  await client.query(
-    `
-      insert into transfer_audit (transfer_type, actor_user_id, source_character_id, target_character_id, payload)
-      values ('memory-player-to-player', $1, $2, $3, $4::jsonb)
-    `,
-    [
-      actor.sub,
-      source.id,
-      target.id,
-      JSON.stringify({
-        memory: transferredMemory,
-        sourceKey: source.key,
-        targetKey: target.key
-      })
-    ]
-  );
+  await insertTransferAudit(client, "memory-player-to-player", actor.sub, source.id, target.id, {
+    memory: transferredMemory,
+    sourceKey: source.key,
+    targetKey: target.key
+  });
 
   return {
     memory: transferredMemory,
@@ -604,22 +689,11 @@ async function awardMonsterMemoryDrop(client, actor, monsterKey, dropIndex, targ
   targetData.ownedMemories.push(memory);
   await persistCharacterData(client, target, targetData);
 
-  await client.query(
-    `
-      insert into transfer_audit (transfer_type, actor_user_id, source_character_id, target_character_id, payload)
-      values ('memory-drop-award', $1, $2, $3, $4::jsonb)
-    `,
-    [
-      actor.sub,
-      monster.id,
-      target.id,
-      JSON.stringify({
-        memory,
-        monsterKey: monster.key,
-        targetKey: target.key
-      })
-    ]
-  );
+  await insertTransferAudit(client, "memory-drop-award", actor.sub, monster.id, target.id, {
+    memory,
+    monsterKey: monster.key,
+    targetKey: target.key
+  });
 
   return {
     memory,
@@ -630,6 +704,7 @@ async function awardMonsterMemoryDrop(client, actor, monsterKey, dropIndex, targ
 
 module.exports = {
   assertCharacterAccess,
+  awardSoulExperienceToCharacter,
   awardMonsterMemoryDrop,
   buildCharacterKey,
   createMonsterCharacter,
@@ -640,6 +715,7 @@ module.exports = {
   getCharacterBundleByKey,
   getCharacterByKey,
   listDirectory,
+  completeSoulNightmareForCharacter,
   rollMonsterMemoryDrop,
   saveCharacterBundle,
   transferItemBetweenCharacters,

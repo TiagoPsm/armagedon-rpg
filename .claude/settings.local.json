@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($s = Get-Content '.claude/settings.json' | ConvertFrom-Json; Write-Host \"Permissoes:\"; $s.permissions.allow; Write-Host \"---HOOK---\"; $s.hooks.Stop[0].hooks[0].command)",
+      "Bash(git --version)",
+      "Bash(npm --version)",
+      "Bash(npx.cmd playwright *)",
+      "Bash(npx.cmd --yes wrangler@latest --version)",
+      "Bash(git push *)",
+      "Bash(npx.cmd serve *)",
+      "Bash(git add *)"
+    ]
+  }
+}

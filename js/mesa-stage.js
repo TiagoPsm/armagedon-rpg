@@ -329,6 +329,7 @@ function handleInspectorStatInput(event) {
   const token = getSelectedToken();
   if (!token || !field) return;
   if (isBlankMesaNumberInput(input)) return;
+  if (field === "maxLife" || field === "maxIntegrity") return;
 
   const nextValue = Number.parseInt(input.value, 10);
   const sheetPatch = buildSheetPatchFromMesa(field, nextValue, token);
@@ -368,9 +369,18 @@ function commitInspectorMaxInputClamp(input) {
   const max = Math.max(isLife ? 1 : 0, asPositiveInt(input.value, isLife ? token.maxLife : token.maxIntegrity));
   const rawCurrent = asPositiveInt(isLife ? sheet.vidaAtual : sheet.integAtual, isLife ? token.currentLife : token.currentIntegrity);
   const current = clamp(rawCurrent, 0, max);
-  if (rawCurrent === current) return;
+  const patch = isLife
+    ? { vidaMax: String(max) }
+    : { integMax: String(max) };
 
-  const patch = isLife ? { vidaAtual: String(current) } : { integAtual: String(current) };
+  if (rawCurrent !== current) {
+    if (isLife) {
+      patch.vidaAtual = String(current);
+    } else {
+      patch.integAtual = String(current);
+    }
+  }
+
   applySheetPatchFromMesa(token.characterKey, patch, { render: false });
   broadcastMesaSheetPatch(token.characterKey, patch);
   syncInspectorStatInputCard(input, field, getSelectedToken() || token);

@@ -4,6 +4,10 @@ let currentSession = null;
 let editingRuleId = null;
 let rulesCache = [];
 let rulesRealtimeBound = false;
+let rulesFilters = {
+  query: "",
+  tag: ""
+};
 
 function initRulesPageGlow() {
   const root = document.body;
@@ -76,6 +80,9 @@ function setupRulesPage() {
   const rulesEditor = document.getElementById("rulesEditor");
   const playerNotice = document.getElementById("playerNotice");
   const ruleContent = document.getElementById("ruleContent");
+  const rulesSearch = document.getElementById("rulesSearch");
+  const clearRulesFilters = document.getElementById("clearRulesFilters");
+  const rulesTagFilters = document.getElementById("rulesTagFilters");
   const isMaster = currentSession.role === "master";
 
   if (rulesUser) rulesUser.textContent = currentSession.username || "";
@@ -95,6 +102,27 @@ function setupRulesPage() {
     ruleContent.addEventListener("input", () => autoGrowTextarea(ruleContent));
     autoGrowTextarea(ruleContent);
   }
+
+  if (rulesSearch instanceof HTMLInputElement) {
+    rulesSearch.addEventListener("input", () => {
+      rulesFilters.query = rulesSearch.value.trim().toLowerCase();
+      renderRulesFromCache();
+    });
+  }
+
+  clearRulesFilters?.addEventListener("click", () => {
+    rulesFilters = { query: "", tag: "" };
+    if (rulesSearch instanceof HTMLInputElement) rulesSearch.value = "";
+    renderRulesFromCache();
+  });
+
+  rulesTagFilters?.addEventListener("click", event => {
+    const button = event.target.closest?.("[data-rule-tag-filter]");
+    if (!(button instanceof HTMLElement)) return;
+    const tag = String(button.dataset.ruleTagFilter || "");
+    rulesFilters.tag = rulesFilters.tag.toLowerCase() === tag.toLowerCase() ? "" : tag;
+    renderRulesFromCache();
+  });
 
   resetRuleForm();
 }
@@ -126,10 +154,11 @@ async function loadRules(options = {}) {
     rulesCache = remoteRules
       .map(rule =>
         normalizeRule({
-          id: rule.id,
-          title: rule.title,
-          tag: rule.tag,
-          content: rule.content,
+        id: rule.id,
+        title: rule.title,
+        tag: rule.tag,
+        tags: rule.tags,
+        content: rule.content,
           createdAt: rule.createdAt,
           updatedAt: rule.updatedAt
         })
@@ -147,15 +176,34 @@ function normalizeRule(rule) {
   const now = Date.now();
   const createdAt = Number(new Date(rule.createdAt || now)) || now;
   const updatedAt = Number(new Date(rule.updatedAt || createdAt)) || createdAt;
+  const tags = normalizeRuleTags(rule.tags || rule.tag);
 
   return {
     id: String(rule.id || createRuleId()),
     title: String(rule.title || "").trim(),
-    tag: String(rule.tag || "").trim(),
+    tag: tags.join(", "),
+    tags,
     content: String(rule.content || "").trim(),
     createdAt,
     updatedAt
   };
+}
+
+function normalizeRuleTags(value) {
+  const rawTags = Array.isArray(value)
+    ? value
+    : String(value || "").split(",");
+  const seen = new Set();
+  return rawTags
+    .map(tag => String(tag || "").trim())
+    .filter(Boolean)
+    .filter(tag => {
+      const key = tag.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 12);
 }
 
 function createRuleId() {
@@ -163,7 +211,9 @@ function createRuleId() {
 }
 
 async function renderRules(options = {}) {
-  const rules = await loadRules(options);
+  await loadRules(options);
+  renderRulesFromCache();
+  return;
   const ruleCount = document.getElementById("ruleCount");
   const lastRuleUpdate = document.getElementById("lastRuleUpdate");
   const rulesUpdatedText = document.getElementById("rulesUpdatedText");
@@ -217,6 +267,128 @@ async function renderRules(options = {}) {
       `
     )
     .join("");
+}
+
+function renderRulesFromCache() {
+  const rules = rulesCache
+    .map(normalizeRule)
+    .sort((left, right) => right.updatedAt - left.updatedAt);
+  const filteredRules = filterRules(rules);
+  const ruleCount = document.getElementById("ruleCount");
+  const lastRuleUpdate = document.getElementById("lastRuleUpdate");
+  const rulesUpdatedText = document.getElementById("rulesUpdatedText");
+  const rulesList = document.getElementById("rulesList");
+  const isMaster = currentSession.role === "master";
+
+  renderRuleTagFilters(rules);
+
+  if (ruleCount) {
+    ruleCount.textContent = filteredRules.length === rules.length
+      ? String(rules.length)
+      : `${filteredRules.length}/${rules.length}`;
+  }
+  if (lastRuleUpdate) {
+    lastRuleUpdate.textContent = rules.length ? formatRuleDate(rules[0].updatedAt) : "Nenhuma";
+  }
+  if (rulesUpdatedText) {
+    rulesUpdatedText.textContent = rules.length
+      ? `${filteredRules.length} de ${rules.length} regra(s) exibida(s). Atualizado em ${formatRuleDateTime(rules[0].updatedAt)}`
+      : "Nenhuma regra publicada.";
+  }
+
+  if (!rulesList) return;
+
+  if (!rules.length) {
+    rulesList.innerHTML = '<p class="empty-msg">Nenhuma regra publicada.</p>';
+    return;
+  }
+
+  if (!filteredRules.length) {
+    rulesList.innerHTML = '<p class="empty-msg">Nenhuma regra encontrada com os filtros atuais.</p>';
+    return;
+  }
+
+  rulesList.innerHTML = filteredRules
+    .map(rule => `
+      <article class="rule-card">
+        <div class="rule-card-head">
+          <div class="rule-card-head-main">
+            ${renderRuleTags(rule)}
+            <h3 class="rule-card-title">${esc(rule.title || "Regra sem titulo")}</h3>
+            <div class="rule-card-meta">
+              <span>Criada em ${esc(formatRuleDateTime(rule.createdAt))}</span>
+              <span>Atualizada em ${esc(formatRuleDateTime(rule.updatedAt))}</span>
+            </div>
+          </div>
+          ${
+            isMaster
+              ? `
+                <div class="rule-actions">
+                  <button class="rule-btn" onclick="editRule('${jsEsc(rule.id)}')">Editar</button>
+                  <button class="rule-btn rule-btn-danger" onclick="deleteRule('${jsEsc(rule.id)}')">Excluir</button>
+                </div>
+              `
+              : ""
+          }
+        </div>
+
+        <p class="rule-card-content">${esc(rule.content || "Sem conteudo.")}</p>
+      </article>
+    `)
+    .join("");
+}
+
+function renderRuleTags(rule) {
+  const tags = normalizeRuleTags(rule.tags || rule.tag);
+  if (!tags.length) return "";
+  return `<div class="rule-tag-row">${tags.map(tag => `<span class="rule-tag rule-tag-chip">${esc(tag)}</span>`).join("")}</div>`;
+}
+
+function getAllRuleTags(rules) {
+  const tagMap = new Map();
+  rules.forEach(rule => {
+    normalizeRuleTags(rule.tags || rule.tag).forEach(tag => {
+      const key = tag.toLowerCase();
+      if (!tagMap.has(key)) tagMap.set(key, tag);
+    });
+  });
+  return [...tagMap.values()].sort((left, right) => left.localeCompare(right, "pt-BR"));
+}
+
+function renderRuleTagFilters(rules) {
+  const filters = document.getElementById("rulesTagFilters");
+  if (!filters) return;
+  const tags = getAllRuleTags(rules);
+  if (!tags.length) {
+    filters.innerHTML = '<span class="empty-msg">Nenhuma tag publicada.</span>';
+    return;
+  }
+  filters.innerHTML = tags.map(tag => {
+    const active = rulesFilters.tag.toLowerCase() === tag.toLowerCase();
+    return `
+      <button
+        type="button"
+        class="rule-tag-filter ${active ? "is-active" : ""}"
+        data-rule-tag-filter="${esc(tag)}"
+        aria-pressed="${active ? "true" : "false"}"
+      >${esc(tag)}</button>
+    `;
+  }).join("");
+}
+
+function filterRules(rules) {
+  const query = rulesFilters.query.trim().toLowerCase();
+  const selectedTag = rulesFilters.tag.trim().toLowerCase();
+  return rules.filter(rule => {
+    const tags = normalizeRuleTags(rule.tags || rule.tag);
+    const matchesTag = !selectedTag || tags.some(tag => tag.toLowerCase() === selectedTag);
+    const haystack = [
+      rule.title,
+      rule.content,
+      ...tags
+    ].join(" ").toLowerCase();
+    return matchesTag && (!query || haystack.includes(query));
+  });
 }
 
 function resetRuleForm() {
@@ -279,7 +451,8 @@ async function saveRule() {
 
   const wasEditing = Boolean(editingRuleId);
   const title = getFormValue("ruleTitle").trim();
-  const tag = getFormValue("ruleTag").trim();
+  const tags = normalizeRuleTags(getFormValue("ruleTag"));
+  const tag = tags.join(", ");
   const content = getFormValue("ruleContent").trim();
   const ruleFormError = document.getElementById("ruleFormError");
   const ruleFormStatus = document.getElementById("ruleFormStatus");
@@ -305,9 +478,9 @@ async function saveRule() {
   if (AUTH.isBackendEnabled()) {
     try {
       if (editingRuleId) {
-        await APP.updateRule(editingRuleId, { title, tag, content });
+        await APP.updateRule(editingRuleId, { title, tag, tags, content });
       } else {
-        await APP.createRule({ title, tag, content });
+        await APP.createRule({ title, tag, tags, content });
       }
     } catch (error) {
       if (ruleFormError) ruleFormError.textContent = error?.message || "Falha ao salvar a postagem.";
@@ -324,6 +497,7 @@ async function saveRule() {
           ...rules[index],
           title,
           tag,
+          tags,
           content,
           updatedAt: now
         });
@@ -334,6 +508,7 @@ async function saveRule() {
           id: createRuleId(),
           title,
           tag,
+          tags,
           content,
           createdAt: now,
           updatedAt: now

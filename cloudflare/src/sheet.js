@@ -2,7 +2,7 @@ import { normalizeSoulCore } from "./soul-progression.js";
 
 const ATTRIBUTES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"];
 const DEFAULT_INVENTORY_SLOTS = 10;
-const ITEM_TYPES = new Set(["arma", "acessorio", "outro"]);
+const ITEM_TYPES = new Set(["arma", "armadura", "acessorio", "outro"]);
 
 function sanitizeChance(value, fallback = "0") {
   if (value === "" || value === null || value === undefined) return fallback;
@@ -15,7 +15,7 @@ function sanitizeAttrValue(attr, value, fallback) {
   if (value === "" || value === null || value === undefined) return fallback;
   const numeric = Number.parseInt(value, 10);
   if (Number.isNaN(numeric)) return fallback;
-  return String(Math.max(1, numeric));
+  return String(Math.max(0, numeric));
 }
 
 function normalizeResourceValue(value, fallback = "") {
@@ -95,12 +95,24 @@ function normalizeDamageExpression(value) {
 
 function normalizeItem(item = {}) {
   const type = normalizeItemType(item.type);
+  const armor = type === "armadura" ? normalizeArmorData(item.armor) : normalizeArmorData({});
   return {
     name: String(item.name || ""),
     qty: String(Math.max(0, Number.parseInt(item.qty || "1", 10) || 0)),
     desc: String(item.desc || ""),
     type,
-    damage: type === "arma" ? normalizeDamageExpression(item.damage) : ""
+    damage: type === "arma" ? normalizeDamageExpression(item.damage) : "",
+    armor
+  };
+}
+
+function normalizeArmorData(armor = {}) {
+  const mitigation = Math.max(0, Number.parseInt(armor.mitigation || "0", 10) || 0);
+  return {
+    equipped: Boolean(armor.equipped),
+    mitigation: String(mitigation),
+    resistances: String(armor.resistances || "").trim(),
+    notes: String(armor.notes || "").trim()
   };
 }
 
@@ -123,9 +135,19 @@ function normalizeMemoryDrop(drop = {}) {
 function normalizeSheetData(data = {}, kind = "player", charNameFallback = "") {
   const isMonster = kind === "monster";
   const inventory = !isMonster && Array.isArray(data.inv) ? data.inv.map(normalizeItem) : [];
-  const soulCore = normalizeSoulCore(data.soulCore || {}, data.charLevel || 1);
   const vidaMax = normalizeResourceValue(data.vidaMax);
   const integMax = normalizeResourceValue(data.integMax);
+  const attrData = {};
+
+  ATTRIBUTES.forEach(attr => {
+    attrData[`attr${attr}`] = sanitizeAttrValue(attr, data[`attr${attr}`], "");
+  });
+
+  const soulCore = normalizeSoulCore(data.soulCore || {}, data.charLevel || 1, {
+    kind,
+    attributes: attrData,
+    seed: data.charName || charNameFallback || kind
+  });
 
   const normalized = {
     charName: String(data.charName || charNameFallback || ""),
@@ -140,6 +162,7 @@ function normalizeSheetData(data = {}, kind = "player", charNameFallback = "") {
     integAtual: clampResourceValue(data.integAtual, integMax),
     integMax,
     charNotes: String(data.charNotes || ""),
+    sheetNotes: String(data.sheetNotes || ""),
     habs: Array.isArray(data.habs) ? data.habs.map(normalizeHab) : [],
     passives: Array.isArray(data.passives) ? data.passives.map(normalizePassive) : [],
     ownedMemories: isMonster
@@ -153,12 +176,9 @@ function normalizeSheetData(data = {}, kind = "player", charNameFallback = "") {
       ? Array.isArray(data.memoryDrops)
         ? data.memoryDrops.map(normalizeMemoryDrop)
         : []
-      : []
+      : [],
+    ...attrData
   };
-
-  ATTRIBUTES.forEach(attr => {
-    normalized[`attr${attr}`] = sanitizeAttrValue(attr, data[`attr${attr}`], "");
-  });
 
   if (isMonster) {
     normalized.charFaction = "";

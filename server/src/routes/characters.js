@@ -5,6 +5,8 @@ const { httpError } = require("../utils/http-error");
 const { withTransaction } = require("../db");
 const {
   assertCharacterAccess,
+  awardSoulExperienceToCharacter,
+  completeSoulNightmareForCharacter,
   getCharacterBundleByKey,
   getCharacterByKey,
   saveCharacterBundle
@@ -39,6 +41,36 @@ router.put(
     });
 
     req.app.get("io")?.emit("sheet:changed", { key: saved.key, kind: saved.kind });
+    res.json(saved);
+  })
+);
+
+router.post(
+  "/:key/soul-essence",
+  asyncHandler(async (req, res) => {
+    const saved = await withTransaction(async client => {
+      return awardSoulExperienceToCharacter(client, req.user, req.params.key, req.body || {});
+    });
+
+    req.app.get("io")?.emit("sheet:changed", {
+      key: saved.character.key,
+      kind: saved.character.kind
+    });
+    res.json(saved);
+  })
+);
+
+router.post(
+  "/:key/soul-nightmare",
+  asyncHandler(async (req, res) => {
+    const saved = await withTransaction(async client => {
+      return completeSoulNightmareForCharacter(client, req.user, req.params.key);
+    });
+
+    req.app.get("io")?.emit("sheet:changed", {
+      key: saved.character.key,
+      kind: saved.character.kind
+    });
     res.json(saved);
   })
 );

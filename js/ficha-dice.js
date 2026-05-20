@@ -236,10 +236,16 @@ function openDiceTray() {
   diceTrayState.open = true;
   diceTrayState.historyOpen = false;
   root.hidden = false;
+  if (window.UI?.activateModal) {
+    window.UI.activateModal(root, dialog, {
+      initialFocus: dialog,
+      onDismiss: closeDiceTray
+    });
+  }
   root.classList.remove("is-closing");
   window.requestAnimationFrame(() => {
     root.classList.add("is-open");
-    dialog.focus();
+    if (!window.UI?.activateModal) dialog.focus();
     renderDiceTray();
   });
 }
@@ -254,6 +260,7 @@ function closeDiceTray() {
   }
 
   diceTrayState.open = false;
+  if (window.UI?.deactivateModal) window.UI.deactivateModal(root);
   root.classList.remove("is-open");
   root.classList.add("is-closing");
   diceTrayCloseTimer = window.setTimeout(() => {
@@ -276,7 +283,6 @@ function initDiceTray() {
     optionGrid,
     modeGrid,
     advancedToggle,
-    historyToggle,
     reroll
   } = getDiceTrayElements();
   const openButton = document.getElementById("openDiceTrayBtn");
@@ -292,7 +298,6 @@ function initDiceTray() {
     || !optionGrid
     || !modeGrid
     || !advancedToggle
-    || !historyToggle
     || !openButton
   ) return;
 
@@ -323,10 +328,6 @@ function initDiceTray() {
       rollDiceTray();
     });
   }
-  historyToggle.addEventListener("click", () => {
-    diceTrayState.historyOpen = !diceTrayState.historyOpen;
-    renderDiceTray();
-  });
   advancedToggle.addEventListener("click", () => {
     diceTrayState.advancedOpen = !diceTrayState.advancedOpen;
     renderDiceTray();
@@ -336,7 +337,7 @@ function initDiceTray() {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
 
-    if (target.dataset.diceClose) {
+    if (target.closest("[data-dice-close]")) {
       closeDiceTray();
       return;
     }

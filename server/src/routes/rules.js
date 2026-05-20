@@ -10,6 +10,22 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
+function normalizeRuleTags(value) {
+  const rawTags = Array.isArray(value)
+    ? value
+    : String(value || "").split(",");
+  const seen = new Set();
+  return rawTags
+    .map(tag => String(tag || "").trim())
+    .filter(Boolean)
+    .filter(tag => {
+      const key = tag.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
 router.get(
   "/",
   asyncHandler(async (_req, res) => {
@@ -24,10 +40,11 @@ router.post(
   asyncHandler(async (req, res) => {
     const title = String(req.body?.title || "").trim();
     const content = String(req.body?.content || "").trim();
-    const tag = String(req.body?.tag || "").trim();
+    const tags = normalizeRuleTags(req.body?.tags || req.body?.tag);
+    const tag = tags.join(", ");
 
     if (!title || !content) {
-    throw httpError(400, "Título e conteúdo são obrigatórios.");
+      throw httpError(400, "Título e conteúdo são obrigatórios.");
     }
 
     const rule = await withTransaction(client =>
@@ -45,10 +62,11 @@ router.put(
   asyncHandler(async (req, res) => {
     const title = String(req.body?.title || "").trim();
     const content = String(req.body?.content || "").trim();
-    const tag = String(req.body?.tag || "").trim();
+    const tags = normalizeRuleTags(req.body?.tags || req.body?.tag);
+    const tag = tags.join(", ");
 
     if (!title || !content) {
-    throw httpError(400, "Título e conteúdo são obrigatórios.");
+      throw httpError(400, "Título e conteúdo são obrigatórios.");
     }
 
     const rule = await withTransaction(client =>
