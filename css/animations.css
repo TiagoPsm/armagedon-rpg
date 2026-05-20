@@ -1,0 +1,162 @@
+/* ============================================================
+ * animations.css — Keyframes centralizados
+ * ============================================================
+ *
+ * Single source of truth para todas as @keyframes do projeto.
+ *
+ * As animações originais ainda estão em ficha-layout.css, regras.css,
+ * index.css, mesa-inspector.css e style.css (compatibilidade).
+ * Este arquivo é a referência canônica — em refactors progressivos,
+ * as duplicadas devem ser removidas dos arquivos legados.
+ *
+ * Filosofia minimalista:
+ *   - Animações sutis (não distraem do conteúdo)
+ *   - Respeitam prefers-reduced-motion (definido em reset.css)
+ * ============================================================ */
+
+/* ============================================================
+ * EFEITOS DE FUNDO — ficha/regras (chamas e brasas)
+ * ============================================================ */
+
+/* Ascensão suave de fundo (usado em hero blocks) */
+@keyframes blackfireRise {
+  0% {
+    transform: translateY(2%) scale(1);
+    opacity: 0.72;
+  }
+  50% {
+    transform: translateY(-1%) scale(1.02);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateY(-3%) scale(1.04);
+    opacity: 0.8;
+  }
+}
+
+/* Brasas flutuando lentamente */
+@keyframes emberFloat {
+  0% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateY(-4%);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(-8%);
+    opacity: 0.2;
+  }
+}
+
+/* Pulsação de brasa */
+@keyframes emberPulse {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 0.2;
+  }
+  to {
+    transform: translateY(-3%) scale(1.04);
+    opacity: 0.45;
+  }
+}
+
+/* ============================================================
+ * EFEITOS DE FUNDO — index/mesa (orbital)
+ * ============================================================ */
+
+/* Pulsação orbital sutil */
+@keyframes orbitPulse {
+  from {
+    transform: scale(0.985);
+    opacity: 0.54;
+  }
+  to {
+    transform: scale(1.02);
+    opacity: 0.84;
+  }
+}
+
+/* ============================================================
+ * REVEAL / ENTRADA
+ * ============================================================ */
+
+/* Entrada vertical sutil (hero reveal) */
+@keyframes heroReveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade simples */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Slide up simples */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================
+ * PULSE / DESTAQUE
+ * ============================================================ */
+
+/* Pulso de fundo (uso em hover de background pesado) */
+@keyframes pulseBg {
+  from {
+    transform: scale(1);
+    opacity: 0.92;
+  }
+  to {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+/* Pulso do dado (ao rolar) */
+@keyframes pulseDice {
+  0% {
+    transform: scale(0.85) rotate(-8deg);
+  }
+  55% {
+    transform: scale(1.08) rotate(6deg);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ============================================================
+ * LOADING / SPINNERS (utilitários)
+ * ============================================================ */
+
+@keyframes spin {
+  from { transform: rotate(0); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes pulseDot {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.3;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

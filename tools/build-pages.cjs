@@ -26,6 +26,9 @@ const dirs = ["css", "js", "data"];
 const fichaCssBundle = "css/ficha-page.bundle.css";
 const fichaJsBundle = "js/ficha-page.bundle.js";
 const fichaCssFiles = [
+  "css/design-tokens.css",
+  "css/reset.css",
+  "css/animations.css",
   "css/style.css",
   "css/ficha-base.css",
   "css/ficha-layout.css",

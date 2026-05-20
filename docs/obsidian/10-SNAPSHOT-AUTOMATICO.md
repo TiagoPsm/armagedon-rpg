@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 16:17:19 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 16:22:32 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,33 +13,20 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `79d519c 2026-05-20 docs: Estrat├®gia pr├ítica de redu├º├úo de tokens por sess├úo`
+- Ultimo commit: `16d27c4 2026-05-20 perf: FASE 0 - quick wins de performance (defer + WebP + minifica├º├úo)`
 
 ### Alteracoes Locais
 
 ```text
-M  .claude/settings.local.json
-M  "Logo app.jpg"
-A  "Logo app.webp"
-M  apple-touch-icon.png
-A  apple-touch-icon.webp
-M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  favicon.png
-A  favicon.webp
+A  css/animations.css
+A  css/design-tokens.css
+A  css/reset.css
 M  ficha.html
 M  index.html
-M  logo-rpg-armagedon.png
-A  logo-rpg-armagedon.webp
-M  logo-rpg-site.jpg
-A  logo-rpg-site.webp
 M  mesa.html
-M  package-lock.json
-M  package.json
 M  regras.html
 M  sugestoes.html
 M  tools/build-pages.cjs
-A  tools/minify.cjs
-A  tools/optimize-images.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -51,28 +38,15 @@ A  tools/optimize-images.cjs
 ### Arquivos Em Stage
 
 ```text
-.claude/settings.local.json
-Logo app.jpg
-Logo app.webp
-apple-touch-icon.png
-apple-touch-icon.webp
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-favicon.png
-favicon.webp
+css/animations.css
+css/design-tokens.css
+css/reset.css
 ficha.html
 index.html
-logo-rpg-armagedon.png
-logo-rpg-armagedon.webp
-logo-rpg-site.jpg
-logo-rpg-site.webp
 mesa.html
-package-lock.json
-package.json
 regras.html
 sugestoes.html
 tools/build-pages.cjs
-tools/minify.cjs
-tools/optimize-images.cjs
 ```
 
 ## Paginas Principais
@@ -86,7 +60,7 @@ tools/optimize-images.cjs
 ## Contagem Rapida
 
 - JavaScript em `js/`: 29 arquivo(s)
-- CSS em `css/`: 18 arquivo(s)
+- CSS em `css/`: 21 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
 ## Notas Do Vault

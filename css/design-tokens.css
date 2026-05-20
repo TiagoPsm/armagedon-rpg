@@ -1,0 +1,181 @@
+/* ============================================================
+ * design-tokens.css — Single source of truth para o design system
+ * ============================================================
+ *
+ * Direção visual: dark fantasy preto + carmesim (Shadow Slave).
+ * Identidade consolidada em docs/obsidian/03-DECISOES.md.
+ *
+ * ESTRATÉGIA DE MIGRAÇÃO (progressiva, sem quebrar nada):
+ *   1. Estes tokens são a referência canônica.
+ *   2. Cada CSS específico (style.css, index.css, mesa-base.css)
+ *      continua com suas variáveis legadas funcionando.
+ *   3. Novos componentes devem usar --clr-*, --sp-*, --bp-*.
+ *   4. Refactors progressivos substituem variáveis legadas
+ *      pelos tokens canônicos.
+ *
+ * Ordem de carregamento: PRIMEIRO arquivo CSS de cada página.
+ * ============================================================ */
+
+:root {
+  color-scheme: dark;
+
+  /* ============================================================
+   * CORES — paleta dark fantasy (preto + carmesim)
+   * ============================================================ */
+
+  /* Backgrounds (do mais profundo ao mais elevado) */
+  --clr-bg-0:        #050608;   /* fundo absoluto (página) */
+  --clr-bg-1:        #0b0e12;   /* superfície base */
+  --clr-bg-2:        #12171c;   /* card / painel */
+  --clr-bg-3:        #1a2028;   /* card elevado */
+  --clr-bg-4:        #22272f;   /* hover / focus */
+
+  /* Superfícies translúcidas (para overlay/glass effect) */
+  --clr-surface:         rgba(17, 22, 29, 0.84);
+  --clr-surface-strong:  rgba(15, 20, 27, 0.94);
+  --clr-surface-soft:    rgba(255, 255, 255, 0.03);
+
+  /* Texto */
+  --clr-text:        #f1ead7;   /* texto principal (branco-creme) */
+  --clr-text-soft:   #cdc2aa;   /* texto secundário */
+  --clr-text-muted:  #918976;   /* texto sutil */
+  --clr-text-faint:  #645f55;   /* texto quase invisível */
+
+  /* Acento principal — vermelho carmesim Shadow Slave */
+  --clr-accent:        #9f2530;  /* carmesim padrão */
+  --clr-accent-light:  #ca4a44;  /* hover / glow */
+  --clr-accent-bright: #b03039;  /* destaques fortes */
+  --clr-accent-deep:   #4f090f;  /* sombra carmesim */
+  --clr-accent-shadow: #260306;  /* profundidade extrema */
+
+  /* Bordas */
+  --clr-border:         rgba(236, 223, 196, 0.10);  /* borda sutil */
+  --clr-border-strong:  rgba(236, 223, 196, 0.18);  /* borda forte */
+  --clr-border-accent:  rgba(176, 47, 57, 0.34);    /* borda carmesim */
+
+  /* Cores de estado/tipo */
+  --clr-success:    #6b9d4a;
+  --clr-warning:    #c3aa69;   /* dourado contido (Integridade NÃO usa) */
+  --clr-danger:     #e1735f;
+  --clr-info:       #5d72d4;   /* azul de jogador */
+
+  /* Cores semânticas da mesa (compatibilidade) */
+  --clr-player:     #5d72d4;
+  --clr-npc:        #b08f32;
+  --clr-monster:    #b03039;
+
+  /* ============================================================
+   * TIPOGRAFIA
+   * ============================================================ */
+  --font-display:  "Cinzel Decorative", "Cormorant Garamond", serif;
+  --font-title:    "Cinzel", serif;
+  --font-body:     "Crimson Text", "Cormorant Garamond", serif;
+  --font-ui:       "Chakra Petch", "Cinzel", sans-serif;
+
+  /* Escala tipográfica (em rem, ~16px base) */
+  --fs-xs:    0.75rem;   /* 12px */
+  --fs-sm:    0.875rem;  /* 14px */
+  --fs-base:  1rem;      /* 16px */
+  --fs-md:    1.125rem;  /* 18px */
+  --fs-lg:    1.25rem;   /* 20px */
+  --fs-xl:    1.5rem;    /* 24px */
+  --fs-2xl:   1.875rem;  /* 30px */
+  --fs-3xl:   2.25rem;   /* 36px */
+  --fs-4xl:   3rem;      /* 48px */
+
+  /* Pesos */
+  --fw-light:    300;
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+
+  /* Letter-spacing */
+  --tracking-tight:   -0.01em;
+  --tracking-normal:   0;
+  --tracking-wide:     0.04em;
+  --tracking-wider:    0.08em;
+  --tracking-widest:   0.16em;
+
+  /* ============================================================
+   * ESPAÇAMENTOS (escala 4px)
+   * ============================================================ */
+  --sp-0:    0;
+  --sp-1:    0.25rem;  /* 4px  */
+  --sp-2:    0.5rem;   /* 8px  */
+  --sp-3:    0.75rem;  /* 12px */
+  --sp-4:    1rem;     /* 16px */
+  --sp-5:    1.25rem;  /* 20px */
+  --sp-6:    1.5rem;   /* 24px */
+  --sp-8:    2rem;     /* 32px */
+  --sp-10:   2.5rem;   /* 40px */
+  --sp-12:   3rem;     /* 48px */
+  --sp-16:   4rem;     /* 64px */
+  --sp-20:   5rem;     /* 80px */
+  --sp-24:   6rem;     /* 96px */
+
+  /* ============================================================
+   * RAIO DE BORDA
+   * ============================================================ */
+  --radius-none:  0;
+  --radius-xs:    4px;
+  --radius-sm:    8px;
+  --radius-md:    12px;
+  --radius-lg:    18px;
+  --radius-xl:    24px;
+  --radius-full:  9999px;
+
+  /* ============================================================
+   * SOMBRAS
+   * ============================================================ */
+  --shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm:  0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-md:  0 16px 40px rgba(0, 0, 0, 0.45);
+  --shadow-lg:  0 28px 80px rgba(0, 0, 0, 0.55);
+  --shadow-xl:  0 40px 120px rgba(0, 0, 0, 0.65);
+
+  /* Glow carmesim (uso pontual) */
+  --shadow-accent:       0 0 24px rgba(159, 37, 48, 0.18);
+  --shadow-accent-strong:0 0 36px rgba(176, 47, 57, 0.34);
+
+  /* ============================================================
+   * TRANSIÇÕES
+   * ============================================================ */
+  --transition-fast:   120ms ease;
+  --transition-base:   180ms ease;
+  --transition-slow:   320ms ease;
+  --transition-slower: 480ms ease;
+
+  /* ============================================================
+   * Z-INDEX (escala discreta)
+   * ============================================================ */
+  --z-base:       0;
+  --z-elevated:   10;
+  --z-overlay:    100;
+  --z-dropdown:   1000;
+  --z-modal:      10000;
+  --z-popover:    100000;
+  --z-toast:      1000000;
+
+  /* ============================================================
+   * BREAKPOINTS — REFERÊNCIA (usar em media queries manualmente)
+   * ============================================================
+   *
+   * Mobile-first approach. Os 5 breakpoints canônicos:
+   *
+   *   --bp-sm:  375px   → mobile pequeno  (smartphones)
+   *   --bp-md:  640px   → mobile grande   (smartphones grandes)
+   *   --bp-lg:  768px   → tablet          (iPad portrait)
+   *   --bp-xl:  1024px  → desktop         (laptops)
+   *   --bp-2xl: 1280px  → desktop grande  (monitores)
+   *
+   * Exemplo em CSS:
+   *   .card { padding: var(--sp-4); }
+   *   @media (min-width: 768px) {
+   *     .card { padding: var(--sp-6); }
+   *   }
+   *
+   * NOTA: CSS não permite custom properties dentro de media queries,
+   * portanto os valores devem ser usados como literais.
+   * ============================================================ */
+}
