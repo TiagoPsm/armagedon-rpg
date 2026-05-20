@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 16:38:31 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 17:02:13 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,19 +13,22 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `ffafaf4 2026-05-20 style: FASE 2 - respiro minimalista da Ficha (refinements)`
+- Ultimo commit: `cfb2fcd 2026-05-20 style: FASE 4 - design system aplicado a todas as p├íginas`
 
 ### Alteracoes Locais
 
 ```text
-M  css/ficha-refinements.css
-A  css/global-refinements.css
+A  css/v2/animations-v2.css
+A  css/v2/base-v2.css
+A  css/v2/components-v2.css
+A  css/v2/layout-v2.css
+A  css/v2/tokens-v2.css
+M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  ficha.html
 M  index.html
 M  mesa.html
 M  regras.html
 M  sugestoes.html
-M  tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -37,14 +40,17 @@ M  tools/build-pages.cjs
 ### Arquivos Em Stage
 
 ```text
-css/ficha-refinements.css
-css/global-refinements.css
+css/v2/animations-v2.css
+css/v2/base-v2.css
+css/v2/components-v2.css
+css/v2/layout-v2.css
+css/v2/tokens-v2.css
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ficha.html
 index.html
 mesa.html
 regras.html
 sugestoes.html
-tools/build-pages.cjs
 ```
 
 ## Paginas Principais
@@ -132,8 +138,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
    18,23 MB  node_modules\@img\sharp-win32-x64\lib\libvips-42.dll
-   13,08 MB  assets\sheet-fire-background.mp4
    13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
+   13,08 MB  assets\sheet-fire-background.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     1,03 MB  node_modules\terser\dist\bundle.min.js
     0,99 MB  assets\logo-rpg-armagedon.png

@@ -1,0 +1,440 @@
+/* ============================================================
+ * layout-v2.css — Layout global Shadow Slave
+ * ============================================================
+ *
+ * Header, nav, background layers, containers principais.
+ * Estilo: denso como grimório, vinheta superior carmesim apagada,
+ * fundo absoluto preto, decorações ritualísticas mínimas.
+ * ============================================================ */
+
+/* ============================================================
+ * BACKGROUND LAYERS — atmosfera ritualística
+ * ============================================================
+ * Substitui as 4 camadas anteriores (bg-noise, bg-vignette,
+ * bg-scar, bg-orbit) por um sistema mais sutil e denso.
+ * ============================================================ */
+
+.bg-layer,
+.bg-fixed {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Noise (textura quase imperceptível) */
+.bg-noise {
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 240px;
+  mix-blend-mode: overlay;
+}
+
+/* Vinheta (sombra nas bordas) */
+.bg-vignette {
+  background:
+    radial-gradient(
+      ellipse at center,
+      transparent 30%,
+      rgba(0, 0, 0, 0.6) 95%,
+      rgba(0, 0, 0, 0.85) 100%
+    );
+}
+
+/* Cinder (gradient sutil de brasa apagada no topo) */
+.bg-scar,
+.bg-cinders {
+  background:
+    radial-gradient(
+      ellipse at 50% -10%,
+      rgba(107, 28, 24, 0.12),
+      transparent 40%
+    ),
+    radial-gradient(
+      ellipse at 50% 110%,
+      rgba(58, 10, 8, 0.18),
+      transparent 50%
+    );
+}
+
+/* Orbit / sigilo central (apenas onde aparecer no design original) */
+.bg-orbit {
+  background:
+    radial-gradient(
+      circle at 50% 35%,
+      rgba(168, 48, 40, 0.06),
+      transparent 25%
+    );
+}
+
+/* Atenuar todas em mobile */
+@media (max-width: 768px) {
+  .bg-noise,
+  .bg-vignette,
+  .bg-scar,
+  .bg-cinders,
+  .bg-orbit,
+  .bg-fixed {
+    opacity: 0.5;
+  }
+}
+
+/* ============================================================
+ * SITE HEADER — densa, ritualística
+ * ============================================================ */
+
+.site-header {
+  position: relative;
+  background:
+    linear-gradient(
+      180deg,
+      var(--clr-bg-0),
+      var(--clr-bg-1)
+    );
+  border-bottom: 1px solid var(--clr-border);
+  z-index: var(--z-sticky);
+}
+
+.site-header::before {
+  /* Linha carmesim apagada no bottom */
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--clr-accent-deep) 20%,
+    var(--clr-accent) 50%,
+    var(--clr-accent-deep) 80%,
+    transparent
+  );
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.site-header::after {
+  /* Vinheta superior sutil */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse at 50% 0%,
+      rgba(107, 28, 24, 0.06),
+      transparent 60%
+    );
+  pointer-events: none;
+}
+
+.header-inner,
+.header-shell {
+  position: relative;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--sp-3) var(--sp-6);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  z-index: 1;
+}
+
+/* Logo */
+.logo,
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  text-decoration: none;
+  color: inherit;
+}
+
+.logo-mark,
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--clr-border-strong);
+  background: var(--clr-bg-2);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm), inset 0 0 0 1px rgba(212, 204, 186, 0.04);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.logo:hover .logo-mark,
+.brand:hover .brand-mark {
+  border-color: var(--clr-border-accent);
+  box-shadow: var(--shadow-sm), var(--shadow-accent);
+}
+
+.site-logo-img,
+.intro-sigil-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.logo-copy,
+.brand-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.1;
+}
+
+.logo-copy strong,
+.brand-copy strong {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wide);
+  color: var(--clr-text-bright);
+  text-transform: uppercase;
+}
+
+.logo-copy small,
+.brand-copy small {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--clr-accent-bright);
+  opacity: 0.85;
+}
+
+/* Nav */
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-left: auto;
+}
+
+/* Header right (user + logout) */
+.header-right,
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-left: var(--sp-4);
+}
+
+.header-user {
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--clr-text-soft);
+  padding: var(--sp-1) var(--sp-3);
+  background: var(--clr-bg-1);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-full);
+}
+
+/* ============================================================
+ * MAIN CONTAINER (.page-main, .shell, etc)
+ * ============================================================ */
+
+.page-main,
+.page-main-rules,
+.page-main-sheet,
+.page-main-master,
+.shell,
+.shell-mesa {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--sp-6);
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .page-main,
+  .page-main-rules,
+  .page-main-sheet,
+  .page-main-master,
+  .shell,
+  .shell-mesa {
+    padding: var(--sp-4);
+  }
+
+  .header-inner,
+  .header-shell {
+    padding: var(--sp-3) var(--sp-4);
+    flex-wrap: wrap;
+  }
+}
+
+/* ============================================================
+ * RESPONSIVE NAV — mobile
+ * ============================================================ */
+
+@media (max-width: 760px) {
+  .main-nav {
+    order: 3;
+    width: 100%;
+    margin: var(--sp-2) 0 0;
+    justify-content: center;
+    border-top: 1px solid var(--clr-border);
+    padding-top: var(--sp-2);
+    flex-wrap: wrap;
+  }
+
+  .header-right,
+  .header-actions {
+    margin-left: auto;
+  }
+}
+
+/* ============================================================
+ * SHELL MESA — layout específico da mesa (2 colunas)
+ * ============================================================ */
+
+.shell-mesa {
+  max-width: 1440px;
+}
+
+.mesa-focus-layout {
+  display: grid;
+  grid-template-columns: 1fr minmax(320px, 380px);
+  gap: var(--sp-6);
+  align-items: flex-start;
+}
+
+@media (max-width: 1024px) {
+  .mesa-focus-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+ * HERO SECTIONS (.rules-hero, .dashboard-hero, .master-hero, .mesa-hero)
+ * ============================================================ */
+
+.rules-hero,
+.dashboard-hero,
+.master-hero,
+.mesa-hero {
+  padding: var(--sp-10) 0 var(--sp-8);
+  margin-bottom: var(--sp-6);
+  border-bottom: 1px solid var(--clr-border);
+  position: relative;
+  animation: heroReveal var(--transition-slower) ease both;
+}
+
+.rules-hero::after,
+.dashboard-hero::after,
+.master-hero::after,
+.mesa-hero::after {
+  /* Linha carmesim sob hero */
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 80px;
+  height: 1px;
+  background: var(--clr-accent);
+  box-shadow: 0 0 8px var(--clr-accent-glow);
+}
+
+@media (max-width: 768px) {
+  .rules-hero,
+  .dashboard-hero,
+  .master-hero,
+  .mesa-hero {
+    padding: var(--sp-6) 0 var(--sp-6);
+    margin-bottom: var(--sp-4);
+  }
+}
+
+/* ============================================================
+ * SCREENS (.screen, .active)
+ * ============================================================ */
+
+.screen {
+  display: none;
+}
+
+.screen.active {
+  display: block;
+}
+
+/* ============================================================
+ * UTILITÁRIOS DE LAYOUT
+ * ============================================================ */
+
+.container-v2 {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--sp-6);
+}
+
+.stack-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.cluster-v2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  align-items: center;
+}
+
+.grid-2col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-4);
+}
+
+.grid-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-4);
+}
+
+@media (max-width: 768px) {
+  .grid-2col,
+  .grid-3col {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+ * MOUSE GLOW (carmesim apagado seguindo cursor — preservado)
+ * ============================================================ */
+
+.cursor-crimson-glow {
+  pointer-events: none;
+  position: fixed;
+  width: 24rem;
+  height: 24rem;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(168, 48, 40, 0.06),
+    rgba(107, 28, 24, 0.025) 35%,
+    transparent 65%
+  );
+  z-index: var(--z-glow);
+  transform: translate(-50%, -50%);
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+  transition: opacity var(--transition-base);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor-crimson-glow {
+    display: none;
+  }
+}

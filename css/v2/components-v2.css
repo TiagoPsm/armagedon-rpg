@@ -1,0 +1,679 @@
+/* ============================================================
+ * components-v2.css — Biblioteca de componentes Shadow Slave
+ * ============================================================
+ *
+ * Componentes reutilizáveis:
+ *   - Buttons (.btn-v2, variantes)
+ *   - Cards (.card-v2, variantes)
+ *   - Modais (.ui-modal-root, mantendo compat com legacy)
+ *   - Tags / Chips / Badges
+ *   - Tabs, dividers, tooltips
+ *
+ * Estilo: bordas finas, fundos opacos, sem gradientes coloridos.
+ * Glow carmesim apenas em hover/foco/ação primária.
+ *
+ * IMPORTANTE: Preservar classes legadas usadas pelo JS (.ui-modal-*,
+ * .item-editor-dialog, etc). Aqui sobrescrevemos apenas a aparência.
+ * ============================================================ */
+
+/* ============================================================
+ * BOTÕES — base ritualística
+ * ============================================================ */
+
+.btn-v2 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  background: var(--clr-bg-2);
+  color: var(--clr-text);
+  border: 1px solid var(--clr-border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.btn-v2:hover:not(:disabled) {
+  background: var(--clr-bg-3);
+  border-color: var(--clr-border-accent);
+  color: var(--clr-text-bright);
+  box-shadow: var(--shadow-accent);
+}
+
+.btn-v2:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
+}
+
+.btn-v2:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* Variante: primário (CTA principal) */
+.btn-v2.is-primary,
+.btn-v2-primary {
+  background: linear-gradient(180deg, var(--clr-accent-light), var(--clr-accent));
+  border-color: var(--clr-accent-bright);
+  color: var(--clr-text-bright);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(212, 204, 186, 0.08);
+}
+
+.btn-v2.is-primary:hover:not(:disabled),
+.btn-v2-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--clr-accent-bright), var(--clr-accent-light));
+  border-color: var(--clr-border-bright);
+  box-shadow: var(--shadow-md), var(--shadow-accent-strong);
+}
+
+/* Variante: ghost (apenas borda) */
+.btn-v2.is-ghost,
+.btn-v2-ghost {
+  background: transparent;
+  border-color: var(--clr-border);
+  color: var(--clr-text-soft);
+}
+
+.btn-v2.is-ghost:hover:not(:disabled),
+.btn-v2-ghost:hover:not(:disabled) {
+  background: var(--clr-bg-1);
+  border-color: var(--clr-border-accent);
+  color: var(--clr-text);
+}
+
+/* Variante: danger (ações destrutivas) */
+.btn-v2.is-danger,
+.btn-v2-danger {
+  background: var(--clr-accent-shadow);
+  border-color: var(--clr-accent);
+  color: var(--clr-text);
+}
+
+.btn-v2.is-danger:hover:not(:disabled),
+.btn-v2-danger:hover:not(:disabled) {
+  background: var(--clr-accent-deep);
+  border-color: var(--clr-accent-bright);
+  color: var(--clr-text-bright);
+}
+
+/* Variante: small */
+.btn-v2.is-sm,
+.btn-v2-sm {
+  padding: var(--sp-1) var(--sp-3);
+  font-size: var(--fs-xs);
+}
+
+/* Variante: large */
+.btn-v2.is-lg,
+.btn-v2-lg {
+  padding: var(--sp-3) var(--sp-6);
+  font-size: var(--fs-base);
+}
+
+/* Variante: icon only (quadrado) */
+.btn-v2.is-icon,
+.btn-v2-icon {
+  padding: var(--sp-2);
+  aspect-ratio: 1;
+}
+
+/* ============================================================
+ * APLICAR AOS BOTÕES LEGADOS (.btn, .btn-ghost, .btn-sm)
+ * ============================================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  background: var(--clr-bg-2);
+  color: var(--clr-text);
+  border: 1px solid var(--clr-border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--clr-bg-3);
+  border-color: var(--clr-border-accent);
+  color: var(--clr-text-bright);
+  box-shadow: var(--shadow-accent);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--clr-border);
+  color: var(--clr-text-soft);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--clr-bg-1);
+  border-color: var(--clr-border-accent);
+  color: var(--clr-text);
+}
+
+.btn-sm {
+  padding: var(--sp-1) var(--sp-3);
+  font-size: var(--fs-xs);
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--clr-accent-light), var(--clr-accent));
+  border-color: var(--clr-accent-bright);
+  color: var(--clr-text-bright);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--clr-accent-bright), var(--clr-accent-light));
+  box-shadow: var(--shadow-accent-strong);
+}
+
+/* ============================================================
+ * CARDS — superfícies elevadas
+ * ============================================================ */
+
+.card-v2 {
+  background: var(--clr-bg-2);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--transition-base);
+}
+
+.card-v2.is-elevated {
+  background: var(--clr-bg-3);
+  box-shadow: var(--shadow-elevated);
+}
+
+.card-v2.is-interactive {
+  cursor: pointer;
+}
+
+.card-v2.is-interactive:hover {
+  border-color: var(--clr-border-accent);
+  box-shadow: var(--shadow-card), var(--shadow-accent);
+}
+
+.card-v2-title {
+  font-family: var(--font-title);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-ritual);
+  text-transform: uppercase;
+  color: var(--clr-accent-bright);
+  margin-bottom: var(--sp-3);
+}
+
+.card-v2-body {
+  color: var(--clr-text);
+  font-size: var(--fs-base);
+  line-height: var(--lh-relaxed);
+}
+
+/* ============================================================
+ * MODAIS — preserva classes legadas (.ui-modal-root, etc)
+ * ============================================================ */
+
+.ui-modal-root,
+.app-modal-root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  pointer-events: none;
+}
+
+.ui-modal-root.is-open,
+.app-modal-root.is-open,
+.ui-modal-root:not(.hidden):not([hidden]),
+.app-modal-root:not(.hidden):not([hidden]) {
+  pointer-events: auto;
+}
+
+.ui-modal-backdrop,
+.app-modal-backdrop,
+.soul-award-backdrop,
+.item-editor-backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--clr-overlay);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: fadeIn var(--transition-base) ease both;
+}
+
+.ui-modal-panel,
+.app-modal-panel,
+.soul-award-dialog,
+.soul-details-dialog,
+.dice-tray-dialog,
+.item-editor-dialog {
+  position: relative;
+  background: var(--clr-bg-3);
+  border: 1px solid var(--clr-border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevated);
+  padding: var(--sp-6);
+  max-width: min(640px, calc(100vw - var(--sp-8)));
+  max-height: calc(100vh - var(--sp-12));
+  overflow-y: auto;
+  z-index: var(--z-modal);
+  animation: scaleIn var(--transition-base) ease both;
+}
+
+.ui-modal-close,
+.app-modal-close {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-full);
+  color: var(--clr-text-soft);
+  font-size: var(--fs-lg);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.ui-modal-close:hover,
+.app-modal-close:hover {
+  background: var(--clr-accent-shadow);
+  border-color: var(--clr-accent);
+  color: var(--clr-text-bright);
+}
+
+/* Modal kicker (etiqueta acima do título) */
+.ui-modal-kicker {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-ritual);
+  text-transform: uppercase;
+  color: var(--clr-accent-bright);
+  margin-bottom: var(--sp-2);
+}
+
+.ui-modal-title {
+  font-family: var(--font-title);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wide);
+  color: var(--clr-text-bright);
+  margin-bottom: var(--sp-2);
+}
+
+.ui-modal-message {
+  color: var(--clr-text);
+  line-height: var(--lh-relaxed);
+  margin-bottom: var(--sp-4);
+}
+
+/* Modal options list (escolha entre múltiplos) */
+.ui-modal-option-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: var(--sp-4) 0;
+}
+
+.ui-modal-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--clr-bg-2);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.ui-modal-option:hover {
+  background: var(--clr-bg-4);
+  border-color: var(--clr-border-accent);
+}
+
+.ui-modal-option.is-selected {
+  background: var(--clr-accent-shadow);
+  border-color: var(--clr-accent);
+}
+
+.ui-modal-option-mark {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--clr-border-strong);
+  border-radius: var(--radius-full);
+  margin-top: 2px;
+  position: relative;
+}
+
+.ui-modal-option.is-selected .ui-modal-option-mark {
+  border-color: var(--clr-accent-bright);
+  background: var(--clr-accent);
+}
+
+.ui-modal-option.is-selected .ui-modal-option-mark::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  background: var(--clr-text-bright);
+  border-radius: var(--radius-full);
+  transform: translate(-50%, -50%);
+}
+
+.ui-modal-option-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.ui-modal-option-title {
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--clr-text-bright);
+}
+
+.ui-modal-option-meta {
+  font-size: var(--fs-xs);
+  color: var(--clr-text-muted);
+  margin-top: 2px;
+}
+
+.ui-modal-confirm-danger {
+  border-color: var(--clr-danger) !important;
+  background: linear-gradient(180deg, var(--clr-danger-light), var(--clr-danger)) !important;
+  color: var(--clr-text-bright) !important;
+}
+
+/* ============================================================
+ * TAGS / CHIPS / BADGES
+ * ============================================================ */
+
+.tag-v2,
+.chip-v2,
+.badge-v2 {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 0.125rem 0.5rem;
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  background: var(--clr-bg-2);
+  border: 1px solid var(--clr-border-strong);
+  border-radius: var(--radius-full);
+  color: var(--clr-text-soft);
+  white-space: nowrap;
+}
+
+.tag-v2.is-accent,
+.chip-v2.is-accent,
+.badge-v2.is-accent {
+  background: var(--clr-accent-shadow);
+  border-color: var(--clr-accent);
+  color: var(--clr-accent-bright);
+}
+
+.tag-v2.is-player {
+  background: rgba(74, 93, 157, 0.18);
+  border-color: rgba(74, 93, 157, 0.42);
+  color: #8a9bd2;
+}
+
+.tag-v2.is-npc {
+  background: rgba(138, 116, 56, 0.18);
+  border-color: rgba(138, 116, 56, 0.42);
+  color: #d4ba6b;
+}
+
+.tag-v2.is-monster {
+  background: rgba(122, 31, 31, 0.22);
+  border-color: rgba(168, 48, 40, 0.45);
+  color: #d57a72;
+}
+
+/* ============================================================
+ * DIVIDER
+ * ============================================================ */
+
+.divider-v2 {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--clr-border-strong) 20%,
+    var(--clr-border-strong) 80%,
+    transparent
+  );
+  margin: var(--sp-6) 0;
+}
+
+.divider-v2.is-ritual {
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--clr-accent-deep) 20%,
+    var(--clr-accent) 50%,
+    var(--clr-accent-deep) 80%,
+    transparent
+  );
+  opacity: 0.5;
+}
+
+/* ============================================================
+ * SECTION LABEL — eyebrow ritualístico
+ * ============================================================ */
+
+.section-label,
+.section-label-v2 {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-ritual);
+  text-transform: uppercase;
+  color: var(--clr-accent-bright);
+  display: inline-block;
+  margin-bottom: var(--sp-2);
+}
+
+/* ============================================================
+ * FORM CONTROLS (.form-group, .form-row, .form-input)
+ * ============================================================ */
+
+.form-row {
+  display: flex;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.form-row > .form-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.form-group-full {
+  flex: 1 1 100%;
+  min-width: 100%;
+}
+
+.form-label,
+.form-group label {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--clr-text-muted);
+}
+
+.form-input,
+.form-group input,
+.form-group textarea,
+.form-group select {
+  background: var(--clr-bg-1);
+  color: var(--clr-text);
+  border: 1px solid var(--clr-border-strong);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-2) var(--sp-3);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.form-input:hover,
+.form-group input:hover,
+.form-group textarea:hover {
+  border-color: var(--clr-border-accent);
+}
+
+.form-input:focus-visible,
+.form-group input:focus-visible,
+.form-group textarea:focus-visible {
+  outline: none;
+  border-color: var(--clr-accent);
+  background: var(--clr-bg-2);
+  box-shadow: 0 0 0 3px var(--clr-accent-glow);
+}
+
+.form-input.error,
+.form-group input.error {
+  border-color: var(--clr-danger);
+  background: rgba(122, 31, 31, 0.08);
+}
+
+/* ============================================================
+ * AUTO-GROW TEXTAREA (preserva comportamento legado)
+ * ============================================================ */
+
+textarea.auto-grow {
+  overflow: hidden;
+  resize: none;
+}
+
+/* ============================================================
+ * NAV LINK (links de navegação no header)
+ * ============================================================ */
+
+.nav-link {
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--clr-text-soft);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-xs);
+  transition: color var(--transition-fast);
+  position: relative;
+}
+
+.nav-link:hover {
+  color: var(--clr-text-bright);
+}
+
+.nav-link.active {
+  color: var(--clr-accent-bright);
+}
+
+.nav-link.active::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 1px;
+  background: var(--clr-accent);
+  box-shadow: 0 0 8px var(--clr-accent-glow);
+}
+
+/* ============================================================
+ * STATUS / FEEDBACK MESSAGES
+ * ============================================================ */
+
+.status-message,
+.status-msg {
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-wider);
+  color: var(--clr-text-soft);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--clr-bg-1);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+}
+
+.status-message.is-success,
+.status-msg.is-success {
+  color: var(--clr-success-light);
+  border-color: rgba(74, 122, 62, 0.42);
+  background: rgba(74, 122, 62, 0.08);
+}
+
+.status-message.is-error,
+.status-msg.is-error {
+  color: var(--clr-danger-light);
+  border-color: var(--clr-accent);
+  background: rgba(122, 31, 31, 0.12);
+}
