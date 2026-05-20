@@ -16,7 +16,8 @@
       "Bash(cat > *)",
       "Bash(git commit -m 'docs: Estratégia de otimização de tokens + eficiência de desenvolvimento *)",
       "mcp__scheduled-tasks__list_scheduled_tasks",
-      "Bash(git commit -m 'docs: Estratégia prática de redução de tokens por sessão *)"
+      "Bash(git commit -m 'docs: Estratégia prática de redução de tokens por sessão *)",
+      "Bash(npm install *)"
     ]
   }
 }

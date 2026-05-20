@@ -11,11 +11,16 @@ const files = [
   "sugestoes.html",
   ".nojekyll",
   "logo-rpg-site.jpg",
+  "logo-rpg-site.webp",
   "logo-rpg-armagedon.png",
+  "logo-rpg-armagedon.webp",
   "Logo app.jpg",
+  "Logo app.webp",
   "favicon.ico",
   "favicon.png",
-  "apple-touch-icon.png"
+  "favicon.webp",
+  "apple-touch-icon.png",
+  "apple-touch-icon.webp"
 ];
 const dirs = ["css", "js", "data"];
 const fichaCssBundle = "css/ficha-page.bundle.css";

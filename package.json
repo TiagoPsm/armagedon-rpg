@@ -10,9 +10,16 @@
     "test:mesa": "playwright test tests/mesa.spec.cjs",
     "test:mesa:online": "playwright test tests/mesa-online.spec.cjs",
     "test:ficha": "playwright test tests/ficha.spec.cjs",
-    "perf:mesa": "playwright test tests/mesa.performance.spec.cjs"
+    "perf:mesa": "playwright test tests/mesa.performance.spec.cjs",
+    "optimize:images": "node tools/optimize-images.cjs",
+    "minify:css": "node tools/minify.cjs --css",
+    "minify:js": "node tools/minify.cjs --js",
+    "build": "node tools/build-pages.cjs && node tools/minify.cjs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.59.1"
+    "@playwright/test": "^1.59.1",
+    "clean-css": "^5.3.3",
+    "sharp": "^0.34.5",
+    "terser": "^5.47.1"
   }
 }

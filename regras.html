@@ -30,7 +30,10 @@
     <div class="header-inner">
       <div class="logo">
         <span class="logo-mark" aria-hidden="true">
-          <img src="logo-rpg-site.jpg?v=2026-04-20-site-speed-1" alt="" class="site-logo-img" width="256" height="256" decoding="async" onerror="if(!this.dataset.fallbackStep){this.dataset.fallbackStep='1';this.src='logo-rpg-armagedon.png?v=2026-04-19-logo-fallback-3';}else if(this.dataset.fallbackStep==='1'){this.dataset.fallbackStep='2';this.src='Logo%20app.jpg?v=2026-04-19-logo-fallback-3';}else{this.onerror=null;}" />
+          <picture>
+            <source srcset="logo-rpg-site.webp?v=2026-05-20-opt-1" type="image/webp">
+            <img src="logo-rpg-site.jpg?v=2026-05-20-opt-1" alt="" class="site-logo-img" width="256" height="256" decoding="async" onerror="if(!this.dataset.fallbackStep){this.dataset.fallbackStep='1';this.src='logo-rpg-armagedon.png?v=2026-05-20-opt-1';}else if(this.dataset.fallbackStep==='1'){this.dataset.fallbackStep='2';this.src='Logo%20app.jpg?v=2026-05-20-opt-1';}else{this.onerror=null;}" />
+          </picture>
         </span>
         <span class="logo-copy">
           <strong>Armagedon</strong>
@@ -157,10 +160,10 @@
     </section>
   </main>
 
-  <script src="js/ui.js?v=2026-05-12-ficha-prefetch-1"></script>
   <script src="js/runtime-config.js?v=2026-05-04-mesa-realtime-1"></script>
-  <script src="js/api.js?v=2026-05-04-mesa-realtime-1"></script>
-  <script src="js/auth.js?v=2026-05-07-master-sheet-key-1"></script>
-  <script src="js/regras.js?v=2026-04-20-site-speed-1"></script>
+  <script src="js/ui.js?v=2026-05-12-ficha-prefetch-1" defer></script>
+  <script src="js/api.js?v=2026-05-04-mesa-realtime-1" defer></script>
+  <script src="js/auth.js?v=2026-05-07-master-sheet-key-1" defer></script>
+  <script src="js/regras.js?v=2026-04-20-site-speed-1" defer></script>
 </body>
 </html>
