@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 16:22:32 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 16:29:34 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,19 +13,13 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `16d27c4 2026-05-20 perf: FASE 0 - quick wins de performance (defer + WebP + minifica├º├úo)`
+- Ultimo commit: `159de45 2026-05-20 refactor: FASE 1 - design system unificado (tokens + reset + animations)`
 
 ### Alteracoes Locais
 
 ```text
-A  css/animations.css
-A  css/design-tokens.css
-A  css/reset.css
+A  css/ficha-refinements.css
 M  ficha.html
-M  index.html
-M  mesa.html
-M  regras.html
-M  sugestoes.html
 M  tools/build-pages.cjs
 ```
 
@@ -38,14 +32,8 @@ M  tools/build-pages.cjs
 ### Arquivos Em Stage
 
 ```text
-css/animations.css
-css/design-tokens.css
-css/reset.css
+css/ficha-refinements.css
 ficha.html
-index.html
-mesa.html
-regras.html
-sugestoes.html
 tools/build-pages.cjs
 ```
 
@@ -60,7 +48,7 @@ tools/build-pages.cjs
 ## Contagem Rapida
 
 - JavaScript em `js/`: 29 arquivo(s)
-- CSS em `css/`: 21 arquivo(s)
+- CSS em `css/`: 22 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
 ## Notas Do Vault
