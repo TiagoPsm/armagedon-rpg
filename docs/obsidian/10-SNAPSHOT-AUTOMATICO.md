@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 00:00:31 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 00:06:16 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,27 +13,26 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `cf49832 2026-05-19 feat: Sistema Soul Essence completo + Feature Sugest├Áes + UI Modal System`
+- Ultimo commit: `3de8655 2026-05-20 docs: Estrat├®gia de otimiza├º├úo de tokens + efici├¬ncia de desenvolvimento`
 
 ### Alteracoes Locais
 
 ```text
-A  .claude/OPTIMIZATION_STATUS.txt
- M .claude/settings.local.json
- M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  .claude/settings.local.json
+M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
-.claude/settings.local.json
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+(nenhum)
 ```
 
 ### Arquivos Em Stage
 
 ```text
-.claude/OPTIMIZATION_STATUS.txt
+.claude/settings.local.json
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ```
 
 ## Paginas Principais
