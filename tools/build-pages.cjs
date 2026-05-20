@@ -37,7 +37,8 @@ const fichaCssFiles = [
   "css/ficha-dice-soul.css",
   "css/ficha-responsive.css",
   "css/ui.css",
-  "css/ficha-refinements.css"
+  "css/ficha-refinements.css",
+  "css/global-refinements.css"
 ];
 const fichaJsFiles = [
   "js/ui.js",

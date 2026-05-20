@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 16:29:34 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 16:38:31 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,13 +13,18 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `159de45 2026-05-20 refactor: FASE 1 - design system unificado (tokens + reset + animations)`
+- Ultimo commit: `ffafaf4 2026-05-20 style: FASE 2 - respiro minimalista da Ficha (refinements)`
 
 ### Alteracoes Locais
 
 ```text
-A  css/ficha-refinements.css
+M  css/ficha-refinements.css
+A  css/global-refinements.css
 M  ficha.html
+M  index.html
+M  mesa.html
+M  regras.html
+M  sugestoes.html
 M  tools/build-pages.cjs
 ```
 
@@ -33,7 +38,12 @@ M  tools/build-pages.cjs
 
 ```text
 css/ficha-refinements.css
+css/global-refinements.css
 ficha.html
+index.html
+mesa.html
+regras.html
+sugestoes.html
 tools/build-pages.cjs
 ```
 
@@ -48,7 +58,7 @@ tools/build-pages.cjs
 ## Contagem Rapida
 
 - JavaScript em `js/`: 29 arquivo(s)
-- CSS em `css/`: 22 arquivo(s)
+- CSS em `css/`: 23 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
 ## Notas Do Vault

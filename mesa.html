@@ -26,6 +26,7 @@
   <link rel="stylesheet" href="css/mesa-layout.css?v=2026-05-09-player-simple-1" />
   <link rel="stylesheet" href="css/mesa-responsive.css?v=2026-05-05-card-stability-1" />
   <link rel="stylesheet" href="css/ui.css?v=2026-05-06-drag-polish-1" />
+  <link rel="stylesheet" href="css/global-refinements.css?v=2026-05-20-minimalist-1" />
 </head>
 <body>
   <div class="bg-layer bg-noise"></div>
@@ -200,12 +201,13 @@
   <script src="js/api.js?v=2026-05-05-mesa-canvas-v2" defer></script>
   <script src="js/ui.js?v=2026-05-12-ficha-prefetch-1" defer></script>
   <script src="js/auth.js?v=2026-05-07-master-sheet-key-1" defer></script>
-  <script src="js/mesa-core.js?v=2026-05-09-sync-lag-1" defer></script>
+  <!-- Ordem importante: dependências antes de mesa-core (que roda imediatamente após DOM com defer) -->
   <script src="js/mesa-renderer-v2.js?v=2026-05-06-player-panel-1" defer></script>
   <script src="js/mesa-stage.js?v=2026-05-09-sync-lag-1" defer></script>
   <script src="js/mesa-roster.js?v=2026-05-09-free-resource-max-1" defer></script>
   <script src="js/mesa-inspector.js?v=2026-05-09-numeric-clear-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-04-24-split-1" defer></script>
+  <script src="js/mesa-core.js?v=2026-05-09-sync-lag-1" defer></script>
   <script src="js/mesa-init.js?v=2026-04-24-split-1" defer></script>
 </body>
 </html>

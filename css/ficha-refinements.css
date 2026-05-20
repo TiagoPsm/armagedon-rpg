@@ -79,35 +79,7 @@
   margin: 0 0 1.125rem;     /* era 1rem — pequeno respiro extra */
 }
 
-/* ============================================================
- * INPUTS — bordas mais limpas em foco
- * ============================================================ */
-
-.sheet-block input:focus-visible,
-.sheet-block textarea:focus-visible,
-.panel-block input:focus-visible,
-.panel-block textarea:focus-visible {
-  outline: none;
-  border-color: var(--clr-accent-light, #ca4a44);
-  box-shadow: 0 0 0 2px rgba(176, 47, 57, 0.22);
-}
-
-/* ============================================================
- * BOTÕES — micro-suavização
- * ============================================================ */
-
-button:not(:disabled) {
-  transition:
-    background var(--transition-fast, 120ms ease),
-    border-color var(--transition-fast, 120ms ease),
-    color var(--transition-fast, 120ms ease),
-    box-shadow var(--transition-fast, 120ms ease),
-    transform var(--transition-fast, 120ms ease);
-}
-
-button:not(:disabled):active {
-  transform: translateY(1px) scale(0.985);
-}
+/* Inputs e botões refinados → global-refinements.css */
 
 /* ============================================================
  * SECTION LABEL — mais sutil
@@ -116,33 +88,6 @@ button:not(:disabled):active {
 .section-label {
   letter-spacing: 0.16em;
   opacity: 0.95;
-}
-
-/* ============================================================
- * SCROLLBAR — discreta (Chrome/Safari)
- * ============================================================ */
-
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(176, 47, 57, 0.28) transparent;
-}
-
-*::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-*::-webkit-scrollbar-thumb {
-  background: rgba(176, 47, 57, 0.22);
-  border-radius: 999px;
-}
-
-*::-webkit-scrollbar-thumb:hover {
-  background: rgba(176, 47, 57, 0.42);
 }
 
 /* ============================================================
@@ -156,36 +101,6 @@ button:not(:disabled):active {
     /* Mantém padding original do ficha-base.css —
        evitamos sobrescrever para não quebrar grids internos */
   }
-
-  .sheet-grid {
-    gap: 1.125rem;
-  }
 }
 
-/* ============================================================
- * REDUZIR ANIMAÇÕES DE FUNDO (decorativas) PARA MAIS LIMPEZA
- * ============================================================
- * O design fantasy do projeto tem brasas e chamas no fundo.
- * Esses efeitos são lindos mas, em telas menores, podem cansar.
- * Reduzimos a intensidade em mobile e respeitamos reduced-motion.
- * ============================================================ */
-
-@media (max-width: 768px) {
-  .bg-layer,
-  .bg-noise,
-  .bg-vignette,
-  .bg-scar,
-  .bg-orbit {
-    opacity: 0.6 !important;
-  }
-}
-
-/* ============================================================
- * FOCO MAIS DISCRETO MAS VISÍVEL (acessibilidade + minimalismo)
- * ============================================================ */
-
-:focus-visible {
-  outline: 2px solid var(--clr-accent, #9f2530);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
+/* Scrollbar, foco, botões e animações de fundo → ver global-refinements.css */
