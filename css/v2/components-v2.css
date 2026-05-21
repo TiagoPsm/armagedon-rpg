@@ -243,36 +243,20 @@
 
 /* ============================================================
  * MODAIS — preserva classes legadas (.ui-modal-root, etc)
+ * ============================================================
+ * IMPORTANTE: NÃO sobrescrevemos display/pointer-events nem
+ * posicionamento dos roots. Os CSSs legados (ui.css, ficha-*.css)
+ * controlam a visibilidade via aria-hidden, is-open, etc.
+ * Aqui aplicamos apenas a aparência dark (cores, bordas, sombras).
  * ============================================================ */
-
-.ui-modal-root,
-.app-modal-root {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-modal);
-  pointer-events: none;
-}
-
-.ui-modal-root.is-open,
-.app-modal-root.is-open,
-.ui-modal-root:not(.hidden):not([hidden]),
-.app-modal-root:not(.hidden):not([hidden]) {
-  pointer-events: auto;
-}
 
 .ui-modal-backdrop,
 .app-modal-backdrop,
 .soul-award-backdrop,
 .item-editor-backdrop {
-  position: absolute;
-  inset: 0;
-  background: var(--clr-overlay);
+  background: var(--clr-overlay) !important;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  animation: fadeIn var(--transition-base) ease both;
 }
 
 .ui-modal-panel,
@@ -281,17 +265,10 @@
 .soul-details-dialog,
 .dice-tray-dialog,
 .item-editor-dialog {
-  position: relative;
-  background: var(--clr-bg-3);
-  border: 1px solid var(--clr-border-strong);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-elevated);
-  padding: var(--sp-6);
-  max-width: min(640px, calc(100vw - var(--sp-8)));
-  max-height: calc(100vh - var(--sp-12));
-  overflow-y: auto;
-  z-index: var(--z-modal);
-  animation: scaleIn var(--transition-base) ease both;
+  background: var(--clr-bg-3) !important;
+  border: 1px solid var(--clr-border-strong) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-elevated) !important;
 }
 
 .ui-modal-close,

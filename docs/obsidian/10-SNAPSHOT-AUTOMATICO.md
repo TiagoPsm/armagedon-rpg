@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 17:02:13 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 22:56:28 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,20 +13,14 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `cfb2fcd 2026-05-20 style: FASE 4 - design system aplicado a todas as p├íginas`
+- Ultimo commit: `bfc216f 2026-05-20 feat(redesign): V1-V3 foundation Shadow Slave (tokens + components + layout)`
 
 ### Alteracoes Locais
 
 ```text
-A  css/v2/animations-v2.css
-A  css/v2/base-v2.css
-A  css/v2/components-v2.css
-A  css/v2/layout-v2.css
-A  css/v2/tokens-v2.css
-M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  ficha.html
-M  index.html
-M  mesa.html
+D  css/regras.css
+M  css/v2/components-v2.css
+A  css/v2/page-regras-v2.css
 M  regras.html
 M  sugestoes.html
 ```
@@ -40,15 +34,9 @@ M  sugestoes.html
 ### Arquivos Em Stage
 
 ```text
-css/v2/animations-v2.css
-css/v2/base-v2.css
+css/regras.css
 css/v2/components-v2.css
-css/v2/layout-v2.css
-css/v2/tokens-v2.css
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-ficha.html
-index.html
-mesa.html
+css/v2/page-regras-v2.css
 regras.html
 sugestoes.html
 ```
@@ -64,7 +52,7 @@ sugestoes.html
 ## Contagem Rapida
 
 - JavaScript em `js/`: 29 arquivo(s)
-- CSS em `css/`: 23 arquivo(s)
+- CSS em `css/`: 22 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
 ## Notas Do Vault
