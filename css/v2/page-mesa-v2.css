@@ -727,21 +727,21 @@ body.mesa-pseudo-fullscreen {
 }
 
 .token-type-badge[data-type="player"] {
-  background: rgba(74, 93, 157, 0.15);
-  border-color: rgba(74, 93, 157, 0.42);
-  color: #8a9bd2;
+  background: var(--clr-item-armor-bg);
+  border-color: var(--clr-item-armor-border);
+  color: var(--clr-item-armor-text);
 }
 
 .token-type-badge[data-type="npc"] {
-  background: rgba(138, 116, 56, 0.15);
-  border-color: rgba(138, 116, 56, 0.42);
-  color: #d4ba6b;
+  background: var(--clr-item-accessory-bg);
+  border-color: var(--clr-item-accessory-border);
+  color: var(--clr-item-accessory-text);
 }
 
 .token-type-badge[data-type="monster"] {
-  background: rgba(122, 31, 31, 0.2);
-  border-color: rgba(168, 48, 40, 0.45);
-  color: #d57a72;
+  background: var(--clr-item-weapon-bg);
+  border-color: var(--clr-item-weapon-border);
+  color: var(--clr-item-weapon-text);
 }
 
 /* ============================================================

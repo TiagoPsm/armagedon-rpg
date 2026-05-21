@@ -4,10 +4,9 @@
  *
  * Animações sutis e ritualísticas. Sem motion gratuito.
  * Todas respeitam prefers-reduced-motion (definido em base-v2.css).
- * ============================================================ */
-
-/* ============================================================
- * REVEAL / ENTRADA
+ *
+ * Apenas keyframes em uso real estão definidos aqui. Loading
+ * states e novas animações devem ser adicionadas conforme demanda.
  * ============================================================ */
 
 /* Entrada vertical sutil (hero sections) */
@@ -22,18 +21,13 @@
   }
 }
 
-/* Fade simples */
+/* Fade simples (modais backdrop) */
 @keyframes fadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
 
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to   { opacity: 0; }
-}
-
-/* Slide up */
+/* Slide up (cards entrando) */
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -45,19 +39,7 @@
   }
 }
 
-/* Slide down */
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Scale in (modais) */
+/* Scale in (modais panel) */
 @keyframes scaleIn {
   from {
     opacity: 0;
@@ -69,11 +51,7 @@
   }
 }
 
-/* ============================================================
- * PULSO RITUALÍSTICO (background sigil, vinheta)
- * ============================================================ */
-
-/* Pulso lento de sigilo — apenas em decorações */
+/* Pulso lento de sigilo — decoração ritualística (login) */
 @keyframes ritualPulse {
   0% {
     opacity: 0.32;
@@ -89,86 +67,10 @@
   }
 }
 
-/* Brasa apagada — glow sutil de carmesim */
-@keyframes emberDim {
-  0%, 100% {
-    opacity: 0.18;
-  }
-  50% {
-    opacity: 0.32;
-  }
-}
-
-/* Vinheta superior (cabeçalhos) — quase imperceptível */
-@keyframes vignetteShift {
-  0% {
-    background-position: 50% 0%;
-  }
-  100% {
-    background-position: 50% 100%;
-  }
-}
-
-/* ============================================================
- * INTERAÇÃO — feedback de ação
- * ============================================================ */
-
-/* Pulso de dado (ao rolar) */
-@keyframes dicePulse {
-  0% {
-    transform: scale(0.92) rotate(-4deg);
-  }
-  55% {
-    transform: scale(1.06) rotate(3deg);
-  }
-  100% {
-    transform: scale(1) rotate(0);
-  }
-}
-
-/* Tremor sutil (erro/falha de roll) */
-@keyframes subtleShake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-2px); }
-  40% { transform: translateX(2px); }
-  60% { transform: translateX(-1px); }
-  80% { transform: translateX(1px); }
-}
-
-/* Brilho carmesim ao clicar (ondulação) */
-@keyframes crimsonRipple {
-  0% {
-    box-shadow: 0 0 0 0 var(--clr-accent-glow);
-  }
-  100% {
-    box-shadow: 0 0 0 12px transparent;
-  }
-}
-
-/* ============================================================
- * LOADING / SPINNERS
- * ============================================================ */
-
+/* Loading spinner */
 @keyframes spin {
   from { transform: rotate(0); }
   to   { transform: rotate(360deg); }
-}
-
-@keyframes pulseDot {
-  0%, 80%, 100% {
-    transform: scale(0);
-    opacity: 0.3;
-  }
-  40% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/* Loading text shimmer (sutil) */
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
 }
 
 /* ============================================================
@@ -185,12 +87,4 @@
 
 .fx-scale-in {
   animation: scaleIn var(--transition-base) ease both;
-}
-
-.fx-ritual-pulse {
-  animation: ritualPulse 5.2s ease-in-out infinite;
-}
-
-.fx-ember-dim {
-  animation: emberDim 4s ease-in-out infinite;
 }

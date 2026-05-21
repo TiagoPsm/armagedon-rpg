@@ -66,6 +66,17 @@
   --clr-npc:      #8a7438;   /* dourado contido */
   --clr-monster:  #7a1f1f;   /* carmesim profundo */
 
+  /* === TIPO DE ITEM (inventário: arma / armadura / acessório) === */
+  --clr-item-weapon-bg:        rgba(122, 31, 31, 0.15);
+  --clr-item-weapon-border:    rgba(168, 48, 40, 0.4);
+  --clr-item-weapon-text:      #d57a72;
+  --clr-item-armor-bg:         rgba(61, 79, 138, 0.15);
+  --clr-item-armor-border:     rgba(93, 114, 184, 0.4);
+  --clr-item-armor-text:       #8a9bd2;
+  --clr-item-accessory-bg:     rgba(138, 116, 56, 0.15);
+  --clr-item-accessory-border: rgba(212, 186, 107, 0.4);
+  --clr-item-accessory-text:   #d4ba6b;
+
   /* === VIDA / INTEGRIDADE — escalas dinâmicas === */
   /* Vida: hsl(0 → 120) dinâmico no JS, mas usa estes como referência */
   --clr-life-full:    #4a7a3e;

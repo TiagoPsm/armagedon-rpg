@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 23:34:51 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 23:41:23 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,18 +13,16 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `40cf3b7 2026-05-20 feat(redesign): V7 ÔÇö Ficha com paleta Shadow Slave aplicada`
+- Ultimo commit: `7e0c8c0 2026-05-20 chore(redesign): V8 ÔÇö Limpeza final p├│s-redesign`
 
 ### Alteracoes Locais
 
 ```text
-D  css/animations.css
-D  css/design-tokens.css
-D  css/ficha-refinements.css
-D  css/ficha.css
-D  css/global-refinements.css
-D  css/reset.css
-M  tools/build-pages.cjs
+M  css/v2/animations-v2.css
+M  css/v2/components-v2.css
+M  css/v2/page-ficha-v2.css
+M  css/v2/page-mesa-v2.css
+M  css/v2/tokens-v2.css
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -36,13 +34,11 @@ M  tools/build-pages.cjs
 ### Arquivos Em Stage
 
 ```text
-css/animations.css
-css/design-tokens.css
-css/ficha-refinements.css
-css/ficha.css
-css/global-refinements.css
-css/reset.css
-tools/build-pages.cjs
+css/v2/animations-v2.css
+css/v2/components-v2.css
+css/v2/page-ficha-v2.css
+css/v2/page-mesa-v2.css
+css/v2/tokens-v2.css
 ```
 
 ## Paginas Principais

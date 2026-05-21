@@ -457,21 +457,21 @@
 }
 
 .item-type-badge.is-weapon {
-  background: rgba(122, 31, 31, 0.15);
-  border-color: rgba(168, 48, 40, 0.4);
-  color: #d57a72;
+  background: var(--clr-item-weapon-bg);
+  border-color: var(--clr-item-weapon-border);
+  color: var(--clr-item-weapon-text);
 }
 
 .item-type-badge.is-armor {
-  background: rgba(61, 79, 138, 0.15);
-  border-color: rgba(93, 114, 184, 0.4);
-  color: #8a9bd2;
+  background: var(--clr-item-armor-bg);
+  border-color: var(--clr-item-armor-border);
+  color: var(--clr-item-armor-text);
 }
 
 .item-type-badge.is-accessory {
-  background: rgba(138, 116, 56, 0.15);
-  border-color: rgba(212, 186, 107, 0.4);
-  color: #d4ba6b;
+  background: var(--clr-item-accessory-bg);
+  border-color: var(--clr-item-accessory-border);
+  color: var(--clr-item-accessory-text);
 }
 
 /* ============================================================
@@ -525,9 +525,9 @@
 }
 
 .hab-type-badge.is-passiva {
-  background: rgba(74, 93, 157, 0.15);
-  border-color: rgba(74, 93, 157, 0.4);
-  color: #8a9bd2;
+  background: var(--clr-item-armor-bg);
+  border-color: var(--clr-item-armor-border);
+  color: var(--clr-item-armor-text);
 }
 
 /* ============================================================
