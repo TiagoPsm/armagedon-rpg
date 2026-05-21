@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 23:11:48 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 23:18:18 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,15 +13,17 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `e3ab344 2026-05-20 feat(redesign): V4 ÔÇö Regras + Sugest├Áes com visual Shadow Slave`
+- Ultimo commit: `c777000 2026-05-20 feat(redesign): V5 ÔÇö Index (Login + Home) com visual Shadow Slave`
 
 ### Alteracoes Locais
 
 ```text
-D  css/index.css
-M  css/v2/components-v2.css
-A  css/v2/page-index-v2.css
-M  index.html
+D  css/mesa-base.css
+D  css/mesa-layout.css
+D  css/mesa-responsive.css
+D  css/mesa.css
+A  css/v2/page-mesa-v2.css
+M  mesa.html
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -33,10 +35,12 @@ M  index.html
 ### Arquivos Em Stage
 
 ```text
-css/index.css
-css/v2/components-v2.css
-css/v2/page-index-v2.css
-index.html
+css/mesa-base.css
+css/mesa-layout.css
+css/mesa-responsive.css
+css/mesa.css
+css/v2/page-mesa-v2.css
+mesa.html
 ```
 
 ## Paginas Principais
@@ -50,7 +54,7 @@ index.html
 ## Contagem Rapida
 
 - JavaScript em `js/`: 29 arquivo(s)
-- CSS em `css/`: 21 arquivo(s)
+- CSS em `css/`: 17 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
 ## Notas Do Vault
@@ -124,8 +128,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
    18,23 MB  node_modules\@img\sharp-win32-x64\lib\libvips-42.dll
-   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
    13,08 MB  assets\sheet-fire-background.mp4
+   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     1,03 MB  node_modules\terser\dist\bundle.min.js
     0,99 MB  assets\logo-rpg-armagedon.png
