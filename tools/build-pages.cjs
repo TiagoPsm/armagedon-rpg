@@ -26,9 +26,13 @@ const dirs = ["css", "js", "data"];
 const fichaCssBundle = "css/ficha-page.bundle.css";
 const fichaJsBundle = "js/ficha-page.bundle.js";
 const fichaCssFiles = [
-  "css/design-tokens.css",
-  "css/reset.css",
-  "css/animations.css",
+  // V2 Shadow Slave (foundation)
+  "css/v2/tokens-v2.css",
+  "css/v2/base-v2.css",
+  "css/v2/animations-v2.css",
+  "css/v2/components-v2.css",
+  "css/v2/layout-v2.css",
+  // Legacy layouts (preservados pelos testes Playwright de alinhamento)
   "css/style.css",
   "css/ficha-base.css",
   "css/ficha-layout.css",
@@ -37,8 +41,8 @@ const fichaCssFiles = [
   "css/ficha-dice-soul.css",
   "css/ficha-responsive.css",
   "css/ui.css",
-  "css/ficha-refinements.css",
-  "css/global-refinements.css"
+  // V2 page-specific (aplica paleta Shadow Slave sobre legacy)
+  "css/v2/page-ficha-v2.css"
 ];
 const fichaJsFiles = [
   "js/ui.js",

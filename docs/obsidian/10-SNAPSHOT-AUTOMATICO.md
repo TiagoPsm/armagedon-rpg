@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 23:33:02 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 23:34:51 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,13 +13,18 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `17301a8 2026-05-20 feat(redesign): V6 ÔÇö Mesa virtual com visual Shadow Slave`
+- Ultimo commit: `40cf3b7 2026-05-20 feat(redesign): V7 ÔÇö Ficha com paleta Shadow Slave aplicada`
 
 ### Alteracoes Locais
 
 ```text
-A  css/v2/page-ficha-v2.css
-M  ficha.html
+D  css/animations.css
+D  css/design-tokens.css
+D  css/ficha-refinements.css
+D  css/ficha.css
+D  css/global-refinements.css
+D  css/reset.css
+M  tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -31,8 +36,13 @@ M  ficha.html
 ### Arquivos Em Stage
 
 ```text
-css/v2/page-ficha-v2.css
-ficha.html
+css/animations.css
+css/design-tokens.css
+css/ficha-refinements.css
+css/ficha.css
+css/global-refinements.css
+css/reset.css
+tools/build-pages.cjs
 ```
 
 ## Paginas Principais
@@ -46,7 +56,7 @@ ficha.html
 ## Contagem Rapida
 
 - JavaScript em `js/`: 29 arquivo(s)
-- CSS em `css/`: 17 arquivo(s)
+- CSS em `css/`: 11 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
 ## Notas Do Vault
@@ -120,8 +130,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
    18,23 MB  node_modules\@img\sharp-win32-x64\lib\libvips-42.dll
-   13,08 MB  assets\sheet-fire-background.mp4
    13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
+   13,08 MB  assets\sheet-fire-background.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     1,03 MB  node_modules\terser\dist\bundle.min.js
     0,99 MB  assets\logo-rpg-armagedon.png
