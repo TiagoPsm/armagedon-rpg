@@ -242,21 +242,48 @@
 }
 
 /* ============================================================
- * MODAIS — preserva classes legadas (.ui-modal-root, etc)
+ * MODAIS — sistema completo (controla aparência + visibilidade)
  * ============================================================
- * IMPORTANTE: NÃO sobrescrevemos display/pointer-events nem
- * posicionamento dos roots. Os CSSs legados (ui.css, ficha-*.css)
- * controlam a visibilidade via aria-hidden, is-open, etc.
- * Aqui aplicamos apenas a aparência dark (cores, bordas, sombras).
+ * Visibility via .is-open (controlado pelo JS via ui.js + ficha-*.js).
+ * Sem .is-open: invisible + pointer-events disabled.
  * ============================================================ */
+
+.ui-modal-root,
+.app-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  padding: var(--sp-5);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--transition-base),
+    visibility var(--transition-base);
+}
+
+/* Sistema 1: ui.js (Modais UI genéricos) usa .is-open */
+.ui-modal-root.is-open,
+.app-modal-root.is-open,
+/* Sistema 2: ficha-*.js (Soul, Dice, Item Editor) usa aria-hidden */
+.ui-modal-root[aria-hidden="false"],
+.app-modal-root[aria-hidden="false"] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
 
 .ui-modal-backdrop,
 .app-modal-backdrop,
 .soul-award-backdrop,
 .item-editor-backdrop {
-  background: var(--clr-overlay) !important;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  position: absolute;
+  inset: 0;
+  background: var(--clr-overlay);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .ui-modal-panel,
@@ -265,10 +292,51 @@
 .soul-details-dialog,
 .dice-tray-dialog,
 .item-editor-dialog {
-  background: var(--clr-bg-3) !important;
-  border: 1px solid var(--clr-border-strong) !important;
-  border-radius: var(--radius-lg) !important;
-  box-shadow: var(--shadow-elevated) !important;
+  position: relative;
+  background: var(--clr-bg-3);
+  border: 1px solid var(--clr-border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevated);
+  padding: var(--sp-6);
+  width: min(560px, calc(100vw - var(--sp-6)));
+  max-height: min(85vh, 760px);
+  overflow: auto;
+  overflow-wrap: anywhere;
+  transform: translateY(8px) scale(0.98);
+  transition: transform var(--transition-base);
+}
+
+.ui-modal-root.is-open .ui-modal-panel,
+.ui-modal-root.is-open .app-modal-panel,
+.app-modal-root.is-open .app-modal-panel,
+.app-modal-root.is-open .ui-modal-panel,
+.ui-modal-root[aria-hidden="false"] .ui-modal-panel,
+.ui-modal-root[aria-hidden="false"] .app-modal-panel,
+.app-modal-root[aria-hidden="false"] .app-modal-panel,
+.app-modal-root[aria-hidden="false"] .ui-modal-panel,
+.app-modal-root[aria-hidden="false"] .item-editor-dialog,
+.app-modal-root[aria-hidden="false"] .dice-tray-dialog,
+.app-modal-root[aria-hidden="false"] .soul-award-dialog,
+.app-modal-root[aria-hidden="false"] .soul-details-dialog {
+  transform: translateY(0) scale(1);
+}
+
+.ui-modal-root[data-variant="danger"] .ui-modal-panel {
+  border-color: var(--clr-accent);
+  box-shadow: var(--shadow-elevated), 0 0 32px var(--clr-accent-glow);
+}
+
+.ui-modal-root[data-variant="success"] .ui-modal-panel {
+  border-color: rgba(74, 122, 62, 0.45);
+  box-shadow: var(--shadow-elevated), 0 0 32px rgba(74, 122, 62, 0.18);
+}
+
+.ui-modal-root[data-variant="success"] .ui-modal-kicker {
+  color: var(--clr-success-light);
+}
+
+.ui-modal-root[data-type="select"] .ui-modal-panel {
+  width: min(680px, calc(100vw - var(--sp-6)));
 }
 
 .ui-modal-close,

@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 22:56:28 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 23:11:48 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,16 +13,15 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `bfc216f 2026-05-20 feat(redesign): V1-V3 foundation Shadow Slave (tokens + components + layout)`
+- Ultimo commit: `e3ab344 2026-05-20 feat(redesign): V4 ÔÇö Regras + Sugest├Áes com visual Shadow Slave`
 
 ### Alteracoes Locais
 
 ```text
-D  css/regras.css
+D  css/index.css
 M  css/v2/components-v2.css
-A  css/v2/page-regras-v2.css
-M  regras.html
-M  sugestoes.html
+A  css/v2/page-index-v2.css
+M  index.html
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -34,11 +33,10 @@ M  sugestoes.html
 ### Arquivos Em Stage
 
 ```text
-css/regras.css
+css/index.css
 css/v2/components-v2.css
-css/v2/page-regras-v2.css
-regras.html
-sugestoes.html
+css/v2/page-index-v2.css
+index.html
 ```
 
 ## Paginas Principais
@@ -52,7 +50,7 @@ sugestoes.html
 ## Contagem Rapida
 
 - JavaScript em `js/`: 29 arquivo(s)
-- CSS em `css/`: 22 arquivo(s)
+- CSS em `css/`: 21 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
 ## Notas Do Vault
