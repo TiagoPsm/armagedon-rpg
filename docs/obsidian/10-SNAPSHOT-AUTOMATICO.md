@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 23:18:18 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 23:33:02 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,17 +13,13 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `c777000 2026-05-20 feat(redesign): V5 ÔÇö Index (Login + Home) com visual Shadow Slave`
+- Ultimo commit: `17301a8 2026-05-20 feat(redesign): V6 ÔÇö Mesa virtual com visual Shadow Slave`
 
 ### Alteracoes Locais
 
 ```text
-D  css/mesa-base.css
-D  css/mesa-layout.css
-D  css/mesa-responsive.css
-D  css/mesa.css
-A  css/v2/page-mesa-v2.css
-M  mesa.html
+A  css/v2/page-ficha-v2.css
+M  ficha.html
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -35,12 +31,8 @@ M  mesa.html
 ### Arquivos Em Stage
 
 ```text
-css/mesa-base.css
-css/mesa-layout.css
-css/mesa-responsive.css
-css/mesa.css
-css/v2/page-mesa-v2.css
-mesa.html
+css/v2/page-ficha-v2.css
+ficha.html
 ```
 
 ## Paginas Principais
