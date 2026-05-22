@@ -15,5 +15,13 @@ class_name = "MesaRealtimeRoom"
 tag = "v1-mesa-realtime"
 new_sqlite_classes = [ "MesaRealtimeRoom" ]
 
+[[r2_buckets]]
+binding  = "MAPS"
+bucket_name = "armagedom-maps"
+
 [vars]
 MASTER_BOOTSTRAP_USERNAME = "mestre"
+# Tempo de expiração dos mapas no R2 em segundos (padrão: 12 horas).
+# Mapas são deletados ativamente quando jogadores saem, mas este valor
+# serve como segurança extra caso o Worker reinicie inesperadamente.
+MAP_R2_TTL = "43200"

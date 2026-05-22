@@ -28,6 +28,23 @@ const RELAY_TYPES = new Set([
   "mesa:batch"
 ]);
 
+// Tipos de sinalização do módulo de mapa (WebRTC + WS chunked + R2).
+// Mensagens com campo "to" são entregues só ao socket daquele username.
+// Mensagens sem "to" são broadcast para todos (ex: announce, clear).
+const MAP_SIGNAL_TYPES = new Set([
+  "mesa:map:announce",   // mestre → todos (sem "to")
+  "mesa:map:have",       // jogador → mestre (com "to")
+  "mesa:map:need",       // jogador → mestre (com "to")
+  "mesa:map:offer",      // mestre → jogador (com "to")
+  "mesa:map:answer",     // jogador → mestre (com "to")
+  "mesa:map:ice",        // bidirecional (com "to")
+  "mesa:map:ws:start",   // mestre → jogador (com "to")
+  "mesa:map:ws:chunk",   // mestre → jogador (com "to")
+  "mesa:map:ws:end",     // mestre → jogador (com "to")
+  "mesa:map:set",        // mestre → todos (sem "to", fallback R2)
+  "mesa:map:clear",      // mestre → todos (sem "to")
+]);
+
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
     ...init,
@@ -280,6 +297,11 @@ class MesaRealtimeRoom extends DurableObject {
 
     if (RELAY_TYPES.has(String(payload?.type || ""))) {
       this.handleRealtimeRelay(ws, payload);
+      return;
+    }
+
+    if (MAP_SIGNAL_TYPES.has(String(payload?.type || ""))) {
+      this.handleMapSignal(ws, payload);
     }
   }
 
@@ -335,6 +357,57 @@ class MesaRealtimeRoom extends DurableObject {
       sceneVersion: payload?.sceneVersion || 0,
       sentAt: new Date().toISOString()
     });
+  }
+
+  /**
+   * Retransmite mensagens do módulo de mapa.
+   *
+   * Se payload.to estiver preenchido: entrega somente ao socket cujo
+   * username coincide com payload.to (sinalização WebRTC 1:1).
+   *
+   * Se não houver payload.to: broadcast para todos exceto o remetente
+   * (ex: announce, clear, R2 URL).
+   *
+   * O campo "from" é sobrescrito com o username autenticado do remetente
+   * para evitar falsificação de identidade.
+   */
+  handleMapSignal(ws, payload) {
+    const attachment = readAttachment(ws) || {};
+    const senderUsername = String(attachment.username || "usuario").trim() || "usuario";
+    const targetUsername  = String(payload?.to || "").trim();
+
+    const enriched = {
+      ...payload,
+      from:    senderUsername,
+      sentAt:  payload?.sentAt || new Date().toISOString(),
+    };
+
+    if (targetUsername) {
+      // Entrega direcionada: apenas o socket do destinatário recebe
+      let delivered = false;
+      this.ctx.getWebSockets().forEach(sock => {
+        if (sock === ws) return; // não enviar de volta ao remetente
+        const att = readAttachment(sock) || {};
+        if (String(att.username || "").trim() === targetUsername) {
+          sendJson(sock, enriched);
+          delivered = true;
+        }
+      });
+      // Confirmar entrega ao remetente (útil para debug/timeout)
+      sendJson(ws, {
+        type:      "mesa:map:relay:ack",
+        for:       payload?.type,
+        to:        targetUsername,
+        delivered,
+        sentAt:    new Date().toISOString(),
+      });
+    } else {
+      // Broadcast: todos os outros sockets (ex: announce, clear)
+      this.ctx.getWebSockets().forEach(sock => {
+        if (sock === ws) return;
+        sendJson(sock, enriched);
+      });
+    }
   }
 
   handleSheetPatchRelay(ws, payload, attachment) {

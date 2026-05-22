@@ -461,6 +461,74 @@ export default {
         return withCors(json(saved), origin);
       }
 
+      /* ── MAPA: upload para R2 (último recurso, só mestre) ──────────── */
+
+      if (path === "/api/mesa/map" && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        if (session.role !== "master") {
+          return errorJson("Apenas o mestre pode enviar mapas.", 403, origin);
+        }
+        if (!env.MAPS) {
+          return errorJson("Bucket R2 de mapas nao configurado.", 503, origin);
+        }
+
+        const formData = await request.formData();
+        const file  = formData.get("file");
+        const mapId = String(formData.get("mapId") || "").trim();
+
+        if (!file || !(file instanceof File)) return errorJson("Campo 'file' obrigatorio.", 400, origin);
+        if (!mapId) return errorJson("Campo 'mapId' obrigatorio.", 400, origin);
+
+        // Chave no R2: maps/<username>/<mapId>.webp
+        const safeUser  = String(session.username || "unknown").replace(/[^a-z0-9_-]/gi, "_").toLowerCase().slice(0, 32);
+        const safeMapId = String(mapId).replace(/[^a-z0-9_-]/gi, "_").slice(0, 64);
+        const r2Key     = `maps/${safeUser}/${safeMapId}.webp`;
+
+        await env.MAPS.put(r2Key, await file.arrayBuffer(), {
+          httpMetadata:   { contentType: "image/webp" },
+          customMetadata: { uploadedBy: session.username, mapId, uploadedAt: new Date().toISOString() },
+        });
+
+        // URL pública servida pelo próprio Worker (não depende de domínio R2 customizado)
+        const publicUrl = `${new URL(request.url).origin}/api/mesa/map/${encodeURIComponent(r2Key)}`;
+        return withCors(json({ ok: true, r2Key, url: publicUrl }, { status: 201 }), origin);
+      }
+
+      /* ── MAPA: servir imagem do R2 (sem auth — URL é efêmera) ────────── */
+
+      const mapServeMatch = path.match(/^\/api\/mesa\/map\/(.+)$/);
+      if (mapServeMatch && request.method === "GET") {
+        if (!env.MAPS) return errorJson("Bucket R2 nao configurado.", 503, origin);
+
+        const r2Key  = decodePathParam(mapServeMatch[1]);
+        const object = await env.MAPS.get(r2Key);
+        if (!object) return errorJson("Mapa nao encontrado.", 404, origin);
+
+        const headers = new Headers();
+        headers.set("content-type", object.httpMetadata?.contentType || "image/webp");
+        headers.set("cache-control", "private, max-age=3600");
+        Object.entries(createCorsHeaders(origin)).forEach(([k, v]) => headers.set(k, v));
+        return new Response(object.body, { headers });
+      }
+
+      /* ── MAPA: deletar do R2 (só mestre, só próprio prefixo) ─────────── */
+
+      const mapDeleteMatch = path.match(/^\/api\/mesa\/map\/(.+)$/);
+      if (mapDeleteMatch && request.method === "DELETE") {
+        const session = await requireAuth(request, env);
+        if (session.role !== "master") return errorJson("Apenas o mestre pode remover mapas.", 403, origin);
+        if (!env.MAPS) return errorJson("Bucket R2 nao configurado.", 503, origin);
+
+        const r2Key    = decodePathParam(mapDeleteMatch[1]);
+        const safeUser = String(session.username || "").replace(/[^a-z0-9_-]/gi, "_").toLowerCase().slice(0, 32);
+        if (!r2Key.startsWith(`maps/${safeUser}/`)) {
+          return errorJson("Sem permissao para remover este mapa.", 403, origin);
+        }
+
+        await env.MAPS.delete(r2Key);
+        return withCors(json({ ok: true, r2Key }), origin);
+      }
+
       if (path === "/api/transfers/items/player-to-player" && request.method === "POST") {
         const session = await requireAuth(request, env);
         const body = await readJson(request);

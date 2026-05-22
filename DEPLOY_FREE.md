@@ -204,8 +204,65 @@ Observacao de performance:
 
 ## Observacao Sobre Realtime
 
-A Mesa atual pode ser publicada como pagina oficial, mas realtime verdadeiro ainda depende da proxima etapa:
+Realtime esta implementado com Durable Objects e WebSocket. O modulo de mapa VTT
+usa WebRTC P2P com fallback WS chunked e R2 como ultimo recurso.
 
-- D1 para persistir o estado da cena
-- Durable Objects + WebSocket para sincronizar abas em tempo real
-- `realtimeEnabled` em `js/runtime-config.js` deve continuar `false` ate esse fluxo estar implementado
+## Deploy do Modulo de Mapa VTT (Fase 3)
+
+O modulo de mapa precisa de um bucket R2 e de um novo deploy do Worker.
+Execute os comandos abaixo uma unica vez, na pasta `cloudflare/`.
+
+### 1. Criar o bucket R2
+
+```powershell
+cd cloudflare
+npx wrangler r2 bucket create armagedom-maps
+```
+
+Confirme que a saida mostra `Created bucket 'armagedom-maps'`.
+
+### 2. Re-deployar o Worker
+
+```powershell
+npx wrangler deploy
+```
+
+O Worker publicado expoe tres novas rotas:
+
+| Metodo   | Rota                       | Descricao                          |
+|----------|----------------------------|------------------------------------|
+| POST     | /api/mesa/map              | Upload mapa comprimido (so mestre) |
+| GET      | /api/mesa/map/:r2Key       | Servir imagem do bucket            |
+| DELETE   | /api/mesa/map/:r2Key       | Remover mapa ao encerrar sessao    |
+
+### 3. Checklist pos-deploy
+
+- [ ] Abrir mesa.html como mestre
+- [ ] Clicar "Abrir mapa" e escolher uma imagem do disco
+- [ ] Confirmar que o mapa aparece no palco imediatamente (Fase 1)
+- [ ] Abrir mesa.html em outra aba como jogador
+- [ ] Confirmar que o mapa chega ao jogador automaticamente
+- [ ] No console do mestre, verificar o caminho usado: P2P > WS > R2
+- [ ] Fechar a aba do jogador e confirmar que o mapa some do R2
+  (verificar em `wrangler r2 object list armagedom-maps`)
+
+### Notas de Seguranca
+
+- O bucket R2 nao tem dominio publico configurado: imagens sao servidas
+  exclusivamente pelo proprio Worker com verificacao de autorizacao.
+- A chave R2 inclui o username do mestre como prefixo (`maps/<user>/<id>.webp`),
+  impedindo que um mestre apague mapas de outro.
+- O fallback R2 so e acionado automaticamente se nenhum jogador confirmar
+  recebimento em 30 segundos (P2P e WS chunked falharam).
+
+## Arquivos Alterados no Modulo de Mapa
+
+Incluir obrigatoriamente no proximo commit/deploy:
+
+- `js/mesa-map.js`        — modulo completo (Fases 1, 2 e 3)
+- `js/mesa-core.js`       — chamada a initMesaMap() em initMesaPage()
+- `css/mesa-map.css`      — estilos da camada de mapa
+- `mesa.html`             — camada de mapa no stage + controles
+- `cloudflare/wrangler.toml`        — binding R2
+- `cloudflare/src/index.js`         — endpoints R2
+- `cloudflare/src/mesa-realtime.js` — relay de sinais WebRTC

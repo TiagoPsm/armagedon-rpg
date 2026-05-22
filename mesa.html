@@ -12,19 +12,16 @@
   <link rel="preconnect" href="https://armagedon-api.tiagopsm2008.workers.dev" crossorigin />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;500;600;700&family=Crimson+Text:wght@400;600;700&display=swap"
-    rel="stylesheet"
-  />
-  <link rel="stylesheet" href="css/v2/tokens-v2.css?v=2026-05-20-v2-1" />
-  <link rel="stylesheet" href="css/v2/base-v2.css?v=2026-05-20-v2-1" />
-  <link rel="stylesheet" href="css/v2/animations-v2.css?v=2026-05-20-v2-1" />
-  <link rel="stylesheet" href="css/v2/components-v2.css?v=2026-05-20-v2-1" />
-  <link rel="stylesheet" href="css/v2/layout-v2.css?v=2026-05-20-v2-1" />
-  <link rel="stylesheet" href="css/v2/page-mesa-v2.css?v=2026-05-20-v2-1" />
-  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-05-09-mesa-guard-gradient-1" />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap"></noscript>
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/reset.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/mesa.css" />
+  <link rel="stylesheet" href="css/mesa-stage.css" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-05-09-player-simple-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-05-06-player-panel-1" />
+  <link rel="stylesheet" href="css/mesa-map.css" />
 </head>
 <body>
   <div class="bg-layer bg-noise"></div>
@@ -48,7 +45,7 @@
       </div>
 
       <nav class="main-nav" aria-label="Navegacao principal">
-        <a href="index.html" class="nav-link">Inicio</a>
+        <a href="index.html" class="nav-link">In&iacute;cio</a>
         <a href="ficha.html" class="nav-link">Fichas</a>
         <a href="mesa.html" class="nav-link active">Mesa</a>
         <a href="regras.html" class="nav-link">Regras</a>
@@ -56,83 +53,43 @@
       </nav>
 
       <div class="header-actions">
-        <span class="header-user" id="headerUser">Convidado</span>
+        <span class="header-user" id="headerUser"></span>
         <button type="button" class="btn btn-ghost btn-small" onclick="handleLogout()">Sair</button>
       </div>
     </div>
   </header>
+  <script>(function(){try{var s=JSON.parse(localStorage.getItem('tc_session'));if(s&&s.username){var u=document.getElementById('headerUser');if(u)u.textContent=s.username;}}catch(e){}})()</script>
 
   <main class="shell mesa-shell">
-    <section class="mesa-hero panel-block">
-      <div class="mesa-hero-copy">
-        <p class="eyebrow">Mesa narrativa</p>
+    <section class="mesa-hero">
+      <div class="mesa-hero-heading">
+        <span class="section-label">// Mesa narrativa</span>
         <h1>Mesa Virtual</h1>
-        <p class="mesa-lead">
-          Palco oficial da campanha, conectado as fichas salvas quando a API esta ativa.
-          O mestre organiza tokens existentes e todos acompanham a cena em tempo real.
-        </p>
       </div>
 
       <div class="mesa-hero-meta">
         <article class="meta-card">
           <span>Modo</span>
           <strong id="roleBadge">Jogador</strong>
-          <small id="roleSummary">Leitura e edicao do proprio estado.</small>
+          <small id="roleSummary" hidden>Leitura e edi&ccedil;&atilde;o do pr&oacute;prio estado.</small>
         </article>
         <article class="meta-card">
           <span>Presentes</span>
           <strong id="activeTokenCount">0</strong>
-          <small>Tokens visiveis no palco atual.</small>
         </article>
         <article class="meta-card">
           <span>Fonte</span>
           <strong>Fichas online</strong>
-          <small>Personagens e status usam o servidor quando a sessao esta conectada.</small>
         </article>
       </div>
     </section>
 
     <section class="mesa-focus-layout">
       <section class="mesa-primary-stage">
-        <div class="panel-block panel-stage" id="mesaPanelStage">
-          <div class="panel-head panel-head-stage">
-            <div>
-              <p class="panel-kicker">Palco da campanha</p>
-              <h2>Cena compartilhada</h2>
-            </div>
-
-            <div class="stage-head-meta">
-              <span class="panel-badge" id="stageViewBadge">Visao do mestre</span>
-              <span class="panel-badge panel-badge-soft" id="stageHintBadge">Arraste os tokens para organizar a cena.</span>
-              <button type="button" class="mini-btn" id="fullscreenMesaBtn" aria-pressed="false">Tela cheia</button>
-            </div>
-          </div>
-
-          <div class="mesa-stage-toolbar">
-          <div class="scene-status-card scene-status-card-compact">
-            <div class="scene-status-copy">
-              <span class="scene-status-label">Estado atual</span>
-              <strong id="sceneStateTitle">Mesa pronta</strong>
-              <p id="sceneStateCopy">A escalacao vem das fichas salvas e a cena sincroniza com jogadores conectados.</p>
-            </div>
-              <div class="scene-status-actions">
-                <button type="button" class="btn btn-ghost btn-small" id="resetMesaBtn" hidden>Limpar cena</button>
-              </div>
-            </div>
-
-            <div class="scene-toggles scene-toggles-inline">
-              <label class="toggle-row" id="playerPreviewRow">
-                <span class="toggle-copy">
-                  <strong>Previa do jogador</strong>
-                  <small>Oculta tokens invisiveis e valida a cena como os jogadores vao enxergar.</small>
-                </span>
-                <input type="checkbox" id="playerPreviewToggle" />
-                <span class="toggle-indicator" aria-hidden="true"></span>
-              </label>
-            </div>
-          </div>
-
+        <div class="panel-stage" id="mesaPanelStage">
           <div class="mesa-stage-wrap" id="mesaStageWrap">
+            <!-- Camada de mapa — fica abaixo do grid e dos tokens -->
+            <div id="mesaMapLayer" class="mesa-map-layer" aria-hidden="true" hidden></div>
             <div class="mesa-stage-grid" aria-hidden="true"></div>
             <div class="mesa-stage-glow" aria-hidden="true"></div>
             <div id="mesaStage" class="mesa-stage" aria-live="polite"></div>
@@ -143,12 +100,30 @@
             </div>
           </div>
 
-          <div class="stage-footer">
-            <div class="stage-footer-copy">
-              <span class="panel-kicker">Cena da mesa</span>
-              <p>
-                Tokens e status usam as fichas disponiveis; a cena ao vivo usa Durable Objects.
-              </p>
+          <div class="mesa-stage-controls">
+            <div class="stage-controls-left">
+              <span class="panel-badge" id="stageViewBadge">Vis&atilde;o do mestre</span>
+              <span class="panel-badge panel-badge-soft" id="stageHintBadge">Arraste os tokens para organizar a cena.</span>
+              <strong id="sceneStateTitle" class="scene-state-inline">Mesa pronta</strong>
+              <p id="sceneStateCopy" class="scene-copy-inline">A escalacao vem das fichas salvas e a cena sincroniza com jogadores conectados.</p>
+            </div>
+            <div class="stage-controls-right">
+              <!-- Controles de mapa -->
+              <div class="mesa-map-controls">
+                <span id="mesaMapLabel" class="mesa-map-label">Sem mapa</span>
+                <button type="button" class="btn btn-ghost btn-small" id="mesaMapOpenBtn" onclick="openAndSetLocalMap()">Abrir mapa</button>
+                <button type="button" class="btn btn-ghost btn-small" id="mesaMapClearBtn" onclick="clearActiveMap()" hidden>Limpar mapa</button>
+              </div>
+              <!-- Controles de cena -->
+              <label class="toggle-row toggle-row-inline" id="playerPreviewRow">
+                <span class="toggle-copy">
+                  <strong>Pr&eacute;via do jogador</strong>
+                </span>
+                <input type="checkbox" id="playerPreviewToggle" />
+                <span class="toggle-indicator" aria-hidden="true"></span>
+              </label>
+              <button type="button" class="btn btn-ghost btn-small" id="resetMesaBtn" hidden>Limpar cena</button>
+              <button type="button" class="mini-btn" id="fullscreenMesaBtn" aria-pressed="false">Tela cheia</button>
             </div>
           </div>
         </div>
@@ -195,7 +170,7 @@
     </section>
   </main>
 
-  <script src="js/runtime-config.js?v=2026-05-04-mesa-realtime-1"></script>
+  <script src="js/runtime-config.js?v=2026-05-04-mesa-realtime-1" defer></script>
   <script src="js/api.js?v=2026-05-05-mesa-canvas-v2" defer></script>
   <script src="js/ui.js?v=2026-05-12-ficha-prefetch-1" defer></script>
   <script src="js/auth.js?v=2026-05-07-master-sheet-key-1" defer></script>
@@ -207,5 +182,6 @@
   <script src="js/mesa-storage.js?v=2026-04-24-split-1" defer></script>
   <script src="js/mesa-core.js?v=2026-05-09-sync-lag-1" defer></script>
   <script src="js/mesa-init.js?v=2026-04-24-split-1" defer></script>
+  <script src="js/mesa-map.js" defer></script>
 </body>
 </html>

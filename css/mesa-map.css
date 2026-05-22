@@ -1,0 +1,89 @@
+/* ============================================================
+ * mesa-map.css — Camada de mapa da Mesa Virtual
+ * ============================================================ */
+
+/* ── CAMADA DE MAPA (dentro de .mesa-stage-wrap) ────────────── */
+
+.mesa-map-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;               /* abaixo do grid, glow e tokens */
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  border-radius: inherit;
+  transition: opacity 0.4s ease;
+}
+
+.mesa-map-layer[hidden] {
+  display: none;
+}
+
+/* Quando não há mapa, o stage mantém seu fundo gradiente normal */
+
+/* ── CONTROLES DO MAPA (dentro de .mesa-stage-controls) ─────── */
+
+.mesa-map-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+}
+
+.mesa-map-label {
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-soft);
+  white-space: nowrap;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mesa-map-label.has-map {
+  color: var(--text);
+}
+
+/* Botão de abrir mapa — aparece só para o mestre */
+#mesaMapOpenBtn {
+  display: none;              /* mostrado via JS para o mestre */
+}
+
+.is-master #mesaMapOpenBtn,
+[data-role="master"] #mesaMapOpenBtn {
+  display: inline-flex;
+}
+
+/* Botão de limpar mapa */
+#mesaMapClearBtn {
+  /* herda .btn .btn-ghost .btn-small dos components.css */
+}
+
+/* ── INDICADOR DE CARREGAMENTO ──────────────────────────────── */
+
+.mesa-map-layer.is-loading {
+  opacity: 0.4;
+}
+
+.mesa-map-layer.is-loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 10px,
+    rgba(255, 255, 255, 0.02) 10px,
+    rgba(255, 255, 255, 0.02) 20px
+  );
+  animation: mesaMapLoadingStripes 1s linear infinite;
+  border-radius: inherit;
+}
+
+@keyframes mesaMapLoadingStripes {
+  from { background-position: 0 0; }
+  to   { background-position: 28px 0; }
+}

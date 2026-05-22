@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-20 23:41:23 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-22 20:54:34 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,32 +13,100 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `7e0c8c0 2026-05-20 chore(redesign): V8 ÔÇö Limpeza final p├│s-redesign`
+- Ultimo commit: `e6e6f32 2026-05-20 refactor(redesign): cleanup pós-simplify review (-323 linhas, sem perda funcional)`
 
 ### Alteracoes Locais
 
 ```text
-M  css/v2/animations-v2.css
-M  css/v2/components-v2.css
-M  css/v2/page-ficha-v2.css
-M  css/v2/page-mesa-v2.css
-M  css/v2/tokens-v2.css
+M  DEPLOY_FREE.md
+A  TESTES_MAPA.md
+M  cloudflare/src/index.js
+M  cloudflare/src/mesa-realtime.js
+M  cloudflare/wrangler.toml
+ D css/ficha-base.css
+ D css/ficha-dice-soul.css
+ D css/ficha-inventory-memory.css
+ D css/ficha-layout.css
+ D css/ficha-master.css
+ D css/ficha-responsive.css
+A  css/mesa-map.css
+ M css/mesa-stage.css
+ D css/style.css
+ D css/ui.css
+ D css/v2/animations-v2.css
+ D css/v2/base-v2.css
+ D css/v2/components-v2.css
+ D css/v2/layout-v2.css
+ D css/v2/page-ficha-v2.css
+ D css/v2/page-index-v2.css
+ D css/v2/page-mesa-v2.css
+ D css/v2/page-regras-v2.css
+ D css/v2/tokens-v2.css
+ M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+ M ficha.html
+ M index.html
+ M js/api.js
+M  js/mesa-core.js
+A  js/mesa-map.js
+ M js/regras.js
+ M js/sugestoes.js
+M  mesa.html
+ M regras.html
+ M sugestoes.html
+A  test-worker.mjs
+?? css/components.css
+?? css/ficha.css
+?? css/index.css
+?? css/mesa.css
+?? css/regras.css
+?? css/reset.css
+?? css/tokens.css
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
-(nenhum)
+css/ficha-base.css
+css/ficha-dice-soul.css
+css/ficha-inventory-memory.css
+css/ficha-layout.css
+css/ficha-master.css
+css/ficha-responsive.css
+css/mesa-stage.css
+css/style.css
+css/ui.css
+css/v2/animations-v2.css
+css/v2/base-v2.css
+css/v2/components-v2.css
+css/v2/layout-v2.css
+css/v2/page-ficha-v2.css
+css/v2/page-index-v2.css
+css/v2/page-mesa-v2.css
+css/v2/page-regras-v2.css
+css/v2/tokens-v2.css
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+ficha.html
+index.html
+js/api.js
+js/regras.js
+js/sugestoes.js
+regras.html
+sugestoes.html
 ```
 
 ### Arquivos Em Stage
 
 ```text
-css/v2/animations-v2.css
-css/v2/components-v2.css
-css/v2/page-ficha-v2.css
-css/v2/page-mesa-v2.css
-css/v2/tokens-v2.css
+DEPLOY_FREE.md
+TESTES_MAPA.md
+cloudflare/src/index.js
+cloudflare/src/mesa-realtime.js
+cloudflare/wrangler.toml
+css/mesa-map.css
+js/mesa-core.js
+js/mesa-map.js
+mesa.html
+test-worker.mjs
 ```
 
 ## Paginas Principais
@@ -51,7 +119,7 @@ css/v2/tokens-v2.css
 
 ## Contagem Rapida
 
-- JavaScript em `js/`: 29 arquivo(s)
+- JavaScript em `js/`: 30 arquivo(s)
 - CSS em `css/`: 11 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
@@ -116,6 +184,8 @@ css/v2/tokens-v2.css
 [file] render.yaml
 [file] sugestoes.html
 [file] SYSTEM_RULES.md
+[file] TESTES_MAPA.md
+[file] test-worker.mjs
 [file] vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
 [file] VISUAL_RULES.md
 ```
@@ -126,8 +196,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
    18,23 MB  node_modules\@img\sharp-win32-x64\lib\libvips-42.dll
-   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
    13,08 MB  assets\sheet-fire-background.mp4
+   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     1,03 MB  node_modules\terser\dist\bundle.min.js
     0,99 MB  assets\logo-rpg-armagedon.png

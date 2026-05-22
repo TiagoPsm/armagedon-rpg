@@ -115,9 +115,30 @@ function bootMesaPage() {
   });
 }
 
+function preFillMesaPage() {
+  try {
+    const s = JSON.parse(localStorage.getItem("tc_session"));
+    if (!s?.username) return;
+    const isMaster = s.role === "master";
+    const headerUser = document.getElementById("headerUser");
+    const roleBadge = document.getElementById("roleBadge");
+    const roleSummary = document.getElementById("roleSummary");
+    const previewRow = document.getElementById("playerPreviewRow");
+    const resetMesaBtn = document.getElementById("resetMesaBtn");
+    if (headerUser) headerUser.textContent = s.username;
+    if (roleBadge) roleBadge.textContent = isMaster ? "Mestre" : "Jogador";
+    if (roleSummary) roleSummary.textContent = isMaster
+      ? "Organiza tokens e transmite a cena para jogadores conectados."
+      : "Ve a cena compartilhada e edita apenas o proprio estado.";
+    if (previewRow) previewRow.classList.toggle("hidden", !isMaster);
+    if (resetMesaBtn) resetMesaBtn.hidden = !isMaster;
+  } catch (e) {}
+}
+
 async function initMesaPage() {
   cacheMesaDomRefs();
   bindEvents();
+  preFillMesaPage();
 
   if (window.AUTH_READY) {
     await window.AUTH_READY;
@@ -137,6 +158,14 @@ async function initMesaPage() {
   await hydrateState();
   bindMesaRealtime();
   renderAll();
+
+  // Inicializa o módulo de mapa após o render inicial:
+  // abre IndexedDB, restaura mapa da sessão anterior e registra
+  // listeners de presença / WebRTC. É seguro chamar aqui porque
+  // window.APP já está conectado via bindMesaRealtime() acima.
+  if (typeof initMesaMap === "function") {
+    await initMesaMap();
+  }
 }
 
 function bindEvents() {
