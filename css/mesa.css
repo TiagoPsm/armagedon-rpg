@@ -1,377 +1,496 @@
 /* ============================================================
- * mesa.css — Mesa Virtual
+ * mesa.css — Mesa Virtual · Layout VTT full-screen
+ * 2026-05-22 redesign: toolbar + canvas + sidebar (Foundry-style)
  * ============================================================ */
 
-/* ── CONTAINER ──────────────────────────────────────────────── */
+/* ─── BODY FULL-SCREEN (somente na página da mesa) ─────────── */
 
-.mesa-shell {
-  width: 100%;
-  margin: 0 auto;
-  padding: var(--sp-4) var(--sp-5);
+.mesa-page {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-5);
+  height: 100dvh;
+  height: 100vh; /* fallback para browsers sem dvh */
+  overflow: hidden;
 }
 
-/* ── HERO DA MESA ───────────────────────────────────────────── */
-
-.mesa-hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--sp-8);
-}
-
-.mesa-hero-heading {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-}
-
-.mesa-hero-heading h1 {
-  font-family: var(--font-display);
-  font-size: var(--fs-4xl);
-  font-weight: var(--fw-bold);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--text);
-  line-height: var(--lh-tight);
-}
-
-.mesa-hero-meta {
-  display: flex;
-  gap: var(--sp-2);
+.mesa-page .site-header {
   flex-shrink: 0;
-  align-items: flex-end;
+  z-index: 20;
+  position: relative;
 }
 
-.meta-card {
+/* ─── VTT BODY: toolbar | canvas | sidebar ──────────────────── */
+
+.vtt-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ─── TOOLBAR ESQUERDA ──────────────────────────────────────── */
+
+.vtt-toolbar {
+  width: 60px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(4, 3, 6, 0.98);
+  border-right: 1px solid rgba(255, 255, 255, 0.055);
+  z-index: 10;
+  padding: 0.65rem 0;
+  gap: 0;
+}
+
+.vtt-tb-top {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+  margin-bottom: 0.6rem;
+}
+
+.vtt-role-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.vtt-role-badge strong {
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.vtt-tb-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  flex: 1;
+  width: 100%;
+  padding: 0 0.35rem;
+}
+
+.vtt-tb-btn {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  gap: var(--sp-1);
-  padding: var(--sp-3) var(--sp-2);
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-top: 2px solid var(--accent);
-  border-radius: var(--radius-md);
-  /* largura fixa igual para todos os cards */
-  width: 120px;
+  gap: 0.22rem;
+  padding: 0.6rem 0.25rem 0.5rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  color: rgba(255, 248, 236, 0.38);
+}
+
+.vtt-tb-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 248, 236, 0.75);
+}
+
+.vtt-tb-btn.is-active,
+.vtt-tb-btn[aria-pressed="true"] {
+  background: rgba(168, 48, 40, 0.18);
+  border-color: rgba(168, 48, 40, 0.32);
+  color: #e8b4b0;
+}
+
+.vtt-tb-icon {
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
 }
 
-.meta-card span {
+.vtt-tb-btn span {
   font-family: var(--font-ui);
-  font-size: 9px;
-  font-weight: var(--fw-semibold);
-  letter-spacing: 0.08em;
+  font-size: 0.52rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.vtt-tb-foot {
+  width: 100%;
+  padding: 0.85rem 0 0.4rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
+  margin-top: 0.6rem;
+  display: flex;
+  justify-content: center;
+}
+
+.vtt-presence {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.vtt-presence-count {
+  font-family: var(--font-ui);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.vtt-presence small {
+  font-family: var(--font-ui);
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-soft);
-  line-height: 1.35;
-  text-align: center;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  min-height: calc(9px * 1.35 * 2);
 }
 
-.meta-card strong {
-  font-family: var(--font-display);
-  font-size: var(--fs-base);
-  font-weight: var(--fw-bold);
-  color: var(--text);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  line-height: 1.15;
-  text-align: center;
-  /* permite quebra em 2 linhas dentro do card de largura fixa */
-  word-break: break-word;
-  hyphens: auto;
-}
+/* ─── CANVAS CENTRAL ─────────────────────────────────────────── */
 
-/* ── LAYOUT PRINCIPAL (palco + workbench empilhados) ─────────── */
-
-.mesa-focus-layout {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-6);
-}
-
-/* ── PALCO ──────────────────────────────────────────────────── */
-
-.mesa-primary-stage {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-}
-
-.panel-stage {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-}
-
-/* Barra de controles abaixo do canvas */
-.mesa-stage-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-4);
-  flex-wrap: wrap;
-  padding: var(--sp-2) var(--sp-3);
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-}
-
-.stage-controls-left {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  flex-wrap: wrap;
+.vtt-canvas {
+  flex: 1;
+  position: relative;
   min-width: 0;
+  overflow: hidden;
+  background: #030205;
 }
 
-.stage-controls-right {
+/* O mesa-stage-wrap preenche o canvas inteiro */
+.vtt-canvas .mesa-stage-wrap {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: unset !important;
+  border-radius: 0 !important;
+  border: none !important;
+}
+
+/* ─── OVERLAYS FLUTUANTES NO CANVAS ─────────────────────────── */
+
+.vtt-overlay {
+  position: absolute;
+  z-index: 30;
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
-  flex-shrink: 0;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  /* HUD glass */
+  background: rgba(4, 3, 8, 0.72);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 0.5rem 0.75rem;
 }
 
-.scene-state-inline {
+.vtt-overlay-tl {
+  top: 12px;
+  left: 12px;
+}
+
+.vtt-overlay-tr {
+  top: 12px;
+  right: 12px;
+}
+
+.vtt-overlay-br {
+  bottom: 12px;
+  right: 12px;
+}
+
+/* HUD badges dentro dos overlays */
+.vtt-hud-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
   font-family: var(--font-ui);
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semibold);
-  letter-spacing: var(--tracking-wider);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text);
+  color: var(--text-soft);
   white-space: nowrap;
 }
 
-.scene-copy-inline {
+.vtt-hud-badge-soft {
+  color: rgba(255, 248, 236, 0.3);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.vtt-hud-title {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.vtt-hud-copy {
   font-family: var(--font-body);
-  font-size: var(--fs-xs);
+  font-size: 0.78rem;
+  color: var(--text-soft);
+  line-height: 1.4;
+  max-width: 28ch;
+}
+
+/* Botão de tela cheia no overlay */
+.vtt-fullscreen-btn {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  color: var(--text-soft);
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.vtt-fullscreen-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.vtt-fullscreen-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+/* Toggle row dentro do overlay */
+.vtt-overlay .toggle-row-inline {
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.vtt-overlay .toggle-row-inline .toggle-copy strong {
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+
+/* Esconde overlays de estado que CSS da mesa-map já gerencia */
+#stageHintBadge,
+#sceneStateTitle,
+#sceneStateCopy {
+  display: none;
+}
+
+/* ─── SIDEBAR DIREITA ─────────────────────────────────────────── */
+
+.vtt-sidebar {
+  width: 288px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: rgba(5, 4, 8, 0.97);
+  border-left: 1px solid rgba(255, 255, 255, 0.055);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+  z-index: 10;
+}
+
+.vtt-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.vtt-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.vtt-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+}
+
+/* Meta chips no topo da sidebar */
+.vtt-sidebar-meta {
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+  flex-shrink: 0;
+}
+
+.vtt-meta-chip {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 0.4rem;
+  gap: 0.2rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  text-align: center;
+}
+
+.vtt-meta-chip:last-child {
+  border-right: none;
+}
+
+.vtt-meta-chip span {
+  font-family: var(--font-ui);
+  font-size: 0.52rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--text-soft);
   line-height: 1;
 }
 
-.toggle-row-inline {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  cursor: pointer;
-  padding: 0;
-  border: none;
+.vtt-meta-chip strong {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1.1;
+  word-break: break-word;
 }
 
-.toggle-row-inline .toggle-copy strong {
+.vtt-meta-chip-accent strong {
+  color: var(--accent);
+}
+
+/* Blocos de conteúdo na sidebar */
+.vtt-sidebar-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 0.9rem;
+}
+
+.vtt-sidebar-block-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.vtt-sidebar-block-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.vtt-kicker {
   font-family: var(--font-ui);
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semibold);
-  letter-spacing: var(--tracking-wider);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0;
+}
+
+.vtt-sidebar-block-title h2 {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+  line-height: 1.15;
+  margin: 0;
+}
+
+.vtt-count-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  font-family: var(--font-ui);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-soft);
   white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
 }
 
-@media (max-width: 640px) {
-  .mesa-stage-controls {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .scene-copy-inline {
-    display: none;
-  }
+/* Separador entre blocos */
+.vtt-sidebar-sep {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.055);
+  flex-shrink: 0;
+  margin: 0;
 }
 
-/* Área do palco */
-.mesa-stage-wrap {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  background: #000;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-
-.mesa-stage-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(var(--border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
-  opacity: 0.5;
-}
-
-.mesa-stage-glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    ellipse at 50% 50%,
-    rgba(168, 48, 40, 0.04),
-    transparent 70%
-  );
-  pointer-events: none;
-}
-
-.mesa-stage {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.mesa-empty-state {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-2);
-  text-align: center;
-  padding: var(--sp-6);
-}
-
-.mesa-empty-state strong {
-  font-family: var(--font-ui);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  letter-spacing: var(--tracking-wider);
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
-.mesa-empty-state p {
-  font-family: var(--font-body);
-  font-size: var(--fs-sm);
-  color: var(--text-faint);
-  max-width: 32ch;
-}
-
-/* Rodapé do palco */
-.stage-footer {
-  padding: var(--sp-3) var(--sp-4);
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-}
-
-.stage-footer-copy {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-1);
-}
-
-.stage-footer-copy p {
-  font-family: var(--font-body);
-  font-size: var(--fs-xs);
-  color: var(--text-faint);
-  line-height: var(--lh-relaxed);
-}
-
-/* ── WORKBENCH (abaixo do palco, 2 colunas) ─────────────────── */
-
-.mesa-focus-workbench {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--sp-4);
-  align-items: start;
-}
-
-.mesa-workbench-stack {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-}
-
-.mesa-roster-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-}
-
-.mesa-roster-card h2 {
-  font-family: var(--font-display);
-  font-size: var(--fs-lg);
-  font-weight: var(--fw-semibold);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--text);
-  line-height: var(--lh-tight);
-}
-
-/* Campo de busca do roster */
+/* Campo de busca dentro da sidebar */
 .search-field {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-1);
+  gap: 0.3rem;
 }
 
 .search-field > span {
   font-family: var(--font-ui);
-  font-size: var(--fs-2xs);
-  font-weight: var(--fw-semibold);
-  letter-spacing: var(--tracking-wider);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-soft);
 }
 
 .search-field input {
   width: 100%;
-  padding: var(--sp-2) var(--sp-3);
-  background: var(--bg-raised);
+  padding: 0.45rem 0.65rem;
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
   font-family: var(--font-body);
-  font-size: var(--fs-base);
-  transition: border-color var(--transition);
+  font-size: var(--fs-sm);
+  transition: border-color 0.15s;
 }
 
 .search-field input::placeholder { color: var(--text-faint); }
 .search-field input:focus-visible {
   outline: none;
-  border-color: var(--accent);
+  border-color: rgba(168, 48, 40, 0.5);
 }
 
-/* Lista do roster (preenchida via JS) */
+/* Lista do roster na sidebar */
 .roster-section {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
-  max-height: 480px;
-  overflow-y: auto;
+  gap: 0.55rem;
 }
 
-/* Inspector */
-.mesa-inspector-shell {
-  flex-shrink: 0;
-}
-
-.token-inspector-block {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-}
-
-.token-inspector-block h2 {
-  font-family: var(--font-display);
-  font-size: var(--fs-lg);
-  font-weight: var(--fw-semibold);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--text);
-  line-height: var(--lh-tight);
-}
-
+/* Inspector na sidebar */
 .token-inspector {
-  min-height: 120px;
+  min-height: 80px;
 }
 
 .token-inspector-empty {
@@ -380,16 +499,16 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  gap: var(--sp-2);
-  padding: var(--sp-6) var(--sp-4);
-  min-height: 120px;
+  gap: 0.4rem;
+  padding: 1.2rem 0.5rem;
+  min-height: 80px;
 }
 
 .token-inspector-empty strong {
   font-family: var(--font-ui);
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semibold);
-  letter-spacing: var(--tracking-wider);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-faint);
 }
@@ -398,48 +517,154 @@
   font-family: var(--font-body);
   font-size: var(--fs-xs);
   color: var(--text-faint);
-  max-width: 28ch;
-  line-height: var(--lh-relaxed);
+  max-width: 24ch;
+  line-height: 1.5;
 }
 
-/* ── RESPONSIVO ─────────────────────────────────────────────── */
+/* ─── RESPONSIVO — sidebar colapsável em telas pequenas ─────── */
 
-@media (max-width: 640px) {
-  .mesa-focus-workbench {
-    grid-template-columns: 1fr;
+@media (max-width: 900px) {
+  .vtt-sidebar {
+    width: 240px;
   }
 }
 
-@media (max-width: 768px) {
-  .mesa-hero {
+@media (max-width: 700px) {
+  /* Sidebar passa para baixo do canvas em mobile */
+  .vtt-body {
     flex-direction: column;
-    align-items: flex-start;
-    gap: var(--sp-4);
   }
 
-  .mesa-hero-meta {
-    flex-wrap: wrap;
+  .vtt-toolbar {
+    width: 100%;
+    height: 52px;
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+    padding: 0 0.5rem;
   }
 
-  .meta-card {
-    width: 100px;
+  .vtt-tb-top,
+  .vtt-tb-foot {
+    border: none;
+    margin: 0;
+    padding: 0 0.5rem;
+  }
+
+  .vtt-tb-tools {
+    flex-direction: row;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .vtt-tb-btn {
+    width: auto;
+    flex-direction: row;
+    padding: 0.4rem 0.7rem;
+    gap: 0.4rem;
+  }
+
+  .vtt-canvas {
+    flex: 1;
+    min-height: 300px;
+  }
+
+  .vtt-sidebar {
+    width: 100%;
+    height: 240px;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.055);
+    flex-direction: row;
+    overflow-x: auto;
+    flex-shrink: 0;
+  }
+
+  .vtt-sidebar-meta {
+    flex-direction: column;
+    border-bottom: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.055);
+    width: 70px;
+  }
+
+  .vtt-meta-chip {
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .vtt-sidebar-block {
+    min-width: 220px;
   }
 }
 
-@media (max-width: 640px) {
-  .mesa-focus-workbench {
-    grid-template-columns: 1fr;
-  }
+/* ─── ESTILOS LEGADOS (usados por JS, mantidos por compatibilidade) ── */
+
+/* panel-badge usado pelo JS em stageViewBadge */
+.panel-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  white-space: nowrap;
 }
 
-@media (max-width: 480px) {
-  .mesa-shell {
-    padding: var(--sp-3);
-  }
+.panel-badge-soft {
+  color: rgba(255, 248, 236, 0.3);
 }
 
-@media (max-width: 480px) {
-  .mesa-shell {
-    padding: var(--sp-4);
-  }
+/* panel-kicker / panel-head usado em outros módulos */
+.panel-kicker {
+  font-family: var(--font-ui);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0;
+}
+
+/* toggle-row-inline (player preview) */
+.toggle-row-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.toggle-row-inline .toggle-copy strong {
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+
+/* scene-state inline (ocultos por padrão, JS pode mostrar) */
+.scene-state-inline {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.scene-copy-inline {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: var(--text-soft);
+  line-height: 1.4;
 }

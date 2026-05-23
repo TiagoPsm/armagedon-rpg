@@ -313,6 +313,18 @@
   line-height: 1.45;
 }
 
+/* 2026-05-22 VTT layout: dentro do .vtt-canvas o wrap preenche tudo */
+.vtt-canvas .mesa-stage-wrap {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: unset !important;
+  border-radius: 0 !important;
+  border: none !important;
+  contain: strict !important;
+}
+
 /* 2026-05 mesa stage gradient polish */
 .mesa-stage-wrap {
   background:
