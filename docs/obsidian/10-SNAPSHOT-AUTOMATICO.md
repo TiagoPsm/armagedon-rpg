@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-22 21:14:18 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-22 21:18:36 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,11 +13,13 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `dbd278e 2026-05-22 fix: atualizar build-pages com novos CSS consolidados`
+- Ultimo commit: `e53959e 2026-05-22 fix: adicionar classe is-master ao body para mostrar botao de mapa`
 
 ### Alteracoes Locais
 
 ```text
+M  css/mesa-map.css
+M  css/mesa-stage.css
 M  js/mesa-map.js
 ```
 
@@ -30,6 +32,8 @@ M  js/mesa-map.js
 ### Arquivos Em Stage
 
 ```text
+css/mesa-map.css
+css/mesa-stage.css
 js/mesa-map.js
 ```
 

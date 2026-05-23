@@ -390,14 +390,22 @@ function renderMesaMapLayer(blobUrl, mapName) {
 
   if (!layer) return;
 
+  const emptyState = document.getElementById("mesaEmptyState");
+
   if (blobUrl) {
     layer.style.backgroundImage    = `url("${blobUrl}")`;
     layer.style.backgroundSize     = "cover";
     layer.style.backgroundPosition = "center";
     layer.removeAttribute("hidden");
+    if (emptyState) emptyState.hidden = true;
   } else {
     layer.style.backgroundImage = "";
     layer.setAttribute("hidden", "");
+    // só mostra o empty state se não há tokens no palco
+    const mesaStage = document.getElementById("mesaStage");
+    if (emptyState && mesaStage && !mesaStage.children.length) {
+      emptyState.hidden = false;
+    }
   }
 
   if (label) {

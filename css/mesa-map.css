@@ -21,6 +21,19 @@
 
 /* Quando não há mapa, o stage mantém seu fundo gradiente normal */
 
+/* Quando há mapa ativo, esconde overlay de tokens vazio e resquícios do sistema de cena */
+.mesa-map-layer:not([hidden]) ~ #mesaEmptyState,
+.mesa-stage-wrap:has(.mesa-map-layer:not([hidden])) #mesaEmptyState {
+  display: none !important;
+}
+
+/* Esconde badges e textos do sistema de tokens que não são mais relevantes */
+#stageHintBadge,
+#sceneStateTitle,
+#sceneStateCopy {
+  display: none;
+}
+
 /* ── CONTROLES DO MAPA (dentro de .mesa-stage-controls) ─────── */
 
 .mesa-map-controls {

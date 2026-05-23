@@ -8,7 +8,7 @@
 
 .mesa-stage-wrap {
   position: relative;
-  min-height: clamp(520px, calc(100vh - 260px), 900px);
+  min-height: clamp(600px, calc(100vh - 180px), 1200px);
   contain: layout paint;
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 30px;
