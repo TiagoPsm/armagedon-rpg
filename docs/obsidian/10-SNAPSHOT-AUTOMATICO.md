@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-22 21:09:43 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-22 21:14:18 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,13 +13,12 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `c2d9557 2026-05-22 refactor: consolidar CSS + atualizar HTML e JS`
+- Ultimo commit: `dbd278e 2026-05-22 fix: atualizar build-pages com novos CSS consolidados`
 
 ### Alteracoes Locais
 
 ```text
-M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  tools/build-pages.cjs
+M  js/mesa-map.js
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -31,8 +30,7 @@ M  tools/build-pages.cjs
 ### Arquivos Em Stage
 
 ```text
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-tools/build-pages.cjs
+js/mesa-map.js
 ```
 
 ## Paginas Principais

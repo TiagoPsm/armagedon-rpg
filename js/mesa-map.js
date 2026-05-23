@@ -122,6 +122,7 @@ async function initMesaMap() {
     bindMesaMapPresence();
 
     if (mesaMapState.isMaster) {
+      document.body.classList.add("is-master");
       bindMasterMapListeners();
     } else {
       bindPlayerMapListeners();
