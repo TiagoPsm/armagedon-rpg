@@ -36,8 +36,27 @@ function initSuggestionsPageGlow() {
   root.addEventListener("pointerleave", () => setGlow("50%", "16%"));
 }
 
+function preFillSuggestionsPage() {
+  try {
+    const s = JSON.parse(localStorage.getItem("tc_session"));
+    if (!s?.username) return;
+    const isMaster = s.role === "master";
+    const suggestionsUser = document.getElementById("suggestionsUser");
+    const suggestionsRoleLabel = document.getElementById("suggestionsRoleLabel");
+    const suggestionsHeaderRole = document.getElementById("suggestionsHeaderRole");
+    const suggestionsIntro = document.getElementById("suggestionsIntro");
+    if (suggestionsUser) suggestionsUser.textContent = s.username;
+    if (suggestionsRoleLabel) suggestionsRoleLabel.textContent = isMaster ? "Mestre" : "Jogador";
+    if (suggestionsHeaderRole) suggestionsHeaderRole.textContent = isMaster ? "Painel do mestre" : "Sugestoes";
+    if (suggestionsIntro) suggestionsIntro.textContent = isMaster
+      ? "Todos podem enviar ideias. Voce pode editar ou excluir sugestoes para manter a lista organizada."
+      : "Envie ideias de melhoria para o site e acompanhe as sugestoes ja registradas pela campanha.";
+  } catch (e) {}
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   initSuggestionsPageGlow();
+  preFillSuggestionsPage();
 
   await AUTH_READY;
   currentSession = AUTH.requireAuth();

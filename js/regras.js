@@ -40,8 +40,31 @@ function initRulesPageGlow() {
   root.addEventListener("pointerleave", () => setGlow("50%", "16%"));
 }
 
+function preFillRulesPage() {
+  try {
+    const s = JSON.parse(localStorage.getItem("tc_session"));
+    if (!s?.username) return;
+    const isMaster = s.role === "master";
+    const rulesUser = document.getElementById("rulesUser");
+    const rulesRoleLabel = document.getElementById("rulesRoleLabel");
+    const rulesHeaderRole = document.getElementById("rulesHeaderRole");
+    const rulesIntro = document.getElementById("rulesIntro");
+    const rulesEditor = document.getElementById("rulesEditor");
+    const playerNotice = document.getElementById("playerNotice");
+    if (rulesUser) rulesUser.textContent = s.username;
+    if (rulesRoleLabel) rulesRoleLabel.textContent = isMaster ? "Mestre" : "Jogador";
+    if (rulesHeaderRole) rulesHeaderRole.textContent = isMaster ? "Painel do mestre" : "Arquivo de regras";
+    if (rulesIntro) rulesIntro.textContent = isMaster
+      ? "Você pode publicar, editar e manter organizadas as regras oficiais da campanha."
+      : "Aqui ficam as regras oficiais publicadas pelo mestre para consulta de todos os jogadores.";
+    if (rulesEditor) rulesEditor.hidden = !isMaster;
+    if (playerNotice) playerNotice.hidden = isMaster;
+  } catch (e) {}
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   initRulesPageGlow();
+  preFillRulesPage();
 
   await AUTH_READY;
   currentSession = AUTH.requireAuth();

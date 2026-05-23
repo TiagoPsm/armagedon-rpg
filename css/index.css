@@ -1,0 +1,634 @@
+/* ============================================================
+ * index.css — Login e Dashboard
+ * ============================================================ */
+
+/* Aliases de fundo usados nesta página */
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-scar,
+.bg-orbit {
+  background: none;
+}
+
+/* ── LOGIN SCREEN ───────────────────────────────────────────── */
+
+#loginScreen {
+  position: relative;
+  z-index: 1;
+}
+
+.login-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: var(--sp-10);
+  align-items: center;
+  padding-top: var(--sp-16);
+  padding-bottom: var(--sp-16);
+}
+
+/* Lado esquerdo — intro */
+.intro-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-10);
+}
+
+.intro-brandline {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+}
+
+.intro-sigil {
+  flex-shrink: 0;
+}
+
+.intro-sigil-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-accent);
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.intro-sigil-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.intro-brand-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.intro-brand-meta strong {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text);
+  line-height: 1;
+}
+
+.intro-brand-meta span {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--text-soft);
+}
+
+.intro-copy-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  max-width: 560px;
+}
+
+.title-display {
+  font-family: var(--font-display);
+  font-size: var(--fs-5xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text);
+  line-height: var(--lh-tight);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.title-display span {
+  font-family: var(--font-body);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-regular);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-soft);
+  line-height: var(--lh-relaxed);
+}
+
+.lead {
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  color: var(--text-soft);
+  line-height: var(--lh-relaxed);
+}
+
+/* Lado direito — card de login */
+.login-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+.login-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.login-card-head h2 {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text);
+  line-height: var(--lh-tight);
+}
+
+.login-card-copy {
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  color: var(--text-soft);
+}
+
+.login-card-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.login-error {
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  color: var(--danger);
+  letter-spacing: var(--tracking-wide);
+  min-height: 1.25rem;
+}
+
+.login-footnote {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+}
+
+.login-footnote span {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  letter-spacing: var(--tracking-ritual);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.login-footnote strong {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--text-soft);
+  font-weight: var(--fw-regular);
+}
+
+/* ── DASHBOARD ──────────────────────────────────────────────── */
+
+#homeScreen {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  padding-top: var(--sp-8);
+  padding-bottom: var(--sp-16);
+}
+
+/* Hero: card principal + sidebar */
+.dashboard-hero {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: var(--sp-5);
+  align-items: start;
+}
+
+.dashboard-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-6);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.55);
+}
+
+.dashboard-main-card {
+  height: 100%;
+}
+
+.dashboard-copy-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.dashboard-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.dashboard-mode-badge {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-soft);
+  padding: var(--sp-1) var(--sp-2);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.dashboard-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-3xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text);
+  line-height: var(--lh-tight);
+}
+
+.dashboard-copy {
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  color: var(--text-soft);
+  line-height: var(--lh-relaxed);
+  max-width: 52ch;
+}
+
+.dashboard-owner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--radius-sm);
+}
+
+.dashboard-owner span {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.dashboard-owner strong {
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.hero-actions {
+  display: flex;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+/* Sidebar: status grid + nota */
+.dashboard-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+}
+
+.status-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--sp-1);
+  padding: var(--sp-4) var(--sp-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.status-card span {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.status-card strong {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  color: var(--text);
+  line-height: 1;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.status-card small {
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+}
+
+.dashboard-note {
+  padding: var(--sp-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.dashboard-note-label {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.dashboard-note p {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--text-soft);
+  line-height: var(--lh-relaxed);
+}
+
+/* Workspace: atalhos */
+.dashboard-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+.dashboard-workspace-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-6);
+}
+
+.dashboard-section-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text);
+  margin-top: var(--sp-2);
+}
+
+.dashboard-section-copy {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--text-soft);
+  line-height: var(--lh-relaxed);
+  max-width: 40ch;
+  text-align: right;
+}
+
+/* Lista de ações */
+.action-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-6);
+  padding: var(--sp-5) var(--sp-6);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.action-row:last-child {
+  border-bottom: none;
+}
+
+a.action-row:hover {
+  background: var(--bg-raised);
+  border-bottom-color: var(--border-accent);
+}
+
+.action-row-static {
+  opacity: 0.7;
+}
+
+.action-row-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.action-row-kicker {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-ritual);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.action-row-copy strong {
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.action-row-copy p {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--text-soft);
+  line-height: var(--lh-relaxed);
+}
+
+.action-row-meta {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── RESPONSIVO ─────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .login-shell {
+    grid-template-columns: 1fr;
+    gap: var(--sp-10);
+    padding-top: var(--sp-8);
+  }
+
+  .dashboard-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-workspace-head {
+    flex-direction: column;
+    gap: var(--sp-3);
+  }
+
+  .dashboard-section-copy {
+    text-align: left;
+  }
+}
+
+@media (max-width: 480px) {
+  .title-display {
+    font-size: var(--fs-4xl);
+  }
+
+  .status-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .action-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-3);
+  }
+}
+
+/* ── DASHBOARD: FUNDO PRETO ABSOLUTO ──────────────────────────── */
+
+#homeScreen {
+  background: #000;
+}
+
+/* ── DASHBOARD: DETALHES DECORATIVOS ──────────────────────────── */
+
+/* Fio carmesim no topo do card principal */
+#homeScreen .dashboard-main-card {
+  border-top: 1px solid var(--border-accent);
+  animation: dashFadeUp 0.45s 0.10s ease both;
+}
+
+#homeScreen .site-header {
+  animation: dashFadeIn 0.35s ease both;
+}
+
+#homeScreen .dashboard-side {
+  animation: dashFadeUp 0.45s 0.20s ease both;
+}
+
+#homeScreen .dashboard-workspace {
+  animation: dashFadeUp 0.45s 0.30s ease both;
+}
+
+/* Status cards: toque de acento no topo + elevação no hover */
+#homeScreen .status-card {
+  border-top: 1px solid rgba(168, 48, 40, 0.18);
+  transition:
+    border-top-color var(--transition),
+    background var(--transition),
+    transform var(--transition);
+}
+
+#homeScreen .status-card:hover {
+  border-top-color: var(--border-accent);
+  background: var(--bg-raised);
+  transform: translateY(-1px);
+}
+
+/* Nota do painel: fio lateral profundo */
+#homeScreen .dashboard-note {
+  border-left: 2px solid var(--accent-deep);
+}
+
+/* Action rows: entrada escalonada */
+#homeScreen .action-row:nth-child(1) {
+  animation: dashFadeUp 0.40s 0.35s ease both;
+}
+
+#homeScreen .action-row:nth-child(2) {
+  animation: dashFadeUp 0.40s 0.42s ease both;
+}
+
+#homeScreen .action-row:nth-child(3) {
+  animation: dashFadeUp 0.40s 0.49s ease both;
+}
+
+/* Kicker fica mais vivo no hover da row */
+a.action-row:hover .action-row-kicker {
+  color: #c03830;
+  transition: color var(--transition);
+}
+
+/* Pulso suave no label de destaque da nota */
+#homeScreen .dashboard-note-label {
+  animation: accentPulse 4s 1s ease-in-out infinite;
+}
+
+/* ── KEYFRAMES ─────────────────────────────────────────────────── */
+
+@keyframes dashFadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dashFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes accentPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ── ACESSIBILIDADE: respeitar prefers-reduced-motion ────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  #homeScreen .dashboard-main-card,
+  #homeScreen .dashboard-side,
+  #homeScreen .dashboard-workspace,
+  #homeScreen .site-header,
+  #homeScreen .action-row,
+  #homeScreen .dashboard-note-label {
+    animation: none;
+  }
+}

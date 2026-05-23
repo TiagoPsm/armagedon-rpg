@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-22 20:54:34 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-22 21:03:48 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,67 +13,69 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `e6e6f32 2026-05-20 refactor(redesign): cleanup pós-simplify review (-323 linhas, sem perda funcional)`
+- Ultimo commit: `89e6f84 2026-05-22 feat: modulo de mapa VTT (P2P + WS + R2 fallback)`
 
 ### Alteracoes Locais
 
 ```text
-M  DEPLOY_FREE.md
-A  TESTES_MAPA.md
-M  cloudflare/src/index.js
-M  cloudflare/src/mesa-realtime.js
-M  cloudflare/wrangler.toml
- D css/ficha-base.css
- D css/ficha-dice-soul.css
- D css/ficha-inventory-memory.css
- D css/ficha-layout.css
- D css/ficha-master.css
- D css/ficha-responsive.css
-A  css/mesa-map.css
- M css/mesa-stage.css
- D css/style.css
- D css/ui.css
- D css/v2/animations-v2.css
- D css/v2/base-v2.css
- D css/v2/components-v2.css
- D css/v2/layout-v2.css
- D css/v2/page-ficha-v2.css
- D css/v2/page-index-v2.css
- D css/v2/page-mesa-v2.css
- D css/v2/page-regras-v2.css
- D css/v2/tokens-v2.css
- M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
- M ficha.html
- M index.html
- M js/api.js
-M  js/mesa-core.js
-A  js/mesa-map.js
- M js/regras.js
- M js/sugestoes.js
-M  mesa.html
- M regras.html
- M sugestoes.html
-A  test-worker.mjs
-?? css/components.css
-?? css/ficha.css
-?? css/index.css
-?? css/mesa.css
-?? css/regras.css
-?? css/reset.css
-?? css/tokens.css
+A  css/components.css
+D  css/ficha-base.css
+D  css/ficha-dice-soul.css
+D  css/ficha-inventory-memory.css
+D  css/ficha-layout.css
+D  css/ficha-master.css
+D  css/ficha-responsive.css
+A  css/ficha.css
+A  css/index.css
+M  css/mesa-stage.css
+A  css/mesa.css
+A  css/regras.css
+A  css/reset.css
+D  css/style.css
+A  css/tokens.css
+D  css/ui.css
+D  css/v2/animations-v2.css
+D  css/v2/base-v2.css
+D  css/v2/components-v2.css
+D  css/v2/layout-v2.css
+D  css/v2/page-ficha-v2.css
+D  css/v2/page-index-v2.css
+D  css/v2/page-mesa-v2.css
+D  css/v2/page-regras-v2.css
+D  css/v2/tokens-v2.css
+M  ficha.html
+M  index.html
+M  js/api.js
+M  js/regras.js
+M  js/sugestoes.js
+M  regras.html
+M  sugestoes.html
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
+(nenhum)
+```
+
+### Arquivos Em Stage
+
+```text
+css/components.css
 css/ficha-base.css
 css/ficha-dice-soul.css
 css/ficha-inventory-memory.css
 css/ficha-layout.css
 css/ficha-master.css
 css/ficha-responsive.css
+css/ficha.css
+css/index.css
 css/mesa-stage.css
+css/mesa.css
+css/regras.css
+css/reset.css
 css/style.css
+css/tokens.css
 css/ui.css
 css/v2/animations-v2.css
 css/v2/base-v2.css
@@ -84,7 +86,6 @@ css/v2/page-index-v2.css
 css/v2/page-mesa-v2.css
 css/v2/page-regras-v2.css
 css/v2/tokens-v2.css
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ficha.html
 index.html
 js/api.js
@@ -92,21 +93,6 @@ js/regras.js
 js/sugestoes.js
 regras.html
 sugestoes.html
-```
-
-### Arquivos Em Stage
-
-```text
-DEPLOY_FREE.md
-TESTES_MAPA.md
-cloudflare/src/index.js
-cloudflare/src/mesa-realtime.js
-cloudflare/wrangler.toml
-css/mesa-map.css
-js/mesa-core.js
-js/mesa-map.js
-mesa.html
-test-worker.mjs
 ```
 
 ## Paginas Principais

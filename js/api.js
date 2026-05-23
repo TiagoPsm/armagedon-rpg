@@ -1,7 +1,7 @@
 (function () {
   const DEFAULT_BASE_URL =
     window.ARMAGEDON_CONFIG?.apiBaseUrl || localStorage.getItem("tc_api_base_url") || "http://localhost:4000/api";
-  const HEALTH_TIMEOUT_MS = 1800;
+  const HEALTH_TIMEOUT_MS = 600;
   const REALTIME_RECONNECT_DELAY_MS = 1800;
   const REALTIME_ENABLED = window.ARMAGEDON_CONFIG?.realtimeEnabled === true;
   const eventBus = new EventTarget();

@@ -1,0 +1,546 @@
+/* ============================================================
+ * regras.css — Regras e Sugestões (estrutura compartilhada)
+ * ============================================================ */
+
+/* ── LAYOUT PRINCIPAL ───────────────────────────────────────── */
+
+.page-main,
+.page-main-rules {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+  padding-bottom: var(--sp-16);
+}
+
+/* ── HERO DA PÁGINA ─────────────────────────────────────────── */
+
+.rules-hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+@media (min-width: 1024px) {
+  .rules-hero {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-10);
+  }
+}
+
+.page-heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  max-width: 640px;
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-4xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text);
+  line-height: var(--lh-tight);
+}
+
+.page-copy {
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  color: var(--text-soft);
+  line-height: var(--lh-relaxed);
+  max-width: 56ch;
+}
+
+/* ── PAINEL DE STATUS (3 cards) ─────────────────────────────── */
+
+.rules-status-panel {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 400px;
+}
+
+.rules-status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+}
+
+.rules-status-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--sp-1);
+  padding: var(--sp-3) var(--sp-2);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--accent);
+  border-radius: var(--radius-md);
+}
+
+.rules-status-card span {
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  line-height: 1.35;
+  text-align: center;
+}
+
+.rules-status-card strong {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  color: var(--text);
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ── BLOCO DE CONTEÚDO ──────────────────────────────────────── */
+
+.rules-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-6);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.55);
+}
+
+.rules-block.rules-notice {
+  border-left: 2px solid var(--accent);
+  background: var(--bg-raised);
+}
+
+.rules-block-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
+  flex-wrap: wrap;
+}
+
+.rules-block-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text);
+  line-height: var(--lh-tight);
+  margin-top: var(--sp-2);
+}
+
+.rules-notice-copy {
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  color: var(--text-soft);
+  line-height: var(--lh-relaxed);
+  max-width: 60ch;
+  margin-top: var(--sp-2);
+}
+
+/* Badge de última atualização */
+.rules-updated {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-soft);
+  padding: var(--sp-1) var(--sp-3);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── FORMULÁRIO DE EDITOR ───────────────────────────────────── */
+
+.rules-form-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+
+.rules-textarea {
+  width: 100%;
+  min-height: 180px;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--bg-raised);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: var(--lh-relaxed);
+  resize: vertical;
+  transition: border-color var(--transition);
+}
+
+.rules-textarea::placeholder { color: var(--text-faint); }
+.rules-textarea:hover        { border-color: rgba(212, 204, 186, 0.25); }
+.rules-textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.rules-form-status {
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-wider);
+  color: var(--text-soft);
+  margin-top: var(--sp-2);
+}
+
+.rules-form-status.is-success { color: var(--success); }
+.rules-form-status.is-error   { color: var(--danger); }
+
+.rules-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+}
+
+/* ── PAINEL DE FILTROS ──────────────────────────────────────── */
+
+.rules-filter-panel {
+  display: grid;
+  grid-template-columns: 1.5fr 2fr auto;
+  gap: var(--sp-4);
+  align-items: end;
+  padding: var(--sp-4);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--sp-4);
+}
+
+.rules-search-group {
+  width: 100%;
+}
+
+.rules-tag-filter-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.rules-tag-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+/* Chips de filtro */
+.rule-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--sp-1) var(--sp-3);
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-soft);
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background var(--transition),
+    border-color var(--transition),
+    color var(--transition);
+}
+
+.rule-tag-chip:hover {
+  background: var(--bg-raised);
+  border-color: var(--border-accent);
+  color: var(--text);
+}
+
+.rule-tag-chip.is-active,
+.rule-tag-chip.active {
+  background: rgba(168, 48, 40, 0.1);
+  border-color: var(--border-accent);
+  color: var(--accent);
+}
+
+/* Botão de limpar filtro */
+.rule-btn {
+  padding: var(--sp-2) var(--sp-4);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-soft);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color var(--transition),
+    color var(--transition);
+}
+
+.rule-btn:hover {
+  border-color: var(--border-accent);
+  color: var(--text);
+}
+
+/* ── LISTA DE CARDS ─────────────────────────────────────────── */
+
+.rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* Card individual (gerado via JS) */
+.rule-card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-5);
+  transition:
+    border-color var(--transition),
+    background var(--transition);
+}
+
+.rule-card:hover {
+  border-color: var(--border-accent);
+  background: var(--bg-card);
+}
+
+.rule-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.rule-card-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text);
+  line-height: var(--lh-tight);
+  margin: 0;
+}
+
+.rule-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.rule-card-tag {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  padding: 2px var(--sp-2);
+  border-radius: var(--radius-full);
+  background: rgba(168, 48, 40, 0.1);
+  border: 1px solid var(--border-accent);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.rule-card-date {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  padding: 2px var(--sp-2);
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+
+.rule-card-content,
+.rule-card-body {
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  color: var(--text);
+  line-height: var(--lh-relaxed);
+  white-space: pre-wrap;
+}
+
+.rule-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border);
+}
+
+/* ── RESPONSIVO ─────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .page-main,
+  .page-main-rules {
+    padding: var(--sp-4);
+    padding-bottom: var(--sp-10);
+  }
+
+  .rules-status-panel {
+    max-width: 100%;
+  }
+
+  .rules-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rules-filter-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .page-title {
+    font-size: var(--fs-3xl);
+  }
+}
+
+@media (max-width: 480px) {
+  .rules-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rules-block {
+    padding: var(--sp-4);
+  }
+}
+
+/* ============================================================
+ * REFINAMENTOS DE TEMA — alinhados ao dashboard
+ * ============================================================ */
+
+/* ── FUNDO PRETO ABSOLUTO ──────────────────────────────────── */
+
+body.rules-page {
+  background: #000;
+}
+
+/* ── TEXTAREA COM PERSONALIDADE GÓTICA ─────────────────────── */
+
+.rules-textarea {
+  border-radius: 2px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.45);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.rules-textarea:hover {
+  border-color: rgba(212, 204, 186, 0.30);
+}
+
+.rules-textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow), inset 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+/* ── BOTÃO DE LIMPAR FILTRO — CANTOS ANGULARES ─────────────── */
+
+.rule-btn {
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* ── STATUS CARDS — HOVER SUAVE ────────────────────────────── */
+
+.rules-status-card {
+  transition:
+    transform var(--transition),
+    background var(--transition);
+}
+
+.rules-status-card:hover {
+  transform: translateY(-1px);
+  background: var(--bg-raised);
+}
+
+/* ── RULE CARDS — ACENTO LATERAL NO HOVER ──────────────────── */
+
+/* box-shadow lateral evita layout shift ao contrário de border-left */
+.rule-card {
+  box-shadow: -2px 0 0 transparent;
+  transition:
+    border-color var(--transition),
+    background var(--transition),
+    box-shadow var(--transition);
+}
+
+.rule-card:hover {
+  border-color: var(--border-accent);
+  background: var(--bg-card);
+  box-shadow: -2px 0 0 var(--accent);
+}
+
+/* ── KEYFRAMES ─────────────────────────────────────────────── */
+
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes headerSlideIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── ANIMAÇÕES DE ENTRADA ──────────────────────────────────── */
+
+.rules-page .site-header {
+  animation: headerSlideIn 0.35s ease both;
+}
+
+/* Todas as seções diretas do main entram em sequência */
+.page-main-rules > section {
+  animation: pageEnter 0.40s ease both;
+}
+
+.page-main-rules > section:nth-of-type(1) { animation-delay: 0.10s; }
+.page-main-rules > section:nth-of-type(2) { animation-delay: 0.18s; }
+.page-main-rules > section:nth-of-type(3) { animation-delay: 0.26s; }
+.page-main-rules > section:nth-of-type(4) { animation-delay: 0.34s; }
+
+/* ── ACESSIBILIDADE ────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .rules-page .site-header,
+  .page-main-rules > section {
+    animation: none;
+  }
+}

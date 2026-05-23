@@ -1,0 +1,445 @@
+/* ============================================================
+ * mesa.css — Mesa Virtual
+ * ============================================================ */
+
+/* ── CONTAINER ──────────────────────────────────────────────── */
+
+.mesa-shell {
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--sp-4) var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+/* ── HERO DA MESA ───────────────────────────────────────────── */
+
+.mesa-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-8);
+}
+
+.mesa-hero-heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.mesa-hero-heading h1 {
+  font-family: var(--font-display);
+  font-size: var(--fs-4xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text);
+  line-height: var(--lh-tight);
+}
+
+.mesa-hero-meta {
+  display: flex;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+  align-items: flex-end;
+}
+
+.meta-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--sp-1);
+  padding: var(--sp-3) var(--sp-2);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--accent);
+  border-radius: var(--radius-md);
+  /* largura fixa igual para todos os cards */
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.meta-card span {
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  line-height: 1.35;
+  text-align: center;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: calc(9px * 1.35 * 2);
+}
+
+.meta-card strong {
+  font-family: var(--font-display);
+  font-size: var(--fs-base);
+  font-weight: var(--fw-bold);
+  color: var(--text);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  line-height: 1.15;
+  text-align: center;
+  /* permite quebra em 2 linhas dentro do card de largura fixa */
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* ── LAYOUT PRINCIPAL (palco + workbench empilhados) ─────────── */
+
+.mesa-focus-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+/* ── PALCO ──────────────────────────────────────────────────── */
+
+.mesa-primary-stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.panel-stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* Barra de controles abaixo do canvas */
+.mesa-stage-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.stage-controls-left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.stage-controls-right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+}
+
+.scene-state-inline {
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.scene-copy-inline {
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  color: var(--text-soft);
+  line-height: 1;
+}
+
+.toggle-row-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  cursor: pointer;
+  padding: 0;
+  border: none;
+}
+
+.toggle-row-inline .toggle-copy strong {
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .mesa-stage-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .scene-copy-inline {
+    display: none;
+  }
+}
+
+/* Área do palco */
+.mesa-stage-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.mesa-stage-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.mesa-stage-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(168, 48, 40, 0.04),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.mesa-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.mesa-empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  text-align: center;
+  padding: var(--sp-6);
+}
+
+.mesa-empty-state strong {
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.mesa-empty-state p {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--text-faint);
+  max-width: 32ch;
+}
+
+/* Rodapé do palco */
+.stage-footer {
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.stage-footer-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.stage-footer-copy p {
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+  line-height: var(--lh-relaxed);
+}
+
+/* ── WORKBENCH (abaixo do palco, 2 colunas) ─────────────────── */
+
+.mesa-focus-workbench {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-4);
+  align-items: start;
+}
+
+.mesa-workbench-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.mesa-roster-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.mesa-roster-card h2 {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text);
+  line-height: var(--lh-tight);
+}
+
+/* Campo de busca do roster */
+.search-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.search-field > span {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.search-field input {
+  width: 100%;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--bg-raised);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  transition: border-color var(--transition);
+}
+
+.search-field input::placeholder { color: var(--text-faint); }
+.search-field input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Lista do roster (preenchida via JS) */
+.roster-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+/* Inspector */
+.mesa-inspector-shell {
+  flex-shrink: 0;
+}
+
+.token-inspector-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.token-inspector-block h2 {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text);
+  line-height: var(--lh-tight);
+}
+
+.token-inspector {
+  min-height: 120px;
+}
+
+.token-inspector-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--sp-2);
+  padding: var(--sp-6) var(--sp-4);
+  min-height: 120px;
+}
+
+.token-inspector-empty strong {
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.token-inspector-empty p {
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+  max-width: 28ch;
+  line-height: var(--lh-relaxed);
+}
+
+/* ── RESPONSIVO ─────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .mesa-focus-workbench {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .mesa-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-4);
+  }
+
+  .mesa-hero-meta {
+    flex-wrap: wrap;
+  }
+
+  .meta-card {
+    width: 100px;
+  }
+}
+
+@media (max-width: 640px) {
+  .mesa-focus-workbench {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .mesa-shell {
+    padding: var(--sp-3);
+  }
+}
+
+@media (max-width: 480px) {
+  .mesa-shell {
+    padding: var(--sp-4);
+  }
+}
