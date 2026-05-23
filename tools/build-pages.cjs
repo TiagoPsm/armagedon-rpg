@@ -26,23 +26,10 @@ const dirs = ["css", "js", "data"];
 const fichaCssBundle = "css/ficha-page.bundle.css";
 const fichaJsBundle = "js/ficha-page.bundle.js";
 const fichaCssFiles = [
-  // V2 Shadow Slave (foundation)
-  "css/v2/tokens-v2.css",
-  "css/v2/base-v2.css",
-  "css/v2/animations-v2.css",
-  "css/v2/components-v2.css",
-  "css/v2/layout-v2.css",
-  // Legacy layouts (preservados pelos testes Playwright de alinhamento)
-  "css/style.css",
-  "css/ficha-base.css",
-  "css/ficha-layout.css",
-  "css/ficha-inventory-memory.css",
-  "css/ficha-master.css",
-  "css/ficha-dice-soul.css",
-  "css/ficha-responsive.css",
-  "css/ui.css",
-  // V2 page-specific (aplica paleta Shadow Slave sobre legacy)
-  "css/v2/page-ficha-v2.css"
+  "css/tokens.css",
+  "css/reset.css",
+  "css/components.css",
+  "css/ficha.css",
 ];
 const fichaJsFiles = [
   "js/ui.js",
@@ -150,3 +137,4 @@ bundleFiles(fichaJsFiles, fichaJsBundle, "\n;\n");
 rewriteFichaHtmlForPublishedBundles();
 
 console.log(`GitHub Pages artifact ready: ${path.relative(repoRoot, outDir)}`);
+
