@@ -1765,9 +1765,9 @@ function changeTokenStyle(style) {
   if (stage) stage.dataset.tokenStyle = style;
 
   if (style === "minimal") {
-    // Switch canvas → DOM: clear canvas, remove canvas class, build DOM tokens
+    // Switch canvas → DOM: clear canvas, remove DOM tokens antigos e re-renderiza
     _ensureCanvasClearedForDOMMode();
-    mesaStageTokenElements.clear();
+    clearDomStageTokenElements(); // remove DOM elements E limpa o Map (era só .clear() — bug)
     renderDomStage();
   } else {
     // Switch DOM → canvas: remove DOM tokens, re-enable canvas render
@@ -1909,5 +1909,4 @@ function removeToken(tokenId) {
   bumpMesaSceneVersion();
   broadcastMesaTokenRemove(removedTokenId);
   persistState();
-  scheduleMesaRender({ summary: true, controls: true, roster: true, stage: true, inspector: true });
-}
+  scheduleMesaRender({ summary: true, 
