@@ -312,7 +312,6 @@
   border-left: 1px solid rgba(255, 255, 255, 0.055);
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
-  scrollbar-gutter: stable; /* reserva espaço fixo — evita reflow ao expandir */
   z-index: 10;
 }
 

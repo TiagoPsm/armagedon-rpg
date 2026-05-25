@@ -301,9 +301,9 @@ async function listDirectory(env, user) {
     const character = serializeCharacter(mapCharacterRow(row));
     const inventorySlots = Number(character.data.inventorySlots || 0);
     const usedSlots = Array.isArray(character.data.inv) ? character.data.inv.length : 0;
-    // Só inclui avatar se for URL (não base64) — mantém payload do /directory pequeno
-    const rawAvatar = String(character.data.avatar || "").trim();
-    const avatarUrl = rawAvatar.startsWith("http") ? rawAvatar : "";
+    // Inclui avatar completo (URL ou base64) para que a Mesa não precise
+    // de uma segunda busca por personagem só para obter o avatar.
+    const avatar = String(character.data.avatar || "").trim();
 
     if (character.kind === "player") {
       players.push({
@@ -313,7 +313,7 @@ async function listDirectory(env, user) {
         charname: character.name,
         inventorySlots,
         usedSlots,
-        avatarUrl
+        avatar
       });
       return;
     }
@@ -329,7 +329,7 @@ async function listDirectory(env, user) {
         name: character.name,
         inventorySlots,
         usedSlots,
-        avatarUrl
+        avatar
       });
       return;
     }
@@ -338,7 +338,7 @@ async function listDirectory(env, user) {
       id: character.id,
       key: character.key,
       name: character.name,
-      avatarUrl
+      avatar
     });
   });
 
@@ -911,3 +911,5 @@ export {
   createMonsterCharacter,
   createNpcCharacter,
   createPlayerCharacter,
+  deleteCharacterByKey,
+  del

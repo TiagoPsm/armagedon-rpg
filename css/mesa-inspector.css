@@ -19,8 +19,8 @@
 .token-inspector-controls {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  padding: 0.6rem 0.75rem;
+  gap: 0.65rem;
+  padding: 0.85rem 0.9rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.055);
 }
 
@@ -44,10 +44,10 @@
 }
 
 .token-inspector-avatar {
-  width: 52px;
-  height: 52px;
+  width: 64px;
+  height: 64px;
   flex-shrink: 0;
-  border-radius: 10px;
+  border-radius: 14px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.07);
   background:
@@ -133,30 +133,42 @@
   gap: 0.35rem;
 }
 
-.bar-label {
-  display: block;
-  font-family: var(--font-ui, "Cinzel", serif);
-  font-size: 0.58rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-soft, rgba(255, 248, 236, 0.45));
-  margin-bottom: 0.1rem;
+.bar-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
-/* Inputs de stat — layout: [−] [valor] [+] / [max] */
+.bar-label {
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-soft, rgba(255, 248, 236, 0.5));
+}
+
+.bar-label-row span:last-child {
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text, rgba(255, 248, 236, 0.85));
+}
+
+/* Inputs de stat — compactos */
 .stat-editor-inputs {
   display: grid;
-  grid-template-columns: 26px 1fr 26px 12px 1fr;
-  gap: 0.25rem;
+  grid-template-columns: 1fr 14px 1fr;
+  gap: 0.35rem;
   align-items: center;
 }
 
 .stat-editor-inputs input {
   width: 100%;
-  min-height: 30px;
-  padding: 0.3rem 0.25rem;
-  border-radius: 4px;
+  min-height: 36px;
+  padding: 0.45rem 0.6rem;
+  border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(6, 7, 11, 0.9);
   color: var(--text, rgba(255, 248, 236, 0.94));
@@ -166,13 +178,6 @@
   text-align: center;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
-  -moz-appearance: textfield;
-}
-
-.stat-editor-inputs input::-webkit-outer-spin-button,
-.stat-editor-inputs input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  appearance: none;
 }
 
 .stat-editor-inputs input:focus {
@@ -182,41 +187,6 @@
 
 .stat-editor-inputs input:disabled {
   opacity: 0.45;
-  cursor: not-allowed;
-}
-
-/* ── Botões +/− ── */
-.stat-step-btn {
-  width: 26px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--text-soft, rgba(255, 248, 236, 0.5));
-  font-family: var(--font-ui, "Cinzel", serif);
-  font-size: 0.9rem;
-  font-weight: 400;
-  line-height: 1;
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-  flex-shrink: 0;
-  user-select: none;
-}
-
-.stat-step-btn:hover:not(:disabled) {
-  background: rgba(168, 48, 40, 0.18);
-  border-color: rgba(168, 48, 40, 0.4);
-  color: #e8b4b0;
-}
-
-.stat-step-btn:active:not(:disabled) {
-  background: rgba(168, 48, 40, 0.32);
-}
-
-.stat-step-btn:disabled {
-  opacity: 0.3;
   cursor: not-allowed;
 }
 
@@ -291,13 +261,14 @@
   gap: 0.3rem;
 }
 
-/* Linha: label em cima, botões embaixo */
+/* Linha: label em cima, botão(ões) abaixo */
 .inspector-action-row {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  padding: 0.4rem 0.5rem;
-  border-radius: 6px;
+  align-items: flex-start;
+  gap: 0.35rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 9px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   background: rgba(255, 255, 255, 0.02);
 }
@@ -314,7 +285,7 @@
 .inspector-action-btns {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.3rem;
   flex-wrap: wrap;
 }
 
@@ -373,9 +344,9 @@
 }
 
 .inspector-row .mini-btn {
-  padding: 2px 8px;
+  min-height: 26px;
+  padding: 0.28rem 0.65rem;
   font-size: 0.58rem;
-  min-height: unset;
 }
 
 /* ── NOTA INFORMATIVA ────────────────────────────────────────── */
@@ -445,3 +416,4 @@
   from { transform: scale(0.985); opacity: 0.54; }
   to   { transform: scale(1.02);  opacity: 0.84; }
 }
+                     

@@ -5,8 +5,8 @@ const repoRoot = path.resolve(__dirname, "..");
 const outDir = path.join(repoRoot, "_site");
 
 // Bump aqui quando mudar arquivos dos bundles
-const FICHA_BUNDLE_VERSION = "2026-05-24-avatar-r2-1";
-const MESA_BUNDLE_VERSION  = "2026-05-25-token-fix-1";
+const FICHA_BUNDLE_VERSION = "2026-05-25-avatar-sync-1";
+const MESA_BUNDLE_VERSION  = "2026-05-25-avatar-full-1";
 
 const files = [
   "index.html", "ficha.html", "mesa.html", "regras.html", "sugestoes.html",
@@ -132,4 +132,4 @@ rewriteHtmlBundles(path.join(outDir, "mesa.html"), {
   jsFiles:  mesaJsFiles,  jsBundle:  mesaJsBundle,  jsVersion:  MESA_BUNDLE_VERSION,
 });
 
-console.log("\nArtifact ready:", path.relative(repoRoot, outDir));
+console.log("\nArtifact ready:", path.relative(repoRoot, outDir

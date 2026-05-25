@@ -412,10 +412,26 @@ async function loadSheet(username, kind = "player") {
       const character = await APP.getCharacter(username);
       const mergedRemoteData = mergeSheetHabDraft(character.data || {}, remoteSheetsCache[username] || {});
       remoteSheetsCache[username] = normalizeSheetData(mergedRemoteData, kind);
+
+      // Se o backend não tem avatar mas o localStorage local tem, preserva o
+      // avatar local e agenda um save silencioso para sincronizar com o backend.
+      // Isso evita que o avatar "desapareça" ao abrir a ficha em modo backend
+      // e garante que outros dispositivos (ex: mesa do mestre) possam buscá-lo.
+      const needsAvatarSync = !remoteSheetsCache[username].avatar && cachedData.avatar;
+      if (needsAvatarSync) {
+        remoteSheetsCache[username] = { ...remoteSheetsCache[username], avatar: cachedData.avatar };
+      }
+
       persistRemoteSheetsCache();
 
       if (!currentSheetTarget || currentSheetTarget.key !== username) return;
       applySheetData(remoteSheetsCache[username], kind);
+
+      // Salva silenciosamente APÓS applySheetData para que collectSheetData
+      // leia o avatar já visível no DOM e o envie ao backend.
+      if (needsAvatarSync) {
+        saveSheetSilently();
+      }
     } catch (error) {
       if (!hasRenderableSheetData(cachedData)) {
         await UI.alert(error.message || "Falha ao carregar a ficha no servidor.", {
@@ -1261,37 +1277,4 @@ function createNpcTarget(npc) {
   return {
     kind: "npc",
     key: normalizedNpc.key || getNpcSheetKey(normalizedNpc.id),
-    npcId: normalizedNpc.id,
-    label: normalizedNpc.name
-  };
-}
-
-function createMonsterTarget(monster) {
-  return {
-    kind: "monster",
-    key: getMonsterSheetKey(monster.id),
-    monsterId: monster.id,
-    label: monster.name
-  };
-}
-
-function syncAutoGrowTextareas(scope = document) {
-  scope.querySelectorAll("textarea.auto-grow").forEach(autoGrowTextarea);
-}
-
-function autoGrowTextarea(textarea) {
-  textarea.style.height = "auto";
-  textarea.style.height = `${textarea.scrollHeight}px`;
-}
-
-function esc(value) {
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-function jsEsc(value) {
-  return String(value || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-}
+   

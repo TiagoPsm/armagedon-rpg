@@ -920,7 +920,7 @@ function buildPlayers(directory, sheets) {
       ownerUsername: username,
       createdBy: "mestre",
       name,
-      imageUrl: sheet.avatar || String(player.avatarUrl || "").trim(),
+      imageUrl: sheet.avatar || String(player.avatar || player.avatarUrl || "").trim(),
       currentLife: sheet.vidaAtual,
       maxLife: sheet.vidaMax,
       currentIntegrity: sheet.integAtual,
@@ -956,7 +956,7 @@ function buildNpcs(directory, sheets) {
       ownerUsername: "mestre",
       createdBy: "mestre",
       name,
-      imageUrl: sheet.avatar || String(npc.avatarUrl || "").trim(),
+      imageUrl: sheet.avatar || String(npc.avatar || npc.avatarUrl || "").trim(),
       currentLife: sheet.vidaAtual,
       maxLife: sheet.vidaMax,
       currentIntegrity: sheet.integAtual,
@@ -992,7 +992,7 @@ function buildMonsters(directory, sheets) {
       ownerUsername: "mestre",
       createdBy: "mestre",
       name,
-      imageUrl: sheet.avatar || String(monster.avatarUrl || "").trim(),
+      imageUrl: sheet.avatar || String(monster.avatar || monster.avatarUrl || "").trim(),
       currentLife: sheet.vidaAtual,
       maxLife: sheet.vidaMax,
       currentIntegrity: sheet.integAtual,
@@ -1624,5 +1624,4 @@ function renderAll() {
   renderInspector();
 }
 
-function renderHeader() {
-  const headerUser = get
+f

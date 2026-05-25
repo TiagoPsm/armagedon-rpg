@@ -5,39 +5,17 @@ let pendingRealtimeDragMove = null;
 let realtimeDragMoveTimer = 0;
 let lastRealtimeDragMoveAt = 0;
 let lastMesaDragEndAt = 0;
-let _tokenResizeDrag = null; // { tokenId, startX, startY, startScale, tokenEl }
 const MESA_REALTIME_DRAG_INTERVAL_MS = 50;
 
 function renderStage() {
-  // Minimal style requires DOM tokens (canvas renderer can't draw circular RPG tokens)
-  if ((state.tokenStyle || "card") === "minimal") {
-    _ensureCanvasClearedForDOMMode();
-    renderDomStage();
-    return;
-  }
   if (renderCanvasStage()) return;
   renderDomStage();
-}
-
-function _ensureCanvasClearedForDOMMode() {
-  const stage = getMesaDomRef("stage");
-  if (!stage) return;
-  // Remove the canvas-renderer class so DOM .mesa-token elements are visible
-  stage.classList.remove("is-canvas-renderer");
-  // Clear canvas pixel content
-  const canvas = document.getElementById("mesaStageCanvas");
-  if (canvas) {
-    const ctx = canvas.getContext("2d");
-    if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
 }
 
 function renderDomStage() {
   const stage = getMesaDomRef("stage");
   const emptyState = getMesaDomRef("emptyState");
   if (!stage || !emptyState) return;
-  // Keep data-token-style in sync so CSS rules always reflect current style
-  stage.dataset.tokenStyle = state.tokenStyle || "card";
 
   const renderedTokens = [...getRenderedTokens()].sort((a, b) => (a.order || 0) - (b.order || 0));
   const nextTokenIds = new Set(renderedTokens.map(token => token.id));
@@ -146,15 +124,11 @@ function createCanvasTokenSnapshot(token) {
 }
 
 function refreshCanvasStageToken() {
-  // Guard: in DOM/minimal mode the canvas renderer must not wipe DOM tokens
-  if ((state.tokenStyle || "card") === "minimal") return;
   if (!mesaStageRenderer?.enabled || !lastCanvasStageSnapshot) return;
   renderCanvasStage();
 }
 
 function updateCanvasStageTokenPosition(token) {
-  // Guard: in DOM/minimal mode positions are managed by CSS, not the canvas renderer
-  if ((state.tokenStyle || "card") === "minimal") return false;
   if (!token || !mesaStageRenderer?.enabled || !lastCanvasStageSnapshot) return false;
   if (typeof mesaStageRenderer.updateTokenPosition !== "function") {
     refreshCanvasStageToken();
@@ -189,10 +163,7 @@ function getTokenContentSignature(token) {
     currentLife: token.currentLife,
     maxLife: token.maxLife,
     currentIntegrity: token.currentIntegrity,
-    maxIntegrity: token.maxIntegrity,
-    tokenStyle: state.tokenStyle || "card",
-    tokenScale: token.tokenScale || 1,
-    canResize: canResizeToken(token)
+    maxIntegrity: token.maxIntegrity
   });
 }
 
@@ -202,18 +173,15 @@ function updateMesaTokenElementState(element, token) {
   element.style.left = `${token.x}%`;
   element.style.top = `${token.y}%`;
   element.style.zIndex = String(token.order || 1);
-  element.style.setProperty("--token-scale", String(token.tokenScale || 1));
   element.dataset.contentSignature = getTokenContentSignature(token);
 }
 
 function updateStageTokenSelection(previousTokenId, nextTokenId) {
-  // Canvas path — only when renderer is active AND we are NOT in DOM/minimal mode
-  if (mesaStageRenderer?.enabled && (state.tokenStyle || "card") !== "minimal") {
+  if (mesaStageRenderer?.enabled) {
     refreshCanvasStageToken();
     return;
   }
 
-  // DOM path — update the two affected elements in place
   [previousTokenId, nextTokenId].forEach(tokenId => {
     if (!tokenId) return;
     const token = findToken(tokenId);
@@ -654,10 +622,6 @@ function syncInspectorStatInputCard(input, field, token) {
 
 function handleTokenPointerDown(event) {
   if (state.drag) return;
-  if (event.target.classList?.contains("mesa-token-resize-handle")) {
-    handleResizePointerDown(event);
-    return;
-  }
   const target = resolveStagePointerTarget(event);
   if (!target) return;
   const tokenId = target.tokenId;
@@ -679,7 +643,6 @@ function handleTokenPointerDown(event) {
 
 function handleTokenMouseDown(event) {
   if (state.drag) return;
-  if (event.target.classList?.contains("mesa-token-resize-handle")) return; // handled by pointer
   const target = resolveStagePointerTarget(event);
   if (!target) return;
   const tokenId = target.tokenId;
@@ -708,10 +671,6 @@ function resolveStagePointerTarget(event) {
       tokenElement
     };
   }
-
-  // In DOM/minimal mode skip the canvas hit-test — the renderer still has stale layout
-  // data from the last canvas render and would return false hits on empty space.
-  if ((state.tokenStyle || "card") === "minimal") return null;
 
   const renderer = getMesaStageRenderer();
   const hit = renderer?.enabled ? renderer.hitTest(event.clientX, event.clientY) : null;
@@ -769,13 +728,11 @@ function beginTokenDrag(target, token, clientX, clientY, pointerId) {
 }
 
 function handleDragMove(event) {
-  if (_tokenResizeDrag) { handleResizePointerMove(event); return; }
   if (!state.drag) return;
   scheduleDragPosition(event.clientX, event.clientY);
 }
 
 function handleDragEnd() {
-  if (_tokenResizeDrag) { handleResizePointerUp(); return; }
   if (!state.drag) return;
   flushPendingDragPosition();
   flushRealtimeDragMove();
@@ -798,7 +755,6 @@ function shouldIgnoreMesaStageClickAfterDrag() {
 }
 
 function handleMouseDragMove(event) {
-  if (_tokenResizeDrag) { handleResizePointerMove(event); return; }
   if (!state.drag) return;
   scheduleDragPosition(event.clientX, event.clientY);
 }
@@ -1616,178 +1572,7 @@ function getOwnerCopy(ownerUsername) {
   return `Dono: ${owner}`;
 }
 
-
-/* ── TOKEN RESIZE ────────────────────────────────────────────── */
-
-function handleResizePointerDown(event) {
-  const handle = event.target.closest(".mesa-token-resize-handle");
-  if (!handle) return;
-  const tokenId = String(handle.dataset.tokenId || "");
-  const token = findToken(tokenId);
-  if (!token || !canResizeToken(token)) return;
-
-  event.preventDefault();
-  event.stopPropagation();
-
-  const tokenEl = document.querySelector(`.mesa-token[data-token-id="${CSS.escape(tokenId)}"]`);
-  _tokenResizeDrag = {
-    tokenId,
-    startX: event.clientX,
-    startY: event.clientY,
-    startScale: token.tokenScale || 1,
-    tokenEl
-  };
-  document.body.classList.add("mesa-resize-active");
-}
-
-function handleResizePointerMove(event) {
-  if (!_tokenResizeDrag) return;
-  const dx = event.clientX - _tokenResizeDrag.startX;
-  const dy = event.clientY - _tokenResizeDrag.startY;
-  // Diagonal drag: down-right = bigger, up-left = smaller
-  const delta = (dx + dy) / 300;
-  const newScale = Math.max(0.25, Math.min(4.0, _tokenResizeDrag.startScale + delta));
-  if (_tokenResizeDrag.tokenEl?.isConnected) {
-    _tokenResizeDrag.tokenEl.style.setProperty("--token-scale", newScale.toFixed(3));
-  }
-}
-
-function handleResizePointerUp() {
-  if (!_tokenResizeDrag) return;
-  const tokenEl = _tokenResizeDrag.tokenEl;
-  const tokenId = _tokenResizeDrag.tokenId;
-  const token = findToken(tokenId);
-
-  if (token && tokenEl?.isConnected) {
-    const scaleStr = tokenEl.style.getPropertyValue("--token-scale");
-    const scale = parseFloat(scaleStr);
-    if (scale > 0 && isFinite(scale)) {
-      token.tokenScale = parseFloat(scale.toFixed(2));
-    }
-    bumpMesaSceneVersion();
-    persistState({ immediate: true });
-    scheduleMesaRender({ stage: true, inspector: true });
-  }
-
-  _tokenResizeDrag = null;
-  document.body.classList.remove("mesa-resize-active");
-}
-
-function canResizeToken(token) {
-  if (!token) return false;
-  if (isMaster()) return true;
-  const myUsername = normalizeMesaUsername(state.session?.username);
-  return Boolean(myUsername && normalizeMesaUsername(token.ownerUsername || token.characterKey || token.id) === myUsername);
-}
-
-
-function _applyTokenStyleDOM(style) {
-  const stage = getMesaDomRef("stage");
-  if (!stage) return;
-  const isMinimal = style === "minimal";
-  stage.querySelectorAll(".mesa-token").forEach(function(token) {
-    if (isMinimal) {
-      token.style.setProperty("width",          "88px",        "important");
-      token.style.setProperty("padding",        "0",           "important");
-      token.style.setProperty("background",     "transparent", "important");
-      token.style.setProperty("border",         "none",        "important");
-      token.style.setProperty("box-shadow",     "none",        "important");
-      token.style.setProperty("display",        "flex",        "important");
-      token.style.setProperty("flex-direction", "column",      "important");
-      token.style.setProperty("align-items",    "center",      "important");
-      token.style.setProperty("gap",            "0.4rem",      "important");
-
-      var top  = token.querySelector(".mesa-token-top");
-      var meta = token.querySelector(".mesa-token-meta");
-      var bars = token.querySelector(".token-bars");
-      if (top)  top.style.setProperty("display",  "none", "important");
-      if (meta) meta.style.setProperty("display", "none", "important");
-      if (bars) bars.style.setProperty("display", "none", "important");
-
-      var avatar = token.querySelector(".mesa-token-avatar");
-      if (avatar) {
-        avatar.style.setProperty("width",         "88px",  "important");
-        avatar.style.setProperty("height",        "88px",  "important");
-        avatar.style.setProperty("border-radius", "50%",   "important");
-        avatar.style.setProperty("margin-top",    "0",     "important");
-        avatar.style.setProperty("margin-bottom", "0",     "important");
-        var t = token.dataset.type;
-        var ring = t === "player"  ? "rgba(93,114,212,0.65)"
-                 : t === "npc"     ? "rgba(176,143,50,0.65)"
-                 : t === "monster" ? "rgba(176,48,57,0.65)"
-                 : "rgba(255,255,255,0.15)";
-        avatar.style.setProperty("border-color", ring, "important");
-        token.querySelectorAll(".mesa-token-avatar img, .mesa-token-avatar-fallback")
-          .forEach(function(el) { el.style.setProperty("border-radius", "50%", "important"); });
-      }
-
-      var name = token.querySelector(".mesa-token-name");
-      if (name) {
-        name.style.setProperty("font-size",      "0.78rem",  "important");
-        name.style.setProperty("text-align",     "center",   "important");
-        name.style.setProperty("max-width",      "96px",     "important");
-        name.style.setProperty("overflow",       "hidden",   "important");
-        name.style.setProperty("text-overflow",  "ellipsis", "important");
-        name.style.setProperty("white-space",    "nowrap",   "important");
-        name.style.setProperty("margin",         "0",        "important");
-        name.style.setProperty("text-shadow",    "0 1px 4px rgba(0,0,0,0.9)", "important");
-      }
-    } else {
-      // Reset — remove all inline overrides set by minimal mode
-      var props = ["width","padding","background","border","box-shadow","display",
-                   "flex-direction","align-items","gap"];
-      props.forEach(function(p) { token.style.removeProperty(p); });
-      token.querySelectorAll(".mesa-token-top,.mesa-token-meta,.token-bars").forEach(function(el) {
-        el.style.removeProperty("display");
-      });
-      var avatar = token.querySelector(".mesa-token-avatar");
-      if (avatar) {
-        ["width","height","border-radius","margin-top","margin-bottom","border-color"]
-          .forEach(function(p) { avatar.style.removeProperty(p); });
-        token.querySelectorAll(".mesa-token-avatar img,.mesa-token-avatar-fallback")
-          .forEach(function(el) { el.style.removeProperty("border-radius"); });
-      }
-      var name = token.querySelector(".mesa-token-name");
-      if (name) {
-        ["font-size","text-align","max-width","overflow","text-overflow","white-space","margin","text-shadow"]
-          .forEach(function(p) { name.style.removeProperty(p); });
-      }
-    }
-  });
-}
-
-function changeTokenStyle(style) {
-  if (!isMaster()) return;
-  if (style !== "card" && style !== "minimal") return;
-  state.tokenStyle = style;
-
-  const stage = getMesaDomRef("stage");
-  if (stage) stage.dataset.tokenStyle = style;
-
-  if (style === "minimal") {
-    // Switch canvas → DOM: clear canvas, remove DOM tokens antigos e re-renderiza
-    _ensureCanvasClearedForDOMMode();
-    clearDomStageTokenElements(); // remove DOM elements E limpa o Map (era só .clear() — bug)
-    renderDomStage();
-  } else {
-    // Switch DOM → canvas: remove DOM tokens, re-enable canvas render
-    clearDomStageTokenElements();
-    if (stage) stage.classList.remove("is-canvas-renderer"); // renderer will re-add
-    scheduleMesaRender({ stage: true, summary: true });
-  }
-
-  bumpMesaSceneVersion();
-  persistState();
-  scheduleMesaRender({ summary: true });
-  if (typeof _syncTokenStyleButtons === "function") _syncTokenStyleButtons();
-}
-
 function renderToken(token) {
-  if ((state.tokenStyle || "card") === "minimal") return renderTokenMinimal(token);
-  return renderTokenCard(token);
-}
-
-function renderTokenCard(token) {
   const hiddenForMaster = isMaster() && !state.previewPlayerView && !token.visibleToPlayers;
   const selectedClass = token.id === state.selectedTokenId ? "is-selected" : "";
   const hiddenClass = hiddenForMaster ? "is-hidden-master" : "";
@@ -1797,17 +1582,13 @@ function renderTokenCard(token) {
     : !canViewStats
       ? "Status restrito"
       : "";
-  const scale = token.tokenScale || 1;
-  const resizeHandle = canResizeToken(token)
-    ? `<div class="mesa-token-resize-handle" data-token-id="${token.id}" title="Redimensionar token"></div>`
-    : "";
 
   return `
     <article
       class="mesa-token ${selectedClass} ${hiddenClass}"
       data-token-id="${token.id}"
       data-type="${token.type}"
-      style="left:${token.x}%; top:${token.y}%; z-index:${token.order || 1}; --token-scale:${scale};"
+      style="left:${token.x}%; top:${token.y}%; z-index:${token.order || 1};"
     >
       <div class="mesa-token-top">
         <span class="token-type-badge" data-type="${token.type}">${escapeHtml(token.typeLabel)}</span>
@@ -1834,38 +1615,6 @@ function renderTokenCard(token) {
             ${renderTokenStatusRow("Integridade", null, null, "", true)}
           `}
       </div>
-      ${resizeHandle}
-    </article>
-  `;
-}
-
-function renderTokenMinimal(token) {
-  const hiddenForMaster = isMaster() && !state.previewPlayerView && !token.visibleToPlayers;
-  const selectedClass = token.id === state.selectedTokenId ? "is-selected" : "";
-  const hiddenClass = hiddenForMaster ? "is-hidden-master" : "";
-  const scale = token.tokenScale || 1;
-  const resizeHandle = canResizeToken(token)
-    ? `<div class="mesa-token-resize-handle" data-token-id="${token.id}" title="Redimensionar token"></div>`
-    : "";
-  const hiddenBadge = hiddenForMaster
-    ? `<span class="mesa-token-minimal-badge is-hidden-badge">Oculto</span>`
-    : "";
-
-  return `
-    <article
-      class="mesa-token is-minimal ${selectedClass} ${hiddenClass}"
-      data-token-id="${token.id}"
-      data-type="${token.type}"
-      style="left:${token.x}%; top:${token.y}%; z-index:${token.order || 1}; --token-scale:${scale};"
-    >
-      <div class="mesa-token-avatar">
-        ${token.imageUrl
-          ? `<img src="${escapeAttribute(token.imageUrl)}" alt="${escapeAttribute(token.name)}" width="128" height="128" loading="lazy" decoding="async" draggable="false" />`
-          : `<span class="mesa-token-avatar-fallback">${escapeHtml(token.initials)}</span>`}
-        ${hiddenBadge}
-      </div>
-      <h3 class="mesa-token-name">${escapeHtml(token.name)}</h3>
-      ${resizeHandle}
     </article>
   `;
 }
@@ -1909,4 +1658,5 @@ function removeToken(tokenId) {
   bumpMesaSceneVersion();
   broadcastMesaTokenRemove(removedTokenId);
   persistState();
-  scheduleMesaRender({ summary: true, 
+  scheduleMesaRender({ summary: true, controls: true, roster: true, stage: true, inspector: true });
+}

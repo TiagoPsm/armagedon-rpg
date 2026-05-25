@@ -172,7 +172,6 @@
       this.records.set(key, record);
 
       const image = new Image();
-      image.crossOrigin = "anonymous"; // necessário para URLs R2 cross-origin no canvas
       image.decoding = "async";
       image.loading = "eager";
       image.onload = async () => {
@@ -716,4 +715,11 @@
       renderer?.destroy();
       renderer = new MesaRendererV2(stage, options);
       renderer.init();
-      return renderer
+      return renderer;
+    },
+    reset() {
+      renderer?.destroy();
+      renderer = null;
+    }
+  };
+})();
