@@ -461,6 +461,61 @@ export default {
         return withCors(json(saved), origin);
       }
 
+      /* ── AVATAR: upload para R2 ─────────────────────────────────────── */
+
+      const avatarUploadMatch = path.match(/^\/api\/avatars\/([^/]+)$/);
+      if (avatarUploadMatch && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        if (!env.MAPS) return errorJson("Bucket R2 de avatares nao configurado.", 503, origin);
+
+        const key = decodePathParam(avatarUploadMatch[1]);
+
+        // Mestre pode enviar qualquer avatar; jogador só pode enviar o próprio
+        const character = await getCharacterByKey(env, key);
+        if (character) {
+          assertCharacterAccess(session, character, "write");
+        } else if (session.role !== "master") {
+          return errorJson("Sem permissao para enviar avatar.", 403, origin);
+        }
+
+        const bodyBytes = await request.arrayBuffer();
+        if (!bodyBytes.byteLength) return errorJson("Body vazio.", 400, origin);
+
+        const contentType = request.headers.get("content-type") || "image/webp";
+        const ext = contentType.includes("jpeg") || contentType.includes("jpg") ? "jpg" : "webp";
+        const safeKey = String(key).replace(/[^a-z0-9_-]/gi, "_").toLowerCase().slice(0, 64);
+        const r2Key = `avatars/${safeKey}.${ext}`;
+
+        await env.MAPS.put(r2Key, bodyBytes, {
+          httpMetadata:   { contentType },
+          customMetadata: { characterKey: key, uploadedBy: session.username, uploadedAt: new Date().toISOString() }
+        });
+
+        const publicUrl = `${new URL(request.url).origin}/api/avatars/${encodeURIComponent(key)}`;
+        return withCors(json({ ok: true, r2Key, url: publicUrl }, { status: 201 }), origin);
+      }
+
+      /* ── AVATAR: servir do R2 ────────────────────────────────────────── */
+
+      const avatarServeMatch = path.match(/^\/api\/avatars\/([^/]+)$/);
+      if (avatarServeMatch && request.method === "GET") {
+        if (!env.MAPS) return errorJson("Bucket R2 nao configurado.", 503, origin);
+
+        const key = decodePathParam(avatarServeMatch[1]);
+        const safeKey = String(key).replace(/[^a-z0-9_-]/gi, "_").toLowerCase().slice(0, 64);
+
+        // Tenta webp primeiro, depois jpg
+        let object = await env.MAPS.get(`avatars/${safeKey}.webp`);
+        if (!object) object = await env.MAPS.get(`avatars/${safeKey}.jpg`);
+        if (!object) return errorJson("Avatar nao encontrado.", 404, origin);
+
+        const headers = new Headers();
+        headers.set("content-type", object.httpMetadata?.contentType || "image/webp");
+        headers.set("cache-control", "public, max-age=3600");
+        Object.entries(createCorsHeaders(origin)).forEach(([k, v]) => headers.set(k, v));
+        return new Response(object.body, { headers });
+      }
+
       /* ── MAPA: upload para R2 (último recurso, só mestre) ──────────── */
 
       if (path === "/api/mesa/map" && request.method === "POST") {

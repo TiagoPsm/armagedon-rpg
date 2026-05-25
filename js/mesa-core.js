@@ -151,11 +151,17 @@ async function initMesaPage() {
 
   state.session = session;
   state.role = resolveInitialRole(session);
-  await refreshMesaDirectoryBeforeRoster();
-  await hydrateOwnMesaSheetSnapshot();
-  setMesaRoster(buildRoster());
 
-  await hydrateState();
+  // Paraleliza as 3 requests independentes: diretorio, ficha propria e cena da mesa.
+  // Cada uma e independente das outras — rodando em paralelo economiza ~300-400ms.
+  const [, , prefetchedScene] = await Promise.all([
+    refreshMesaDirectoryBeforeRoster(),   // GET /directory
+    hydrateOwnMesaSheetSnapshot(),        // GET /characters/:key (apenas jogadores)
+    prefetchMesaSceneSnapshot(),          // GET /mesa/scene
+  ]);
+
+  setMesaRoster(buildRoster());
+  await hydrateState(prefetchedScene);
   bindMesaRealtime();
   bindMesaStorageSync();
   renderAll();
@@ -638,17 +644,13 @@ async function hydrateOwnMesaSheetSnapshot() {
 // não têm avatar cacheado. Chamado depois do render inicial para não bloquear
 // a exibição da mesa. Só atua em modo backend.
 async function hydrateAllMesaSheetSnapshots() {
-  const backendOk = window.AUTH?.isBackendEnabled?.();
-  const getCharOk = Boolean(window.APP?.getCharacter);
-  console.log("[Mesa] hydrateAllMesaSheetSnapshots: backend=", backendOk, "getCharacter=", getCharOk);
-  if (!backendOk || !getCharOk) return;
+  if (!window.AUTH?.isBackendEnabled?.() || !window.APP?.getCharacter) return;
 
   const keysToFetch = state.roster
     .filter(entry => !entry.imageUrl)
     .map(entry => normalizeMesaCharacterKey(entry.characterKey || entry.id))
     .filter(Boolean);
 
-  console.log("[Mesa] hydrateAllMesaSheetSnapshots: roster=", state.roster.length, "keysToFetch=", keysToFetch);
   if (!keysToFetch.length) return;
 
   let changed = false;
@@ -657,15 +659,13 @@ async function hydrateAllMesaSheetSnapshots() {
   for (const key of keysToFetch) {
     try {
       const bundle = await window.APP.getCharacter(key);
-      const hasAvatar = Boolean(String(bundle?.data?.avatar || "").trim());
-      console.log("[Mesa] hydrateAllMesaSheetSnapshots: key=", key, "bundle.data=", bundle?.data ? "ok" : "null", "avatar=", hasAvatar);
       if (!bundle?.data) continue;
-      if (hasAvatar) {
+      if (String(bundle.data.avatar || "").trim()) {
         remoteSheets[key] = bundle.data;
         changed = true;
       }
-    } catch (err) {
-      console.warn("[Mesa] hydrateAllMesaSheetSnapshots: erro ao buscar key=", key, err);
+    } catch {
+      // silencioso — avatar simplesmente nao aparece
     }
   }
 
@@ -1299,11 +1299,22 @@ function buildFallbackRoster(sheets = {}) {
   ];
 }
 
+// Busca a cena remotamente sem aplicar — usada para iniciar o request
+// em paralelo com /directory, antes do roster estar pronto.
+async function prefetchMesaSceneSnapshot() {
+  if (!window.AUTH?.isBackendEnabled?.() || !window.APP?.getMesaScene) return null;
+  try {
+    return await window.APP.getMesaScene();
+  } catch {
+    return null;
+  }
+}
+
 // A Mesa usa a ficha como fonte de verdade para identidade e status.
 // O estado salvo aqui e apenas a camada visual do palco:
 // posicao, ordem, visibilidade e regra de exposicao dos status.
-async function hydrateState() {
-  const saved = await loadMesaSceneSnapshot();
+async function hydrateState(prefetchedSceneResult) {
+  const saved = await loadMesaSceneSnapshot(prefetchedSceneResult);
   const snapshotResult = applyMesaSceneSnapshot(saved);
 
   if (
@@ -1318,10 +1329,12 @@ async function hydrateState() {
   }
 }
 
-async function loadMesaSceneSnapshot() {
+async function loadMesaSceneSnapshot(prefetchedResult) {
   if (window.AUTH?.isBackendEnabled?.() && window.APP?.getMesaScene) {
     try {
-      const remoteScene = await window.APP.getMesaScene();
+      const remoteScene = prefetchedResult !== undefined
+        ? prefetchedResult
+        : await window.APP.getMesaScene();
       const remoteData = remoteScene?.data && typeof remoteScene.data === "object" ? remoteScene.data : {};
       state.sceneRemoteExists = Boolean(remoteScene?.createdAt || remoteScene?.updatedAt);
       localStorage.setItem(MESA_STORAGE_KEY, JSON.stringify(remoteData));
