@@ -666,6 +666,28 @@ async function saveCurrentSheet(options = {}) {
 
   if (isBackendMode()) {
     const requestId = ++saveRequestId;
+
+    // Migração automática: se o avatar ainda é base64, faz upload para R2 e substitui pela URL.
+    // Isso cobre fichas existentes e novos uploads que passam pelo canvas local antes do save.
+    if (String(data.avatar || "").startsWith("data:") && APP.uploadAvatar) {
+      try {
+        const [, mime, b64] = data.avatar.match(/^data:([^;]+);base64,(.+)$/) || [];
+        if (mime && b64) {
+          const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+          const blob  = new Blob([bytes], { type: mime });
+          const result = await APP.uploadAvatar(currentSheetTarget.key, blob);
+          if (result?.url) {
+            data.avatar = result.url;
+            // Atualiza o DOM para que próximos saves usem a URL diretamente
+            const avatarImg = document.getElementById("avatarImg");
+            if (avatarImg && avatarImg.style.display !== "none") avatarImg.src = result.url;
+          }
+        }
+      } catch (uploadErr) {
+        console.warn("Falha ao migrar avatar para R2, salvando base64 como fallback.", uploadErr);
+      }
+    }
+
     markRecentLocalSave(currentSheetTarget.key);
     remoteSheetsCache[currentSheetTarget.key] = normalizeSheetData(data, currentSheetTarget.kind);
     persistRemoteSheetsCache();
