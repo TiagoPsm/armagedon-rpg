@@ -1,0 +1,44 @@
+# ─── Cloudflare Pages — Cache Headers ───────────────────────────────────────
+#
+# Como funciona o cache busting neste projeto:
+#   - Todos os <script src> e <link href> do HTML carregam ?v=YYYY-MM-DD-slug
+#   - Quando há deploy, o ?v= muda → o browser pede um URL diferente
+#   - O servidor entrega o arquivo novo; o cache antigo expira naturalmente
+#
+# Com esse mecanismo, JS e CSS podem ter cache longo (1 ano, immutable):
+#   - Se o URL não mudou → o browser usa o cache local, zero request ao servidor
+#   - Se o URL mudou (novo deploy) → o browser baixa a versão nova
+#
+# HTML é sempre revalidado:
+#   - Garante que os ?v= atualizados sejam vistos imediatamente
+# ─────────────────────────────────────────────────────────────────────────────
+
+# JavaScript — cache imutável por 1 ano
+/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# CSS — cache imutável por 1 ano
+/css/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Imagens estáticas do root — cache por 30 dias
+/*.webp
+  Cache-Control: public, max-age=2592000
+/*.png
+  Cache-Control: public, max-age=2592000
+/*.jpg
+  Cache-Control: public, max-age=2592000
+/*.ico
+  Cache-Control: public, max-age=2592000
+
+# Dados JSON estáticos — cache por 1 dia
+/data/*
+  Cache-Control: public, max-age=86400
+
+# HTML — sempre revalida para garantir ?v= atualizados
+/*.html
+  Cache-Control: public, no-cache
+
+# Raiz (index.html implícito)
+/
+  Cache-Control: public, no-cache

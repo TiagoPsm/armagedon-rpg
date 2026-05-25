@@ -157,7 +157,11 @@ async function initMesaPage() {
 
   await hydrateState();
   bindMesaRealtime();
+  bindMesaStorageSync();
   renderAll();
+
+  // Busca fichas faltantes do backend em background (não bloqueia o render)
+  hydrateAllMesaSheetSnapshots().catch(() => {});
 
   // Inicializa o módulo de mapa após o render inicial:
   // abre IndexedDB, restaura mapa da sessão anterior e registra
@@ -627,6 +631,71 @@ async function hydrateOwnMesaSheetSnapshot() {
   } catch (error) {
     console.warn("Falha ao carregar ficha do jogador para a Mesa.", error);
   }
+}
+
+
+// Busca em background as fichas de todos os personagens do roster que ainda
+// não têm avatar cacheado. Chamado depois do render inicial para não bloquear
+// a exibição da mesa. Só atua em modo backend.
+async function hydrateAllMesaSheetSnapshots() {
+  const backendOk = window.AUTH?.isBackendEnabled?.();
+  const getCharOk = Boolean(window.APP?.getCharacter);
+  console.log("[Mesa] hydrateAllMesaSheetSnapshots: backend=", backendOk, "getCharacter=", getCharOk);
+  if (!backendOk || !getCharOk) return;
+
+  const keysToFetch = state.roster
+    .filter(entry => !entry.imageUrl)
+    .map(entry => normalizeMesaCharacterKey(entry.characterKey || entry.id))
+    .filter(Boolean);
+
+  console.log("[Mesa] hydrateAllMesaSheetSnapshots: roster=", state.roster.length, "keysToFetch=", keysToFetch);
+  if (!keysToFetch.length) return;
+
+  let changed = false;
+  const remoteSheets = readJsonStorage(REMOTE_SHEETS_KEY, {});
+
+  for (const key of keysToFetch) {
+    try {
+      const bundle = await window.APP.getCharacter(key);
+      const hasAvatar = Boolean(String(bundle?.data?.avatar || "").trim());
+      console.log("[Mesa] hydrateAllMesaSheetSnapshots: key=", key, "bundle.data=", bundle?.data ? "ok" : "null", "avatar=", hasAvatar);
+      if (!bundle?.data) continue;
+      if (hasAvatar) {
+        remoteSheets[key] = bundle.data;
+        changed = true;
+      }
+    } catch (err) {
+      console.warn("[Mesa] hydrateAllMesaSheetSnapshots: erro ao buscar key=", key, err);
+    }
+  }
+
+  if (!changed) return;
+
+  localStorage.setItem(REMOTE_SHEETS_KEY, JSON.stringify(remoteSheets));
+  setMesaRoster(buildRoster());
+
+  state.tokens = state.tokens.map(token => {
+    const entry = getRosterEntryByCharacterKey(token.characterKey || token.id);
+    if (!entry?.imageUrl || token.imageUrl === entry.imageUrl) return token;
+    return { ...token, imageUrl: entry.imageUrl };
+  });
+
+  scheduleMesaRender({ roster: true, stage: true });
+}
+
+// Quando ficha.html salva tc_sheets em outra aba (modo local), sincroniza o
+// roster da mesa sem forçar reload da página.
+function bindMesaStorageSync() {
+  window.addEventListener("storage", event => {
+    if (event.key !== SHEETS_KEY && event.key !== REMOTE_SHEETS_KEY) return;
+    setMesaRoster(buildRoster());
+    state.tokens = state.tokens.map(token => {
+      const entry = getRosterEntryByCharacterKey(token.characterKey || token.id);
+      if (!entry) return token;
+      return { ...token, imageUrl: entry.imageUrl || token.imageUrl };
+    });
+    scheduleMesaRender({ roster: true, stage: true });
+  });
 }
 
 function resolveOwnMesaCharacterKey() {

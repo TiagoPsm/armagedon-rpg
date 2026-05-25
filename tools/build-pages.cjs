@@ -20,7 +20,8 @@ const files = [
   "favicon.png",
   "favicon.webp",
   "apple-touch-icon.png",
-  "apple-touch-icon.webp"
+  "apple-touch-icon.webp",
+  "_headers"
 ];
 const dirs = ["css", "js", "data"];
 const fichaCssBundle = "css/ficha-page.bundle.css";

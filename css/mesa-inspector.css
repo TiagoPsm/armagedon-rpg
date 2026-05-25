@@ -1,207 +1,238 @@
+/* ============================================================
+ * mesa-inspector.css — Painel do token selecionado (sidebar VTT)
+ * 2026-05-22 rewrite: compacto para sidebar de 288px
+ * ============================================================ */
+
 .token-inspector {
-  display: grid;
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   contain: layout paint;
   content-visibility: auto;
   contain-intrinsic-size: auto 420px;
 }
 
-.token-inspector-card {
-  padding: 1rem;
-}
+/* ── SEÇÕES INTERNAS ─────────────────────────────────────────── */
 
-.token-inspector-hero {
-  display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
-  gap: 0.95rem;
-  align-items: center;
-}
-
-.token-inspector-avatar {
-  width: 120px;
-  aspect-ratio: 1 / 1;
-  border-radius: 24px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background:
-    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.08), transparent 40%),
-    linear-gradient(135deg, rgba(55, 58, 84, 0.72), rgba(11, 12, 18, 0.95));
-}
-
-.token-inspector-avatar img,
-.token-inspector-avatar .mesa-token-avatar-fallback {
-  width: 100%;
-  height: 100%;
-}
-
-.token-inspector-name {
-  margin-top: 0.5rem;
-  font-size: 2rem;
-}
-
-.token-inspector-copy p {
-  margin: 0.42rem 0 0;
-  color: var(--text-secondary);
-  font-size: 1rem;
-  line-height: 1.42;
-}
-
-.token-inspector-stats {
-  padding: 1rem;
-  display: grid;
-  gap: 0.9rem;
+.token-inspector-card,
+.token-inspector-stats,
+.token-inspector-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
 }
 
 .token-inspector-stats h3,
 .token-inspector-controls h3 {
   margin: 0;
-  font-family: var(--font-title);
-  font-size: 1.08rem;
-  font-weight: 600;
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent, #a83028);
 }
 
-.stats-grid {
+/* ── HERO (avatar + nome + badges) ──────────────────────────── */
+
+.token-inspector-hero {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.token-inspector-avatar {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.08), transparent 40%),
+    linear-gradient(135deg, rgba(55, 58, 84, 0.72), rgba(11, 12, 18, 0.95));
+}
+
+.token-inspector-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.token-inspector-avatar .mesa-token-avatar-fallback {
+  width: 100%;
+  height: 100%;
   display: grid;
-  gap: 0.9rem;
+  place-items: center;
+  font-family: var(--font-display, "Cinzel Decorative", serif);
+  font-size: 1.6rem;
+  color: rgba(255, 248, 236, 0.85);
+}
+
+.token-inspector-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.token-inspector-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+/* Badge de tipo — compacto */
+.token-inspector-badges .token-type-badge,
+.token-inspector-badges .token-state-pill {
+  font-size: 0.52rem;
+  padding: 0.18rem 0.45rem;
+  min-height: 18px;
+  letter-spacing: 0.1em;
+}
+
+.token-inspector-name {
+  margin: 0;
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text, rgba(255, 248, 236, 0.94));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.15;
+}
+
+.token-inspector-owner {
+  margin: 0;
+  font-family: var(--font-body, "Crimson Text", serif);
+  font-size: 0.78rem;
+  color: var(--text-soft, rgba(255, 248, 236, 0.45));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── STATS (Vida / Integridade) ──────────────────────────────── */
+
+.stats-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
 }
 
 .stat-editor {
-  display: grid;
-  gap: 0.52rem;
-}
-
-.bar-label-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.8rem;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
-.bar-label-row span:last-child {
-  color: var(--text-secondary);
-  font-size: 0.94rem;
+.bar-label {
+  display: block;
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-soft, rgba(255, 248, 236, 0.45));
+  margin-bottom: 0.1rem;
 }
 
+/* Inputs de stat — layout: [−] [valor] [+] / [max] */
 .stat-editor-inputs {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr);
-  gap: 0.55rem;
+  grid-template-columns: 26px 1fr 26px 12px 1fr;
+  gap: 0.25rem;
   align-items: center;
 }
 
 .stat-editor-inputs input {
   width: 100%;
-  min-height: 46px;
-  padding: 0.72rem 0.85rem;
-  border-radius: 16px;
+  min-height: 30px;
+  padding: 0.3rem 0.25rem;
+  border-radius: 4px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(6, 7, 11, 0.9);
-  color: var(--text-primary);
+  color: var(--text, rgba(255, 248, 236, 0.94));
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
   outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  -moz-appearance: textfield;
+}
+
+.stat-editor-inputs input::-webkit-outer-spin-button,
+.stat-editor-inputs input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .stat-editor-inputs input:focus {
-  border-color: var(--border-up);
-  box-shadow: 0 0 0 3px rgba(176, 47, 57, 0.14);
+  border-color: rgba(168, 48, 40, 0.5);
+  box-shadow: 0 0 0 2px rgba(176, 47, 57, 0.14);
 }
 
 .stat-editor-inputs input:disabled {
-  opacity: 0.56;
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Botões +/− ── */
+.stat-step-btn {
+  width: 26px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-soft, rgba(255, 248, 236, 0.5));
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.stat-step-btn:hover:not(:disabled) {
+  background: rgba(168, 48, 40, 0.18);
+  border-color: rgba(168, 48, 40, 0.4);
+  color: #e8b4b0;
+}
+
+.stat-step-btn:active:not(:disabled) {
+  background: rgba(168, 48, 40, 0.32);
+}
+
+.stat-step-btn:disabled {
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
 .stat-divider {
   text-align: center;
-  color: var(--text-muted);
-  font-family: var(--font-title);
+  color: var(--text-soft, rgba(255, 248, 236, 0.35));
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.75rem;
 }
 
-.token-inspector-controls {
-  display: grid;
-  gap: 0.7rem;
-}
-
-.inspector-control-grid {
-  display: grid;
-  gap: 0.65rem;
-}
-
-.inspector-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.7rem;
-  align-items: center;
-  padding: 0.9rem 0.95rem;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.inspector-row.is-status-hidden {
-  border-style: dashed;
-  background: rgba(255, 255, 255, 0.018);
-}
-
-.inspector-row-copy {
-  min-width: 0;
-}
-
-.inspector-row-copy strong {
-  display: block;
-  font-family: var(--font-title);
-  font-size: 1rem;
-}
-
-.inspector-row-copy small {
-  display: block;
-  margin-top: 0.2rem;
-  color: var(--text-secondary);
-  font-size: 0.95rem;
-}
-
-.inspector-meta-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.7rem;
-}
-
-.inspector-meta-card {
-  padding: 0.9rem;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.inspector-meta-card strong {
-  display: block;
-  margin-top: 0.3rem;
-  font-family: var(--font-title);
-  font-size: 1.2rem;
-}
-
-.inspector-note {
-  padding: 0.9rem 1rem;
-  border: 1px solid rgba(176, 143, 50, 0.14);
-  border-radius: 18px;
-  background: rgba(176, 143, 50, 0.08);
-  color: var(--text-secondary);
-  font-size: 0.98rem;
-  line-height: 1.42;
-}
-
-.inspector-note strong {
-  display: block;
-  margin-bottom: 0.2rem;
-  color: var(--text-primary);
-  font-family: var(--font-title);
-  font-size: 0.96rem;
-}
-
+/* Barra de vida/integridade */
 .bar-preview {
   position: relative;
-  height: 12px;
+  height: 5px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
   overflow: hidden;
 }
 
@@ -209,28 +240,208 @@
   display: block;
   height: 100%;
   border-radius: inherit;
+  transition: width 0.3s ease;
 }
 
-.bar-preview.is-life span {
-  background: hsl(120 78% 50%);
+.bar-preview.is-life span     { background: hsl(120 65% 44%); }
+.bar-preview.is-integrity span { background: hsl(204 70% 56%); }
+
+/* ── CONTROLES (Posição, Visibilidade, Palco) ────────────────── */
+
+.inspector-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
 }
 
-.bar-preview.is-integrity span {
-  background: hsl(204 78% 64%);
+.inspector-meta-card {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
 }
+
+.inspector-meta-card .panel-kicker {
+  font-size: 0.5rem;
+  letter-spacing: 0.14em;
+}
+
+.inspector-meta-card strong {
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text, rgba(255, 248, 236, 0.9));
+  line-height: 1;
+}
+
+.inspector-control-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+/* ── LISTA DE AÇÕES (novo estilo simplificado) ───────────────── */
+
+.inspector-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+/* Linha: label em cima, botões embaixo */
+.inspector-action-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.inspector-action-label {
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-soft, rgba(255, 248, 236, 0.45));
+}
+
+.inspector-action-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+/* Variante danger para Retirar */
+.mini-btn.is-danger {
+  border-color: var(--border-accent);
+  color: #e8b4b0;
+}
+
+.mini-btn.is-danger:hover:not(:disabled) {
+  background: rgba(168, 48, 40, 0.15);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* Legado — inspector-row ainda pode aparecer em outros contextos */
+.inspector-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.inspector-row.is-status-hidden {
+  border-style: dashed;
+  opacity: 0.72;
+}
+
+.inspector-row-copy strong {
+  display: block;
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text, rgba(255, 248, 236, 0.9));
+}
+
+.inspector-row-copy small {
+  display: block;
+  margin-top: 0.15rem;
+  font-family: var(--font-body, "Crimson Text", serif);
+  font-size: 0.76rem;
+  color: var(--text-soft, rgba(255, 248, 236, 0.45));
+  line-height: 1.35;
+}
+
+.inspector-row .roster-entry-actions,
+.inspector-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.inspector-row .mini-btn {
+  padding: 2px 8px;
+  font-size: 0.58rem;
+  min-height: unset;
+}
+
+/* ── NOTA INFORMATIVA ────────────────────────────────────────── */
+
+.inspector-note {
+  margin: 0 0.9rem 0.85rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(176, 143, 50, 0.16);
+  border-radius: 10px;
+  background: rgba(176, 143, 50, 0.07);
+  font-family: var(--font-body, "Crimson Text", serif);
+  font-size: 0.82rem;
+  color: var(--text-soft, rgba(255, 248, 236, 0.5));
+  line-height: 1.45;
+}
+
+.inspector-note strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(212, 186, 107, 0.85);
+}
+
+/* ── ESTADO VAZIO ────────────────────────────────────────────── */
+
+.token-inspector-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.4rem;
+  padding: 1.4rem 0.75rem;
+  min-height: 80px;
+}
+
+.token-inspector-empty strong {
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint, rgba(255, 248, 236, 0.18));
+}
+
+.token-inspector-empty p {
+  font-family: var(--font-body, "Crimson Text", serif);
+  font-size: 0.82rem;
+  color: var(--text-faint, rgba(255, 248, 236, 0.18));
+  max-width: 22ch;
+  line-height: 1.45;
+}
+
+/* ── STATUS OCULTO ───────────────────────────────────────────── */
 
 .hidden {
   display: none !important;
 }
 
-@keyframes orbitPulse {
-  from {
-    transform: scale(0.985);
-    opacity: 0.54;
-  }
+/* ── ANIMAÇÃO (legado) ───────────────────────────────────────── */
 
-  to {
-    transform: scale(1.02);
-    opacity: 0.84;
-  }
+@keyframes orbitPulse {
+  from { transform: scale(0.985); opacity: 0.54; }
+  to   { transform: scale(1.02);  opacity: 0.84; }
 }

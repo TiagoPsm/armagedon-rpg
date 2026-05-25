@@ -75,6 +75,130 @@
   /* herda .btn .btn-ghost .btn-small dos components.css */
 }
 
+/* ── BOTÃO DE ENGRENAGEM ─────────────────────────────────────── */
+
+.mesa-map-settings-btn {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-soft);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.mesa-map-settings-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+.mesa-map-settings-btn:hover,
+.mesa-map-settings-btn.is-active {
+  background: rgba(168, 48, 40, 0.2);
+  border-color: rgba(168, 48, 40, 0.45);
+  color: #e8b4b0;
+}
+
+/* ── PAINEL DE CONFIGURAÇÕES DO MAPA (flutuante) ─────────────── */
+
+.mesa-map-settings-panel {
+  position: absolute;
+  top: 52px;   /* abaixo do overlay */
+  right: 12px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.7rem 0.8rem;
+  background: rgba(4, 3, 8, 0.88);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.mesa-map-settings-panel[hidden] { display: none; }
+
+.mesa-map-transform-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mesa-map-transform-label {
+  font-family: var(--font-ui);
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.mesa-map-transform-row {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.mesa-map-scale-val {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  min-width: 38px;
+  text-align: center;
+}
+
+/* Hint de instrução no painel */
+.mesa-map-settings-hint {
+  font-family: var(--font-body, serif);
+  font-size: 0.72rem;
+  color: var(--text-soft);
+  line-height: 1.45;
+  margin: 0;
+  padding-top: 0.3rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Botão comum de transform */
+.mesa-transform-btn {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  user-select: none;
+  padding: 0;
+}
+
+.mesa-transform-btn:hover {
+  background: rgba(168, 48, 40, 0.2);
+  border-color: rgba(168, 48, 40, 0.45);
+  color: #e8b4b0;
+}
+
+.mesa-transform-btn:active {
+  background: rgba(168, 48, 40, 0.35);
+}
+
+/* Botão reset (centro do d-pad) */
+.mesa-transform-reset {
+  font-size: 0.85rem;
+  color: rgba(255, 248, 236, 0.4);
+}
+
 /* ── INDICADOR DE CARREGAMENTO ──────────────────────────────── */
 
 .mesa-map-layer.is-loading {
@@ -99,4 +223,508 @@
 @keyframes mesaMapLoadingStripes {
   from { background-position: 0 0; }
   to   { background-position: 28px 0; }
+}
+
+/* ── BIBLIOTECA DE MAPAS (painel lateral) ─────────────────────── */
+
+
+.map-lib-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.2rem 0 0.4rem;
+}
+
+/* Estado vazio */
+.map-lib-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.3rem;
+  padding: 1.4rem 0.75rem;
+}
+
+.map-lib-empty strong {
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint, rgba(255, 248, 236, 0.18));
+}
+
+.map-lib-empty p {
+  font-family: var(--font-body, "Crimson Text", serif);
+  font-size: 0.82rem;
+  color: var(--text-faint, rgba(255, 248, 236, 0.18));
+  max-width: 22ch;
+  line-height: 1.45;
+}
+
+/* Card de mapa */
+.map-lib-entry {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.map-lib-entry:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.map-lib-entry.is-active {
+  border-color: rgba(168, 48, 40, 0.4);
+  background: rgba(168, 48, 40, 0.07);
+}
+
+/* Thumbnail */
+.map-lib-thumb {
+  width: 56px;
+  height: 40px;
+  border-radius: 4px;
+  background-size: cover;
+  background-position: center;
+  background-color: rgba(255, 255, 255, 0.04);
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Info: nome + tamanho */
+.map-lib-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.map-lib-name {
+  display: block;
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text, rgba(255, 248, 236, 0.92));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.map-lib-meta {
+  font-family: var(--font-body, "Crimson Text", serif);
+  font-size: 0.72rem;
+  color: var(--text-soft, rgba(255, 248, 236, 0.4));
+  line-height: 1.2;
+}
+
+.map-lib-active-pill {
+  display: inline-block;
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #e8b4b0;
+  background: rgba(168, 48, 40, 0.2);
+  border: 1px solid rgba(168, 48, 40, 0.35);
+  border-radius: 3px;
+  padding: 0.12rem 0.4rem;
+  line-height: 1.4;
+}
+
+/* Ações */
+.map-lib-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+/* Botão de deletar — sobreposto ao mini-btn para estilo ×  */
+.map-lib-delete-btn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 0.9rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  color: var(--text-soft, rgba(255, 248, 236, 0.35));
+  border-color: transparent;
+}
+
+.map-lib-delete-btn:hover:not(:disabled) {
+  color: #e8b4b0;
+  border-color: rgba(168, 48, 40, 0.35);
+  background: rgba(168, 48, 40, 0.12);
+}
+
+/* Linha de confirmação Sim / Não */
+.map-lib-confirm-row {
+  display: flex;
+  gap: 0.2rem;
+  align-items: center;
+  animation: mapLibConfirmIn 0.12s ease;
+}
+
+@keyframes mapLibConfirmIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Cabeçalho da biblioteca — ícones + label de espaço */
+.map-lib-head-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.map-lib-head-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.map-lib-storage-label {
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.55rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--text-soft, rgba(255, 248, 236, 0.4));
+  white-space: nowrap;
+  min-height: 0.8rem; /* reserva espaço mesmo vazio */
+}
+
+/* ── SEÇÃO: SEPARADOR + LABEL DA BIBLIOTECA ──────────────────── */
+
+.map-lib-section-sep {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  margin: 0.55rem 0 0.4rem;
+}
+
+.map-lib-section-label {
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.54rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint, rgba(255, 248, 236, 0.22));
+  padding: 0 0 0.3rem 0;
+  margin: 0;
+}
+
+/* ── PASTA CONECTADA: PROMPT DE CONEXÃO ──────────────────────── */
+
+.map-lib-connect-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.9rem 0.5rem 0.7rem;
+  text-align: center;
+}
+
+.map-lib-connect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.8rem;
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text, rgba(255, 248, 236, 0.92));
+  background: rgba(168, 48, 40, 0.12);
+  border: 1px solid rgba(168, 48, 40, 0.35);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s;
+}
+
+.map-lib-connect-btn:hover {
+  background: rgba(168, 48, 40, 0.22);
+  border-color: rgba(168, 48, 40, 0.55);
+}
+
+.map-lib-connect-hint {
+  font-family: var(--font-body, "Crimson Text", serif);
+  font-size: 0.72rem;
+  color: var(--text-faint, rgba(255, 248, 236, 0.22));
+  line-height: 1.4;
+  max-width: 22ch;
+  margin: 0;
+}
+
+/* ── PASTA CONECTADA: CABEÇALHO QUANDO CONECTADA ─────────────── */
+
+.map-lib-connected-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.4rem 0.1rem 0.35rem;
+}
+
+.map-lib-connected-info {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  flex: 1;
+}
+
+/* Ponto de status animado (verde = conectado) */
+.map-lib-connected-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 5px rgba(74, 222, 128, 0.6);
+  flex-shrink: 0;
+  animation: cfDotPulse 2.4s ease-in-out infinite;
+}
+
+.map-lib-connected-dot.is-offline {
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: none;
+  animation: none;
+}
+
+@keyframes cfDotPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+.map-lib-connected-name {
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text, rgba(255, 248, 236, 0.92));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.map-lib-connected-count {
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.56rem;
+  font-weight: 600;
+  color: var(--text-soft, rgba(255, 248, 236, 0.4));
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 0.05rem 0.35rem;
+  flex-shrink: 0;
+}
+
+.map-lib-connected-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+/* ── BOTÃO DE REFRESH DA PASTA CONECTADA ─────────────────────── */
+
+@keyframes cfSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+#cfRefreshBtn.is-spinning svg {
+  animation: cfSpin 0.65s linear infinite;
+}
+
+/* ── GRUPOS DE SUBPASTAS (pasta conectada) ───────────────────── */
+
+.map-lib-folder-group {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.015);
+  margin-bottom: 0.2rem;
+  overflow: hidden;
+}
+
+.map-lib-folder-group[open] {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.map-lib-folder-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.5rem;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: background 0.12s;
+}
+
+.map-lib-folder-summary::-webkit-details-marker { display: none; }
+
+.map-lib-folder-summary:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.map-lib-folder-summary svg {
+  flex-shrink: 0;
+  color: var(--text-soft, rgba(255, 248, 236, 0.4));
+  transition: transform 0.18s ease;
+}
+
+.map-lib-folder-group[open] > .map-lib-folder-summary svg {
+  transform: rotate(0deg); /* já é pasta aberta */
+}
+
+.map-lib-folder-gname {
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text, rgba(255, 248, 236, 0.9));
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.map-lib-folder-gcount {
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--text-soft, rgba(255, 248, 236, 0.4));
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 0.04rem 0.35rem;
+  flex-shrink: 0;
+}
+
+.map-lib-folder-body {
+  padding: 0.2rem 0.3rem 0.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/* Cards dentro de grupos ficam levemente recuados */
+.map-lib-folder-body .map-lib-entry {
+  border-radius: 4px;
+}
+
+/* ── PASTA CONECTADA: BANNER DE RECONEXÃO PÓS-RELOAD ──────────── */
+
+.map-lib-reconnect-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.85rem 0.75rem 0.8rem;
+  text-align: center;
+  background: rgba(168, 48, 40, 0.07);
+  border-bottom: 1px solid rgba(168, 48, 40, 0.18);
+}
+
+.map-lib-reconnect-info {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-faint, rgba(255, 248, 236, 0.5));
+}
+
+.map-lib-reconnect-name {
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text, rgba(255, 248, 236, 0.85));
+  max-width: 18ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-lib-reconnect-hint {
+  font-family: var(--font-body, "Crimson Text", serif);
+  font-size: 0.72rem;
+  color: var(--text-faint, rgba(255, 248, 236, 0.32));
+  line-height: 1.4;
+  max-width: 24ch;
+  margin: 0;
+}
+
+.map-lib-reconnect-dismiss {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body, "Crimson Text", serif);
+  font-size: 0.66rem;
+  color: var(--text-faint, rgba(255, 248, 236, 0.28));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0;
+  margin-top: 0.1rem;
+  transition: color 0.14s;
+}
+
+.map-lib-reconnect-dismiss:hover {
+  color: var(--text-faint, rgba(255, 248, 236, 0.55));
+}
+
+/* ── TOKEN STYLE PICKER (settings panel) ────────────────────── */
+.mesa-token-style-group {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mesa-token-style-btns {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+}
+
+.mesa-token-style-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.55rem 0.4rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    border-color var(--transition),
+    color var(--transition);
+}
+
+.mesa-token-style-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.mesa-token-style-btn.is-active {
+  background: rgba(176, 47, 57, 0.18);
+  border-color: rgba(176, 47, 57, 0.45);
+  color: #ffcdd0;
 }
