@@ -920,7 +920,7 @@ function buildPlayers(directory, sheets) {
       ownerUsername: username,
       createdBy: "mestre",
       name,
-      imageUrl: sheet.avatar,
+      imageUrl: sheet.avatar || String(player.avatarUrl || "").trim(),
       currentLife: sheet.vidaAtual,
       maxLife: sheet.vidaMax,
       currentIntegrity: sheet.integAtual,
@@ -956,7 +956,7 @@ function buildNpcs(directory, sheets) {
       ownerUsername: "mestre",
       createdBy: "mestre",
       name,
-      imageUrl: sheet.avatar,
+      imageUrl: sheet.avatar || String(npc.avatarUrl || "").trim(),
       currentLife: sheet.vidaAtual,
       maxLife: sheet.vidaMax,
       currentIntegrity: sheet.integAtual,
@@ -992,7 +992,7 @@ function buildMonsters(directory, sheets) {
       ownerUsername: "mestre",
       createdBy: "mestre",
       name,
-      imageUrl: sheet.avatar,
+      imageUrl: sheet.avatar || String(monster.avatarUrl || "").trim(),
       currentLife: sheet.vidaAtual,
       maxLife: sheet.vidaMax,
       currentIntegrity: sheet.integAtual,
@@ -1625,8 +1625,4 @@ function renderAll() {
 }
 
 function renderHeader() {
-  const headerUser = getMesaDomRef("headerUser");
-  if (headerUser) {
-    headerUser.textContent = state.session?.username || "Convidado";
-  }
-}
+  const headerUser = get

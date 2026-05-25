@@ -301,6 +301,9 @@ async function listDirectory(env, user) {
     const character = serializeCharacter(mapCharacterRow(row));
     const inventorySlots = Number(character.data.inventorySlots || 0);
     const usedSlots = Array.isArray(character.data.inv) ? character.data.inv.length : 0;
+    // Só inclui avatar se for URL (não base64) — mantém payload do /directory pequeno
+    const rawAvatar = String(character.data.avatar || "").trim();
+    const avatarUrl = rawAvatar.startsWith("http") ? rawAvatar : "";
 
     if (character.kind === "player") {
       players.push({
@@ -309,7 +312,8 @@ async function listDirectory(env, user) {
         username: character.ownerUsername,
         charname: character.name,
         inventorySlots,
-        usedSlots
+        usedSlots,
+        avatarUrl
       });
       return;
     }
@@ -324,7 +328,8 @@ async function listDirectory(env, user) {
         key: character.key,
         name: character.name,
         inventorySlots,
-        usedSlots
+        usedSlots,
+        avatarUrl
       });
       return;
     }
@@ -332,7 +337,8 @@ async function listDirectory(env, user) {
     monsters.push({
       id: character.id,
       key: character.key,
-      name: character.name
+      name: character.name,
+      avatarUrl
     });
   });
 
@@ -905,15 +911,3 @@ export {
   createMonsterCharacter,
   createNpcCharacter,
   createPlayerCharacter,
-  deleteCharacterByKey,
-  deletePlayerByUsername,
-  getCharacterBundleByKey,
-  getCharacterByKey,
-  listDirectory,
-  normalizeUsername,
-  rollMonsterMemoryDrop,
-  saveCharacterBundle,
-  transferItemBetweenCharacters,
-  transferItemBetweenPlayers,
-  transferMemoryBetweenPlayers
-};
