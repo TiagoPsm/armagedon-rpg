@@ -53,7 +53,6 @@ const state = {
   selectedTokenId: "",
   previewPlayerView: false,
   sceneVersion: 0,
-  tokenStyle: "card",
   search: "",
   drag: null,
   playerPanelCharacterKey: "",
@@ -152,23 +151,13 @@ async function initMesaPage() {
 
   state.session = session;
   state.role = resolveInitialRole(session);
-
-  // Paraleliza as 3 requests independentes: diretorio, ficha propria e cena da mesa.
-  // Cada uma e independente das outras — rodando em paralelo economiza ~300-400ms.
-  const [, , prefetchedScene] = await Promise.all([
-    refreshMesaDirectoryBeforeRoster(),   // GET /directory
-    hydrateOwnMesaSheetSnapshot(),        // GET /characters/:key (apenas jogadores)
-    prefetchMesaSceneSnapshot(),          // GET /mesa/scene
-  ]);
-
+  await refreshMesaDirectoryBeforeRoster();
+  await hydrateOwnMesaSheetSnapshot();
   setMesaRoster(buildRoster());
-  await hydrateState(prefetchedScene);
-  bindMesaRealtime();
-  bindMesaStorageSync();
-  renderAll();
 
-  // Busca fichas faltantes do backend em background (não bloqueia o render)
-  hydrateAllMesaSheetSnapshots().catch(() => {});
+  await hydrateState();
+  bindMesaRealtime();
+  renderAll();
 
   // Inicializa o módulo de mapa após o render inicial:
   // abre IndexedDB, restaura mapa da sessão anterior e registra
@@ -640,69 +629,6 @@ async function hydrateOwnMesaSheetSnapshot() {
   }
 }
 
-
-// Busca em background as fichas de todos os personagens do roster que ainda
-// não têm avatar cacheado. Chamado depois do render inicial para não bloquear
-// a exibição da mesa. Só atua em modo backend.
-async function hydrateAllMesaSheetSnapshots() {
-  // Só o mestre pode buscar fichas de outros personagens via /api/characters/:key
-  // Jogadores recebem o avatar pelo /api/directory (campo avatar) — não precisam
-  // de requisições individuais que retornariam 403.
-  if (!isMaster()) return;
-  if (!window.AUTH?.isBackendEnabled?.() || !window.APP?.getCharacter) return;
-
-  const keysToFetch = state.roster
-    .filter(entry => !entry.imageUrl)
-    .map(entry => normalizeMesaCharacterKey(entry.characterKey || entry.id))
-    .filter(Boolean);
-
-  if (!keysToFetch.length) return;
-
-  let changed = false;
-  const remoteSheets = readJsonStorage(REMOTE_SHEETS_KEY, {});
-
-  for (const key of keysToFetch) {
-    try {
-      const bundle = await window.APP.getCharacter(key);
-      if (!bundle?.data) continue;
-      if (String(bundle.data.avatar || "").trim()) {
-        remoteSheets[key] = bundle.data;
-        changed = true;
-      }
-    } catch {
-      // silencioso — avatar simplesmente nao aparece
-    }
-  }
-
-  if (!changed) return;
-
-  localStorage.setItem(REMOTE_SHEETS_KEY, JSON.stringify(remoteSheets));
-  setMesaRoster(buildRoster());
-
-  state.tokens = state.tokens.map(token => {
-    const entry = getRosterEntryByCharacterKey(token.characterKey || token.id);
-    if (!entry?.imageUrl || token.imageUrl === entry.imageUrl) return token;
-    return { ...token, imageUrl: entry.imageUrl };
-  });
-
-  scheduleMesaRender({ roster: true, stage: true });
-}
-
-// Quando ficha.html salva tc_sheets em outra aba (modo local), sincroniza o
-// roster da mesa sem forçar reload da página.
-function bindMesaStorageSync() {
-  window.addEventListener("storage", event => {
-    if (event.key !== SHEETS_KEY && event.key !== REMOTE_SHEETS_KEY) return;
-    setMesaRoster(buildRoster());
-    state.tokens = state.tokens.map(token => {
-      const entry = getRosterEntryByCharacterKey(token.characterKey || token.id);
-      if (!entry) return token;
-      return { ...token, imageUrl: entry.imageUrl || token.imageUrl };
-    });
-    scheduleMesaRender({ roster: true, stage: true });
-  });
-}
-
 function resolveOwnMesaCharacterKey() {
   const username = normalizeMesaUsername(state.session?.username);
   if (!username) return "";
@@ -925,7 +851,7 @@ function buildPlayers(directory, sheets) {
       ownerUsername: username,
       createdBy: "mestre",
       name,
-      imageUrl: sheet.avatar || String(player.avatar || player.avatarUrl || "").trim(),
+      imageUrl: sheet.avatar,
       currentLife: sheet.vidaAtual,
       maxLife: sheet.vidaMax,
       currentIntegrity: sheet.integAtual,
@@ -961,7 +887,7 @@ function buildNpcs(directory, sheets) {
       ownerUsername: "mestre",
       createdBy: "mestre",
       name,
-      imageUrl: sheet.avatar || String(npc.avatar || npc.avatarUrl || "").trim(),
+      imageUrl: sheet.avatar,
       currentLife: sheet.vidaAtual,
       maxLife: sheet.vidaMax,
       currentIntegrity: sheet.integAtual,
@@ -997,7 +923,7 @@ function buildMonsters(directory, sheets) {
       ownerUsername: "mestre",
       createdBy: "mestre",
       name,
-      imageUrl: sheet.avatar || String(monster.avatar || monster.avatarUrl || "").trim(),
+      imageUrl: sheet.avatar,
       currentLife: sheet.vidaAtual,
       maxLife: sheet.vidaMax,
       currentIntegrity: sheet.integAtual,
@@ -1304,22 +1230,11 @@ function buildFallbackRoster(sheets = {}) {
   ];
 }
 
-// Busca a cena remotamente sem aplicar — usada para iniciar o request
-// em paralelo com /directory, antes do roster estar pronto.
-async function prefetchMesaSceneSnapshot() {
-  if (!window.AUTH?.isBackendEnabled?.() || !window.APP?.getMesaScene) return null;
-  try {
-    return await window.APP.getMesaScene();
-  } catch {
-    return null;
-  }
-}
-
 // A Mesa usa a ficha como fonte de verdade para identidade e status.
 // O estado salvo aqui e apenas a camada visual do palco:
 // posicao, ordem, visibilidade e regra de exposicao dos status.
-async function hydrateState(prefetchedSceneResult) {
-  const saved = await loadMesaSceneSnapshot(prefetchedSceneResult);
+async function hydrateState() {
+  const saved = await loadMesaSceneSnapshot();
   const snapshotResult = applyMesaSceneSnapshot(saved);
 
   if (
@@ -1334,12 +1249,10 @@ async function hydrateState(prefetchedSceneResult) {
   }
 }
 
-async function loadMesaSceneSnapshot(prefetchedResult) {
+async function loadMesaSceneSnapshot() {
   if (window.AUTH?.isBackendEnabled?.() && window.APP?.getMesaScene) {
     try {
-      const remoteScene = prefetchedResult !== undefined
-        ? prefetchedResult
-        : await window.APP.getMesaScene();
+      const remoteScene = await window.APP.getMesaScene();
       const remoteData = remoteScene?.data && typeof remoteScene.data === "object" ? remoteScene.data : {};
       state.sceneRemoteExists = Boolean(remoteScene?.createdAt || remoteScene?.updatedAt);
       localStorage.setItem(MESA_STORAGE_KEY, JSON.stringify(remoteData));
@@ -1369,13 +1282,6 @@ function applyMesaSceneSnapshot(saved) {
   state.previewPlayerView = isMaster() ? Boolean(saved?.previewPlayerView) : false;
   state.sceneVersion = asPositiveInt(saved?.sceneVersion, state.sceneVersion);
   state.selectedTokenId = pickInitialSelectedToken(saved?.selectedTokenId);
-
-  // Restaura estilo dos tokens — apenas o mestre pode ter alterado esta config
-  const savedStyle = saved?.tokenStyle;
-  if (isMaster() && (savedStyle === "card" || savedStyle === "minimal")) {
-    state.tokenStyle = savedStyle;
-  }
-
   return { seeded, savedTokenCount: savedTokens.length };
 }
 
@@ -1419,8 +1325,7 @@ function mergeTokenWithRoster(savedToken, rosterEntry) {
     ),
     x: clamp(Number(savedToken?.x), 3, 82),
     y: clamp(Number(savedToken?.y), 3, 78),
-    order: asPositiveInt(savedToken?.order, 1),
-    tokenScale: Math.max(0.25, Math.min(4, Number(savedToken?.tokenScale) || 1))
+    order: asPositiveInt(savedToken?.order, 1)
   };
 }
 
@@ -1585,7 +1490,6 @@ function createMesaScenePayloadFromState() {
   return {
     sceneVersion: asPositiveInt(state.sceneVersion, 0),
     previewPlayerView: Boolean(state.previewPlayerView),
-    tokenStyle: state.tokenStyle || "card",
     selectedTokenId: state.selectedTokenId,
     tokens: state.tokens.map(token => ({
       id: token.id,
@@ -1594,8 +1498,7 @@ function createMesaScenePayloadFromState() {
       y: roundTo(token.y, 2),
       visibleToPlayers: token.visibleToPlayers !== false,
       statsVisibleToPlayers: normalizeStatsVisibility(token.type, token.statsVisibleToPlayers),
-      order: token.order || 1,
-      tokenScale: roundTo(token.tokenScale || 1, 2)
+      order: token.order || 1
     }))
   };
 }
@@ -1612,7 +1515,6 @@ function normalizeMesaScenePayload(payload = {}) {
   return {
     sceneVersion: asPositiveInt(payload?.sceneVersion, 0),
     previewPlayerView: Boolean(payload?.previewPlayerView),
-    tokenStyle: (payload?.tokenStyle === "minimal") ? "minimal" : "card",
     selectedTokenId: String(payload?.selectedTokenId || ""),
     tokens: tokens
       .map(token => ({
@@ -1622,8 +1524,7 @@ function normalizeMesaScenePayload(payload = {}) {
         y: roundTo(clamp(Number(token?.y), 0, 100), 2),
         visibleToPlayers: token?.visibleToPlayers !== false,
         statsVisibleToPlayers: token?.statsVisibleToPlayers === true,
-        order: asPositiveInt(token?.order, 1),
-        tokenScale: roundTo(Math.max(0.25, Math.min(4, Number(token?.tokenScale) || 1)), 2)
+        order: asPositiveInt(token?.order, 1)
       }))
       .filter(token => token.id && token.characterKey)
       .sort((a, b) => a.id.localeCompare(b.id))
@@ -1635,3 +1536,15 @@ function renderAll() {
   syncSelectedToken();
   renderHeader();
   renderSummary();
+  renderControls();
+  renderRoster();
+  renderStage();
+  renderInspector();
+}
+
+function renderHeader() {
+  const headerUser = getMesaDomRef("headerUser");
+  if (headerUser) {
+    headerUser.textContent = state.session?.username || "Convidado";
+  }
+}
