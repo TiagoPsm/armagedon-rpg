@@ -53,6 +53,7 @@ const state = {
   selectedTokenId: "",
   previewPlayerView: false,
   sceneVersion: 0,
+  tokenStyle: "card",
   search: "",
   drag: null,
   playerPanelCharacterKey: "",
@@ -1364,6 +1365,13 @@ function applyMesaSceneSnapshot(saved) {
   state.previewPlayerView = isMaster() ? Boolean(saved?.previewPlayerView) : false;
   state.sceneVersion = asPositiveInt(saved?.sceneVersion, state.sceneVersion);
   state.selectedTokenId = pickInitialSelectedToken(saved?.selectedTokenId);
+
+  // Restaura estilo dos tokens — apenas o mestre pode ter alterado esta config
+  const savedStyle = saved?.tokenStyle;
+  if (isMaster() && (savedStyle === "card" || savedStyle === "minimal")) {
+    state.tokenStyle = savedStyle;
+  }
+
   return { seeded, savedTokenCount: savedTokens.length };
 }
 
@@ -1407,7 +1415,8 @@ function mergeTokenWithRoster(savedToken, rosterEntry) {
     ),
     x: clamp(Number(savedToken?.x), 3, 82),
     y: clamp(Number(savedToken?.y), 3, 78),
-    order: asPositiveInt(savedToken?.order, 1)
+    order: asPositiveInt(savedToken?.order, 1),
+    tokenScale: Math.max(0.25, Math.min(4, Number(savedToken?.tokenScale) || 1))
   };
 }
 
@@ -1572,6 +1581,7 @@ function createMesaScenePayloadFromState() {
   return {
     sceneVersion: asPositiveInt(state.sceneVersion, 0),
     previewPlayerView: Boolean(state.previewPlayerView),
+    tokenStyle: state.tokenStyle || "card",
     selectedTokenId: state.selectedTokenId,
     tokens: state.tokens.map(token => ({
       id: token.id,
@@ -1580,7 +1590,8 @@ function createMesaScenePayloadFromState() {
       y: roundTo(token.y, 2),
       visibleToPlayers: token.visibleToPlayers !== false,
       statsVisibleToPlayers: normalizeStatsVisibility(token.type, token.statsVisibleToPlayers),
-      order: token.order || 1
+      order: token.order || 1,
+      tokenScale: roundTo(token.tokenScale || 1, 2)
     }))
   };
 }
@@ -1597,6 +1608,7 @@ function normalizeMesaScenePayload(payload = {}) {
   return {
     sceneVersion: asPositiveInt(payload?.sceneVersion, 0),
     previewPlayerView: Boolean(payload?.previewPlayerView),
+    tokenStyle: (payload?.tokenStyle === "minimal") ? "minimal" : "card",
     selectedTokenId: String(payload?.selectedTokenId || ""),
     tokens: tokens
       .map(token => ({
@@ -1606,7 +1618,8 @@ function normalizeMesaScenePayload(payload = {}) {
         y: roundTo(clamp(Number(token?.y), 0, 100), 2),
         visibleToPlayers: token?.visibleToPlayers !== false,
         statsVisibleToPlayers: token?.statsVisibleToPlayers === true,
-        order: asPositiveInt(token?.order, 1)
+        order: asPositiveInt(token?.order, 1),
+        tokenScale: roundTo(Math.max(0.25, Math.min(4, Number(token?.tokenScale) || 1)), 2)
       }))
       .filter(token => token.id && token.characterKey)
       .sort((a, b) => a.id.localeCompare(b.id))
@@ -1624,4 +1637,9 @@ function renderAll() {
   renderInspector();
 }
 
-f
+function renderHeader() {
+  const headerUser = getMesaDomRef("headerUser");
+  if (headerUser) {
+    headerUser.textContent = state.session?.username || "Convidado";
+  }
+}
