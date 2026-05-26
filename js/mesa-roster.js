@@ -124,16 +124,31 @@ function renderRoster() {
     .filter(group => group.entries.length);
 
   rosterList.innerHTML = groups
-    .map(group => `
-      <section class="roster-group">
-        <div class="roster-group-head">
-          <h3>${group.label}</h3>
-          <span>${group.entries.length} registro${group.entries.length === 1 ? "" : "s"}</span>
-        </div>
-        ${group.entries.map(renderRosterEntry).join("")}
-      </section>
-    `)
+    .map(group => {
+      const storageKey = `mesa_roster_open_${group.type}`;
+      const isOpen = localStorage.getItem(storageKey) !== "0";
+      return `
+        <details class="roster-group" data-group-type="${group.type}"${isOpen ? " open" : ""}>
+          <summary class="roster-group-head">
+            <span class="roster-group-chevron" aria-hidden="true"></span>
+            <h3>${group.label}</h3>
+            <span>${group.entries.length}</span>
+          </summary>
+          <div class="roster-group-body">
+            ${group.entries.map(renderRosterEntry).join("")}
+          </div>
+        </details>
+      `;
+    })
     .join("");
+
+  // Persiste estado aberto/fechado no localStorage
+  rosterList.querySelectorAll(".roster-group").forEach(function(details) {
+    details.addEventListener("toggle", function() {
+      const type = details.dataset.groupType;
+      if (type) localStorage.setItem(`mesa_roster_open_${type}`, details.open ? "1" : "0");
+    });
+  });
 }
 
 function renderRosterEntry(entry) {
@@ -148,29 +163,16 @@ function renderRosterEntry(entry) {
 
   return `
     <article class="roster-entry" data-type="${entry.type}" data-state="${isOnStage ? "on-stage" : "off-stage"}">
-      <div class="roster-entry-copy">
-        <div class="roster-entry-headline">
-          <strong class="roster-entry-name">${escapeHtml(entry.name)}</strong>
-          <span class="token-type-badge" data-type="${entry.type}">${escapeHtml(entry.typeLabel)}</span>
-        </div>
-        <span class="roster-entry-meta">${escapeHtml(ownerCopy)}</span>
-      </div>
+      <strong class="roster-entry-name">${escapeHtml(entry.name)}</strong>
       <div class="roster-entry-actions">
-        <span class="status-chip">${stageChip}</span>
         <button
           type="button"
           class="mini-btn ${canAdd ? "is-primary" : ""}"
           data-roster-action="${primaryAction}"
           data-entry-id="${entry.id}"
           ${!canAdd && !canFocus ? "disabled" : ""}
-        >
-          ${primaryLabel}
-        </button>
-        ${isOnStage && isMaster() ? `
-          <button type="button" class="mini-btn" data-roster-action="remove" data-entry-id="${entry.id}">
-            Retirar
-          </button>
-        ` : ""}
+        >${primaryLabel}</button>
+        ${isOnStage && isMaster() ? `<button type="button" class="mini-btn" data-roster-action="remove" data-entry-id="${entry.id}">Retirar</button>` : ""}
       </div>
     </article>
   `;

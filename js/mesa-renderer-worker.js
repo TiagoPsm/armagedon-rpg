@@ -68,9 +68,30 @@ async function loadBitmap(url) {
   imageCache.set(key, record);
 
   try {
-    const response = await fetch(key);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const blob = await response.blob();
+    let blob;
+    if (key.startsWith("data:")) {
+      // fetch("data:...") é instável em Web Workers em alguns browsers.
+      // Decodificamos o data URL diretamente para evitar falha silenciosa.
+      const commaIdx = key.indexOf(",");
+      if (commaIdx === -1) throw new Error("data URL inválido");
+      const meta = key.slice(5, commaIdx); // ex: "image/webp;base64"
+      const payload = key.slice(commaIdx + 1);
+      const mimeType = meta.split(";")[0] || "image/webp";
+      if (meta.includes("base64")) {
+        const binaryStr = atob(payload);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        blob = new Blob([bytes], { type: mimeType });
+      } else {
+        blob = new Blob([decodeURIComponent(payload)], { type: mimeType });
+      }
+    } else {
+      const response = await fetch(key);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      blob = await response.blob();
+    }
     record.image = await createImageBitmap(blob);
     record.status = "ready";
     drawLatest();
