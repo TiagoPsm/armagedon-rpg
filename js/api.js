@@ -357,6 +357,22 @@
         keepalive: options.keepalive === true
       });
     },
+    async uploadAvatar(key, blob) {
+      const contentType = blob.type || "image/webp";
+      const response = await fetch(buildUrl(`/avatars/${encodeURIComponent(key)}`), {
+        method: "POST",
+        headers: {
+          "Content-Type": contentType,
+          ...(state.token ? { Authorization: `Bearer ${state.token}` } : {})
+        },
+        body: blob
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err?.error || "Falha ao enviar avatar.");
+      }
+      return response.json();
+    },
     async awardSoulEssence(key, payload) {
       return request(`/characters/${encodeURIComponent(key)}/soul-essence`, {
         method: "POST",

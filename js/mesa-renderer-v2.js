@@ -1,6 +1,6 @@
 (function () {
-  const RENDERER_VERSION = "2026-05-06-player-panel-1";
-  const DEFAULT_WORKER_URL = "js/mesa-renderer-worker.js?v=2026-05-06-player-panel-1";
+  const RENDERER_VERSION = "2026-05-26-tokenscale-1";
+  const DEFAULT_WORKER_URL = "js/mesa-renderer-worker.js?v=2026-05-26-tokenscale-1";
   const MAX_DPR = 2;
   const IMAGE_RETRY_MS = 30000;
 
@@ -172,6 +172,7 @@
       this.records.set(key, record);
 
       const image = new Image();
+      image.crossOrigin = "anonymous"; // necessário para URLs R2 cross-origin no canvas
       image.decoding = "async";
       image.loading = "eager";
       image.onload = async () => {
@@ -408,13 +409,14 @@
       this.orderedTokens.forEach(token => {
         const x = clamp((Number(token.x) || 0) / 100, 0, 1) * size.width;
         const y = clamp((Number(token.y) || 0) / 100, 0, 1) * size.height;
+        const scale = Math.max(0.25, Math.min(4, Number(token.tokenScale) || 1));
         this.layouts.set(String(token.id), {
           x,
           y,
-          width: metrics.width,
-          height: metrics.height,
-          padding: metrics.padding,
-          radius: metrics.radius
+          width: metrics.width * scale,
+          height: metrics.height * scale,
+          padding: metrics.padding * scale,
+          radius: metrics.radius * scale
         });
       });
     }
@@ -697,6 +699,21 @@
       }
 
       return null;
+    }
+
+    // Limpa o canvas imediatamente — funciona mesmo quando o canvas foi
+    // transferido para o Worker (OffscreenCanvas). Útil ao trocar para
+    // o modo DOM/minimal, onde o Worker não deve mais desenhar nada.
+    clearCanvas() {
+      if (!this.enabled) return;
+      if (this.workerReady && this.worker) {
+        this.worker.postMessage({ type: "clear" });
+      } else if (this.ctx) {
+        this.ctx.clearRect(0, 0, this.canvas?.width || 0, this.canvas?.height || 0);
+      }
+      this.snapshot = normalizeSnapshot({});
+      this.layouts.clear();
+      this.orderedTokens = [];
     }
   }
 

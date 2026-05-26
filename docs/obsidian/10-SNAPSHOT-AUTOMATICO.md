@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-26 18:31:13 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-26 18:38:07 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,12 +13,30 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `891f9be 2026-05-26 fix(mesa): token scale + ghost card + deselect on empty stage click`
+- Ultimo commit: `a60feab 2026-05-26 fix(build): restaurar build-pages.cjs com bundle mesa`
 
 ### Alteracoes Locais
 
 ```text
-M  tools/build-pages.cjs
+M  cloudflare/src/characters.js
+M  cloudflare/src/index.js
+M  css/mesa-inspector.css
+M  css/mesa-map.css
+M  css/mesa-roster.css
+M  css/mesa-stage.css
+M  css/mesa.css
+M  ficha.html
+M  js/api.js
+M  js/ficha-core.js
+M  js/ficha-sheet.js
+M  js/mesa-core.js
+M  js/mesa-inspector.js
+M  js/mesa-map.js
+M  js/mesa-renderer-v2.js
+M  js/mesa-renderer-worker.js
+M  js/mesa-roster.js
+M  js/mesa-stage.js
+M  mesa.html
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -30,7 +48,25 @@ M  tools/build-pages.cjs
 ### Arquivos Em Stage
 
 ```text
-tools/build-pages.cjs
+cloudflare/src/characters.js
+cloudflare/src/index.js
+css/mesa-inspector.css
+css/mesa-map.css
+css/mesa-roster.css
+css/mesa-stage.css
+css/mesa.css
+ficha.html
+js/api.js
+js/ficha-core.js
+js/ficha-sheet.js
+js/mesa-core.js
+js/mesa-inspector.js
+js/mesa-map.js
+js/mesa-renderer-v2.js
+js/mesa-renderer-worker.js
+js/mesa-roster.js
+js/mesa-stage.js
+mesa.html
 ```
 
 ## Paginas Principais
