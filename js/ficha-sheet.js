@@ -212,43 +212,10 @@ function handleAvatar(event) {
     const avatarPlaceholder = document.getElementById("avatarPlaceholder");
     if (!avatarImg || !avatarPlaceholder) return;
 
-    // Compress before storing: resize to max 256×256 and export as JPEG.
-    // Reduces a 2 MB photo to ~20 KB, a ~100× storage saving with no
-    // visible quality loss at token size.
-    const tempImg = new Image();
-    tempImg.onload = () => {
-      const MAX = 256;
-      const ratio = Math.min(MAX / tempImg.naturalWidth, MAX / tempImg.naturalHeight, 1);
-      const w = Math.max(1, Math.round(tempImg.naturalWidth  * ratio));
-      const h = Math.max(1, Math.round(tempImg.naturalHeight * ratio));
-
-      const canvas = document.createElement("canvas");
-      canvas.width  = w;
-      canvas.height = h;
-      const ctx = canvas.getContext("2d");
-      // Fill with a dark background so transparent PNGs look correct in JPEG.
-      ctx.fillStyle = "#111";
-      ctx.fillRect(0, 0, w, h);
-      ctx.drawImage(tempImg, 0, 0, w, h);
-
-      // Prefer WebP (better compression), fall back to JPEG.
-      const mime    = canvas.toDataURL("image/webp").startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
-      const quality = mime === "image/webp" ? 0.85 : 0.82;
-      const compressed = canvas.toDataURL(mime, quality);
-
-      avatarImg.src = compressed;
-      avatarImg.style.display = "block";
-      avatarPlaceholder.style.display = "none";
-      saveSheetSilently();
-    };
-    tempImg.onerror = () => {
-      // Fallback: store as-is if canvas processing fails.
-      avatarImg.src = String(loadEvent.target.result || "");
-      avatarImg.style.display = "block";
-      avatarPlaceholder.style.display = "none";
-      saveSheetSilently();
-    };
-    tempImg.src = String(loadEvent.target.result || "");
+    avatarImg.src = loadEvent.target.result || "";
+    avatarImg.style.display = "block";
+    avatarPlaceholder.style.display = "none";
+    saveSheetSilently();
   };
 
   reader.readAsDataURL(file);

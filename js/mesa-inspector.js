@@ -45,48 +45,67 @@ function renderInspector() {
     ${buildInspectorStatsSection(token, canEditCurrent, canEditAll, canViewStats)}
 
     <section class="token-inspector-controls">
-      <h3>A&ccedil;&otilde;es</h3>
-      <div class="inspector-action-list">
+      <h3>Cena e acoes</h3>
+      <div class="inspector-meta-grid">
+        <article class="inspector-meta-card">
+          <span class="panel-kicker">Posicao X</span>
+          <strong>${Math.round(token.x)}%</strong>
+        </article>
+        <article class="inspector-meta-card">
+          <span class="panel-kicker">Posicao Y</span>
+          <strong>${Math.round(token.y)}%</strong>
+        </article>
+      </div>
+
+      <div class="inspector-control-grid">
         ${isMaster()
           ? `
-            <div class="inspector-action-row">
-              <span class="inspector-action-label">Visibilidade</span>
-              <div class="inspector-action-btns">
-                <button type="button" class="mini-btn ${token.visibleToPlayers ? "" : "is-primary"}" data-inspector-action="toggle-visibility">
-                  ${token.visibleToPlayers ? "Vis&iacute;vel" : "Oculto"}
-                </button>
+            <div class="inspector-row">
+              <div class="inspector-row-copy">
+                <strong>Visibilidade</strong>
+                <small>Controla se o retrato aparece para jogadores.</small>
               </div>
+              <button type="button" class="mini-btn ${token.visibleToPlayers ? "" : "is-primary"}" data-inspector-action="toggle-visibility">
+                ${token.visibleToPlayers ? "Visivel" : "Oculto"}
+              </button>
             </div>
 
             ${canConfigureStatsVisibility(token) ? `
-              <div class="inspector-action-row">
-                <span class="inspector-action-label">Status dos jogadores</span>
-                <div class="inspector-action-btns">
-                  <button type="button" class="mini-btn ${token.statsVisibleToPlayers ? "is-primary" : ""}" data-inspector-action="toggle-stats-visibility">
-                    ${token.statsVisibleToPlayers ? "Liberados" : "Ocultos"}
-                  </button>
+              <div class="inspector-row">
+                <div class="inspector-row-copy">
+                  <strong>Status</strong>
+                  <small>Libera Vida e Integridade para jogadores.</small>
                 </div>
+                <button type="button" class="mini-btn ${token.statsVisibleToPlayers ? "is-primary" : ""}" data-inspector-action="toggle-stats-visibility">
+                  ${token.statsVisibleToPlayers ? "Liberados" : "Ocultos"}
+                </button>
               </div>
             ` : ""}
 
-            <div class="inspector-action-row">
-              <span class="inspector-action-label">Palco</span>
-              <div class="inspector-action-btns">
+            <div class="inspector-row">
+              <div class="inspector-row-copy">
+                <strong>Palco</strong>
+                <small>Centralize ou retire este token do palco.</small>
+              </div>
+              <div class="roster-entry-actions">
                 <button type="button" class="mini-btn" data-inspector-action="center">Centralizar</button>
-                <button type="button" class="mini-btn is-danger" data-inspector-action="remove">Retirar</button>
+                <button type="button" class="mini-btn" data-inspector-action="remove">Retirar</button>
               </div>
             </div>
           `
           : `
-            <div class="inspector-action-row">
-              <span class="inspector-action-label">Permiss&atilde;o</span>
-              <div class="inspector-action-btns">
-                <span class="status-chip">${canEditCurrent ? "Edi&ccedil;&atilde;o parcial" : "Somente leitura"}</span>
+            <div class="inspector-row">
+              <div class="inspector-row-copy">
+                <strong>Permissao atual</strong>
+                <small>${canEditCurrent ? "Voce pode ajustar Vida e Integridade deste token." : "Este token fica em modo somente leitura."}</small>
               </div>
+              <span class="status-chip">${canEditCurrent ? "Edicao parcial" : "Somente leitura"}</span>
             </div>
           `}
       </div>
     </section>
+
+    ${buildInspectorNote(token, canEditCurrent, canEditAll, canViewStats)}
   `;
 }
 
@@ -139,11 +158,12 @@ function buildInspectorStatsSection(token, canEditCurrent, canEditAll, canViewSt
       <h3>Estado</h3>
       <div class="stats-grid">
         <div class="stat-editor">
-          <span class="bar-label">Vida</span>
+          <div class="bar-label-row">
+            <span class="bar-label">Vida</span>
+            <span>${token.currentLife}/${token.maxLife}</span>
+          </div>
           <div class="stat-editor-inputs">
-            <button type="button" class="stat-step-btn" data-stat-step="-1" data-stat-field="currentLife" ${canEditCurrent ? "" : "disabled"} aria-label="Diminuir vida">−</button>
             <input type="number" min="0" step="1" inputmode="numeric" data-stat-field="currentLife" value="${token.currentLife}" ${canEditCurrent ? "" : "disabled"} />
-            <button type="button" class="stat-step-btn" data-stat-step="1" data-stat-field="currentLife" ${canEditCurrent ? "" : "disabled"} aria-label="Aumentar vida">+</button>
             <span class="stat-divider">/</span>
             <input type="number" min="1" step="1" inputmode="numeric" data-stat-field="maxLife" value="${token.maxLife}" ${canEditAll ? "" : "disabled"} />
           </div>
@@ -151,11 +171,12 @@ function buildInspectorStatsSection(token, canEditCurrent, canEditAll, canViewSt
         </div>
 
         <div class="stat-editor">
-          <span class="bar-label">Integridade</span>
+          <div class="bar-label-row">
+            <span class="bar-label">Integridade</span>
+            <span>${token.currentIntegrity}/${token.maxIntegrity}</span>
+          </div>
           <div class="stat-editor-inputs">
-            <button type="button" class="stat-step-btn" data-stat-step="-1" data-stat-field="currentIntegrity" ${canEditCurrent ? "" : "disabled"} aria-label="Diminuir integridade">−</button>
             <input type="number" min="0" step="1" inputmode="numeric" data-stat-field="currentIntegrity" value="${token.currentIntegrity}" ${canEditCurrent ? "" : "disabled"} />
-            <button type="button" class="stat-step-btn" data-stat-step="1" data-stat-field="currentIntegrity" ${canEditCurrent ? "" : "disabled"} aria-label="Aumentar integridade">+</button>
             <span class="stat-divider">/</span>
             <input type="number" min="0" step="1" inputmode="numeric" data-stat-field="maxIntegrity" value="${token.maxIntegrity}" ${canEditAll ? "" : "disabled"} />
           </div>
@@ -180,7 +201,12 @@ function buildInspectorNote(token, canEditCurrent, canEditAll, canViewStats) {
   }
 
   if (isMaster()) {
-    return "";
+    return `
+      <div class="inspector-note">
+        <strong>Cena oficial</strong>
+        Status usa a ficha quando a API esta ativa; posicao dos tokens ainda fica local ate o realtime.
+      </div>
+    `;
   }
 
   if (canEditCurrent) {
@@ -199,28 +225,3 @@ function buildInspectorNote(token, canEditCurrent, canEditAll, canViewStats) {
     </div>
   `;
 }
-
-/* ── Handler dos botões +/- de stat ─────────────────────────── */
-(function () {
-  document.addEventListener("click", function (e) {
-    const btn = e.target.closest(".stat-step-btn");
-    if (!btn || btn.disabled) return;
-
-    const field = btn.dataset.statField;
-    const step  = parseInt(btn.dataset.statStep, 10);
-    if (!field || !step) return;
-
-    const inspector = document.getElementById("tokenInspector");
-    if (!inspector) return;
-
-    const input = inspector.querySelector(`input[data-stat-field="${field}"]`);
-    if (!input || input.disabled) return;
-
-    const min = input.min !== "" ? parseInt(input.min, 10) : -Infinity;
-    const max = input.max !== "" ? parseInt(input.max, 10) :  Infinity;
-    const newVal = Math.min(max, Math.max(min, (parseInt(input.value, 10) || 0) + step));
-
-    input.value = newVal;
-    input.dispatchEvent(new Event("change", { bubbles: true }));
-  });
-})();

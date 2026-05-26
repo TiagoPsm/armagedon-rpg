@@ -301,9 +301,6 @@ async function listDirectory(env, user) {
     const character = serializeCharacter(mapCharacterRow(row));
     const inventorySlots = Number(character.data.inventorySlots || 0);
     const usedSlots = Array.isArray(character.data.inv) ? character.data.inv.length : 0;
-    // Inclui avatar completo (URL ou base64) para que a Mesa não precise
-    // de uma segunda busca por personagem só para obter o avatar.
-    const avatar = String(character.data.avatar || "").trim();
 
     if (character.kind === "player") {
       players.push({
@@ -312,8 +309,7 @@ async function listDirectory(env, user) {
         username: character.ownerUsername,
         charname: character.name,
         inventorySlots,
-        usedSlots,
-        avatar
+        usedSlots
       });
       return;
     }
@@ -328,8 +324,7 @@ async function listDirectory(env, user) {
         key: character.key,
         name: character.name,
         inventorySlots,
-        usedSlots,
-        avatar
+        usedSlots
       });
       return;
     }
@@ -337,8 +332,7 @@ async function listDirectory(env, user) {
     monsters.push({
       id: character.id,
       key: character.key,
-      name: character.name,
-      avatar
+      name: character.name
     });
   });
 

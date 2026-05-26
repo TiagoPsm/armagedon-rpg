@@ -412,26 +412,10 @@ async function loadSheet(username, kind = "player") {
       const character = await APP.getCharacter(username);
       const mergedRemoteData = mergeSheetHabDraft(character.data || {}, remoteSheetsCache[username] || {});
       remoteSheetsCache[username] = normalizeSheetData(mergedRemoteData, kind);
-
-      // Se o backend não tem avatar mas o localStorage local tem, preserva o
-      // avatar local e agenda um save silencioso para sincronizar com o backend.
-      // Isso evita que o avatar "desapareça" ao abrir a ficha em modo backend
-      // e garante que outros dispositivos (ex: mesa do mestre) possam buscá-lo.
-      const needsAvatarSync = !remoteSheetsCache[username].avatar && cachedData.avatar;
-      if (needsAvatarSync) {
-        remoteSheetsCache[username] = { ...remoteSheetsCache[username], avatar: cachedData.avatar };
-      }
-
       persistRemoteSheetsCache();
 
       if (!currentSheetTarget || currentSheetTarget.key !== username) return;
       applySheetData(remoteSheetsCache[username], kind);
-
-      // Salva silenciosamente APÓS applySheetData para que collectSheetData
-      // leia o avatar já visível no DOM e o envie ao backend.
-      if (needsAvatarSync) {
-        saveSheetSilently();
-      }
     } catch (error) {
       if (!hasRenderableSheetData(cachedData)) {
         await UI.alert(error.message || "Falha ao carregar a ficha no servidor.", {
@@ -682,28 +666,6 @@ async function saveCurrentSheet(options = {}) {
 
   if (isBackendMode()) {
     const requestId = ++saveRequestId;
-
-    // Migração automática: se o avatar ainda é base64, faz upload para R2 e substitui pela URL.
-    // Isso cobre fichas existentes e novos uploads que passam pelo canvas local antes do save.
-    if (String(data.avatar || "").startsWith("data:") && APP.uploadAvatar) {
-      try {
-        const [, mime, b64] = data.avatar.match(/^data:([^;]+);base64,(.+)$/) || [];
-        if (mime && b64) {
-          const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-          const blob  = new Blob([bytes], { type: mime });
-          const result = await APP.uploadAvatar(currentSheetTarget.key, blob);
-          if (result?.url) {
-            data.avatar = result.url;
-            // Atualiza o DOM para que próximos saves usem a URL diretamente
-            const avatarImg = document.getElementById("avatarImg");
-            if (avatarImg && avatarImg.style.display !== "none") avatarImg.src = result.url;
-          }
-        }
-      } catch (uploadErr) {
-        console.warn("Falha ao migrar avatar para R2, salvando base64 como fallback.", uploadErr);
-      }
-    }
-
     markRecentLocalSave(currentSheetTarget.key);
     remoteSheetsCache[currentSheetTarget.key] = normalizeSheetData(data, currentSheetTarget.kind);
     persistRemoteSheetsCache();

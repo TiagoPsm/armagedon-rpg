@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-22 21:18:36 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-26 18:14:50 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,28 +13,81 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `e53959e 2026-05-22 fix: adicionar classe is-master ao body para mostrar botao de mapa`
+- Ultimo commit: `0b8e64d 2026-05-26 fix: commit completo — todos os arquivos atualizados de uma vez`
 
 ### Alteracoes Locais
 
 ```text
-M  css/mesa-map.css
-M  css/mesa-stage.css
-M  js/mesa-map.js
+MM cloudflare/src/characters.js
+MM cloudflare/src/index.js
+MM css/mesa-inspector.css
+MM css/mesa-map.css
+MM css/mesa-roster.css
+MM css/mesa-stage.css
+MM css/mesa.css
+MM ficha.html
+MM js/api.js
+MM js/ficha-core.js
+MM js/ficha-sheet.js
+MM js/mesa-core.js
+MM js/mesa-inspector.js
+MM js/mesa-map.js
+MM js/mesa-renderer-v2.js
+MM js/mesa-renderer-worker.js
+MM js/mesa-roster.js
+MM js/mesa-stage.js
+MM mesa.html
+MM tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
-(nenhum)
+cloudflare/src/characters.js
+cloudflare/src/index.js
+css/mesa-inspector.css
+css/mesa-map.css
+css/mesa-roster.css
+css/mesa-stage.css
+css/mesa.css
+ficha.html
+js/api.js
+js/ficha-core.js
+js/ficha-sheet.js
+js/mesa-core.js
+js/mesa-inspector.js
+js/mesa-map.js
+js/mesa-renderer-v2.js
+js/mesa-renderer-worker.js
+js/mesa-roster.js
+js/mesa-stage.js
+mesa.html
+tools/build-pages.cjs
 ```
 
 ### Arquivos Em Stage
 
 ```text
+cloudflare/src/characters.js
+cloudflare/src/index.js
+css/mesa-inspector.css
 css/mesa-map.css
+css/mesa-roster.css
 css/mesa-stage.css
+css/mesa.css
+ficha.html
+js/api.js
+js/ficha-core.js
+js/ficha-sheet.js
+js/mesa-core.js
+js/mesa-inspector.js
 js/mesa-map.js
+js/mesa-renderer-v2.js
+js/mesa-renderer-worker.js
+js/mesa-roster.js
+js/mesa-stage.js
+mesa.html
+tools/build-pages.cjs
 ```
 
 ## Paginas Principais
@@ -88,6 +141,7 @@ js/mesa-map.js
 [file] .nojekyll
 [file] .server-err.log
 [file] .server-out.log
+[file] _headers
 [file] apple-touch-icon.png
 [file] apple-touch-icon.webp
 [file] debug.log

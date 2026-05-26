@@ -1,6 +1,6 @@
 (function () {
-  const RENDERER_VERSION = "2026-05-25-dataurl-fix-1";
-  const DEFAULT_WORKER_URL = "js/mesa-renderer-worker.js?v=2026-05-25-dataurl-fix-1";
+  const RENDERER_VERSION = "2026-05-06-player-panel-1";
+  const DEFAULT_WORKER_URL = "js/mesa-renderer-worker.js?v=2026-05-06-player-panel-1";
   const MAX_DPR = 2;
   const IMAGE_RETRY_MS = 30000;
 
@@ -172,7 +172,6 @@
       this.records.set(key, record);
 
       const image = new Image();
-      image.crossOrigin = "anonymous"; // necessário para URLs R2 cross-origin no canvas
       image.decoding = "async";
       image.loading = "eager";
       image.onload = async () => {
