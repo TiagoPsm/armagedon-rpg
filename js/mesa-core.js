@@ -182,6 +182,10 @@ async function initMesaPage() {
   if (typeof initMesaDrawing === "function") {
     initMesaDrawing();
   }
+
+  if (typeof initMesaSelect === "function") {
+    initMesaSelect();
+  }
 }
 
 function bindEvents() {

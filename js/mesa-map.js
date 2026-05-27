@@ -684,7 +684,10 @@ function bindMapInteractions() {
   window._mesaStagePanMoved = false;
 
   wrap.addEventListener("mousedown", function(e) {
-    if (e.button !== 0) return;
+    // Modo "select": pan no RMB | Modo "move": pan no LMB (padrão)
+    const _imode = window._mesaInteractionMode || "select";
+    const _panBtn = _imode === "select" ? 2 : 0;
+    if (e.button !== _panBtn) return;
     if (e.target.closest("input, button, a, select, textarea")) return;
     // Em camada tokens: só inicia pan se NÃO está em cima de um token
     // (tokens têm pointer-events desativados na camada mapa, então não há conflito)
@@ -2352,7 +2355,4 @@ function _deleteCFActiveMapFromIDB() {
     var action = btn.dataset.cfAction;
     var path   = btn.dataset.cfPath;
 
-    if (action === "set")    { setMapFromConnectedFolder(path); return; }
-    if (action === "remove") { clearActiveMap(); renderMapLibrary(); renderConnectedFolderUI(); return; }
-  });
-})();
+    if (
