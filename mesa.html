@@ -551,7 +551,9 @@
   <script src="js/mesa-storage.js?v=2026-04-24-split-1" defer></script>
   <script src="js/mesa-core.js?v=2026-05-25-persist-style-1" defer></script>
   <script src="js/mesa-init.js?v=2026-04-24-split-1" defer></script>
-  <script src="js/mesa-map.js?v=2026-05-24-token-styles-1" defer></script>
+  <script src="js/mesa-map.js?v=2026-05-27-select-1" defer></script>
+  <script src="js/mesa-drawing.js?v=2026-05-27-select-1" defer></script>
+  <script src="js/mesa-select.js?v=2026-05-27-select-1" defer></script>
   <script>
   /* VTT Toolbar — camadas + painéis da sidebar */
   (function () {
@@ -581,9 +583,4 @@
       // Callbacks de render
       if (panelName === "map") {
         if (typeof renderMapLibrary === "function")        renderMapLibrary();
-        if (typeof renderConnectedFolderUI === "function") renderConnectedFolderUI();
-        if (typeof _patchThumbsInDOM === "function")       _patchThumbsInDOM();
-      }
-    }
-
-  
+        if (typeof renderConnectedFolderUI =
