@@ -142,58 +142,22 @@
         </div>
       </div>
 
-      <!-- Ferramentas de desenho -->
-      <div class="vtt-tb-section">
-        <span class="vtt-tb-label">Ferramentas</span>
-        <div class="vtt-tb-tools" style="gap:0.15rem">
-
-          <button class="vtt-tb-btn" data-draw-tool="pencil" title="Lápis — desenho livre" aria-pressed="false">
-            <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M14.5 2.5l3 3-10 10-4 1 1-4 10-10z"/>
-              <line x1="12" y1="4.5" x2="15.5" y2="8"/>
-            </svg>
-            <span>Lápis</span>
-          </button>
-
-          <button class="vtt-tb-btn" data-draw-tool="line" title="Linha reta" aria-pressed="false">
-            <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-              <line x1="3" y1="17" x2="17" y2="3"/>
-            </svg>
-            <span>Linha</span>
-          </button>
-
-          <button class="vtt-tb-btn" data-draw-tool="rect" title="Retângulo" aria-pressed="false">
-            <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="3" y="5" width="14" height="10" rx="1.5"/>
-            </svg>
-            <span>Ret.</span>
-          </button>
-
-          <button class="vtt-tb-btn" data-draw-tool="circle" title="Círculo / Elipse" aria-pressed="false">
-            <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-              <ellipse cx="10" cy="10" rx="7" ry="5.5"/>
-            </svg>
-            <span>Cír.</span>
-          </button>
-
-          <button class="vtt-tb-btn" data-draw-tool="eraser" title="Borracha — apagar traços" aria-pressed="false">
-            <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M3 17h14M5.5 14.5l-2-2 7-7 4 4-4 4-1.5 1.5"/>
-              <path d="M10 5.5l4 4"/>
-            </svg>
-            <span>Borr.</span>
-          </button>
-
-        </div>
+      <!-- Botão único de desenho — abre flyout com as ferramentas -->
+      <div class="vtt-tb-tools" style="padding:0 0.35rem">
+        <button class="vtt-tb-btn" id="mesaDrawToggleBtn"
+                title="Ferramentas de desenho" aria-expanded="false" aria-haspopup="true">
+          <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+               stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14.5 2.5l3 3-10 10-4 1 1-4 10-10z"/>
+            <line x1="12" y1="4.5" x2="15.5" y2="8"/>
+          </svg>
+        </button>
       </div>
 
       <!-- Separador -->
       <div class="vtt-tb-divider"></div>
 
       <!-- Camadas do canvas -->
-      <div class="vtt-tb-section">
-        <span class="vtt-tb-label">Camadas</span>
-      </div>
       <div class="vtt-tb-layers">
         <button class="vtt-layer-btn is-active" data-layer="tokens" data-panel="scene" title="Camada de Tokens — selecionar e mover fichas" aria-pressed="true">
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
@@ -286,31 +250,85 @@
 
       </div>
 
-      <!-- Painel de opções de desenho — aparece ao lado da toolbar quando tool ativa -->
-      <div id="mesaDrawOptions" hidden aria-label="Opções de desenho">
-        <span class="draw-options-title">Desenho</span>
+      <!-- Flyout de desenho — abre ao clicar no botão da caneta -->
+      <div id="mesaDrawFlyout" class="vtt-draw-flyout" hidden aria-label="Ferramentas de desenho">
 
-        <!-- Preview da cor + paleta -->
-        <div class="draw-color-row">
-          <div id="mesaDrawColorPreview" title="Cor atual"></div>
-          <div class="draw-palette" id="mesaDrawColorPalette"></div>
+        <!-- Lista de ferramentas -->
+        <button class="draw-flyout-item" data-draw-tool="pencil" aria-pressed="false">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+               stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14.5 2.5l3 3-10 10-4 1 1-4 10-10z"/>
+            <line x1="12" y1="4.5" x2="15.5" y2="8"/>
+          </svg>
+          <span>À Mão Livre</span>
+        </button>
+
+        <button class="draw-flyout-item" data-draw-tool="line" aria-pressed="false">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <line x1="3" y1="17" x2="17" y2="3"/>
+          </svg>
+          <span>Linha</span>
+        </button>
+
+        <button class="draw-flyout-item" data-draw-tool="rect" aria-pressed="false">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+               stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="14" height="10" rx="1.5"/>
+          </svg>
+          <span>Retângulo</span>
+        </button>
+
+        <button class="draw-flyout-item" data-draw-tool="circle" aria-pressed="false">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+               stroke-width="1.6" aria-hidden="true">
+            <ellipse cx="10" cy="10" rx="7" ry="5.5"/>
+          </svg>
+          <span>Elipse</span>
+        </button>
+
+        <button class="draw-flyout-item" data-draw-tool="eraser" aria-pressed="false">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+               stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 17h14M5.5 14.5l-2-2 7-7 4 4-4 4-1.5 1.5"/>
+            <path d="M10 5.5l4 4"/>
+          </svg>
+          <span>Borracha</span>
+        </button>
+
+        <!-- Divisor -->
+        <div class="draw-flyout-divider"></div>
+
+        <!-- Cores e largura — só visíveis quando tool ativa (não eraser) -->
+        <div id="mesaDrawOptions" class="draw-flyout-options" hidden>
+          <div class="draw-color-row">
+            <div id="mesaDrawColorPreview" title="Cor atual"></div>
+            <div class="draw-palette" id="mesaDrawColorPalette"></div>
+          </div>
+          <div class="draw-width-row">
+            <button class="draw-width-btn is-active" data-draw-width="2" title="Fino">
+              <span class="draw-width-line thin"></span>
+            </button>
+            <button class="draw-width-btn" data-draw-width="4" title="Médio">
+              <span class="draw-width-line medium"></span>
+            </button>
+            <button class="draw-width-btn" data-draw-width="8" title="Grosso">
+              <span class="draw-width-line thick"></span>
+            </button>
+          </div>
+          <div class="draw-flyout-divider"></div>
         </div>
 
-        <!-- Largura do traço -->
-        <div class="draw-width-row">
-          <button class="draw-width-btn is-active" data-draw-width="2" title="Fino" aria-label="Traço fino">
-            <span class="draw-width-line thin"></span>
-          </button>
-          <button class="draw-width-btn" data-draw-width="4" title="Médio" aria-label="Traço médio">
-            <span class="draw-width-line medium"></span>
-          </button>
-          <button class="draw-width-btn" data-draw-width="8" title="Grosso" aria-label="Traço grosso">
-            <span class="draw-width-line thick"></span>
-          </button>
-        </div>
+        <!-- Limpar tudo -->
+        <button class="draw-flyout-item draw-flyout-item--danger" id="mesaDrawClearBtn" type="button">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+               stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="3,6 17,6"/><path d="M8 6V4h4v2"/>
+            <path d="M5 6l1 11h8l1-11"/>
+          </svg>
+          <span>Limpar tudo</span>
+        </button>
 
-        <!-- Limpar -->
-        <button id="mesaDrawClearBtn" type="button">Limpar tudo</button>
       </div>
 
       <!-- Overlay: topo esquerdo — estado da cena -->
@@ -575,31 +593,4 @@
           b.classList.toggle("is-active", active);
           b.setAttribute("aria-pressed", active ? "true" : "false");
         });
-        showPanel(toolBtn.dataset.tool);
-      }
-    });
-
-    // Inicializar com camada TOKENS + painel de cena
-    showPanel("scene");
-  })();
-  </script>
-
-  <script>
-  /* VTT Roster tabs — filtro por tipo sem tocar no mesa-roster.js */
-  (function () {
-    document.addEventListener('click', function (e) {
-      var btn = e.target.closest('.vtt-rtab');
-      if (!btn) return;
-      var filter = btn.dataset.filter;
-      var block = document.getElementById('vttRosterBlock');
-      if (block) block.dataset.rosterFilter = filter;
-      document.querySelectorAll('.vtt-rtab').forEach(function (b) {
-        var isActive = b.dataset.filter === filter;
-        b.classList.toggle('is-active', isActive);
-        b.setAttribute('aria-selected', isActive ? 'true' : 'false');
-      });
-    });
-  })();
-  </script>
-</body>
-</html
+        

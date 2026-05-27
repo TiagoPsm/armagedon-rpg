@@ -7,75 +7,147 @@
 #mesaDrawCanvas {
   position: absolute;
   inset: 0;
-  pointer-events: none;   /* ativado via JS quando ferramenta está ativa */
-  z-index: 8;             /* acima do grid/glow, abaixo dos tokens DOM */
+  pointer-events: none;
+  z-index: 8;
   touch-action: none;
 }
 
-/* ─── Label de seção na toolbar ─────────────────────────────── */
+/* ─── Botão toggle na toolbar — destaque quando flyout aberto ── */
 
-.vtt-tb-label {
-  font-family: var(--font-ui);
-  font-size: 0.46rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(255, 248, 236, 0.22);
-  line-height: 1;
-  padding: 0 0 0.35rem 0;
-  width: 100%;
-  text-align: center;
-  user-select: none;
+#mesaDrawToggleBtn.is-open,
+#mesaDrawToggleBtn[aria-expanded="true"] {
+  background: rgba(168, 48, 40, 0.18);
+  border-color: rgba(168, 48, 40, 0.32);
+  color: #e8b4b0;
 }
 
-/* ─── Seção genérica da toolbar ─────────────────────────────── */
-
-.vtt-tb-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  padding: 0 0.35rem;
-  gap: 0;
+/* Ponto indicador de ferramenta ativa (aparece sob o ícone) */
+#mesaDrawToggleBtn::after {
+  content: "";
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: transparent;
+  margin: 2px auto 0;
+  transition: background 0.2s;
+}
+#mesaDrawToggleBtn.has-active-tool::after {
+  background: #e84040;
 }
 
-/* ─── Painel flutuante de opções de desenho ──────────────────── */
+/* ─── Flyout — painel lateral que aparece ao clicar na caneta ── */
 
-#mesaDrawOptions {
+.vtt-draw-flyout {
   position: absolute;
-  left: calc(60px + 8px);   /* 60px = largura da toolbar */
-  top: 50%;
-  transform: translateY(-50%);
+  left: calc(60px + 6px);    /* 60px = largura da toolbar */
+  top: 0;                    /* alinhado ao topo do vtt-canvas; JS ajusta se necessário */
   z-index: 50;
+  width: 186px;
+  padding: 6px 0;
+  background: rgba(10, 8, 16, 0.96);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+  pointer-events: all;
+  animation: flyoutIn 0.14s ease;
+}
+
+.vtt-draw-flyout[hidden] { display: none; }
+
+@keyframes flyoutIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ─── Item do flyout ─────────────────────────────────────────── */
+
+.draw-flyout-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  color: rgba(255, 248, 236, 0.65);
+  font-family: var(--font-ui, sans-serif);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-align: left;
+  transition: background 0.12s, color 0.12s;
+  position: relative;
+}
+
+.draw-flyout-item svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: opacity 0.12s;
+}
+
+.draw-flyout-item:hover {
+  background: rgba(255, 255, 255, 0.055);
+  color: rgba(255, 248, 236, 0.92);
+}
+.draw-flyout-item:hover svg { opacity: 1; }
+
+/* Ferramenta ativa — destaque vermelho */
+.draw-flyout-item.is-active,
+.draw-flyout-item[aria-pressed="true"] {
+  background: rgba(168, 48, 40, 0.14);
+  color: #e8b4b0;
+}
+.draw-flyout-item.is-active svg,
+.draw-flyout-item[aria-pressed="true"] svg { opacity: 1; color: #e8b4b0; }
+
+/* Indicador de ativa à esquerda */
+.draw-flyout-item.is-active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 25%;
+  height: 50%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: #e84040;
+}
+
+/* Item danger (limpar tudo) */
+.draw-flyout-item--danger {
+  color: rgba(232, 100, 90, 0.65);
+}
+.draw-flyout-item--danger svg { color: rgba(232, 100, 90, 0.65); }
+.draw-flyout-item--danger:hover {
+  background: rgba(168, 48, 40, 0.12);
+  color: #e87070;
+}
+.draw-flyout-item--danger:hover svg { color: #e87070; }
+
+/* ─── Divisor ────────────────────────────────────────────────── */
+
+.draw-flyout-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 4px 0;
+}
+
+/* ─── Seção de opções (cor + largura) dentro do flyout ──────── */
+
+.draw-flyout-options {
+  padding: 8px 14px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px 10px;
-  background: var(--hud-bg, rgba(4, 3, 8, 0.90));
-  backdrop-filter: var(--hud-blur, blur(12px) saturate(130%));
-  -webkit-backdrop-filter: var(--hud-blur, blur(12px) saturate(130%));
-  border: 1px solid var(--hud-border, rgba(168, 48, 40, 0.22));
-  border-radius: var(--hud-radius, 12px);
-  min-width: 130px;
-  pointer-events: all;
+  gap: 8px;
 }
 
-#mesaDrawOptions[hidden] { display: none; }
+.draw-flyout-options[hidden] { display: none; }
 
-/* ─── Cabeçalho do painel ────────────────────────────────────── */
-
-.draw-options-title {
-  font-family: var(--font-ui);
-  font-size: 0.52rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(255, 248, 236, 0.35);
-  line-height: 1;
-}
-
-/* ─── Preview + paleta de cores ─────────────────────────────── */
-
+/* Preview da cor + paleta */
 .draw-color-row {
   display: flex;
   align-items: center;
@@ -83,9 +155,9 @@
 }
 
 #mesaDrawColorPreview {
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
   border: 2px solid rgba(255, 255, 255, 0.18);
   flex-shrink: 0;
   background: #e84040;
@@ -94,36 +166,33 @@
 .draw-palette {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
+  gap: 3px;
 }
 
 .draw-swatch {
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
+  width: 17px;
+  height: 17px;
+  border-radius: 4px;
   border: 2px solid transparent;
   background: var(--swatch-color, #888);
   cursor: pointer;
   padding: 0;
   transition: transform 0.1s, border-color 0.1s;
 }
-
 .draw-swatch:hover {
   transform: scale(1.2);
   border-color: rgba(255, 255, 255, 0.5);
 }
-
 .draw-swatch.is-active {
   border-color: rgba(255, 255, 255, 0.9);
   transform: scale(1.15);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
 }
 
-/* ─── Largura do traço ───────────────────────────────────────── */
-
+/* Largura do traço */
 .draw-width-row {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   align-items: center;
 }
 
@@ -131,66 +200,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 28px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  flex: 1;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
   background: transparent;
   cursor: pointer;
-  color: rgba(255, 248, 236, 0.5);
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.draw-width-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 248, 236, 0.85);
-}
-
-.draw-width-btn.is-active {
-  background: rgba(168, 48, 40, 0.18);
-  border-color: rgba(168, 48, 40, 0.35);
-  color: #e8b4b0;
-}
-
-/* Ícone de linha com espessura visual */
-.draw-width-line {
-  display: block;
-  width: 18px;
-  background: currentColor;
-  border-radius: 999px;
-}
-.draw-width-line.thin   { height: 1.5px; }
-.draw-width-line.medium { height: 3px;   }
-.draw-width-line.thick  { height: 6px;   }
-
-/* ─── Botão limpar ───────────────────────────────────────────── */
-
-#mesaDrawClearBtn {
-  width: 100%;
-  padding: 5px 8px;
-  border-radius: 8px;
-  border: 1px solid rgba(168, 48, 40, 0.25);
-  background: rgba(168, 48, 40, 0.10);
-  color: rgba(232, 180, 176, 0.75);
-  font-family: var(--font-ui);
-  font-size: 0.58rem;
-  font-weight: 600;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-#mesaDrawClearBtn:hover {
-  background: rgba(168, 48, 40, 0.22);
-  color: #e8b4b0;
-}
-
-/* ─── Cursor no stage-wrap quando tool ativa ─────────────────── */
-
-.mesa-stage-wrap[data-draw-active="true"] {
-  cursor: crosshair !important;
-}
-.mesa-stage-wrap[data-draw-active="eraser"] {
-  cursor: cell !important;
-}
+  color: rgba(255, 248, 236, 0.45);
+  transition: background 0.12s, border-color 0.12s, c

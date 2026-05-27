@@ -63,12 +63,16 @@ function setDrawTool(tool) {
   // toggle: clicar na mesma ferramenta desativa
   _activeTool = (_activeTool === tool) ? null : tool;
 
-  // botões da toolbar
+  // itens do flyout
   document.querySelectorAll("[data-draw-tool]").forEach(btn => {
     const active = btn.dataset.drawTool === _activeTool;
     btn.classList.toggle("is-active", active);
     btn.setAttribute("aria-pressed", active ? "true" : "false");
   });
+
+  // ponto indicador no botão toggle
+  const toggleBtn = document.getElementById("mesaDrawToggleBtn");
+  if (toggleBtn) toggleBtn.classList.toggle("has-active-tool", Boolean(_activeTool));
 
   // canvas: captura eventos só quando ferramenta ativa
   if (_drawCanvasEl) {
@@ -79,11 +83,11 @@ function setDrawTool(tool) {
       : "";
   }
 
-  // painel de opções: ocultar se eraser ou null
+  // painel de opções dentro do flyout: oculta para borracha e sem ferramenta
   const opts = document.getElementById("mesaDrawOptions");
   if (opts) opts.hidden = !_activeTool || _activeTool === "eraser";
 
-  // cursor do stage-wrap quando uma ferramenta está ativa
+  // cursor do stage-wrap
   const wrap = document.getElementById("mesaStageWrap");
   if (wrap) wrap.style.cursor = _activeTool ? "crosshair" : "";
 }
@@ -129,13 +133,16 @@ function _bindDrawEvents() {
     setDrawTool(null);
   });
 
-  // Tecla Escape cancela / desfaz traço em andamento
+  // Tecla Escape cancela ferramenta + fecha flyout
   document.addEventListener("keydown", e => {
-    if (e.key === "Escape" && _activeTool) {
-      _isDrawing    = false;
-      _activeStroke = null;
-      setDrawTool(null);
-      renderDrawings();
+    if (e.key === "Escape") {
+      if (_activeTool) {
+        _isDrawing    = false;
+        _activeStroke = null;
+        setDrawTool(null);
+        renderDrawings();
+      }
+      _closeFlyout();
     }
     // Ctrl+Z: desfaz último traço
     if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
@@ -346,53 +353,57 @@ function _broadcastDrawings() {
   }
 }
 
+// ── Flyout toggle ──────────────────────────────────────────────────
+let _flyoutOpen = false;
+
+function _openFlyout() {
+  const flyout  = document.getElementById("mesaDrawFlyout");
+  const toggleBtn = document.getElementById("mesaDrawToggleBtn");
+  if (!flyout) return;
+
+  // Posiciona o flyout alinhado ao botão toggle
+  if (toggleBtn) {
+    const tbRect = toggleBtn.getBoundingClientRect();
+    const canvasRect = document.getElementById("mesaPanelStage")?.getBoundingClientRect() || { top: 0 };
+    flyout.style.top = (tbRect.top - canvasRect.top) + "px";
+  }
+
+  flyout.hidden   = false;
+  _flyoutOpen     = true;
+  if (toggleBtn) {
+    toggleBtn.classList.add("is-open");
+    toggleBtn.setAttribute("aria-expanded", "true");
+  }
+}
+
+function _closeFlyout() {
+  const flyout    = document.getElementById("mesaDrawFlyout");
+  const toggleBtn = document.getElementById("mesaDrawToggleBtn");
+  if (flyout) flyout.hidden = true;
+  _flyoutOpen = false;
+  if (toggleBtn) {
+    toggleBtn.classList.remove("is-open");
+    toggleBtn.setAttribute("aria-expanded", "false");
+  }
+}
+
+function _toggleFlyout() {
+  _flyoutOpen ? _closeFlyout() : _openFlyout();
+}
+
 // ── Bind botões da toolbar ─────────────────────────────────────────
 function _bindToolbarButtons() {
+  // Botão toggle da caneta
+  const toggleBtn = document.getElementById("mesaDrawToggleBtn");
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", e => {
+      e.stopPropagation();
+      _toggleFlyout();
+    });
+  }
+
+  // Itens do flyout — selecionar ferramenta
   document.querySelectorAll("[data-draw-tool]").forEach(btn => {
-    btn.addEventListener("click", () => setDrawTool(btn.dataset.drawTool));
-  });
-
-  const clearBtn = document.getElementById("mesaDrawClearBtn");
-  if (clearBtn) clearBtn.addEventListener("click", clearAllDrawings);
-}
-
-// ── Paleta de cores + largura ──────────────────────────────────────
-function _buildColorPicker() {
-  const container = document.getElementById("mesaDrawColorPalette");
-  if (!container) return;
-
-  PALETTE.forEach(color => {
-    const swatch = document.createElement("button");
-    swatch.className = "draw-swatch";
-    swatch.style.setProperty("--swatch-color", color);
-    swatch.title = color;
-    swatch.setAttribute("aria-label", "Cor " + color);
-    if (color === _drawColor) swatch.classList.add("is-active");
-
-    swatch.addEventListener("click", () => {
-      _drawColor = color;
-      document.querySelectorAll(".draw-swatch").forEach(s =>
-        s.classList.toggle("is-active", s.title === color)
-      );
-      // Atualiza preview da cor atual
-      const preview = document.getElementById("mesaDrawColorPreview");
-      if (preview) preview.style.background = color;
-    });
-    container.appendChild(swatch);
-  });
-
-  // Atualiza preview inicial
-  const preview = document.getElementById("mesaDrawColorPreview");
-  if (preview) preview.style.background = _drawColor;
-
-  // Botões de largura
-  document.querySelectorAll("[data-draw-width]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      _drawWidth = Number(btn.dataset.drawWidth);
-      document.querySelectorAll("[data-draw-width]").forEach(b =>
-        b.classList.toggle("is-active", b.dataset.drawWidth === btn.dataset.drawWidth)
-      );
-    });
-    if (Number(btn.dataset.drawWidth) === _drawWidth) btn.classList.add("is-active");
-  });
-}
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      
