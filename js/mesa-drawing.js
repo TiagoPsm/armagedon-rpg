@@ -416,7 +416,7 @@ function _bindToolbarButtons() {
     if (!_flyoutOpen) return;
     const flyout    = document.getElementById("mesaDrawFlyout");
     const toggleBtn = document.getElementById("mesaDrawToggleBtn");
-    if (flyout && !flyout.contains(e.target) && e.target !== toggleBtn) {
+    if (flyout && !flyout.contains(e.target) && !e.target.closest("#mesaDrawToggleBtn")) {
       _closeFlyout();
     }
   });
@@ -466,4 +466,3 @@ function _buildColorPicker() {
     if (Number(btn.dataset.drawWidth) === _drawWidth) btn.classList.add("is-active");
   });
 }
-      const tool = btn.dataset.
