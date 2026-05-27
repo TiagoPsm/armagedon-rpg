@@ -87,7 +87,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.22rem;
-  padding: 0.6rem 0.25rem 0.5rem;
+  padding: 0.55rem 0.25rem;
   border-radius: 10px;
   border: 1px solid transparent;
   background: transparent;
@@ -140,7 +140,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.22rem;
-  padding: 0.6rem 0.25rem 0.5rem;
+  padding: 0.55rem 0.25rem;
   border-radius: 10px;
   border: 1px solid transparent;
   background: transparent;
@@ -912,3 +912,4 @@
   width: 100% !important;
   height: 100% !important;
 }
+            

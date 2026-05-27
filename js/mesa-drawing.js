@@ -406,4 +406,64 @@ function _bindToolbarButtons() {
   document.querySelectorAll("[data-draw-tool]").forEach(btn => {
     btn.addEventListener("click", e => {
       e.stopPropagation();
-      
+      setDrawTool(btn.dataset.drawTool);
+      // Não fecha o flyout: usuário pode trocar de ferramenta
+    });
+  });
+
+  // Fechar ao clicar fora do flyout
+  document.addEventListener("click", e => {
+    if (!_flyoutOpen) return;
+    const flyout    = document.getElementById("mesaDrawFlyout");
+    const toggleBtn = document.getElementById("mesaDrawToggleBtn");
+    if (flyout && !flyout.contains(e.target) && e.target !== toggleBtn) {
+      _closeFlyout();
+    }
+  });
+
+  // Limpar tudo
+  const clearBtn = document.getElementById("mesaDrawClearBtn");
+  if (clearBtn) clearBtn.addEventListener("click", clearAllDrawings);
+}
+
+// ── Paleta de cores + largura ──────────────────────────────────────
+function _buildColorPicker() {
+  const container = document.getElementById("mesaDrawColorPalette");
+  if (!container) return;
+
+  PALETTE.forEach(color => {
+    const swatch = document.createElement("button");
+    swatch.className = "draw-swatch";
+    swatch.style.setProperty("--swatch-color", color);
+    swatch.title = color;
+    swatch.setAttribute("aria-label", "Cor " + color);
+    if (color === _drawColor) swatch.classList.add("is-active");
+
+    swatch.addEventListener("click", () => {
+      _drawColor = color;
+      document.querySelectorAll(".draw-swatch").forEach(s =>
+        s.classList.toggle("is-active", s.title === color)
+      );
+      // Atualiza preview da cor atual
+      const preview = document.getElementById("mesaDrawColorPreview");
+      if (preview) preview.style.background = color;
+    });
+    container.appendChild(swatch);
+  });
+
+  // Atualiza preview inicial
+  const preview = document.getElementById("mesaDrawColorPreview");
+  if (preview) preview.style.background = _drawColor;
+
+  // Botões de largura
+  document.querySelectorAll("[data-draw-width]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      _drawWidth = Number(btn.dataset.drawWidth);
+      document.querySelectorAll("[data-draw-width]").forEach(b =>
+        b.classList.toggle("is-active", b.dataset.drawWidth === btn.dataset.drawWidth)
+      );
+    });
+    if (Number(btn.dataset.drawWidth) === _drawWidth) btn.classList.add("is-active");
+  });
+}
+      const tool = btn.dataset.

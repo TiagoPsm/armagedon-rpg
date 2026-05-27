@@ -181,7 +181,7 @@
       <div class="vtt-tb-divider"></div>
 
       <!-- Ferramentas -->
-      <div class="vtt-tb-tools">
+      <div class="vtt-tb-tools" style="flex:0">
         <button class="vtt-tb-btn" data-tool="roster" title="Escalação — adicionar personagens à cena" aria-pressed="false">
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
             <circle cx="7" cy="6" r="2.5"/>
@@ -592,5 +592,4 @@
           var active = b.dataset.tool === toolBtn.dataset.tool;
           b.classList.toggle("is-active", active);
           b.setAttribute("aria-pressed", active ? "true" : "false");
-        });
-        
+     

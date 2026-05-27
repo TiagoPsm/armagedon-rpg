@@ -40,7 +40,7 @@
 
 .vtt-draw-flyout {
   position: absolute;
-  left: calc(60px + 6px);    /* 60px = largura da toolbar */
+  left: 6px;                 /* relativo ao vtt-canvas, que já começa após a toolbar */
   top: 0;                    /* alinhado ao topo do vtt-canvas; JS ajusta se necessário */
   z-index: 50;
   width: 186px;
@@ -207,4 +207,4 @@
   background: transparent;
   cursor: pointer;
   color: rgba(255, 248, 236, 0.45);
-  transition: background 0.12s, border-color 0.12s, c
+  transition: backgroun
