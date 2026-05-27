@@ -6,7 +6,7 @@ const outDir = path.join(repoRoot, "_site");
 
 // Bump aqui quando mudar arquivos dos bundles
 const FICHA_BUNDLE_VERSION = "2026-05-25-avatar-sync-1";
-const MESA_BUNDLE_VERSION  = "2026-05-26-stagezoom-4";
+const MESA_BUNDLE_VERSION  = "2026-05-26-drawing-1";
 
 const files = [
   "index.html", "ficha.html", "mesa.html", "regras.html", "sugestoes.html",
@@ -33,13 +33,15 @@ const mesaCssBundle = "css/mesa-page.bundle.css";
 const mesaJsBundle  = "js/mesa-page.bundle.js";
 const mesaCssFiles  = [
   "css/tokens.css","css/reset.css","css/components.css","css/mesa.css",
-  "css/mesa-stage.css","css/mesa-roster.css","css/mesa-inspector.css","css/mesa-map.css"
+  "css/mesa-stage.css","css/mesa-roster.css","css/mesa-inspector.css","css/mesa-map.css",
+  "css/mesa-drawing.css"
 ];
 const mesaJsFiles = [
   "js/runtime-config.js","js/api.js","js/ui.js","js/auth.js",
   "js/mesa-renderer-v2.js","js/mesa-renderer-worker.js",
   "js/mesa-stage.js","js/mesa-roster.js","js/mesa-inspector.js",
-  "js/mesa-storage.js","js/mesa-core.js","js/mesa-init.js","js/mesa-map.js"
+  "js/mesa-storage.js","js/mesa-core.js","js/mesa-init.js","js/mesa-map.js",
+  "js/mesa-drawing.js"
 ];
 
 function removeDir(dir) {
@@ -132,4 +134,4 @@ rewriteHtmlBundles(path.join(outDir, "mesa.html"), {
   jsFiles:  mesaJsFiles,  jsBundle:  mesaJsBundle,  jsVersion:  MESA_BUNDLE_VERSION,
 });
 
-console.log("\nArtifact ready:", path.relative(repoRoot, outDir)
+console.log("\nArtifact ready:", path.relative(repoRoot, outDir));

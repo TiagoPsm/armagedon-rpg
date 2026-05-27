@@ -69,7 +69,8 @@ const MESA_REALTIME_DELTA_TYPES = new Set([
   "mesa:token:move",
   "mesa:token:upsert",
   "mesa:token:remove",
-  "mesa:scene:clear"
+  "mesa:scene:clear",
+  "mesa:drawings:update"
 ]);
 const MESA_SHEET_PATCH_TYPE = "mesa:sheet:patch";
 const MESA_ATTRIBUTE_NAMES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"];
@@ -176,6 +177,10 @@ async function initMesaPage() {
   // window.APP já está conectado via bindMesaRealtime() acima.
   if (typeof initMesaMap === "function") {
     await initMesaMap();
+  }
+
+  if (typeof initMesaDrawing === "function") {
+    initMesaDrawing();
   }
 }
 
@@ -429,6 +434,13 @@ async function applyMesaRealtimeDelta(payload) {
       setMesaRoster(buildRoster());
     }
     changed = applyMesaTokenUpsertDelta(payload) || changed;
+  }
+
+  if (type === "mesa:drawings:update") {
+    if (typeof setDrawingsFromRemote === "function") {
+      setDrawingsFromRemote(payload.drawings);
+    }
+    return; // não precisa scheduleMesaRender
   }
 
   if (!changed && !needsRosterRefresh) return;

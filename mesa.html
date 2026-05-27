@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-05-09-player-simple-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-05-06-player-panel-1" />
   <link rel="stylesheet" href="css/mesa-map.css?v=2026-05-24-token-styles-1" />
+  <link rel="stylesheet" href="css/mesa-drawing.css" />
   <style>
     /* ── TOKEN SCALE ── */
     .mesa-token { transform-origin: top left; transform: scale(var(--token-scale, 1)); }
@@ -141,7 +142,58 @@
         </div>
       </div>
 
+      <!-- Ferramentas de desenho -->
+      <div class="vtt-tb-section">
+        <span class="vtt-tb-label">Ferramentas</span>
+        <div class="vtt-tb-tools" style="gap:0.15rem">
+
+          <button class="vtt-tb-btn" data-draw-tool="pencil" title="Lápis — desenho livre" aria-pressed="false">
+            <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14.5 2.5l3 3-10 10-4 1 1-4 10-10z"/>
+              <line x1="12" y1="4.5" x2="15.5" y2="8"/>
+            </svg>
+            <span>Lápis</span>
+          </button>
+
+          <button class="vtt-tb-btn" data-draw-tool="line" title="Linha reta" aria-pressed="false">
+            <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+              <line x1="3" y1="17" x2="17" y2="3"/>
+            </svg>
+            <span>Linha</span>
+          </button>
+
+          <button class="vtt-tb-btn" data-draw-tool="rect" title="Retângulo" aria-pressed="false">
+            <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="5" width="14" height="10" rx="1.5"/>
+            </svg>
+            <span>Ret.</span>
+          </button>
+
+          <button class="vtt-tb-btn" data-draw-tool="circle" title="Círculo / Elipse" aria-pressed="false">
+            <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+              <ellipse cx="10" cy="10" rx="7" ry="5.5"/>
+            </svg>
+            <span>Cír.</span>
+          </button>
+
+          <button class="vtt-tb-btn" data-draw-tool="eraser" title="Borracha — apagar traços" aria-pressed="false">
+            <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 17h14M5.5 14.5l-2-2 7-7 4 4-4 4-1.5 1.5"/>
+              <path d="M10 5.5l4 4"/>
+            </svg>
+            <span>Borr.</span>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Separador -->
+      <div class="vtt-tb-divider"></div>
+
       <!-- Camadas do canvas -->
+      <div class="vtt-tb-section">
+        <span class="vtt-tb-label">Camadas</span>
+      </div>
       <div class="vtt-tb-layers">
         <button class="vtt-layer-btn is-active" data-layer="tokens" data-panel="scene" title="Camada de Tokens — selecionar e mover fichas" aria-pressed="true">
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
@@ -199,6 +251,8 @@
           <div class="mesa-stage-grid" aria-hidden="true"></div>
           <div class="mesa-stage-glow" aria-hidden="true"></div>
           <canvas class="mesa-stage-canvas" id="mesaStageCanvas" aria-hidden="true"></canvas>
+          <!-- Canvas de desenho — acima do grid, abaixo dos tokens DOM -->
+          <canvas id="mesaDrawCanvas" aria-hidden="true"></canvas>
           <div id="mesaStage" class="mesa-stage" aria-live="polite"></div>
 
           <div id="mesaEmptyState" class="mesa-empty-state" hidden>
@@ -230,6 +284,33 @@
           </button>
         </div>
 
+      </div>
+
+      <!-- Painel de opções de desenho — aparece ao lado da toolbar quando tool ativa -->
+      <div id="mesaDrawOptions" hidden aria-label="Opções de desenho">
+        <span class="draw-options-title">Desenho</span>
+
+        <!-- Preview da cor + paleta -->
+        <div class="draw-color-row">
+          <div id="mesaDrawColorPreview" title="Cor atual"></div>
+          <div class="draw-palette" id="mesaDrawColorPalette"></div>
+        </div>
+
+        <!-- Largura do traço -->
+        <div class="draw-width-row">
+          <button class="draw-width-btn is-active" data-draw-width="2" title="Fino" aria-label="Traço fino">
+            <span class="draw-width-line thin"></span>
+          </button>
+          <button class="draw-width-btn" data-draw-width="4" title="Médio" aria-label="Traço médio">
+            <span class="draw-width-line medium"></span>
+          </button>
+          <button class="draw-width-btn" data-draw-width="8" title="Grosso" aria-label="Traço grosso">
+            <span class="draw-width-line thick"></span>
+          </button>
+        </div>
+
+        <!-- Limpar -->
+        <button id="mesaDrawClearBtn" type="button">Limpar tudo</button>
       </div>
 
       <!-- Overlay: topo esquerdo — estado da cena -->
@@ -455,4 +536,70 @@
         var el = document.getElementById(id);
         if (el) el.hidden = false;
       });
-      // Callbacks
+      // Callbacks de render
+      if (panelName === "map") {
+        if (typeof renderMapLibrary === "function")        renderMapLibrary();
+        if (typeof renderConnectedFolderUI === "function") renderConnectedFolderUI();
+        if (typeof _patchThumbsInDOM === "function")       _patchThumbsInDOM();
+      }
+    }
+
+    // Clique em botão de CAMADA (altera a camada activa do canvas + painel)
+    document.addEventListener("click", function (e) {
+      var layerBtn = e.target.closest(".vtt-layer-btn[data-layer]");
+      if (layerBtn) {
+        var layer = layerBtn.dataset.layer;
+        var panel = layerBtn.dataset.panel || "scene";
+        // Actualizar botões de camada
+        document.querySelectorAll(".vtt-layer-btn[data-layer]").forEach(function (b) {
+          var active = b.dataset.layer === layer;
+          b.classList.toggle("is-active", active);
+          b.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+        // Aplicar ao stage
+        if (typeof setMesaActiveLayer === "function") {
+          setMesaActiveLayer(layer);
+        } else {
+          var wrap = document.getElementById("mesaStageWrap");
+          if (wrap) wrap.dataset.activeLayer = layer;
+        }
+        showPanel(panel);
+        return;
+      }
+
+      // Clique em botão de FERRAMENTA (apenas muda o painel, não a camada)
+      var toolBtn = e.target.closest(".vtt-tb-btn[data-tool]");
+      if (toolBtn) {
+        document.querySelectorAll(".vtt-tb-btn[data-tool]").forEach(function (b) {
+          var active = b.dataset.tool === toolBtn.dataset.tool;
+          b.classList.toggle("is-active", active);
+          b.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+        showPanel(toolBtn.dataset.tool);
+      }
+    });
+
+    // Inicializar com camada TOKENS + painel de cena
+    showPanel("scene");
+  })();
+  </script>
+
+  <script>
+  /* VTT Roster tabs — filtro por tipo sem tocar no mesa-roster.js */
+  (function () {
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.vtt-rtab');
+      if (!btn) return;
+      var filter = btn.dataset.filter;
+      var block = document.getElementById('vttRosterBlock');
+      if (block) block.dataset.rosterFilter = filter;
+      document.querySelectorAll('.vtt-rtab').forEach(function (b) {
+        var isActive = b.dataset.filter === filter;
+        b.classList.toggle('is-active', isActive);
+        b.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+    });
+  })();
+  </script>
+</body>
+</html
