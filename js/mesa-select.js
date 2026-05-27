@@ -41,6 +41,10 @@ function setInteractionMode(mode) {
   const wrap = document.getElementById("mesaStageWrap");
   if (wrap) wrap.dataset.interactionMode = mode;
 
+  // Desativar ferramenta de desenho ao trocar para select/move
+  if (typeof setDrawTool === "function") setDrawTool(null);
+  if (typeof _closeFlyout === "function") _closeFlyout();
+
   clearMultiSelection();
 }
 
@@ -169,11 +173,4 @@ function initMesaSelect() {
       _selectedTokenIds.add(id);
       const el = document.querySelector(`[data-token-id="${id}"]`);
       if (el) el.classList.add("is-multi-selected");
-    });
-
-    // Se um único token foi capturado, seleciona normalmente também
-    if (hits.length === 1 && typeof selectToken === "function") {
-      selectToken(hits[0]);
     }
-  });
-}
