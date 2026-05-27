@@ -123,6 +123,84 @@
   line-height: 1;
 }
 
+/* ── CAMADAS ────────────────────────────────────────────────── */
+.vtt-tb-layers {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  width: 100%;
+  padding: 0 0.35rem;
+}
+
+.vtt-layer-btn {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.22rem;
+  padding: 0.6rem 0.25rem 0.5rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  color: rgba(255, 248, 236, 0.38);
+}
+
+.vtt-layer-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 248, 236, 0.75);
+}
+
+/* TOKENS layer — verde */
+.vtt-layer-btn[data-layer="tokens"].is-active {
+  background: rgba(46, 160, 90, 0.14);
+  border-color: rgba(46, 160, 90, 0.3);
+  color: #86e8ac;
+}
+
+/* MAPA layer — dourado */
+.vtt-layer-btn[data-layer="map"].is-active {
+  background: rgba(176, 143, 50, 0.14);
+  border-color: rgba(176, 143, 50, 0.3);
+  color: #e8c97d;
+}
+
+.vtt-layer-btn span {
+  font-family: var(--font-ui);
+  font-size: 0.52rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/* Separador entre camadas e ferramentas */
+.vtt-tb-divider {
+  width: calc(100% - 1.4rem);
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  margin: 0.35rem 0;
+  flex-shrink: 0;
+}
+
+/* Stage em modo MAPA — bloqueia tokens, cursor grab */
+.mesa-stage-wrap[data-active-layer="map"] .mesa-stage {
+  pointer-events: none;
+}
+
+.mesa-stage-wrap[data-active-layer="map"] {
+  cursor: grab;
+}
+
+.mesa-stage-wrap[data-active-layer="map"]:active {
+  cursor: grabbing;
+}
+
+/* ── FIM CAMADAS ─────────────────────────────────────────────── */
+
 .vtt-tb-foot {
   width: 100%;
   padding: 0.85rem 0 0.4rem;
@@ -177,7 +255,153 @@
   border: none !important;
 }
 
+/* ─── INNER ESCALÁVEL DO PALCO ──────────────────────────────── */
+
+/* Wrapper interno que recebe transform:scale() do zoom de palco.
+   Fica absolutamente posicionado cobrindo o wrap inteiro; o zoom
+   expande a partir do centro sem mexer em nada fora dele. */
+.mesa-stage-inner {
+  position: absolute;
+  inset: 0;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* ─── CONTROLE DE ZOOM ───────────────────────────────────────── */
+
+.vtt-zoom-ctrl {
+  position: absolute;
+  top: calc(var(--hud-inset) * 2 + 48px); /* abaixo do overlay TR (~72px) */
+  right: var(--hud-inset);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--hud-bg);
+  backdrop-filter: var(--hud-blur);
+  -webkit-backdrop-filter: var(--hud-blur);
+  border: 1px solid var(--hud-border);
+  border-radius: var(--hud-radius);
+  padding: 8px 6px;
+  user-select: none;
+}
+
+.vtt-zoom-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(210, 130, 120, 0.7);
+  line-height: 1;
+  margin-bottom: 2px;
+  min-width: 22px;
+  text-align: center;
+}
+
+.vtt-zoom-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: rgba(215, 140, 130, 0.65);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+.vtt-zoom-btn:hover {
+  color: #d57a72;
+  background: rgba(168, 48, 40, 0.15);
+}
+.vtt-zoom-btn:active {
+  background: rgba(168, 48, 40, 0.25);
+}
+.vtt-zoom-reset {
+  color: rgba(168, 48, 40, 0.5);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.vtt-zoom-reset:hover {
+  color: #d57a72;
+}
+
+/* Track container para o slider vertical */
+.vtt-zoom-track {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88px;
+  width: 22px;
+}
+
+/* ── Slider vertical cross-browser ── */
+.vtt-zoom-slider {
+  -webkit-appearance: slider-vertical;
+  appearance: slider-vertical;
+  writing-mode: vertical-lr;
+  direction: rtl;          /* max no topo, min na base */
+  width: 4px;
+  height: 88px;
+  cursor: pointer;
+  accent-color: #a83028;
+  background: transparent;
+}
+/* Chrome/Safari: trilha e thumb */
+.vtt-zoom-slider::-webkit-slider-runnable-track {
+  width: 4px;
+  border-radius: 2px;
+  background: rgba(168, 48, 40, 0.18);
+}
+.vtt-zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #d57a72;
+  border: 2px solid rgba(0,0,0,0.5);
+  box-shadow: 0 0 7px rgba(168, 48, 40, 0.7);
+  margin-left: -5px;
+  cursor: grab;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.vtt-zoom-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  background: #c05848;
+  box-shadow: 0 0 12px rgba(168, 48, 40, 1);
+}
+/* Firefox */
+.vtt-zoom-slider::-moz-range-track {
+  width: 4px;
+  border-radius: 2px;
+  background: rgba(168, 48, 40, 0.18);
+}
+.vtt-zoom-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #d57a72;
+  border: 2px solid rgba(0,0,0,0.4);
+  box-shadow: 0 0 6px rgba(157,111,232,0.6);
+  cursor: grab;
+}
+
 /* ─── OVERLAYS FLUTUANTES NO CANVAS ─────────────────────────── */
+
+/* Token de estilo compartilhado por todos os painéis flutuantes da mesa
+   (overlays + controle de zoom). Mantém um único visual glass consistente. */
+:root {
+  --hud-bg:     rgba(4, 3, 8, 0.80);
+  --hud-blur:   blur(12px) saturate(130%);
+  --hud-border: rgba(168, 48, 40, 0.22);
+  --hud-radius: 12px;
+  --hud-inset:  12px;            /* margem uniforme dos cantos do canvas */
+}
 
 .vtt-overlay {
   position: absolute;
@@ -186,28 +410,27 @@
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
-  /* HUD glass */
-  background: rgba(4, 3, 8, 0.72);
-  backdrop-filter: blur(12px) saturate(120%);
-  -webkit-backdrop-filter: blur(12px) saturate(120%);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 12px;
+  background: var(--hud-bg);
+  backdrop-filter: var(--hud-blur);
+  -webkit-backdrop-filter: var(--hud-blur);
+  border: 1px solid var(--hud-border);
+  border-radius: var(--hud-radius);
   padding: 0.5rem 0.75rem;
 }
 
 .vtt-overlay-tl {
-  top: 12px;
-  left: 12px;
+  top:  var(--hud-inset);
+  left: var(--hud-inset);
 }
 
 .vtt-overlay-tr {
-  top: 12px;
-  right: 12px;
+  top:   var(--hud-inset);
+  right: var(--hud-inset);
 }
 
 .vtt-overlay-br {
-  bottom: 12px;
-  right: 12px;
+  bottom: var(--hud-inset);
+  right:  var(--hud-inset);
 }
 
 /* HUD badges dentro dos overlays */
@@ -668,4 +891,24 @@
   font-size: 0.78rem;
   color: var(--text-soft);
   line-height: 1.4;
+}
+
+
+/* ─── PSEUDO TELA CHEIA ──────────────────────────────────────── */
+
+/* Tela cheia pseudo: canvas cobre toda a viewport (header, toolbar, sidebar incluídos) */
+.vtt-canvas.is-pseudo-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 200 !important;
+  border-radius: 0 !important;
+  width: 100dvw !important;
+  height: 100dvh !important;
+}
+
+/* Garantia para tela cheia nativa */
+.vtt-canvas:fullscreen,
+.vtt-canvas:-webkit-full-screen {
+  width: 100% !important;
+  height: 100% !important;
 }

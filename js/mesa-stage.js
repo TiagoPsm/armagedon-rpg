@@ -662,19 +662,16 @@ function syncInspectorStatInputCard(input, field, token) {
 
 function handleTokenPointerDown(event) {
   if (state.drag) return;
+  // Bloqueia interação com tokens quando a camada mapa está ativa
+  if (typeof getMesaActiveLayer === "function" && getMesaActiveLayer() !== "tokens") return;
   if (event.target.classList?.contains("mesa-token-resize-handle")) {
     handleResizePointerDown(event);
     return;
   }
   const target = resolveStagePointerTarget(event);
   if (!target) {
-    // Clique em espaço vazio do stage — deseleciona o token atual
-    if (state.selectedTokenId && !event.target.closest("input, button, a")) {
-      const previousTokenId = state.selectedTokenId;
-      state.selectedTokenId = "";
-      updateStageTokenSelection(previousTokenId, "");
-      scheduleMesaRender({ inspector: true });
-    }
+    // Espaço vazio: deselect acontece no evento 'click' (ver handleStageEmptyClick)
+    // para não conflitar com pan (arrastar não dispara click no browser)
     return;
   }
   const tokenId = target.tokenId;
@@ -696,16 +693,12 @@ function handleTokenPointerDown(event) {
 
 function handleTokenMouseDown(event) {
   if (state.drag) return;
+  // Bloqueia interação com tokens quando a camada mapa está ativa
+  if (typeof getMesaActiveLayer === "function" && getMesaActiveLayer() !== "tokens") return;
   if (event.target.classList?.contains("mesa-token-resize-handle")) return; // handled by pointer
   const target = resolveStagePointerTarget(event);
   if (!target) {
-    // Fallback (sem Pointer Events): clique em espaço vazio deseleciona
-    if (state.selectedTokenId && !event.target.closest("input, button, a")) {
-      const previousTokenId = state.selectedTokenId;
-      state.selectedTokenId = "";
-      updateStageTokenSelection(previousTokenId, "");
-      scheduleMesaRender({ inspector: true });
-    }
+    // Espaço vazio: deselect acontece no evento 'click' (ver handleStageEmptyClick)
     return;
   }
   const tokenId = target.tokenId;

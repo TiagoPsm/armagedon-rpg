@@ -141,27 +141,32 @@
         </div>
       </div>
 
-      <!-- Ferramentas / camadas -->
-      <div class="vtt-tb-tools">
-        <button class="vtt-tb-btn is-active" data-tool="scene" title="Cena — tokens em cena" aria-pressed="true">
+      <!-- Camadas do canvas -->
+      <div class="vtt-tb-layers">
+        <button class="vtt-layer-btn is-active" data-layer="tokens" data-panel="scene" title="Camada de Tokens — selecionar e mover fichas" aria-pressed="true">
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
             <circle cx="10" cy="6.5" r="3"/>
             <path d="M3.5 18c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5" stroke-linecap="round"/>
           </svg>
-          <span>CENA</span>
+          <span>TOKENS</span>
         </button>
 
-        <button class="vtt-tb-btn" data-tool="map" title="Mapa — carregar imagem de mapa" aria-pressed="false">
+        <button class="vtt-layer-btn" data-layer="map" data-panel="map" title="Camada de Mapa — mover e redimensionar o fundo" aria-pressed="false">
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-            <rect x="2" y="2" width="7" height="7" rx="1"/>
-            <rect x="11" y="2" width="7" height="7" rx="1"/>
-            <rect x="2" y="11" width="7" height="7" rx="1"/>
-            <rect x="11" y="11" width="7" height="7" rx="1"/>
+            <polygon points="2,4 8,2 12,5 18,3 18,16 12,18 8,15 2,17" stroke-linejoin="round"/>
+            <line x1="8" y1="2" x2="8" y2="15"/>
+            <line x1="12" y1="5" x2="12" y2="18"/>
           </svg>
           <span>MAPA</span>
         </button>
+      </div>
 
-        <button class="vtt-tb-btn" data-tool="roster" title="Escalação — adicionar personagens" aria-pressed="false">
+      <!-- Separador -->
+      <div class="vtt-tb-divider"></div>
+
+      <!-- Ferramentas -->
+      <div class="vtt-tb-tools">
+        <button class="vtt-tb-btn" data-tool="roster" title="Escalação — adicionar personagens à cena" aria-pressed="false">
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
             <circle cx="7" cy="6" r="2.5"/>
             <path d="M1.5 16.5c0-3 2.4-5.5 5.5-5.5s5.5 2.5 5.5 5.5" stroke-linecap="round"/>
@@ -185,18 +190,46 @@
     <div class="vtt-canvas" id="mesaPanelStage">
 
       <!-- O palco propriamente dito -->
-      <div class="mesa-stage-wrap" id="mesaStageWrap">
-        <!-- Camada de mapa — abaixo do grid e tokens -->
-        <div id="mesaMapLayer" class="mesa-map-layer" aria-hidden="true" hidden></div>
-        <div class="mesa-stage-grid" aria-hidden="true"></div>
-        <div class="mesa-stage-glow" aria-hidden="true"></div>
-        <canvas class="mesa-stage-canvas" id="mesaStageCanvas" aria-hidden="true"></canvas>
-        <div id="mesaStage" class="mesa-stage" aria-live="polite"></div>
+      <div class="mesa-stage-wrap" id="mesaStageWrap" data-active-layer="tokens">
 
-        <div id="mesaEmptyState" class="mesa-empty-state" hidden>
-          <strong>Nenhum token em cena.</strong>
-          <p>Use a escalacao abaixo para colocar personagens, NPCs e monstros no palco.</p>
+        <!-- Inner escalável — tudo dentro aqui escala junto com o zoom -->
+        <div id="mesaStageInner" class="mesa-stage-inner">
+          <!-- Camada de mapa — abaixo do grid e tokens -->
+          <div id="mesaMapLayer" class="mesa-map-layer" aria-hidden="true" hidden></div>
+          <div class="mesa-stage-grid" aria-hidden="true"></div>
+          <div class="mesa-stage-glow" aria-hidden="true"></div>
+          <canvas class="mesa-stage-canvas" id="mesaStageCanvas" aria-hidden="true"></canvas>
+          <div id="mesaStage" class="mesa-stage" aria-live="polite"></div>
+
+          <div id="mesaEmptyState" class="mesa-empty-state" hidden>
+            <strong>Nenhum token em cena.</strong>
+            <p>Use a escalacao abaixo para colocar personagens, NPCs e monstros no palco.</p>
+          </div>
         </div>
+
+        <!-- Controle de zoom — fora do inner, não escala com o palco -->
+        <div class="vtt-zoom-ctrl" id="mesaZoomCtrl" aria-label="Zoom do palco">
+          <span class="vtt-zoom-label" id="mesaZoomLabel">100</span>
+          <button class="vtt-zoom-btn" id="mesaZoomIn"    title="Aproximar" aria-label="Aproximar">+</button>
+          <div class="vtt-zoom-track">
+            <input class="vtt-zoom-slider" id="mesaZoomSlider" type="range"
+                   min="25" max="300" value="100" step="5"
+                   orient="vertical" aria-label="Nível de zoom">
+          </div>
+          <button class="vtt-zoom-btn" id="mesaZoomOut"   title="Afastar"   aria-label="Afastar">−</button>
+          <button class="vtt-zoom-btn vtt-zoom-reset" id="mesaZoomReset" title="Resetar zoom (100%)" aria-label="Resetar zoom">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+                 stroke-linecap="round" stroke-linejoin="round" width="11" height="11" aria-hidden="true">
+              <circle cx="8" cy="8" r="5.5"/>
+              <circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/>
+              <line x1="8" y1="1" x2="8" y2="3.5"/>
+              <line x1="8" y1="12.5" x2="8" y2="15"/>
+              <line x1="1" y1="8" x2="3.5" y2="8"/>
+              <line x1="12.5" y1="8" x2="15" y2="8"/>
+            </svg>
+          </button>
+        </div>
+
       </div>
 
       <!-- Overlay: topo esquerdo — estado da cena -->
@@ -397,77 +430,29 @@
   <script src="js/mesa-init.js?v=2026-04-24-split-1" defer></script>
   <script src="js/mesa-map.js?v=2026-05-24-token-styles-1" defer></script>
   <script>
-  /* VTT Toolbar — troca de painéis na sidebar direita */
+  /* VTT Toolbar — camadas + painéis da sidebar */
   (function () {
-    var TOOL_PANELS = {
+    // Painéis associados a cada painel/layer
+    var PANEL_BLOCKS = {
       scene:  ["vttRosterBlock", "vttInspectorBlock"],
       map:    ["vttMapLibraryBlock"],
       roster: ["vttRosterBlock"],
     };
+    var ALL_BLOCKS = ["vttRosterBlock", "vttInspectorBlock", "vttMapLibraryBlock"];
 
-    function activateTool(toolName) {
-      // Resetar todos os botões
-      document.querySelectorAll(".vtt-tb-btn").forEach(function (b) {
-        b.classList.remove("is-active");
-        b.setAttribute("aria-pressed", "false");
-      });
-      // Ativar botão correto
-      var btn = document.querySelector(`.vtt-tb-btn[data-tool="${toolName}"]`);
-      if (btn) { btn.classList.add("is-active"); btn.setAttribute("aria-pressed", "true"); }
-
-      // Esconder todos os blocos gerenciados
-      var allBlocks = ["vttRosterBlock", "vttInspectorBlock", "vttMapLibraryBlock"];
-      allBlocks.forEach(function (id) {
+    function showPanel(panelName) {
+      // Esconder todos
+      ALL_BLOCKS.forEach(function (id) {
         var el = document.getElementById(id);
         if (el) el.hidden = true;
       });
-      // Separador — mostra só se CENA (ambos os blocos) está ativo
+      // Separador só quando scene ativo
       var sep = document.querySelector(".vtt-sidebar-sep");
-      if (sep) sep.hidden = toolName !== "scene";
-
-      // Mostrar os blocos do tool ativo
-      var panels = TOOL_PANELS[toolName] || TOOL_PANELS.scene;
-      panels.forEach(function (id) {
+      if (sep) sep.hidden = panelName !== "scene";
+      // Mostrar os do painel
+      var blocks = PANEL_BLOCKS[panelName] || PANEL_BLOCKS.scene;
+      blocks.forEach(function (id) {
         var el = document.getElementById(id);
         if (el) el.hidden = false;
       });
-
-      // Se mudou para mapa, renderizar a biblioteca e a pasta conectada
-      if (toolName === "map") {
-        if (typeof renderMapLibrary === "function")         renderMapLibrary();
-        if (typeof renderConnectedFolderUI === "function")  renderConnectedFolderUI();
-        // Aplicar thumbnails gerados em background enquanto o painel estava oculto
-        if (typeof _patchThumbsInDOM === "function")        _patchThumbsInDOM();
-      }
-    }
-
-    document.addEventListener("click", function (e) {
-      var btn = e.target.closest(".vtt-tb-btn[data-tool]");
-      if (!btn) return;
-      activateTool(btn.dataset.tool);
-    });
-
-    // Inicializar com "scene" ativo
-    activateTool("scene");
-  })();
-  </script>
-
-  <script>
-  /* VTT Roster tabs — filtro por tipo sem tocar no mesa-roster.js */
-  (function () {
-    document.addEventListener('click', function (e) {
-      var btn = e.target.closest('.vtt-rtab');
-      if (!btn) return;
-      var filter = btn.dataset.filter;
-      var block = document.getElementById('vttRosterBlock');
-      if (block) block.dataset.rosterFilter = filter;
-      document.querySelectorAll('.vtt-rtab').forEach(function (b) {
-        var isActive = b.dataset.filter === filter;
-        b.classList.toggle('is-active', isActive);
-        b.setAttribute('aria-selected', isActive ? 'true' : 'false');
-      });
-    });
-  })();
-  </script>
-</body>
-</html
+      // Callbacks

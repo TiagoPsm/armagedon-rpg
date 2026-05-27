@@ -117,6 +117,106 @@ const mesaWsBuffer = {
   chunks: null, received: 0, total: 0, hash: "", name: "", size: 0,
 };
 
+/* ── ZOOM DE PALCO ──────────────────────────────────────────── */
+
+let _stageZoom     = 1.0;
+let _stagePan      = { x: 0, y: 0 };   // translação do palco em px de tela
+const ZOOM_MIN     = 0.25;
+const ZOOM_MAX     = 3.0;
+const ZOOM_STEP    = 0.1;
+const ZOOM_DEFAULT = 1.0;
+
+/** Retorna o nível de zoom atual do palco (1 = 100%). */
+function getStageZoom() {
+  return _stageZoom;
+}
+
+/** Aplica transform composta (translate + scale) ao inner do palco. */
+function _applyStageTransform() {
+  const inner = document.getElementById("mesaStageInner");
+  if (!inner) return;
+  const { x, y } = _stagePan;
+  const z = _stageZoom;
+  inner.style.transform =
+    (x === 0 && y === 0 && z === 1) ? "" : `translate(${x}px,${y}px) scale(${z})`;
+}
+
+/**
+ * Define o zoom do palco. Preserva a translação atual.
+ * @param {number} z — fator de escala (0.25 – 3.0)
+ */
+function setStageZoom(z) {
+  _stageZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+  _applyStageTransform();
+  const slider = document.getElementById("mesaZoomSlider");
+  const label  = document.getElementById("mesaZoomLabel");
+  if (slider) slider.value = Math.round(_stageZoom * 100);
+  if (label)  label.textContent = Math.round(_stageZoom * 100);
+}
+
+/**
+ * Move o palco por (dx, dy) pixels de tela.
+ * @param {number} dx
+ * @param {number} dy
+ */
+function panStage(dx, dy) {
+  _stagePan.x += dx;
+  _stagePan.y += dy;
+  _applyStageTransform();
+}
+
+/** Reseta pan e zoom para os valores padrão. */
+function resetStageView() {
+  _stageZoom = ZOOM_DEFAULT;
+  _stagePan  = { x: 0, y: 0 };
+  _applyStageTransform();
+  const slider = document.getElementById("mesaZoomSlider");
+  const label  = document.getElementById("mesaZoomLabel");
+  if (slider) slider.value = 100;
+  if (label)  label.textContent = "100";
+}
+
+/** Liga os botões e o slider do controle de zoom ao palco. */
+function bindZoomControl() {
+  const btnIn    = document.getElementById("mesaZoomIn");
+  const btnOut   = document.getElementById("mesaZoomOut");
+  const btnReset = document.getElementById("mesaZoomReset");
+  const slider   = document.getElementById("mesaZoomSlider");
+
+  if (btnIn)    btnIn.addEventListener("click",  () => setStageZoom(_stageZoom + ZOOM_STEP));
+  if (btnOut)   btnOut.addEventListener("click", () => setStageZoom(_stageZoom - ZOOM_STEP));
+  if (btnReset) btnReset.addEventListener("click", () => resetStageView());
+  if (slider) {
+    slider.addEventListener("input", () => setStageZoom(Number(slider.value) / 100));
+    // Impede que o scroll dentro do slider propague para o zoom do palco
+    slider.addEventListener("wheel", (e) => e.stopPropagation(), { passive: true });
+  }
+}
+
+/* ── CAMADA ATIVA ───────────────────────────────────────────── */
+
+/**
+ * Retorna a camada atualmente ativa ("tokens" | "map").
+ * Lê diretamente do atributo data-active-layer do wrapper do palco.
+ */
+function getMesaActiveLayer() {
+  const wrap = document.getElementById("mesaStageWrap");
+  return wrap ? (wrap.dataset.activeLayer || "tokens") : "tokens";
+}
+
+/**
+ * Define a camada ativa e atualiza o estado visual dos botões.
+ * @param {"tokens"|"map"} layer
+ */
+function setMesaActiveLayer(layer) {
+  const wrap = document.getElementById("mesaStageWrap");
+  if (!wrap) return;
+  wrap.dataset.activeLayer = layer;
+  document.querySelectorAll(".vtt-layer-btn[data-layer]").forEach(function(btn) {
+    btn.classList.toggle("is-active", btn.dataset.layer === layer);
+  });
+}
+
 /* ── INICIALIZAÇÃO ──────────────────────────────────────────── */
 
 /**
@@ -136,6 +236,7 @@ async function initMesaMap() {
     await _restoreConnectedFolder();
     bindMesaMapPresence();
     bindMapInteractions();
+    bindZoomControl();
 
     if (mesaMapState.isMaster) {
       document.body.classList.add("is-master");
@@ -563,41 +664,53 @@ function bindMapInteractions() {
   const wrap = document.getElementById("mesaStageWrap");
   if (!wrap) return;
 
-  // Scroll = zoom
+  // ── Zoom via scroll/pinch — qualquer camada, qualquer utilizador ────────────
   wrap.addEventListener("wheel", function(e) {
-    if (!mesaMapState.activeMapUrl) return;
     e.preventDefault();
-    const delta = e.deltaY < 0 ? 0.08 : -0.08;
-    adjustMapScale(delta);
+    const raw  = e.deltaY;
+    const step = Math.abs(raw) < 20 ? raw * 0.005 : (raw > 0 ? -0.08 : 0.08);
+    setStageZoom(_stageZoom - step);
   }, { passive: false });
 
-  // Clique esquerdo no fundo (não em token) = pan do mapa
+  // ── Pan do palco — qualquer camada, qualquer utilizador ───────────────────
+  // Arrastar em espaço vazio (não sobre token/botão) move toda a cena.
+  // Em camada MAPA o mestre também pode mover o fundo independentemente
+  // através do painel de configurações de mapa.
   let dragging = false;
   let lastX = 0, lastY = 0;
-  let moved = false;
+  let _panMoved = false;  // exportado para mesa-stage.js saber se foi pan
+
+  // Expõe flag para o handler de deselect em mesa-stage.js
+  window._mesaStagePanMoved = false;
 
   wrap.addEventListener("mousedown", function(e) {
-    if (!mesaMapState.activeMapUrl) return;
     if (e.button !== 0) return;
-    // Não interferir com tokens arrastáveis
+    if (e.target.closest("input, button, a, select, textarea")) return;
+    // Em camada tokens: só inicia pan se NÃO está em cima de um token
+    // (tokens têm pointer-events desativados na camada mapa, então não há conflito)
     if (e.target.closest(".mesa-token")) return;
     dragging = true;
-    moved    = false;
-    lastX    = e.clientX;
-    lastY    = e.clientY;
-    e.preventDefault();
+    _panMoved = false;
+    window._mesaStagePanMoved = false;
+    lastX = e.clientX;
+    lastY = e.clientY;
   });
 
   window.addEventListener("mousemove", function(e) {
     if (!dragging) return;
     const dx = e.clientX - lastX;
     const dy = e.clientY - lastY;
-    if (!moved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
-      moved = true;
+    if (!_panMoved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
+      _panMoved = true;
+      window._mesaStagePanMoved = true;
       wrap.style.cursor = "grabbing";
     }
-    if (moved) {
-      panMap(dx, dy);
+    if (_panMoved) {
+      panStage(dx, dy);
+      // Na camada mapa: também move o fundo do mapa junto (mestre apenas)
+      if (mesaMapState.isMaster && getMesaActiveLayer() === "map") {
+        panMap(dx, dy);
+      }
       lastX = e.clientX;
       lastY = e.clientY;
     }
@@ -606,19 +719,19 @@ function bindMapInteractions() {
   window.addEventListener("mouseup", function() {
     if (dragging) {
       dragging = false;
-      moved    = false;
       wrap.style.cursor = "";
+      // Reseta o flag de pan após o ciclo de eventos (para o click handler ver)
+      setTimeout(function() { window._mesaStagePanMoved = false; }, 0);
     }
   });
 
-  // Cursor grab quando mapa ativo e mouse sobre o fundo
+  // Cursor hint: grab ao passar sobre área vazia
   wrap.addEventListener("mouseover", function(e) {
-    if (!mesaMapState.activeMapUrl) return;
-    if (!e.target.closest(".mesa-token") && !dragging) {
+    if (dragging) return;
+    if (!e.target.closest(".mesa-token, input, button, a")) {
       wrap.style.cursor = "grab";
     }
   });
-
   wrap.addEventListener("mouseout", function() {
     if (!dragging) wrap.style.cursor = "";
   });
@@ -2219,17 +2332,6 @@ function _saveCFActiveMapToIDB(blob, name, cfPath) {
 }
 
 function _deleteCFActiveMapFromIDB() {
-  return new Promise(function(resolve, reject) {
-    if (!mesaMapState.db) { resolve(); return; }
-    var tx    = mesaMapState.db.transaction(MESA_MAP_SETTINGS_STORE, "readwrite");
-    var store = tx.objectStore(MESA_MAP_SETTINGS_STORE);
-    store.delete("cfActiveMap");
-    tx.oncomplete = function() { resolve(); };
-    tx.onerror    = function(e) { reject(e.target.error); };
-  });
-}
-
-function _deleteCFHandleFromIDB() {
   return new Promise(function(resolve, reject) {
     if (!mesaMapState.db) { resolve(); return; }
     var tx    = mesaMapState.db.transaction(MESA_MAP_SETTINGS_STORE, "readwrite");

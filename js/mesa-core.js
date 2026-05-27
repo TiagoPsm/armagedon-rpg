@@ -224,6 +224,21 @@ function bindEvents() {
   stage?.addEventListener("pointerdown", handleTokenPointerDown);
   stage?.addEventListener("mousedown", handleTokenMouseDown);
 
+  // Deselect ao clicar em espaço vazio — usa 'click' em vez de 'mousedown'
+  // para não conflitar com pan (arrastar não dispara 'click' no browser).
+  stage?.addEventListener("click", function(event) {
+    if (window._mesaStagePanMoved) return;
+    if (typeof getMesaActiveLayer === "function" && getMesaActiveLayer() !== "tokens") return;
+    const tokenElement = event.target.closest?.("[data-token-id]");
+    if (tokenElement) return;
+    if (event.target.closest("input, button, a")) return;
+    if (!state.selectedTokenId) return;
+    const previousTokenId = state.selectedTokenId;
+    state.selectedTokenId = "";
+    updateStageTokenSelection(previousTokenId, "");
+    scheduleMesaRender({ inspector: true });
+  });
+
   stage?.addEventListener("dragstart", event => {
     event.preventDefault();
   });
