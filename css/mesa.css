@@ -936,14 +936,12 @@
   outline-offset: 2px;
 }
 
-/* Cursores por modo de interação */
-.mesa-stage-wrap[data-interaction-mode="select"] {
-  cursor: default !important;
-}
-.mesa-stage-wrap[data-interaction-mode="move"] {
-  cursor: grab !important;
-}
-.mesa-stage-wrap[data-interaction-mode="move"]:active {
-  cursor: grabbing !important;
-}
-            
+/* ─── SELECTION BOX (select tool) ────────────────────────────── */
+
+#mesaSelectionBox {
+  position: absolute;
+  border: 2px solid #4a9eff;
+  background: rgba(74, 158, 255, 0.06);
+  pointer-events: auto;
+  cursor: move;
+  z-index: 15;

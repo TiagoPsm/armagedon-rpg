@@ -134,4 +134,4 @@ rewriteHtmlBundles(path.join(outDir, "mesa.html"), {
   jsFiles:  mesaJsFiles,  jsBundle:  mesaJsBundle,  jsVersion:  MESA_BUNDLE_VERSION,
 });
 
-console.log("\nArtifact ready:", path.relative(r
+console.log("\nArtifact ready:", path.relative(repoRoot, outDir));
