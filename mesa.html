@@ -243,6 +243,18 @@
           <canvas id="mesaDrawCanvas" aria-hidden="true"></canvas>
           <div id="mesaStage" class="mesa-stage" aria-live="polite"></div>
 
+          <!-- Caixa de seleção + handles de transform (Select tool) -->
+          <div id="mesaSelectionBox" hidden aria-hidden="true">
+            <div class="sel-handle" data-handle="nw"></div>
+            <div class="sel-handle" data-handle="n"></div>
+            <div class="sel-handle" data-handle="ne"></div>
+            <div class="sel-handle" data-handle="w"></div>
+            <div class="sel-handle" data-handle="e"></div>
+            <div class="sel-handle" data-handle="sw"></div>
+            <div class="sel-handle" data-handle="s"></div>
+            <div class="sel-handle" data-handle="se"></div>
+          </div>
+
           <div id="mesaEmptyState" class="mesa-empty-state" hidden>
             <strong>Nenhum token em cena.</strong>
             <p>Use a escalacao abaixo para colocar personagens, NPCs e monstros no palco.</p>
@@ -552,8 +564,8 @@
   <script src="js/mesa-core.js?v=2026-05-25-persist-style-1" defer></script>
   <script src="js/mesa-init.js?v=2026-04-24-split-1" defer></script>
   <script src="js/mesa-map.js?v=2026-05-27-select-1" defer></script>
-  <script src="js/mesa-drawing.js?v=2026-05-27-select-1" defer></script>
-  <script src="js/mesa-select.js?v=2026-05-27-select-1" defer></script>
+  <script src="js/mesa-drawing.js?v=2026-05-27-select-4" defer></script>
+  <script src="js/mesa-select.js?v=2026-05-27-select-4" defer></script>
   <script>
   /* VTT Toolbar — camadas + painéis da sidebar */
   (function () {
@@ -568,19 +580,4 @@
     function showPanel(panelName) {
       // Esconder todos
       ALL_BLOCKS.forEach(function (id) {
-        var el = document.getElementById(id);
-        if (el) el.hidden = true;
-      });
-      // Separador só quando scene ativo
-      var sep = document.querySelector(".vtt-sidebar-sep");
-      if (sep) sep.hidden = panelName !== "scene";
-      // Mostrar os do painel
-      var blocks = PANEL_BLOCKS[panelName] || PANEL_BLOCKS.scene;
-      blocks.forEach(function (id) {
-        var el = document.getElementById(id);
-        if (el) el.hidden = false;
-      });
-      // Callbacks de render
-      if (panelName === "map") {
-        if (typeof renderMapLibrary === "function")        renderMapLibrary();
-        if (typeof renderConnectedFolderUI =
+        var el = do

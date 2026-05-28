@@ -2,21 +2,23 @@
  * mesa-select.js — Modos de interação + seleção multi-elemento
  *
  *  "select"  — cursor/flecha
- *    LMB arrastar em vazio      → rubber-band multi-select
- *    Clique em stroke           → click-select individual
- *    RMB arrastar               → pan da câmera (mesa-map.js)
- *    Drag na selection box      → mover todos os selecionados
+ *    LMB arrastar em vazio        → rubber-band multi-select
+ *    Clique em stroke/token       → click-select individual
+ *    RMB arrastar                 → pan da câmera (mesa-map.js)
+ *    Drag na selection box        → mover todos os selecionados
  *    Drag em handle (.sel-handle) → redimensionar seleção
- *    Escape                     → limpar seleção
+ *    Escape                       → limpar seleção
  *
  *  "move"    — mão
- *    LMB arrastar em token      → mover token (mesa-stage.js)
- *    LMB arrastar em vazio      → pan da câmera (mesa-map.js)
+ *    LMB arrastar em token        → mover token (mesa-stage.js)
+ *    LMB arrastar em vazio        → pan da câmera (mesa-map.js)
  *
  * Coordenadas internas: % do mesaStageInner (0–100).
- * Strokes usam frações 0–1 nos seus pontos; tokens usam 0–100.
- * A selection box fica dentro de #mesaStageInner e herda o
- * transform de zoom/pan — posicionada em % lógicos. ✓
+ *
+ * Formato real dos strokes (mesa-drawing.js):
+ *   pencil:  { x1,y1,x2,y2, points:[[px,py],...], tool:"pencil", ... }
+ *   shapes:  { x1,y1,x2,y2, points:null,          tool:"line"|"rect"|"circle", ... }
+ *   Todos os coords são frações 0–1. Multiplicar por 100 → %.
  * ============================================================ */
 
 let _interactionMode   = "select";
@@ -81,7 +83,7 @@ function _hideSelectionBox() {
 function _showSelectionBox(b) {
   const box = document.getElementById("mesaSelectionBox");
   if (!box || !b) return;
-  const PAD = 0.5; // % de padding ao redor dos elementos
+  const PAD = 0.5;
   box.style.left   = (b.x1 - PAD) + "%";
   box.style.top    = (b.y1 - PAD) + "%";
   box.style.width  = ((b.x2 - b.x1) + PAD * 2) + "%";
@@ -90,7 +92,7 @@ function _showSelectionBox(b) {
 }
 
 function _refreshSelectionBox() {
-  var b = _computeSelectionBounds();
+  const b = _computeSelectionBounds();
   if (b && (_selectedTokenIds.size > 0 || _selectedStrokeIds.size > 0)) {
     _showSelectionBox(b);
   } else {
@@ -98,36 +100,54 @@ function _refreshSelectionBox() {
   }
 }
 
-// ── Coordenadas ──────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────
 
 function _getInner() {
   return document.getElementById("mesaStageInner");
 }
 
-// ── Bounds dos elementos (em 0–100%) ─────────────────────────
+// ── Bounds dos strokes (em 0–100%) ───────────────────────────
+//
+// Formato real dos pontos:
+//   pencil → stroke.points = [[px,py], [px,py], ...]  (frações 0-1)
+//   shapes → stroke.x1,y1,x2,y2 são frações 0-1; points = null
 
-/** Bounding box de um stroke em 0–100% */
 function _strokeBounds(stroke) {
-  var x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
-  (stroke.points || []).forEach(function(p) {
-    var px = (p.px != null ? p.px : p.x) * 100;
-    var py = (p.py != null ? p.py : p.y) * 100;
-    if (px < x1) x1 = px;  if (px > x2) x2 = px;
-    if (py < y1) y1 = py;  if (py > y2) y2 = py;
-  });
-  return isFinite(x1) ? { x1: x1, y1: y1, x2: x2, y2: y2 } : null;
+  let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+
+  if (stroke.points && stroke.points.length > 0) {
+    // Pencil: pontos como arrays [px, py]
+    stroke.points.forEach(p => {
+      if (p[0] < x1) x1 = p[0]; if (p[0] > x2) x2 = p[0];
+      if (p[1] < y1) y1 = p[1]; if (p[1] > y2) y2 = p[1];
+    });
+    x1 *= 100; y1 *= 100; x2 *= 100; y2 *= 100;
+  } else if (stroke.x1 != null) {
+    // Shape (line, rect, circle): usa x1,y1,x2,y2
+    let sx1 = stroke.x1 * 100, sy1 = stroke.y1 * 100;
+    let sx2 = stroke.x2 * 100, sy2 = stroke.y2 * 100;
+    x1 = Math.min(sx1, sx2); x2 = Math.max(sx1, sx2);
+    y1 = Math.min(sy1, sy2); y2 = Math.max(sy1, sy2);
+  }
+
+  // Garantia de área mínima (evita bounding box de zero px)
+  if (isFinite(x1)) {
+    if (x2 - x1 < 0.5) { x1 -= 0.25; x2 += 0.25; }
+    if (y2 - y1 < 0.5) { y1 -= 0.25; y2 += 0.25; }
+    return { x1, y1, x2, y2 };
+  }
+  return null;
 }
 
-/**
- * Bounding box de um token em % do mesaStageInner (escala-invariante).
- */
+// ── Bounds dos tokens (em 0–100%) ───────────────────────────
+
 function _tokenBoundsPct(tokenId) {
-  var inner = _getInner();
+  const inner = _getInner();
   if (!inner) return null;
-  var ir = inner.getBoundingClientRect();
-  var el = document.querySelector("[data-token-id=\"" + tokenId + "\"]");
+  const ir = inner.getBoundingClientRect();
+  const el = document.querySelector(`[data-token-id="${tokenId}"]`);
   if (el) {
-    var r = el.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
     return {
       x1: ((r.left   - ir.left) / ir.width)  * 100,
       y1: ((r.top    - ir.top)  / ir.height) * 100,
@@ -136,44 +156,45 @@ function _tokenBoundsPct(tokenId) {
     };
   }
   if (typeof state !== "undefined" && Array.isArray(state.tokens)) {
-    var t = state.tokens.find(function(t) { return String(t.id) === String(tokenId); });
+    const t = state.tokens.find(t => String(t.id) === String(tokenId));
     if (t) return { x1: t.x, y1: t.y, x2: t.x + 5, y2: t.y + 5 };
   }
   return null;
 }
 
-/** União de todos os bounds selecionados em % */
+// ── União de todos os bounds selecionados ─────────────────────
+
 function _computeSelectionBounds() {
   if (_selectedTokenIds.size === 0 && _selectedStrokeIds.size === 0) return null;
-  var x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+  let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
 
-  function expand(b) {
+  const expand = b => {
     if (!b) return;
     if (b.x1 < x1) x1 = b.x1;  if (b.y1 < y1) y1 = b.y1;
     if (b.x2 > x2) x2 = b.x2;  if (b.y2 > y2) y2 = b.y2;
-  }
+  };
 
-  _selectedTokenIds.forEach(function(id) { expand(_tokenBoundsPct(id)); });
+  _selectedTokenIds.forEach(id => expand(_tokenBoundsPct(id)));
 
   if (_selectedStrokeIds.size > 0 && typeof getDrawingsSnapshot === "function") {
-    var strokes = getDrawingsSnapshot();
-    _selectedStrokeIds.forEach(function(id) {
-      var s = strokes.find(function(s) { return String(s.id) === String(id); });
+    const strokes = getDrawingsSnapshot();
+    _selectedStrokeIds.forEach(id => {
+      const s = strokes.find(s => String(s.id) === String(id));
       if (s) expand(_strokeBounds(s));
     });
   }
 
-  return isFinite(x1) ? { x1: x1, y1: y1, x2: x2, y2: y2 } : null;
+  return isFinite(x1) ? { x1, y1, x2, y2 } : null;
 }
 
 // ── Detecção de elementos no rubber-band ─────────────────────
 
 function _tokensInBand(screenRect) {
-  var hits = [];
-  document.querySelectorAll("[data-token-id]").forEach(function(el) {
-    var r = el.getBoundingClientRect();
-    var cx = (r.left + r.right)  / 2;
-    var cy = (r.top  + r.bottom) / 2;
+  const hits = [];
+  document.querySelectorAll("[data-token-id]").forEach(el => {
+    const r = el.getBoundingClientRect();
+    const cx = (r.left + r.right)  / 2;
+    const cy = (r.top  + r.bottom) / 2;
     if (cx >= screenRect.left && cx <= screenRect.right &&
         cy >= screenRect.top  && cy <= screenRect.bottom) {
       hits.push(String(el.dataset.tokenId));
@@ -181,14 +202,13 @@ function _tokensInBand(screenRect) {
   });
   if (hits.length) return hits;
 
-  // Fallback canvas
-  var inner = _getInner();
+  const inner = _getInner();
   if (!inner) return hits;
-  var ir = inner.getBoundingClientRect();
+  const ir = inner.getBoundingClientRect();
   if (typeof state !== "undefined" && Array.isArray(state.tokens)) {
-    state.tokens.forEach(function(t) {
-      var sx = ir.left + (t.x / 100) * ir.width;
-      var sy = ir.top  + (t.y / 100) * ir.height;
+    state.tokens.forEach(t => {
+      const sx = ir.left + (t.x / 100) * ir.width;
+      const sy = ir.top  + (t.y / 100) * ir.height;
       if (sx >= screenRect.left && sx <= screenRect.right &&
           sy >= screenRect.top  && sy <= screenRect.bottom) {
         hits.push(String(t.id));
@@ -200,44 +220,42 @@ function _tokensInBand(screenRect) {
 
 function _strokesInBand(screenRect) {
   if (typeof getDrawingsSnapshot !== "function") return [];
-  var inner = _getInner();
+  const inner = _getInner();
   if (!inner) return [];
-  var ir = inner.getBoundingClientRect();
+  const ir = inner.getBoundingClientRect();
 
   return getDrawingsSnapshot()
-    .filter(function(s) {
-      var b = _strokeBounds(s);
+    .filter(s => {
+      const b = _strokeBounds(s);
       if (!b) return false;
-      // Bounding box do stroke em screen space — verifica sobreposição
-      var sx1 = ir.left + (b.x1 / 100) * ir.width;
-      var sy1 = ir.top  + (b.y1 / 100) * ir.height;
-      var sx2 = ir.left + (b.x2 / 100) * ir.width;
-      var sy2 = ir.top  + (b.y2 / 100) * ir.height;
+      const sx1 = ir.left + (b.x1 / 100) * ir.width;
+      const sy1 = ir.top  + (b.y1 / 100) * ir.height;
+      const sx2 = ir.left + (b.x2 / 100) * ir.width;
+      const sy2 = ir.top  + (b.y2 / 100) * ir.height;
       return sx1 <= screenRect.right  && sx2 >= screenRect.left &&
              sy1 <= screenRect.bottom && sy2 >= screenRect.top;
     })
-    .map(function(s) { return s.id; });
+    .map(s => s.id);
 }
 
 /**
- * Click-select: tenta selecionar o stroke cujo bounding box
- * contém (clientX, clientY). Prefere o menor bounding box (mais específico).
- * Retorna true se algo foi selecionado.
+ * Click-select: seleciona o stroke cujo bounding box contém o ponto.
+ * Prefere o de menor área (mais específico).
  */
 function _tryClickSelectStroke(clientX, clientY) {
   if (typeof getDrawingsSnapshot !== "function") return false;
-  var inner = _getInner();
+  const inner = _getInner();
   if (!inner) return false;
-  var ir  = inner.getBoundingClientRect();
-  var cpx = ((clientX - ir.left) / ir.width)  * 100;
-  var cpy = ((clientY - ir.top)  / ir.height) * 100;
+  const ir  = inner.getBoundingClientRect();
+  const cpx = ((clientX - ir.left) / ir.width)  * 100;
+  const cpy = ((clientY - ir.top)  / ir.height) * 100;
 
-  var best = null, bestArea = Infinity;
-  getDrawingsSnapshot().forEach(function(s) {
-    var b = _strokeBounds(s);
+  let best = null, bestArea = Infinity;
+  getDrawingsSnapshot().forEach(s => {
+    const b = _strokeBounds(s);
     if (!b) return;
     if (cpx < b.x1 || cpx > b.x2 || cpy < b.y1 || cpy > b.y2) return;
-    var area = (b.x2 - b.x1) * (b.y2 - b.y1);
+    const area = (b.x2 - b.x1) * (b.y2 - b.y1);
     if (area < bestArea) { bestArea = area; best = s; }
   });
 
@@ -252,80 +270,87 @@ function _tryClickSelectStroke(clientX, clientY) {
 function _applyMoveDelta(dxPct, dyPct) {
   // Tokens (0–100%)
   if (typeof state !== "undefined" && Array.isArray(state.tokens)) {
-    state.tokens.forEach(function(token) {
+    state.tokens.forEach(token => {
       if (!_selectedTokenIds.has(String(token.id))) return;
       token.x = Math.max(0, Math.min(100, token.x + dxPct));
       token.y = Math.max(0, Math.min(100, token.y + dyPct));
-      var el = document.querySelector("[data-token-id=\"" + token.id + "\"]");
+      const el = document.querySelector(`[data-token-id="${token.id}"]`);
       if (el) { el.style.left = token.x + "%"; el.style.top = token.y + "%"; }
     });
   }
 
-  // Strokes (frações 0–1)
-  if (_selectedStrokeIds.size > 0 && typeof getDrawingsSnapshot === "function") {
-    var dx = dxPct / 100, dy = dyPct / 100;
-    var strokes = getDrawingsSnapshot();
-    strokes.forEach(function(s) {
-      if (!_selectedStrokeIds.has(String(s.id))) return;
-      (s.points || []).forEach(function(p) {
-        if (p.px != null) { p.px += dx; p.py += dy; }
-        else              { p.x  += dx; p.y  += dy; }
-      });
-    });
-    _scheduleDrawingUpdate(strokes);
-  }
+  if (_selectedStrokeIds.size === 0 || typeof getDrawingsSnapshot !== "function") return;
+
+  // Strokes: dx/dy em frações 0-1
+  const dx = dxPct / 100, dy = dyPct / 100;
+  const strokes = getDrawingsSnapshot();
+  strokes.forEach(s => {
+    if (!_selectedStrokeIds.has(String(s.id))) return;
+    // Pencil: move pontos [[px,py],...]
+    if (s.points) {
+      s.points.forEach(p => { p[0] += dx; p[1] += dy; });
+    }
+    // Todos: move x1,y1,x2,y2 (shapes usam esses como definição principal)
+    if (s.x1 != null) {
+      s.x1 += dx; s.y1 += dy;
+      s.x2 += dx; s.y2 += dy;
+    }
+  });
+  _scheduleDrawingUpdate(strokes);
 }
 
 // ── Resize ───────────────────────────────────────────────────
 
 function _applyResizeDelta(handle, newBounds, oldBounds) {
-  var oldW = oldBounds.x2 - oldBounds.x1;
-  var oldH = oldBounds.y2 - oldBounds.y1;
-  var newW = newBounds.x2 - newBounds.x1;
-  var newH = newBounds.y2 - newBounds.y1;
+  const oldW = oldBounds.x2 - oldBounds.x1;
+  const oldH = oldBounds.y2 - oldBounds.y1;
+  const newW = newBounds.x2 - newBounds.x1;
+  const newH = newBounds.y2 - newBounds.y1;
   if (oldW < 0.1 || oldH < 0.1) return;
 
-  var scaleX = newW / oldW;
-  var scaleY = newH / oldH;
-  var anchorX = handle.includes("w") ? oldBounds.x2 : oldBounds.x1;
-  var anchorY = handle.includes("n") ? oldBounds.y2 : oldBounds.y1;
+  const scaleX = newW / oldW;
+  const scaleY = newH / oldH;
+  const anchorX = handle.includes("w") ? oldBounds.x2 : oldBounds.x1;
+  const anchorY = handle.includes("n") ? oldBounds.y2 : oldBounds.y1;
 
   if (typeof state !== "undefined" && Array.isArray(state.tokens)) {
-    state.tokens.forEach(function(token) {
+    state.tokens.forEach(token => {
       if (!_selectedTokenIds.has(String(token.id))) return;
-      var nx = anchorX + (token.x - anchorX) * scaleX;
-      var ny = anchorY + (token.y - anchorY) * scaleY;
-      token.x = Math.max(0, Math.min(100, nx));
-      token.y = Math.max(0, Math.min(100, ny));
-      var el = document.querySelector("[data-token-id=\"" + token.id + "\"]");
+      token.x = Math.max(0, Math.min(100, anchorX + (token.x - anchorX) * scaleX));
+      token.y = Math.max(0, Math.min(100, anchorY + (token.y - anchorY) * scaleY));
+      const el = document.querySelector(`[data-token-id="${token.id}"]`);
       if (el) { el.style.left = token.x + "%"; el.style.top = token.y + "%"; }
     });
   }
 
-  if (_selectedStrokeIds.size > 0 && typeof getDrawingsSnapshot === "function") {
-    var ax = anchorX / 100, ay = anchorY / 100;
-    var strokes = getDrawingsSnapshot();
-    strokes.forEach(function(s) {
-      if (!_selectedStrokeIds.has(String(s.id))) return;
-      (s.points || []).forEach(function(p) {
-        if (p.px != null) {
-          p.px = ax + (p.px - ax) * scaleX;
-          p.py = ay + (p.py - ay) * scaleY;
-        } else {
-          p.x = ax + (p.x - ax) * scaleX;
-          p.y = ay + (p.y - ay) * scaleY;
-        }
+  if (_selectedStrokeIds.size === 0 || typeof getDrawingsSnapshot !== "function") return;
+
+  // Anchor em frações 0-1
+  const ax = anchorX / 100, ay = anchorY / 100;
+  const strokes = getDrawingsSnapshot();
+  strokes.forEach(s => {
+    if (!_selectedStrokeIds.has(String(s.id))) return;
+    if (s.points) {
+      s.points.forEach(p => {
+        p[0] = ax + (p[0] - ax) * scaleX;
+        p[1] = ay + (p[1] - ay) * scaleY;
       });
-    });
-    _scheduleDrawingUpdate(strokes);
-  }
+    }
+    if (s.x1 != null) {
+      s.x1 = ax + (s.x1 - ax) * scaleX;
+      s.y1 = ay + (s.y1 - ay) * scaleY;
+      s.x2 = ax + (s.x2 - ax) * scaleX;
+      s.y2 = ay + (s.y2 - ay) * scaleY;
+    }
+  });
+  _scheduleDrawingUpdate(strokes);
 }
 
 function _scheduleDrawingUpdate(strokes) {
   _pendingStrokes = strokes;
   if (!_pendingDrawingRender) {
     _pendingDrawingRender = true;
-    requestAnimationFrame(function() {
+    requestAnimationFrame(() => {
       _pendingDrawingRender = false;
       if (_pendingStrokes !== null && typeof setDrawingsFromRemote === "function") {
         setDrawingsFromRemote(_pendingStrokes);
@@ -337,7 +362,7 @@ function _scheduleDrawingUpdate(strokes) {
 
 function _broadcastAndRender() {
   if (typeof state !== "undefined" && Array.isArray(state.tokens)) {
-    state.tokens.forEach(function(token) {
+    state.tokens.forEach(token => {
       if (!_selectedTokenIds.has(String(token.id))) return;
       if (typeof broadcastMesaTokenMove === "function") broadcastMesaTokenMove(token);
     });
@@ -348,11 +373,11 @@ function _broadcastAndRender() {
 // ── Rubber-band helper ───────────────────────────────────────
 
 function _updateBandEl(band) {
-  var x = Math.min(_rbStartX, _rbEndX);
-  var y = Math.min(_rbStartY, _rbEndY);
-  var w = Math.abs(_rbEndX - _rbStartX);
-  var h = Math.abs(_rbEndY - _rbStartY);
-  band.style.cssText = "left:" + x + "px;top:" + y + "px;width:" + w + "px;height:" + h + "px;";
+  const x = Math.min(_rbStartX, _rbEndX);
+  const y = Math.min(_rbStartY, _rbEndY);
+  const w = Math.abs(_rbEndX - _rbStartX);
+  const h = Math.abs(_rbEndY - _rbStartY);
+  band.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px;`;
 }
 
 // ── Init ─────────────────────────────────────────────────────
@@ -360,32 +385,32 @@ function _updateBandEl(band) {
 function initMesaSelect() {
   window._mesaInteractionMode = _interactionMode;
 
-  var wrap = document.getElementById("mesaStageWrap");
+  const wrap = document.getElementById("mesaStageWrap");
   if (!wrap) return;
 
-  var band = document.getElementById("mesaRubberBand");
+  let band = document.getElementById("mesaRubberBand");
   if (!band) {
     band = document.createElement("div");
     band.id = "mesaRubberBand";
     wrap.appendChild(band);
   }
 
-  document.querySelectorAll("[data-interaction-tool]").forEach(function(btn) {
-    btn.addEventListener("click", function() { setInteractionMode(btn.dataset.interactionTool); });
+  document.querySelectorAll("[data-interaction-tool]").forEach(btn => {
+    btn.addEventListener("click", () => setInteractionMode(btn.dataset.interactionTool));
   });
 
-  window.addEventListener("keydown", function(e) {
+  window.addEventListener("keydown", e => {
     if (e.key === "Escape" && _interactionMode === "select") clearMultiSelection();
   });
 
-  wrap.addEventListener("contextmenu", function(e) {
+  wrap.addEventListener("contextmenu", e => {
     if (_interactionMode === "select") e.preventDefault();
   });
 
   // ── SELECTION BOX: drag-to-move ──────────────────────────
-  var box = document.getElementById("mesaSelectionBox");
+  const box = document.getElementById("mesaSelectionBox");
   if (box) {
-    box.addEventListener("mousedown", function(e) {
+    box.addEventListener("mousedown", e => {
       if (e.button !== 0 || _interactionMode !== "select") return;
       if (e.target.classList.contains("sel-handle")) return;
       e.preventDefault();
@@ -396,8 +421,8 @@ function initMesaSelect() {
       _dragBounds  = _computeSelectionBounds();
     });
 
-    box.querySelectorAll(".sel-handle").forEach(function(h) {
-      h.addEventListener("mousedown", function(e) {
+    box.querySelectorAll(".sel-handle").forEach(h => {
+      h.addEventListener("mousedown", e => {
         if (e.button !== 0 || _interactionMode !== "select") return;
         e.preventDefault();
         e.stopPropagation();
@@ -411,11 +436,11 @@ function initMesaSelect() {
   }
 
   // ── RUBBER BAND: mousedown em espaço vazio ───────────────
-  wrap.addEventListener("mousedown", function(e) {
+  wrap.addEventListener("mousedown", e => {
     if (e.button !== 0 || _interactionMode !== "select") return;
     if (e.target.closest("input, button, a, [data-token-id], .mesa-token, #mesaSelectionBox")) return;
 
-    var wr = wrap.getBoundingClientRect();
+    const wr = wrap.getBoundingClientRect();
     _rbStartX = e.clientX - wr.left;
     _rbStartY = e.clientY - wr.top;
     _rbEndX   = _rbStartX;
@@ -428,9 +453,9 @@ function initMesaSelect() {
   });
 
   // ── GLOBAL MOUSEMOVE ─────────────────────────────────────
-  window.addEventListener("mousemove", function(e) {
+  window.addEventListener("mousemove", e => {
     if (_rbActive) {
-      var wr = wrap.getBoundingClientRect();
+      const wr = wrap.getBoundingClientRect();
       _rbEndX = e.clientX - wr.left;
       _rbEndY = e.clientY - wr.top;
       _updateBandEl(band);
@@ -439,11 +464,11 @@ function initMesaSelect() {
 
     if (_dragMode === null || !_dragBounds) return;
 
-    var inner = _getInner();
+    const inner = _getInner();
     if (!inner) return;
-    var ir    = inner.getBoundingClientRect();
-    var dxPct = ((e.clientX - _dragClientX) / ir.width)  * 100;
-    var dyPct = ((e.clientY - _dragClientY) / ir.height) * 100;
+    const ir    = inner.getBoundingClientRect();
+    const dxPct = ((e.clientX - _dragClientX) / ir.width)  * 100;
+    const dyPct = ((e.clientY - _dragClientY) / ir.height) * 100;
     _dragClientX = e.clientX;
     _dragClientY = e.clientY;
 
@@ -452,8 +477,8 @@ function initMesaSelect() {
       _dragBounds = _computeSelectionBounds();
 
     } else if (_dragMode === "resize" && _dragHandle) {
-      var nb = { x1: _dragBounds.x1, y1: _dragBounds.y1, x2: _dragBounds.x2, y2: _dragBounds.y2 };
-      var h  = _dragHandle;
+      const nb = { ..._dragBounds };
+      const h  = _dragHandle;
       if (h.includes("e")) nb.x2 = Math.max(nb.x1 + 2, nb.x2 + dxPct);
       if (h.includes("w")) nb.x1 = Math.min(nb.x2 - 2, nb.x1 + dxPct);
       if (h.includes("s")) nb.y2 = Math.max(nb.y1 + 2, nb.y2 + dyPct);
@@ -467,33 +492,33 @@ function initMesaSelect() {
   });
 
   // ── GLOBAL MOUSEUP ───────────────────────────────────────
-  window.addEventListener("mouseup", function() {
+  window.addEventListener("mouseup", () => {
     if (_rbActive) {
       _rbActive = false;
       band.classList.remove("is-active");
 
-      var w = Math.abs(_rbEndX - _rbStartX);
-      var h = Math.abs(_rbEndY - _rbStartY);
-      var wr = wrap.getBoundingClientRect();
+      const w = Math.abs(_rbEndX - _rbStartX);
+      const h = Math.abs(_rbEndY - _rbStartY);
+      const wr = wrap.getBoundingClientRect();
 
       if (w >= 6 && h >= 6) {
-        // Rubber-band drag: seleciona tudo que sobreponha a band
-        var bandScreen = {
+        // Rubber-band: seleciona tudo que sobreponha a band
+        const bandScreen = {
           left:   wr.left + Math.min(_rbStartX, _rbEndX),
           right:  wr.left + Math.max(_rbStartX, _rbEndX),
           top:    wr.top  + Math.min(_rbStartY, _rbEndY),
           bottom: wr.top  + Math.max(_rbStartY, _rbEndY),
         };
 
-        var tHits = _tokensInBand(bandScreen);
-        tHits.forEach(function(id) {
+        const tHits = _tokensInBand(bandScreen);
+        tHits.forEach(id => {
           _selectedTokenIds.add(id);
-          var el = document.querySelector("[data-token-id=\"" + id + "\"]");
+          const el = document.querySelector(`[data-token-id="${id}"]`);
           if (el) el.classList.add("is-multi-selected");
         });
 
-        var sHits = _strokesInBand(bandScreen);
-        sHits.forEach(function(id) { _selectedStrokeIds.add(id); });
+        const sHits = _strokesInBand(bandScreen);
+        sHits.forEach(id => _selectedStrokeIds.add(id));
 
         if (tHits.length === 1 && sHits.length === 0 && typeof selectToken === "function") {
           selectToken(tHits[0]);
@@ -503,8 +528,8 @@ function initMesaSelect() {
 
       } else {
         // Clique simples: tenta click-select num stroke
-        var clickCx = wr.left + (_rbStartX + _rbEndX) / 2;
-        var clickCy = wr.top  + (_rbStartY + _rbEndY) / 2;
+        const clickCx = wr.left + (_rbStartX + _rbEndX) / 2;
+        const clickCy = wr.top  + (_rbStartY + _rbEndY) / 2;
         _tryClickSelectStroke(clickCx, clickCy);
       }
       return;
