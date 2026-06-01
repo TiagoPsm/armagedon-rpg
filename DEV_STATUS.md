@@ -57,6 +57,24 @@ Registro minimo esperado:
 - Tratar `C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign` como copia antiga/local, nao como fonte para commits
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
+## Ultima Etapa Concluida (2026-06-01)
+
+- Correcao de sincronizacao do roster e botao de configuracoes da Mesa sempre visivel:
+
+  **Fix 1 — Roster contaminado por localStorage em modo backend:**
+  - causa: `buildPlayers`, `buildNpcs` e `buildMonsters` adicionavam ao roster qualquer chave encontrada em `tc_sheets` (localStorage), mesmo que aquele personagem nao existisse no diretorio da API; numa maquina diferente com outro cache local o roster ficava diferente
+  - `js/mesa-core.js`: as tres funcoes agora so adicionam entradas vindas do localStorage ao roster quando `isMesaBackendEnabled()` retornar `false`; em modo backend o diretorio da API e a unica fonte de quem aparece no roster
+  - cache bust de `mesa-core.js` atualizado para `2026-06-01-backend-roster-1`
+
+  **Fix 2 — Botao de configuracoes da Mesa sempre visivel para o mestre:**
+  - causa: `#mesaMapSettingsBtn` ficava oculto ate que um mapa fosse carregado, mas o painel de configuracoes tambem tem o seletor de estilo de tokens, que nao depende de mapa
+  - `mesa.html`: removido `hidden` inicial do `#mesaMapSettingsBtn`; adicionado `id="mesaMapScaleGroup"` e `id="mesaMapHint"` para controlar visibilidade por secao
+  - `js/mesa-map.js`: `renderMesaMapLayer()` exibe/oculta apenas as secoes de escala e posicao conforme mapa ativo; o botao e mantido visivel para o mestre mesmo sem mapa; `toggleMapSettings()` sincroniza visibilidade de cada secao ao abrir o painel; `initMesaMap()` ja exibe o botao ao detectar papel mestre, antes de qualquer mapa ser carregado
+  - cache bust de `mesa-map.js` atualizado para `2026-06-01-settings-always-1`
+
+  - validacoes executadas: `npm run check:js` (39 arquivos OK)
+  - status: pronto para revisao e commit
+
 ## Estado Funcional Atual
 
 - Login com mestre e jogadores funcionando via API

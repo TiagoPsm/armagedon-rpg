@@ -56,14 +56,14 @@ test.describe("Mesa virtual", () => {
     await page.mouse.move(end.x, end.y, { steps: 8 });
     await page.mouse.up();
 
-    const inspectorMaxLife = page.locator('#tokenInspector [data-stat-field="maxLife"]').first();
+    const inspectorMaxLife = page.locator('#tokenInspector input[data-stat-field="maxLife"]').first();
     await expect(inspectorMaxLife).toBeVisible();
     await inspectorMaxLife.fill("");
     await expect(inspectorMaxLife).toHaveValue("");
     await inspectorMaxLife.type("30");
     await expect(inspectorMaxLife).toHaveValue("30");
 
-    const inspectorLife = page.locator('#tokenInspector [data-stat-field="currentLife"]').first();
+    const inspectorLife = page.locator('#tokenInspector input[data-stat-field="currentLife"]').first();
     await expect(inspectorLife).toBeVisible();
     await inspectorLife.fill("");
     await expect(inspectorLife).toHaveValue("");

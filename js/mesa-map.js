@@ -240,6 +240,9 @@ async function initMesaMap() {
 
     if (mesaMapState.isMaster) {
       document.body.classList.add("is-master");
+      // Mestre: botão de configurações sempre visível (token style disponível sem mapa)
+      const settingsBtn = document.getElementById("mesaMapSettingsBtn");
+      if (settingsBtn) settingsBtn.hidden = false;
       bindMasterMapListeners();
     } else {
       bindPlayerMapListeners();
@@ -562,30 +565,50 @@ async function _restoreCFActiveMap() {
 /* ── RENDERIZAÇÃO NO PALCO ──────────────────────────────────── */
 
 function renderMesaMapLayer(blobUrl, mapName) {
-  const layer      = document.getElementById("mesaMapLayer");
-  const label      = document.getElementById("mesaMapLabel");
-  const clearBtn   = document.getElementById("mesaMapClearBtn");
+  const layer       = document.getElementById("mesaMapLayer");
+  const label       = document.getElementById("mesaMapLabel");
+  const clearBtn    = document.getElementById("mesaMapClearBtn");
   const transformEl = document.getElementById("mesaMapTransform");
+  const scaleGroup  = document.getElementById("mesaMapScaleGroup");
+  const hint        = document.getElementById("mesaMapHint");
+  const settingsBtn = document.getElementById("mesaMapSettingsBtn");
 
   if (!layer) return;
 
   const emptyState = document.getElementById("mesaEmptyState");
-
-  const settingsBtn = document.getElementById("mesaMapSettingsBtn");
+  const masterMode = typeof isMaster === "function" && isMaster();
 
   if (blobUrl) {
     layer.style.backgroundImage = `url("${blobUrl}")`;
     layer.removeAttribute("hidden");
     if (emptyState) emptyState.hidden = true;
     applyMapTransform();
+    // Exibe seção de escala/posição — só faz sentido com mapa ativo
+    if (scaleGroup) scaleGroup.hidden = false;
+    if (hint) hint.hidden = false;
     if (settingsBtn) settingsBtn.hidden = false;
   } else {
     layer.style.backgroundImage    = "";
     layer.style.backgroundSize     = "cover";
     layer.style.backgroundPosition = "center";
     layer.setAttribute("hidden", "");
-    if (transformEl) { transformEl.hidden = true; }
-    if (settingsBtn) { settingsBtn.hidden = true; settingsBtn.setAttribute("aria-expanded","false"); }
+    // Oculta controles específicos de mapa (escala, hint)
+    if (scaleGroup) scaleGroup.hidden = true;
+    if (hint) hint.hidden = true;
+    if (masterMode) {
+      // Mestre: mantém botão visível para acessar config de tokens
+      if (settingsBtn) settingsBtn.hidden = false;
+      // Se o painel estava aberto, fecha para evitar visual quebrado (controles de mapa sumiram)
+      if (transformEl && !transformEl.hidden) {
+        transformEl.hidden = true;
+        if (settingsBtn) settingsBtn.setAttribute("aria-expanded", "false");
+        if (settingsBtn) settingsBtn.classList.remove("is-active");
+      }
+    } else {
+      // Jogador: sem mapa → sem configurações → oculta tudo
+      if (transformEl) { transformEl.hidden = true; }
+      if (settingsBtn) { settingsBtn.hidden = true; settingsBtn.setAttribute("aria-expanded","false"); }
+    }
     const mesaStage = document.getElementById("mesaStage");
     if (emptyState && mesaStage && !mesaStage.children.length) {
       emptyState.hidden = false;
@@ -1281,11 +1304,18 @@ function toggleMapSettings() {
     btn.classList.toggle("is-active", !isOpen);
   }
   if (!isOpen && typeof isMaster === "function" && isMaster()) {
+    // Estilo de tokens — sempre visível para o mestre
     const group = document.getElementById("mesaTokenStyleGroup");
     if (group) {
       group.hidden = false;
       _syncTokenStyleButtons();
     }
+    // Controles de mapa — visíveis apenas quando há mapa ativo
+    const hasMap = Boolean(mesaMapState.activeMapUrl);
+    const scaleGroup = document.getElementById("mesaMapScaleGroup");
+    const hint = document.getElementById("mesaMapHint");
+    if (scaleGroup) scaleGroup.hidden = !hasMap;
+    if (hint) hint.hidden = !hasMap;
   }
 }
 

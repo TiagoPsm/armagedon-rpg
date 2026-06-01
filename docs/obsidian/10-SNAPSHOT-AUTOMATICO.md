@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-31 22:18:20 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-01 14:46:32 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,13 +13,19 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `aa6af00 2026-05-31 feat(mesa): ferramentas de desenho, modos Select/Move e refinamentos da toolbar`
+- Ultimo commit: `224077e 2026-05-31 chore(docs): atualiza snapshot Obsidian p├│s-commit aa6af00`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
+A  CLAUDE.md
+M  DEV_STATUS.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  js/mesa-core.js
+M  js/mesa-map.js
+M  mesa.html
+M  tests/mesa.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -31,7 +37,13 @@ M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ### Arquivos Em Stage
 
 ```text
+CLAUDE.md
+DEV_STATUS.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+js/mesa-core.js
+js/mesa-map.js
+mesa.html
+tests/mesa.spec.cjs
 ```
 
 ## Paginas Principais
@@ -88,6 +100,7 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 [file] _headers
 [file] apple-touch-icon.png
 [file] apple-touch-icon.webp
+[file] CLAUDE.md
 [file] debug.log
 [file] DEPLOY_FREE.md
 [file] DEV_STATUS.md

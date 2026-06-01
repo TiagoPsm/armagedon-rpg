@@ -914,7 +914,7 @@ function buildRoster() {
 
 function buildPlayers(directory, sheets) {
   const backendPlayers = Array.isArray(directory?.players) ? directory.players : [];
-  const localPlayers = Array.isArray(window.AUTH?.getPlayers?.()) ? window.AUTH.getPlayers() : [];
+  const localPlayers = isMesaBackendEnabled() ? [] : (Array.isArray(window.AUTH?.getPlayers?.()) ? window.AUTH.getPlayers() : []);
   const players = backendPlayers.length ? backendPlayers : localPlayers;
   const playerMap = new Map(
     players.map((player, index) => {
@@ -928,21 +928,25 @@ function buildPlayers(directory, sheets) {
     })
   );
 
-  Object.keys(sheets || {}).forEach(rawKey => {
-    const key = normalizeMesaCharacterKey(rawKey);
-    if (!key || key.startsWith(NPC_PREFIX) || key.startsWith(MONSTER_PREFIX)) return;
-    const alreadyMapped = [...playerMap.values()].some(player => (
-      normalizeMesaCharacterKey(player?.key || player?.username) === key
-      || normalizeMesaUsername(player?.username) === key
-    ));
-    if (!alreadyMapped) {
-      playerMap.set(key, {
-        key,
-        username: key,
-        charname: String(sheets?.[key]?.charName || "").trim()
-      });
-    }
-  });
+  // Em modo backend, o diretório da API é a única fonte de quem entra no roster.
+  // Em modo local (sem backend), fichas do localStorage complementam a lista.
+  if (!isMesaBackendEnabled()) {
+    Object.keys(sheets || {}).forEach(rawKey => {
+      const key = normalizeMesaCharacterKey(rawKey);
+      if (!key || key.startsWith(NPC_PREFIX) || key.startsWith(MONSTER_PREFIX)) return;
+      const alreadyMapped = [...playerMap.values()].some(player => (
+        normalizeMesaCharacterKey(player?.key || player?.username) === key
+        || normalizeMesaUsername(player?.username) === key
+      ));
+      if (!alreadyMapped) {
+        playerMap.set(key, {
+          key,
+          username: key,
+          charname: String(sheets?.[key]?.charName || "").trim()
+        });
+      }
+    });
+  }
 
   return [...playerMap.values()].map((player, index) => {
     const username = String(player.username || "").trim() || `jogador-${index + 1}`;
@@ -967,20 +971,22 @@ function buildPlayers(directory, sheets) {
 
 function buildNpcs(directory, sheets) {
   const backendNpcs = Array.isArray(directory?.npcs) ? directory.npcs : [];
-  const localNpcs = readJsonStorage(NPCS_KEY, []).map(normalizeNamedEntity);
+  const localNpcs = isMesaBackendEnabled() ? [] : readJsonStorage(NPCS_KEY, []).map(normalizeNamedEntity);
   const npcs = backendNpcs.length ? backendNpcs.map(normalizeNamedEntity) : localNpcs;
   const npcMap = new Map(npcs.map(npc => [resolveDirectoryCharacterKey(npc, NPC_PREFIX, "npc"), npc]));
 
-  Object.keys(sheets || {}).forEach(rawKey => {
-    const key = String(rawKey || "").trim();
-    if (!key.startsWith(NPC_PREFIX)) return;
-    const npcId = key.slice(NPC_PREFIX.length).trim();
-    if (!npcId || npcMap.has(key)) return;
-    npcMap.set(key, {
-      id: npcId,
-      name: String(sheets?.[key]?.charName || npcId).trim() || npcId
+  if (!isMesaBackendEnabled()) {
+    Object.keys(sheets || {}).forEach(rawKey => {
+      const key = String(rawKey || "").trim();
+      if (!key.startsWith(NPC_PREFIX)) return;
+      const npcId = key.slice(NPC_PREFIX.length).trim();
+      if (!npcId || npcMap.has(key)) return;
+      npcMap.set(key, {
+        id: npcId,
+        name: String(sheets?.[key]?.charName || npcId).trim() || npcId
+      });
     });
-  });
+  }
 
   return [...npcMap.entries()].map(([key, npc]) => {
     const sheet = normalizeSheetSnapshot(sheets[key], "npc");
@@ -1003,20 +1009,22 @@ function buildNpcs(directory, sheets) {
 
 function buildMonsters(directory, sheets) {
   const backendMonsters = Array.isArray(directory?.monsters) ? directory.monsters : [];
-  const localMonsters = readJsonStorage(MONSTERS_KEY, []).map(normalizeNamedEntity);
+  const localMonsters = isMesaBackendEnabled() ? [] : readJsonStorage(MONSTERS_KEY, []).map(normalizeNamedEntity);
   const monsters = backendMonsters.length ? backendMonsters.map(normalizeNamedEntity) : localMonsters;
   const monsterMap = new Map(monsters.map(monster => [resolveDirectoryCharacterKey(monster, MONSTER_PREFIX, "monster"), monster]));
 
-  Object.keys(sheets || {}).forEach(rawKey => {
-    const key = String(rawKey || "").trim();
-    if (!key.startsWith(MONSTER_PREFIX)) return;
-    const monsterId = key.slice(MONSTER_PREFIX.length).trim();
-    if (!monsterId || monsterMap.has(key)) return;
-    monsterMap.set(key, {
-      id: monsterId,
-      name: String(sheets?.[key]?.charName || monsterId).trim() || monsterId
+  if (!isMesaBackendEnabled()) {
+    Object.keys(sheets || {}).forEach(rawKey => {
+      const key = String(rawKey || "").trim();
+      if (!key.startsWith(MONSTER_PREFIX)) return;
+      const monsterId = key.slice(MONSTER_PREFIX.length).trim();
+      if (!monsterId || monsterMap.has(key)) return;
+      monsterMap.set(key, {
+        id: monsterId,
+        name: String(sheets?.[key]?.charName || monsterId).trim() || monsterId
+      });
     });
-  });
+  }
 
   return [...monsterMap.entries()].map(([key, monster]) => {
     const sheet = normalizeSheetSnapshot(sheets[key], "monster");

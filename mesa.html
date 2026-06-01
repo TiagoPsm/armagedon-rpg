@@ -381,7 +381,7 @@
           <span id="mesaMapLabel" class="mesa-map-label">Sem mapa</span>
           <button type="button" class="btn btn-ghost btn-small" id="mesaMapOpenBtn" onclick="openAndSetLocalMap()">Abrir mapa</button>
           <button type="button" class="btn btn-ghost btn-small" id="mesaMapClearBtn" onclick="clearActiveMap()" hidden>Limpar mapa</button>
-          <button type="button" class="mesa-map-settings-btn" id="mesaMapSettingsBtn" onclick="toggleMapSettings()" title="Configura&ccedil;&otilde;es do mapa" hidden aria-expanded="false">
+          <button type="button" class="mesa-map-settings-btn" id="mesaMapSettingsBtn" onclick="toggleMapSettings()" title="Configura&ccedil;&otilde;es da mesa" aria-controls="mesaMapTransform" aria-expanded="false" hidden>
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="8" cy="8" r="2.2"/>
               <path d="M8 1.5v1.3M8 13.2v1.3M1.5 8h1.3M13.2 8h1.3M3.4 3.4l.9.9M11.7 11.7l.9.9M11.7 3.4l-.9.9M4.3 11.7l-.9.9"/>
@@ -392,7 +392,7 @@
 
       <!-- Painel de configurações do mapa — separado, abre abaixo do overlay -->
       <div class="mesa-map-settings-panel" id="mesaMapTransform" hidden>
-        <div class="mesa-map-transform-group">
+        <div class="mesa-map-transform-group" id="mesaMapScaleGroup" hidden>
           <span class="mesa-map-transform-label">Escala</span>
           <div class="mesa-map-transform-row">
             <button type="button" class="mesa-transform-btn" onclick="adjustMapScale(-0.1)">&#8722;</button>
@@ -401,7 +401,7 @@
             <button type="button" class="mesa-transform-btn mesa-transform-reset" onclick="resetMapTransform()" title="Resetar posi&ccedil;&atilde;o e escala">&#8635;</button>
           </div>
         </div>
-        <p class="mesa-map-settings-hint">Arraste o mapa para reposicionar.<br>Scroll para zoom.</p>
+        <p class="mesa-map-settings-hint" id="mesaMapHint" hidden>Arraste o mapa para reposicionar.<br>Scroll para zoom.</p>
 
         <!-- Token style — only visible to master (hidden for players via JS) -->
         <div class="mesa-map-transform-group mesa-token-style-group" id="mesaTokenStyleGroup" hidden>
@@ -561,9 +561,9 @@
   <script src="js/mesa-roster.js?v=2026-05-09-free-resource-max-1" defer></script>
   <script src="js/mesa-inspector.js?v=2026-05-09-numeric-clear-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-04-24-split-1" defer></script>
-  <script src="js/mesa-core.js?v=2026-05-25-persist-style-1" defer></script>
+  <script src="js/mesa-core.js?v=2026-06-01-backend-roster-1" defer></script>
   <script src="js/mesa-init.js?v=2026-04-24-split-1" defer></script>
-  <script src="js/mesa-map.js?v=2026-05-27-select-5" defer></script>
+  <script src="js/mesa-map.js?v=2026-06-01-settings-always-1" defer></script>
   <script src="js/mesa-drawing.js?v=2026-05-27-select-5" defer></script>
   <script src="js/mesa-select.js?v=2026-05-27-select-5" defer></script>
   <script>
