@@ -21,7 +21,7 @@
  *   Todos os coords são frações 0–1. Multiplicar por 100 → %.
  * ============================================================ */
 
-let _interactionMode   = "select";
+let _interactionMode   = null;
 let _selectedTokenIds  = new Set();
 let _selectedStrokeIds = new Set();
 
@@ -47,17 +47,19 @@ function getSelectedStrokeIds() { return new Set(_selectedStrokeIds); }
 
 function setInteractionMode(mode) {
   if (mode !== "select" && mode !== "move") return;
-  _interactionMode = mode;
-  window._mesaInteractionMode = mode;
+  // Toggle: clicar no modo já ativo desativa
+  const next = (_interactionMode === mode) ? null : mode;
+  _interactionMode = next;
+  window._mesaInteractionMode = next;
 
   document.querySelectorAll("[data-interaction-tool]").forEach(btn => {
-    const active = btn.dataset.interactionTool === mode;
+    const active = btn.dataset.interactionTool === next;
     btn.classList.toggle("is-active", active);
     btn.setAttribute("aria-pressed", String(active));
   });
 
   const wrap = document.getElementById("mesaStageWrap");
-  if (wrap) wrap.dataset.interactionMode = mode;
+  if (wrap) wrap.dataset.interactionMode = next ?? "";
 
   if (typeof setDrawTool === "function") setDrawTool(null);
   if (typeof _closeFlyout === "function") _closeFlyout();
@@ -395,16 +397,32 @@ function initMesaSelect() {
     wrap.appendChild(band);
   }
 
+  // Sincroniza estado inicial dos botões (nenhum ativo por padrão)
   document.querySelectorAll("[data-interaction-tool]").forEach(btn => {
+    const active = btn.dataset.interactionTool === _interactionMode;
+    btn.classList.toggle("is-active", active);
+    btn.setAttribute("aria-pressed", String(active));
     btn.addEventListener("click", () => setInteractionMode(btn.dataset.interactionTool));
   });
+  wrap.dataset.interactionMode = _interactionMode ?? "";
 
   window.addEventListener("keydown", e => {
-    if (e.key === "Escape" && _interactionMode === "select") clearMultiSelection();
+    if (_interactionMode !== "select") return;
+    if (e.key === "Escape") {
+      clearMultiSelection();
+    } else if ((e.key === "Delete" || e.key === "Backspace") && _selectedStrokeIds.size > 0) {
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.isContentEditable)) return;
+      if (typeof deleteDrawingsById === "function") {
+        deleteDrawingsById([..._selectedStrokeIds]);
+        _selectedStrokeIds.clear();
+        _hideSelectionBox();
+      }
+    }
   });
 
   wrap.addEventListener("contextmenu", e => {
-    if (_interactionMode === "select") e.preventDefault();
+    e.preventDefault();
   });
 
   // ── SELECTION BOX: drag-to-move ──────────────────────────

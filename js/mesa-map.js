@@ -669,7 +669,7 @@ function bindMapInteractions() {
     e.preventDefault();
     const raw  = e.deltaY;
     const step = Math.abs(raw) < 20 ? raw * 0.005 : (raw > 0 ? -0.08 : 0.08);
-    setStageZoom(_stageZoom - step);
+    setStageZoom(_stageZoom + step);
   }, { passive: false });
 
   // ── Pan do palco — qualquer camada, qualquer utilizador ───────────────────
@@ -2355,4 +2355,7 @@ function _deleteCFActiveMapFromIDB() {
     var action = btn.dataset.cfAction;
     var path   = btn.dataset.cfPath;
 
-    if (
+    if (action === "set")    { setMapFromConnectedFolder(path); return; }
+    if (action === "remove") { clearActiveMap(); renderMapLibrary(); renderConnectedFolderUI(); return; }
+  });
+})();

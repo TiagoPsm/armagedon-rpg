@@ -1391,11 +1391,14 @@ async function loadMesaSceneSnapshot(prefetchedResult) {
 
 function applyMesaSceneSnapshot(saved) {
   const savedTokens = Array.isArray(saved?.tokens) ? saved.tokens : [];
+  // hasExplicitSave = true quando o usuário já salvou a cena ao menos uma vez
+  // (mesmo que vazia). Impede o auto-seed sobrescrever uma cena intencionalmente limpa.
+  const hasExplicitSave = Array.isArray(saved?.tokens);
   const mergedTokens = savedTokens
     .map(token => mergeTokenWithRoster(token, getRosterEntryByCharacterKey(token?.characterKey)))
     .filter(Boolean);
 
-  const seeded = !mergedTokens.length && shouldSeedMesaTokens(savedTokens.length);
+  const seeded = !mergedTokens.length && shouldSeedMesaTokens(savedTokens.length, hasExplicitSave);
   state.tokens = seeded ? seedInitialTokens() : mergedTokens;
   state.previewPlayerView = isMaster() ? Boolean(saved?.previewPlayerView) : false;
   state.sceneVersion = asPositiveInt(saved?.sceneVersion, state.sceneVersion);
@@ -1410,8 +1413,9 @@ function applyMesaSceneSnapshot(saved) {
   return { seeded, savedTokenCount: savedTokens.length };
 }
 
-function shouldSeedMesaTokens(savedTokenCount) {
+function shouldSeedMesaTokens(savedTokenCount, hasExplicitSave) {
   if (!state.roster.length) return false;
+  if (hasExplicitSave) return false;  // cena já foi salva explicitamente — respeitar o estado
   if (state.scenePersistence !== "remote") return true;
   if (!state.sceneRemoteExists) return true;
   return savedTokenCount > 0;

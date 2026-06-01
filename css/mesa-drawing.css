@@ -207,4 +207,29 @@
   background: transparent;
   cursor: pointer;
   color: rgba(255, 248, 236, 0.45);
-  transition: backgroun
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.draw-width-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 248, 236, 0.85);
+}
+.draw-width-btn.is-active {
+  background: rgba(168, 48, 40, 0.18);
+  border-color: rgba(168, 48, 40, 0.35);
+  color: #e8b4b0;
+}
+
+.draw-width-line {
+  display: block;
+  width: 18px;
+  background: currentColor;
+  border-radius: 999px;
+}
+.draw-width-line.thin   { height: 1.5px; }
+.draw-width-line.medium { height: 3px;   }
+.draw-width-line.thick  { height: 6px;   }
+
+/* ─── Cursor no stage quando ferramenta ativa ────────────────── */
+
+.mesa-stage-wrap[data-draw-active="true"]   { cursor: crosshair !important; }
+.mesa-stage-wrap[data-draw-active="eraser"] { cursor: cell !important; }

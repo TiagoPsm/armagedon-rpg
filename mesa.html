@@ -143,22 +143,22 @@
       </div>
 
       <!-- Ferramentas de interação: Selecionar / Mover -->
-      <div class="vtt-tb-tools" style="padding:0 0.35rem">
-        <button class="vtt-tb-btn is-active" id="mesaSelectToolBtn"
-                data-interaction-tool="select" aria-pressed="true"
+      <div class="vtt-tb-tools">
+        <button class="vtt-tb-btn" id="mesaSelectToolBtn"
+                data-interaction-tool="select" aria-pressed="false"
                 title="Selecionar — arraste para multi-selecionar tokens; botão direito move a câmera">
-          <!-- cursor arrow -->
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path d="M4 2l12 7.5-6.5 1.5L7 17z" fill="currentColor" stroke="none"/>
+            <!-- cursor arrow -->
+            <path fill-rule="evenodd" d="M6 2 L6 15 L9 12 L11 17 L13 16 L11 11 L15 11 Z"/>
           </svg>
         </button>
         <button class="vtt-tb-btn" id="mesaMoveToolBtn"
                 data-interaction-tool="move" aria-pressed="false"
                 title="Mover — arraste tokens para reposicioná-los; espaço vazio move a câmera">
-          <!-- hand icon -->
-          <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor"
-               stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M8 3.5V10M8 3.5a1.5 1.5 0 0 1 3 0V10M11 5a1.5 1.5 0 0 1 3 0v2M14 6.5a1.5 1.5 0 0 1 3 0V13a5 5 0 0 1-5 5H9a5 5 0 0 1-4.1-2.3L3 12.5a1.5 1.5 0 0 1 2.6-1.5l.9 1.5V3.5a1.5 1.5 0 0 1 1.5-1.5z"/>
+          <svg class="vtt-tb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <!-- open hand -->
+            <path d="M9 4.5v7M9 4.5A1.75 1.75 0 0 1 12.5 4.5v5.5M12.5 6A1.75 1.75 0 0 1 16 6v2.5M16 8A1.75 1.75 0 0 1 19.5 8v5.5a6 6 0 0 1-6 6H10a6 6 0 0 1-5-2.7L3 13a1.75 1.75 0 0 1 3-1.8l1 1.6V4.5A1.75 1.75 0 0 1 9 4.5z"/>
           </svg>
         </button>
       </div>
@@ -167,13 +167,13 @@
       <div class="vtt-tb-divider"></div>
 
       <!-- Botão único de desenho — abre flyout com as ferramentas -->
-      <div class="vtt-tb-tools" style="padding:0 0.35rem">
+      <div class="vtt-tb-tools">
         <button class="vtt-tb-btn" id="mesaDrawToggleBtn"
                 title="Ferramentas de desenho" aria-expanded="false" aria-haspopup="true">
-          <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor"
-               stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M14.5 2.5l3 3-10 10-4 1 1-4 10-10z"/>
-            <line x1="12" y1="4.5" x2="15.5" y2="8"/>
+          <svg class="vtt-tb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <!-- pencil -->
+            <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
           </svg>
         </button>
       </div>
@@ -205,7 +205,7 @@
       <div class="vtt-tb-divider"></div>
 
       <!-- Ferramentas -->
-      <div class="vtt-tb-tools" style="flex:0">
+      <div class="vtt-tb-tools">
         <button class="vtt-tb-btn" data-tool="roster" title="Escalação — adicionar personagens à cena" aria-pressed="false">
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
             <circle cx="7" cy="6" r="2.5"/>
@@ -563,9 +563,9 @@
   <script src="js/mesa-storage.js?v=2026-04-24-split-1" defer></script>
   <script src="js/mesa-core.js?v=2026-05-25-persist-style-1" defer></script>
   <script src="js/mesa-init.js?v=2026-04-24-split-1" defer></script>
-  <script src="js/mesa-map.js?v=2026-05-27-select-1" defer></script>
-  <script src="js/mesa-drawing.js?v=2026-05-27-select-4" defer></script>
-  <script src="js/mesa-select.js?v=2026-05-27-select-4" defer></script>
+  <script src="js/mesa-map.js?v=2026-05-27-select-5" defer></script>
+  <script src="js/mesa-drawing.js?v=2026-05-27-select-5" defer></script>
+  <script src="js/mesa-select.js?v=2026-05-27-select-5" defer></script>
   <script>
   /* VTT Toolbar — camadas + painéis da sidebar */
   (function () {
@@ -580,4 +580,82 @@
     function showPanel(panelName) {
       // Esconder todos
       ALL_BLOCKS.forEach(function (id) {
-        var el = do
+        var el = document.getElementById(id);
+        if (el) el.hidden = true;
+      });
+      // Separador só quando scene ativo
+      var sep = document.querySelector(".vtt-sidebar-sep");
+      if (sep) sep.hidden = panelName !== "scene";
+      // Mostrar os do painel
+      var blocks = PANEL_BLOCKS[panelName] || PANEL_BLOCKS.scene;
+      blocks.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.hidden = false;
+      });
+      // Callbacks de render
+      if (panelName === "map") {
+        if (typeof renderMapLibrary === "function")        renderMapLibrary();
+        if (typeof renderConnectedFolderUI === "function") renderConnectedFolderUI();
+        if (typeof _patchThumbsInDOM === "function")       _patchThumbsInDOM();
+      }
+    }
+
+    // Clique em botão de CAMADA (altera a camada activa do canvas + painel)
+    document.addEventListener("click", function (e) {
+      var layerBtn = e.target.closest(".vtt-layer-btn[data-layer]");
+      if (layerBtn) {
+        var layer = layerBtn.dataset.layer;
+        var panel = layerBtn.dataset.panel || "scene";
+        // Actualizar botões de camada
+        document.querySelectorAll(".vtt-layer-btn[data-layer]").forEach(function (b) {
+          var active = b.dataset.layer === layer;
+          b.classList.toggle("is-active", active);
+          b.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+        // Aplicar ao stage
+        if (typeof setMesaActiveLayer === "function") {
+          setMesaActiveLayer(layer);
+        } else {
+          var wrap = document.getElementById("mesaStageWrap");
+          if (wrap) wrap.dataset.activeLayer = layer;
+        }
+        showPanel(panel);
+        return;
+      }
+
+      // Clique em botão de FERRAMENTA (apenas muda o painel, não a camada)
+      var toolBtn = e.target.closest(".vtt-tb-btn[data-tool]");
+      if (toolBtn) {
+        document.querySelectorAll(".vtt-tb-btn[data-tool]").forEach(function (b) {
+          var active = b.dataset.tool === toolBtn.dataset.tool;
+          b.classList.toggle("is-active", active);
+          b.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+        showPanel(toolBtn.dataset.tool);
+      }
+    });
+
+    // Inicializar com camada TOKENS + painel de cena
+    showPanel("scene");
+  })();
+  </script>
+
+  <script>
+  /* VTT Roster tabs — filtro por tipo sem tocar no mesa-roster.js */
+  (function () {
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.vtt-rtab');
+      if (!btn) return;
+      var filter = btn.dataset.filter;
+      var block = document.getElementById('vttRosterBlock');
+      if (block) block.dataset.rosterFilter = filter;
+      document.querySelectorAll('.vtt-rtab').forEach(function (b) {
+        var isActive = b.dataset.filter === filter;
+        b.classList.toggle('is-active', isActive);
+        b.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+    });
+  })();
+  </script>
+</body>
+</html>

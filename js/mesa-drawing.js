@@ -337,6 +337,14 @@ function clearAllDrawings() {
   _broadcastDrawings();
 }
 
+// ── Deletar strokes por ID ─────────────────────────────────────────
+function deleteDrawingsById(ids) {
+  const idSet = new Set(ids.map(String));
+  _strokes = _strokes.filter(s => !idSet.has(String(s.id)));
+  renderDrawings();
+  _broadcastDrawings();
+}
+
 // ── Sync externo ───────────────────────────────────────────────────
 function setDrawingsFromRemote(strokes) {
   _strokes = Array.isArray(strokes) ? strokes : [];

@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-26 18:38:07 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-31 21:53:10 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,59 +13,42 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `a60feab 2026-05-26 fix(build): restaurar build-pages.cjs com bundle mesa`
+- Ultimo commit: `23bf36c 2026-05-28 fix(select): corrige formato dos strokes ÔÇö pontos s├úo [px,py] n├úo {px,py}`
 
 ### Alteracoes Locais
 
 ```text
-M  cloudflare/src/characters.js
-M  cloudflare/src/index.js
-M  css/mesa-inspector.css
-M  css/mesa-map.css
+ M .claude/settings.local.json
+D  assets/armagedon-sigil.svg
+M  css/mesa-drawing.css
 M  css/mesa-roster.css
-M  css/mesa-stage.css
 M  css/mesa.css
-M  ficha.html
-M  js/api.js
-M  js/ficha-core.js
-M  js/ficha-sheet.js
+M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  js/mesa-core.js
-M  js/mesa-inspector.js
+M  js/mesa-drawing.js
 M  js/mesa-map.js
-M  js/mesa-renderer-v2.js
-M  js/mesa-renderer-worker.js
-M  js/mesa-roster.js
-M  js/mesa-stage.js
+M  js/mesa-select.js
 M  mesa.html
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
-(nenhum)
+.claude/settings.local.json
 ```
 
 ### Arquivos Em Stage
 
 ```text
-cloudflare/src/characters.js
-cloudflare/src/index.js
-css/mesa-inspector.css
-css/mesa-map.css
+assets/armagedon-sigil.svg
+css/mesa-drawing.css
 css/mesa-roster.css
-css/mesa-stage.css
 css/mesa.css
-ficha.html
-js/api.js
-js/ficha-core.js
-js/ficha-sheet.js
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 js/mesa-core.js
-js/mesa-inspector.js
+js/mesa-drawing.js
 js/mesa-map.js
-js/mesa-renderer-v2.js
-js/mesa-renderer-worker.js
-js/mesa-roster.js
-js/mesa-stage.js
+js/mesa-select.js
 mesa.html
 ```
 
@@ -79,8 +62,8 @@ mesa.html
 
 ## Contagem Rapida
 
-- JavaScript em `js/`: 30 arquivo(s)
-- CSS em `css/`: 11 arquivo(s)
+- JavaScript em `js/`: 32 arquivo(s)
+- CSS em `css/`: 12 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
 ## Notas Do Vault
