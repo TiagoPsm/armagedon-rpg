@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-01 14:46:32 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-01 14:56:03 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,37 +13,27 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `224077e 2026-05-31 chore(docs): atualiza snapshot Obsidian p├│s-commit aa6af00`
+- Ultimo commit: `d82baba 2026-06-01 fix(mesa): roster sempre da API em modo backend + configuracoes sempre visiveis para mestre`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-A  CLAUDE.md
-M  DEV_STATUS.md
-M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-core.js
-M  js/mesa-map.js
-M  mesa.html
-M  tests/mesa.spec.cjs
+M  cloudflare/src/mesa.js
+ M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
 .claude/settings.local.json
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ```
 
 ### Arquivos Em Stage
 
 ```text
-CLAUDE.md
-DEV_STATUS.md
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/mesa-core.js
-js/mesa-map.js
-mesa.html
-tests/mesa.spec.cjs
+cloudflare/src/mesa.js
 ```
 
 ## Paginas Principais

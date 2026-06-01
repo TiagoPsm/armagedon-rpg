@@ -55,7 +55,8 @@ function normalizeSceneToken(token) {
     y: Math.round(clamp(token?.y, 0, 100) * 100) / 100,
     visibleToPlayers: token?.visibleToPlayers !== false,
     statsVisibleToPlayers: token?.statsVisibleToPlayers === true,
-    order: normalizeOrder(token?.order)
+    order: normalizeOrder(token?.order),
+    tokenScale: Math.round(clamp(token?.tokenScale, 0.25, 4) * 100) / 100 || 1
   };
 }
 
