@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-31 21:53:10 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-05-31 22:18:20 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,22 +13,13 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `23bf36c 2026-05-28 fix(select): corrige formato dos strokes ÔÇö pontos s├úo [px,py] n├úo {px,py}`
+- Ultimo commit: `aa6af00 2026-05-31 feat(mesa): ferramentas de desenho, modos Select/Move e refinamentos da toolbar`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-D  assets/armagedon-sigil.svg
-M  css/mesa-drawing.css
-M  css/mesa-roster.css
-M  css/mesa.css
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-core.js
-M  js/mesa-drawing.js
-M  js/mesa-map.js
-M  js/mesa-select.js
-M  mesa.html
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -40,16 +31,7 @@ M  mesa.html
 ### Arquivos Em Stage
 
 ```text
-assets/armagedon-sigil.svg
-css/mesa-drawing.css
-css/mesa-roster.css
-css/mesa.css
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/mesa-core.js
-js/mesa-drawing.js
-js/mesa-map.js
-js/mesa-select.js
-mesa.html
 ```
 
 ## Paginas Principais
@@ -140,8 +122,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
    18,23 MB  node_modules\@img\sharp-win32-x64\lib\libvips-42.dll
-   13,08 MB  assets\sheet-fire-background.mp4
    13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
+   13,08 MB  assets\sheet-fire-background.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     1,03 MB  node_modules\terser\dist\bundle.min.js
     0,99 MB  assets\logo-rpg-armagedon.png
