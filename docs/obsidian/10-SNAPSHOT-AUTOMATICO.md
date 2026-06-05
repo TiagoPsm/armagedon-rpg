@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-05 17:50:00 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-05 17:54:57 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,31 +13,31 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `d5712a3 2026-06-05 fix(mesa-map): corrige _deleteCFActiveMapFromIDB apagando chave errada`
+- Ultimo commit: `6ec8990 2026-06-05 feat(mesa): tracker de iniciativa com rolagem 1d20+mod Agilidade`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-M  DEV_STATUS.md
-M  cloudflare/src/mesa.js
- M css/components.css
- M css/ficha.css
- M css/mesa-roster.css
-M  css/mesa.css
- M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
- M ficha.html
- M index.html
-M  js/mesa-core.js
-A  js/mesa-initiative.js
-M  mesa.html
- M regras.html
+M  css/components.css
+M  css/ficha.css
+M  css/mesa-roster.css
+MM docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  ficha.html
+M  index.html
+M  regras.html
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
 .claude/settings.local.json
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+```
+
+### Arquivos Em Stage
+
+```text
 css/components.css
 css/ficha.css
 css/mesa-roster.css
@@ -45,17 +45,6 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ficha.html
 index.html
 regras.html
-```
-
-### Arquivos Em Stage
-
-```text
-DEV_STATUS.md
-cloudflare/src/mesa.js
-css/mesa.css
-js/mesa-core.js
-js/mesa-initiative.js
-mesa.html
 ```
 
 ## Paginas Principais

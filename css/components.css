@@ -612,10 +612,43 @@ textarea.form-input {
     padding: var(--sp-4);
   }
 
+  /* Formulários: campos em coluna no mobile */
+  .form-row {
+    flex-wrap: wrap;
+  }
+
+  .form-row .form-group {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
   .app-modal-panel,
   .ui-modal-panel {
     padding: var(--sp-4);
     max-width: 100%;
     border-radius: var(--radius-md);
+  }
+
+  /* Header compacto: logo menor e badge de usuário sem padding excessivo */
+  .brand-mark {
+    width: 32px;
+    height: 32px;
+  }
+
+  .brand-copy strong {
+    font-size: var(--fs-sm);
+  }
+
+  .brand-copy small {
+    display: none;
+  }
+
+  .header-user {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: var(--sp-1) var(--sp-2);
+    font-size: 0.58rem;
   }
 }

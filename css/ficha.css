@@ -1346,6 +1346,17 @@
   .dice-tray-fields {
     grid-template-columns: 1fr;
   }
+
+  /* Soul core: atributos quebram para segunda linha */
+  .soul-core-panel {
+    flex-wrap: wrap;
+  }
+
+  .soul-attribute-cap-grid {
+    width: 100%;
+    flex: 0 0 100%;
+    margin-top: var(--sp-2);
+  }
 }
 
 @media (max-width: 480px) {
@@ -1361,5 +1372,41 @@
 
   .master-stat {
     min-width: 90px;
+  }
+
+  /* Soul core: empilha verticalmente para evitar overflow dos badges de atributo */
+  .soul-core-panel {
+    flex-direction: column;
+  }
+
+  .soul-core-tools {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+  }
+
+  /* Bloco de identidade: coluna única */
+  .identity-block {
+    grid-template-columns: 1fr;
+  }
+
+  .identity-main {
+    flex-direction: column;
+  }
+
+  .avatar-col {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  /* Seção de recursos: empilha */
+  .resources-row {
+    flex-direction: column;
+    gap: var(--sp-3);
+  }
+
+  /* Armadura: 1 coluna */
+  .armor-stats-grid {
+    grid-template-columns: 1fr;
   }
 }
