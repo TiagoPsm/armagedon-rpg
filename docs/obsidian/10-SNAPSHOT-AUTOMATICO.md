@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-05 17:54:57 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-05 18:07:20 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,19 +13,18 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `6ec8990 2026-06-05 feat(mesa): tracker de iniciativa com rolagem 1d20+mod Agilidade`
+- Ultimo commit: `2ad218c 2026-06-05 fix(css): responsividade da Mesa e da Ficha em mobile e tablet`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-M  css/components.css
-M  css/ficha.css
-M  css/mesa-roster.css
-MM docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  ficha.html
-M  index.html
-M  regras.html
+ M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  mesa.html
+?? tools/fix-mojibake.js
+?? tools/fix-mojibake2.cjs
+?? tools/fix-mojibake3.cjs
+?? tools/fix-mojibake4.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -38,13 +37,7 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ### Arquivos Em Stage
 
 ```text
-css/components.css
-css/ficha.css
-css/mesa-roster.css
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-ficha.html
-index.html
-regras.html
+mesa.html
 ```
 
 ## Paginas Principais
