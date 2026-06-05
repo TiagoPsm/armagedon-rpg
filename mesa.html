@@ -215,6 +215,14 @@
           </svg>
           <span>ESCAL.</span>
         </button>
+        <button class="vtt-tb-btn" id="mesaInitiativeBtn"
+          title="Ativar tracker de iniciativa" aria-pressed="false"
+          onclick="if(getInitiativeState().active){deactivateInitiative()}else{activateInitiative()}">
+          <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M10 2L12.4 7.6H18L13.3 11.1L15.1 17L10 13.5L4.9 17L6.7 11.1L2 7.6H7.6L10 2Z" stroke-linejoin="round"/>
+          </svg>
+          <span>INIC.</span>
+        </button>
       </div>
 
       <!-- Contador de tokens -->
@@ -553,6 +561,24 @@
             <p>Os detalhes da cena aparecem aqui quando voc&ecirc; escolhe um retrato no palco.</p>
           </div>
         </div>
+      </div>
+
+      <!-- Tracker de Iniciativa -->
+      <div class="vtt-sidebar-block" id="vttInitiativeBlock" hidden>
+        <div class="vtt-sidebar-block-head">
+          <div class="vtt-sidebar-block-title">
+            <p class="vtt-kicker">Combate</p>
+            <h2>Iniciativa</h2>
+          </div>
+          <span class="init-round-badge">Rodada <strong class="init-round-num">1</strong></span>
+        </div>
+        <p class="init-status"></p>
+        <div class="init-master-controls" id="initMasterControls">
+          <button type="button" class="btn btn-primary btn-sm" onclick="nextInitiativeTurn()">&#9654; Próximo</button>
+          <button type="button" class="btn btn-sm"             onclick="resetInitiativeRound()">&#8635; Reiniciar</button>
+          <button type="button" class="btn btn-sm btn-danger"  onclick="deactivateInitiative()">&#10005; Encerrar</button>
+        </div>
+        <ol class="init-order-list" aria-live="polite"></ol>
       </div>
 
     </aside>

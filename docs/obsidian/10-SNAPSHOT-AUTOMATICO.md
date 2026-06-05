@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-05 18:07:20 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-05 18:15:38 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `2ad218c 2026-06-05 fix(css): responsividade da Mesa e da Ficha em mobile e tablet`
+- Ultimo commit: `513dbeb 2026-06-05 fix(mesa): corrige mojibake no HTML — acentos e símbolos corrompidos`
 
 ### Alteracoes Locais
 
