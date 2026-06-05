@@ -2369,7 +2369,7 @@ function _deleteCFActiveMapFromIDB() {
     if (!mesaMapState.db) { resolve(); return; }
     var tx    = mesaMapState.db.transaction(MESA_MAP_SETTINGS_STORE, "readwrite");
     var store = tx.objectStore(MESA_MAP_SETTINGS_STORE);
-    store.delete("connectedFolderHandle");
+    store.delete("cfActiveMap");
     tx.oncomplete = function() { resolve(); };
     tx.onerror    = function(e) { reject(e.target.error); };
   });

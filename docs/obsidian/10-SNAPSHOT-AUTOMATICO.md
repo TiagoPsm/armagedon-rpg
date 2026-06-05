@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-01 14:56:03 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-05 17:22:57 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,27 +13,45 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `d82baba 2026-06-01 fix(mesa): roster sempre da API em modo backend + configuracoes sempre visiveis para mestre`
+- Ultimo commit: `e1052fb 2026-06-01 fix(worker): preserva tokenScale ao normalizar e salvar cena da Mesa`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-M  cloudflare/src/mesa.js
+ M DEV_STATUS.md
+ M css/components.css
+ M css/ficha.css
+ M css/mesa-roster.css
+ M css/mesa.css
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+ M ficha.html
+ M index.html
+M  js/mesa-map.js
+M  mesa.html
+ M regras.html
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
 .claude/settings.local.json
+DEV_STATUS.md
+css/components.css
+css/ficha.css
+css/mesa-roster.css
+css/mesa.css
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+ficha.html
+index.html
+regras.html
 ```
 
 ### Arquivos Em Stage
 
 ```text
-cloudflare/src/mesa.js
+js/mesa-map.js
+mesa.html
 ```
 
 ## Paginas Principais
@@ -125,8 +143,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
    18,23 MB  node_modules\@img\sharp-win32-x64\lib\libvips-42.dll
-   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
    13,08 MB  assets\sheet-fire-background.mp4
+   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     1,03 MB  node_modules\terser\dist\bundle.min.js
     0,99 MB  assets\logo-rpg-armagedon.png

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -16,18 +16,18 @@
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap"></noscript>
   <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/reset.css" />
-  <link rel="stylesheet" href="css/components.css" />
-  <link rel="stylesheet" href="css/mesa.css" />
+  <link rel="stylesheet" href="css/components.css?v=2026-06-05-responsive-1" />
+  <link rel="stylesheet" href="css/mesa.css?v=2026-06-05-responsive-1" />
   <link rel="stylesheet" href="css/mesa-stage.css?v=2026-05-24-token-styles-2" />
-  <link rel="stylesheet" href="css/mesa-roster.css?v=2026-05-09-player-simple-1" />
+  <link rel="stylesheet" href="css/mesa-roster.css?v=2026-06-05-responsive-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-05-06-player-panel-1" />
   <link rel="stylesheet" href="css/mesa-map.css?v=2026-05-24-token-styles-1" />
   <link rel="stylesheet" href="css/mesa-drawing.css" />
   <style>
-    /* ── TOKEN SCALE ── */
+    /* â”€â”€ TOKEN SCALE â”€â”€ */
     .mesa-token { transform-origin: top left; transform: scale(var(--token-scale, 1)); }
 
-    /* ── MINIMAL TOKEN — CSS-driven visual switch via stage data attr ── */
+    /* â”€â”€ MINIMAL TOKEN â€” CSS-driven visual switch via stage data attr â”€â”€ */
     .mesa-stage[data-token-style="minimal"] .mesa-token:not(.is-minimal) {
       width: 88px !important; padding: 0 !important;
       background: transparent !important; border: none !important; box-shadow: none !important;
@@ -52,7 +52,7 @@
       text-shadow: 0 1px 4px rgba(0,0,0,0.9) !important; margin: 0 !important;
     }
 
-    /* ── MINIMAL TOKEN — proper is-minimal structure ── */
+    /* â”€â”€ MINIMAL TOKEN â€” proper is-minimal structure â”€â”€ */
     .mesa-token.is-minimal {
       width: 88px; padding: 0; background: transparent; border: none; box-shadow: none;
       display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
@@ -78,7 +78,7 @@
     .mesa-token.is-minimal.is-hidden-master { opacity: 0.48; }
     .mesa-token.is-minimal:hover { transform: scale(var(--token-scale,1)) translateY(-2px); }
 
-    /* ── RESIZE HANDLE ── */
+    /* â”€â”€ RESIZE HANDLE â”€â”€ */
     .mesa-token-resize-handle {
       position: absolute; bottom: 6px; right: 6px; width: 18px; height: 18px;
       border-radius: 4px; opacity: 0; cursor: nwse-resize; transition: opacity 0.15s;
@@ -96,7 +96,7 @@
   <div class="bg-layer bg-scar"></div>
   <div class="bg-layer bg-orbit"></div>
 
-  <!-- Site header — navegação global -->
+  <!-- Site header â€” navegaÃ§Ã£o global -->
   <header class="site-header">
     <div class="shell header-shell">
       <div class="brand">
@@ -131,10 +131,10 @@
   <!-- VTT App: toolbar | canvas | sidebar -->
   <div class="vtt-body">
 
-    <!-- ── TOOLBAR ESQUERDA ──────────────────────────────────── -->
+    <!-- â”€â”€ TOOLBAR ESQUERDA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <nav class="vtt-toolbar" aria-label="Ferramentas da mesa">
 
-      <!-- Papel do usuário -->
+      <!-- Papel do usuÃ¡rio -->
       <div class="vtt-tb-top">
         <div class="vtt-role-badge">
           <strong id="roleBadge">GM</strong>
@@ -142,11 +142,11 @@
         </div>
       </div>
 
-      <!-- Ferramentas de interação: Selecionar / Mover -->
+      <!-- Ferramentas de interaÃ§Ã£o: Selecionar / Mover -->
       <div class="vtt-tb-tools">
         <button class="vtt-tb-btn" id="mesaSelectToolBtn"
                 data-interaction-tool="select" aria-pressed="false"
-                title="Selecionar — arraste para multi-selecionar tokens; botão direito move a câmera">
+                title="Selecionar â€” arraste para multi-selecionar tokens; botÃ£o direito move a cÃ¢mera">
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <!-- cursor arrow -->
             <path fill-rule="evenodd" d="M6 2 L6 15 L9 12 L11 17 L13 16 L11 11 L15 11 Z"/>
@@ -154,7 +154,7 @@
         </button>
         <button class="vtt-tb-btn" id="mesaMoveToolBtn"
                 data-interaction-tool="move" aria-pressed="false"
-                title="Mover — arraste tokens para reposicioná-los; espaço vazio move a câmera">
+                title="Mover â€” arraste tokens para reposicionÃ¡-los; espaÃ§o vazio move a cÃ¢mera">
           <svg class="vtt-tb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <!-- open hand -->
@@ -166,7 +166,7 @@
       <!-- Separador -->
       <div class="vtt-tb-divider"></div>
 
-      <!-- Botão único de desenho — abre flyout com as ferramentas -->
+      <!-- BotÃ£o Ãºnico de desenho â€” abre flyout com as ferramentas -->
       <div class="vtt-tb-tools">
         <button class="vtt-tb-btn" id="mesaDrawToggleBtn"
                 title="Ferramentas de desenho" aria-expanded="false" aria-haspopup="true">
@@ -183,7 +183,7 @@
 
       <!-- Camadas do canvas -->
       <div class="vtt-tb-layers">
-        <button class="vtt-layer-btn is-active" data-layer="tokens" data-panel="scene" title="Camada de Tokens — selecionar e mover fichas" aria-pressed="true">
+        <button class="vtt-layer-btn is-active" data-layer="tokens" data-panel="scene" title="Camada de Tokens â€” selecionar e mover fichas" aria-pressed="true">
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
             <circle cx="10" cy="6.5" r="3"/>
             <path d="M3.5 18c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5" stroke-linecap="round"/>
@@ -191,7 +191,7 @@
           <span>TOKENS</span>
         </button>
 
-        <button class="vtt-layer-btn" data-layer="map" data-panel="map" title="Camada de Mapa — mover e redimensionar o fundo" aria-pressed="false">
+        <button class="vtt-layer-btn" data-layer="map" data-panel="map" title="Camada de Mapa â€” mover e redimensionar o fundo" aria-pressed="false">
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
             <polygon points="2,4 8,2 12,5 18,3 18,16 12,18 8,15 2,17" stroke-linejoin="round"/>
             <line x1="8" y1="2" x2="8" y2="15"/>
@@ -206,7 +206,7 @@
 
       <!-- Ferramentas -->
       <div class="vtt-tb-tools">
-        <button class="vtt-tb-btn" data-tool="roster" title="Escalação — adicionar personagens à cena" aria-pressed="false">
+        <button class="vtt-tb-btn" data-tool="roster" title="EscalaÃ§Ã£o â€” adicionar personagens Ã  cena" aria-pressed="false">
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
             <circle cx="7" cy="6" r="2.5"/>
             <path d="M1.5 16.5c0-3 2.4-5.5 5.5-5.5s5.5 2.5 5.5 5.5" stroke-linecap="round"/>
@@ -226,24 +226,24 @@
       </div>
     </nav>
 
-    <!-- ── CANVAS CENTRAL ────────────────────────────────────── -->
+    <!-- â”€â”€ CANVAS CENTRAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <div class="vtt-canvas" id="mesaPanelStage">
 
       <!-- O palco propriamente dito -->
       <div class="mesa-stage-wrap" id="mesaStageWrap" data-active-layer="tokens">
 
-        <!-- Inner escalável — tudo dentro aqui escala junto com o zoom -->
+        <!-- Inner escalÃ¡vel â€” tudo dentro aqui escala junto com o zoom -->
         <div id="mesaStageInner" class="mesa-stage-inner">
-          <!-- Camada de mapa — abaixo do grid e tokens -->
+          <!-- Camada de mapa â€” abaixo do grid e tokens -->
           <div id="mesaMapLayer" class="mesa-map-layer" aria-hidden="true" hidden></div>
           <div class="mesa-stage-grid" aria-hidden="true"></div>
           <div class="mesa-stage-glow" aria-hidden="true"></div>
           <canvas class="mesa-stage-canvas" id="mesaStageCanvas" aria-hidden="true"></canvas>
-          <!-- Canvas de desenho — acima do grid, abaixo dos tokens DOM -->
+          <!-- Canvas de desenho â€” acima do grid, abaixo dos tokens DOM -->
           <canvas id="mesaDrawCanvas" aria-hidden="true"></canvas>
           <div id="mesaStage" class="mesa-stage" aria-live="polite"></div>
 
-          <!-- Caixa de seleção + handles de transform (Select tool) -->
+          <!-- Caixa de seleÃ§Ã£o + handles de transform (Select tool) -->
           <div id="mesaSelectionBox" hidden aria-hidden="true">
             <div class="sel-handle" data-handle="nw"></div>
             <div class="sel-handle" data-handle="n"></div>
@@ -261,16 +261,16 @@
           </div>
         </div>
 
-        <!-- Controle de zoom — fora do inner, não escala com o palco -->
+        <!-- Controle de zoom â€” fora do inner, nÃ£o escala com o palco -->
         <div class="vtt-zoom-ctrl" id="mesaZoomCtrl" aria-label="Zoom do palco">
           <span class="vtt-zoom-label" id="mesaZoomLabel">100</span>
           <button class="vtt-zoom-btn" id="mesaZoomIn"    title="Aproximar" aria-label="Aproximar">+</button>
           <div class="vtt-zoom-track">
             <input class="vtt-zoom-slider" id="mesaZoomSlider" type="range"
                    min="25" max="300" value="100" step="5"
-                   orient="vertical" aria-label="Nível de zoom">
+                   orient="vertical" aria-label="NÃ­vel de zoom">
           </div>
-          <button class="vtt-zoom-btn" id="mesaZoomOut"   title="Afastar"   aria-label="Afastar">−</button>
+          <button class="vtt-zoom-btn" id="mesaZoomOut"   title="Afastar"   aria-label="Afastar">âˆ’</button>
           <button class="vtt-zoom-btn vtt-zoom-reset" id="mesaZoomReset" title="Resetar zoom (100%)" aria-label="Resetar zoom">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
                  stroke-linecap="round" stroke-linejoin="round" width="11" height="11" aria-hidden="true">
@@ -286,7 +286,7 @@
 
       </div>
 
-      <!-- Flyout de desenho — abre ao clicar no botão da caneta -->
+      <!-- Flyout de desenho â€” abre ao clicar no botÃ£o da caneta -->
       <div id="mesaDrawFlyout" class="vtt-draw-flyout" hidden aria-label="Ferramentas de desenho">
 
         <!-- Lista de ferramentas -->
@@ -296,7 +296,7 @@
             <path d="M14.5 2.5l3 3-10 10-4 1 1-4 10-10z"/>
             <line x1="12" y1="4.5" x2="15.5" y2="8"/>
           </svg>
-          <span>À Mão Livre</span>
+          <span>Ã€ MÃ£o Livre</span>
         </button>
 
         <button class="draw-flyout-item" data-draw-tool="line" aria-pressed="false">
@@ -312,7 +312,7 @@
                stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <rect x="3" y="5" width="14" height="10" rx="1.5"/>
           </svg>
-          <span>Retângulo</span>
+          <span>RetÃ¢ngulo</span>
         </button>
 
         <button class="draw-flyout-item" data-draw-tool="circle" aria-pressed="false">
@@ -335,7 +335,7 @@
         <!-- Divisor -->
         <div class="draw-flyout-divider"></div>
 
-        <!-- Cores e largura — só visíveis quando tool ativa (não eraser) -->
+        <!-- Cores e largura â€” sÃ³ visÃ­veis quando tool ativa (nÃ£o eraser) -->
         <div id="mesaDrawOptions" class="draw-flyout-options" hidden>
           <div class="draw-color-row">
             <div id="mesaDrawColorPreview" title="Cor atual"></div>
@@ -345,7 +345,7 @@
             <button class="draw-width-btn is-active" data-draw-width="2" title="Fino">
               <span class="draw-width-line thin"></span>
             </button>
-            <button class="draw-width-btn" data-draw-width="4" title="Médio">
+            <button class="draw-width-btn" data-draw-width="4" title="MÃ©dio">
               <span class="draw-width-line medium"></span>
             </button>
             <button class="draw-width-btn" data-draw-width="8" title="Grosso">
@@ -367,7 +367,7 @@
 
       </div>
 
-      <!-- Overlay: topo esquerdo — estado da cena -->
+      <!-- Overlay: topo esquerdo â€” estado da cena -->
       <div class="vtt-overlay vtt-overlay-tl" aria-live="polite">
         <span class="vtt-hud-badge" id="stageViewBadge">Vis&atilde;o do mestre</span>
         <span class="vtt-hud-badge vtt-hud-badge-soft" id="stageHintBadge">Arraste os tokens para organizar a cena.</span>
@@ -375,7 +375,7 @@
         <p id="sceneStateCopy" class="vtt-hud-copy">A escalacao vem das fichas salvas e a cena sincroniza com jogadores conectados.</p>
       </div>
 
-      <!-- Overlay: topo direito — controles do mapa -->
+      <!-- Overlay: topo direito â€” controles do mapa -->
       <div class="vtt-overlay vtt-overlay-tr">
         <div class="mesa-map-controls">
           <span id="mesaMapLabel" class="mesa-map-label">Sem mapa</span>
@@ -390,7 +390,7 @@
         </div>
       </div>
 
-      <!-- Painel de configurações do mapa — separado, abre abaixo do overlay -->
+      <!-- Painel de configuraÃ§Ãµes do mapa â€” separado, abre abaixo do overlay -->
       <div class="mesa-map-settings-panel" id="mesaMapTransform" hidden>
         <div class="mesa-map-transform-group" id="mesaMapScaleGroup" hidden>
           <span class="mesa-map-transform-label">Escala</span>
@@ -403,7 +403,7 @@
         </div>
         <p class="mesa-map-settings-hint" id="mesaMapHint" hidden>Arraste o mapa para reposicionar.<br>Scroll para zoom.</p>
 
-        <!-- Token style — only visible to master (hidden for players via JS) -->
+        <!-- Token style â€” only visible to master (hidden for players via JS) -->
         <div class="mesa-map-transform-group mesa-token-style-group" id="mesaTokenStyleGroup" hidden>
           <span class="mesa-map-transform-label">Estilo dos tokens</span>
           <div class="mesa-token-style-btns">
@@ -431,7 +431,7 @@
         </div>
       </div>
 
-      <!-- Overlay: baixo direito — ações e toggle -->
+      <!-- Overlay: baixo direito â€” aÃ§Ãµes e toggle -->
       <div class="vtt-overlay vtt-overlay-br">
         <label class="toggle-row toggle-row-inline" id="playerPreviewRow">
           <span class="toggle-copy">
@@ -445,10 +445,10 @@
       </div>
     </div>
 
-    <!-- ── SIDEBAR DIREITA ────────────────────────────────────── -->
+    <!-- â”€â”€ SIDEBAR DIREITA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <aside class="vtt-sidebar">
 
-      <!-- Meta: modo e presença -->
+      <!-- Meta: modo e presenÃ§a -->
       <div class="vtt-sidebar-meta">
         <article class="vtt-meta-chip">
           <span>Modo</span>
@@ -456,7 +456,7 @@
         </article>
         <article class="vtt-meta-chip vtt-meta-chip-accent" id="vttRoleChip">
           <span>Papel</span>
-          <strong id="roleBadge2">—</strong>
+          <strong id="roleBadge2">â€”</strong>
         </article>
         <article class="vtt-meta-chip">
           <span>Fichas</span>
@@ -464,14 +464,14 @@
         </article>
       </div>
 
-      <!-- Escalação / Roster -->
+      <!-- EscalaÃ§Ã£o / Roster -->
       <div class="vtt-sidebar-block" id="vttRosterBlock" data-roster-filter="all">
         <div class="vtt-sidebar-block-head">
           <div class="vtt-sidebar-block-title">
             <p class="vtt-kicker" id="rosterPanelKicker">Escalacao</p>
             <h2 id="rosterPanelTitle">Adicionar &agrave; mesa</h2>
           </div>
-          <span class="vtt-count-badge" id="rosterCountBadge">0 disponíveis</span>
+          <span class="vtt-count-badge" id="rosterCountBadge">0 disponÃ­veis</span>
         </div>
 
         <!-- Tabs de filtro por tipo -->
@@ -490,7 +490,7 @@
         <div class="roster-section" id="rosterList" aria-live="polite"></div>
       </div>
 
-      <!-- Biblioteca de mapas (visível quando tool=map) -->
+      <!-- Biblioteca de mapas (visÃ­vel quando tool=map) -->
       <div class="vtt-sidebar-block" id="vttMapLibraryBlock" hidden>
         <div class="vtt-sidebar-block-head">
           <div class="vtt-sidebar-block-title">
@@ -555,7 +555,7 @@
   <script src="js/api.js?v=2026-05-05-mesa-canvas-v2" defer></script>
   <script src="js/ui.js?v=2026-05-12-ficha-prefetch-1" defer></script>
   <script src="js/auth.js?v=2026-05-07-master-sheet-key-1" defer></script>
-  <!-- Ordem importante: dependências antes de mesa-core -->
+  <!-- Ordem importante: dependÃªncias antes de mesa-core -->
   <script src="js/mesa-renderer-v2.js?v=2026-05-25-dataurl-fix-1" defer></script>
   <script src="js/mesa-stage.js?v=2026-05-25-token-style-fix-1" defer></script>
   <script src="js/mesa-roster.js?v=2026-05-09-free-resource-max-1" defer></script>
@@ -563,13 +563,13 @@
   <script src="js/mesa-storage.js?v=2026-04-24-split-1" defer></script>
   <script src="js/mesa-core.js?v=2026-06-01-backend-roster-1" defer></script>
   <script src="js/mesa-init.js?v=2026-04-24-split-1" defer></script>
-  <script src="js/mesa-map.js?v=2026-06-01-settings-always-1" defer></script>
+  <script src="js/mesa-map.js?v=2026-06-05-fix-clear-map" defer></script>
   <script src="js/mesa-drawing.js?v=2026-05-27-select-5" defer></script>
   <script src="js/mesa-select.js?v=2026-05-27-select-5" defer></script>
   <script>
-  /* VTT Toolbar — camadas + painéis da sidebar */
+  /* VTT Toolbar â€” camadas + painÃ©is da sidebar */
   (function () {
-    // Painéis associados a cada painel/layer
+    // PainÃ©is associados a cada painel/layer
     var PANEL_BLOCKS = {
       scene:  ["vttRosterBlock", "vttInspectorBlock"],
       map:    ["vttMapLibraryBlock"],
@@ -583,7 +583,7 @@
         var el = document.getElementById(id);
         if (el) el.hidden = true;
       });
-      // Separador só quando scene ativo
+      // Separador sÃ³ quando scene ativo
       var sep = document.querySelector(".vtt-sidebar-sep");
       if (sep) sep.hidden = panelName !== "scene";
       // Mostrar os do painel
@@ -600,13 +600,13 @@
       }
     }
 
-    // Clique em botão de CAMADA (altera a camada activa do canvas + painel)
+    // Clique em botÃ£o de CAMADA (altera a camada activa do canvas + painel)
     document.addEventListener("click", function (e) {
       var layerBtn = e.target.closest(".vtt-layer-btn[data-layer]");
       if (layerBtn) {
         var layer = layerBtn.dataset.layer;
         var panel = layerBtn.dataset.panel || "scene";
-        // Actualizar botões de camada
+        // Actualizar botÃµes de camada
         document.querySelectorAll(".vtt-layer-btn[data-layer]").forEach(function (b) {
           var active = b.dataset.layer === layer;
           b.classList.toggle("is-active", active);
@@ -623,7 +623,7 @@
         return;
       }
 
-      // Clique em botão de FERRAMENTA (apenas muda o painel, não a camada)
+      // Clique em botÃ£o de FERRAMENTA (apenas muda o painel, nÃ£o a camada)
       var toolBtn = e.target.closest(".vtt-tb-btn[data-tool]");
       if (toolBtn) {
         document.querySelectorAll(".vtt-tb-btn[data-tool]").forEach(function (b) {
@@ -641,7 +641,7 @@
   </script>
 
   <script>
-  /* VTT Roster tabs — filtro por tipo sem tocar no mesa-roster.js */
+  /* VTT Roster tabs â€” filtro por tipo sem tocar no mesa-roster.js */
   (function () {
     document.addEventListener('click', function (e) {
       var btn = e.target.closest('.vtt-rtab');
