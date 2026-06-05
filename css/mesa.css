@@ -756,6 +756,17 @@
   .vtt-sidebar {
     width: 240px;
   }
+
+  /* Cabeçalho do bloco: quebra badge para segunda linha quando sidebar estreita */
+  .vtt-sidebar-block-head {
+    flex-wrap: wrap;
+  }
+
+  .vtt-count-badge {
+    font-size: 0.52rem;
+    padding: 0 0.4rem;
+    height: 18px;
+  }
 }
 
 @media (max-width: 700px) {
@@ -795,33 +806,128 @@
 
   .vtt-canvas {
     flex: 1;
-    min-height: 300px;
+    min-height: 260px;
   }
 
   .vtt-sidebar {
     width: 100%;
-    height: 240px;
+    height: 260px;
     border-left: none;
     border-top: 1px solid rgba(255, 255, 255, 0.055);
     flex-direction: row;
     overflow-x: auto;
+    overflow-y: hidden;
     flex-shrink: 0;
+    scroll-snap-type: x mandatory;
   }
 
   .vtt-sidebar-meta {
     flex-direction: column;
     border-bottom: none;
     border-right: 1px solid rgba(255, 255, 255, 0.055);
-    width: 70px;
+    width: 60px;
+    flex-shrink: 0;
   }
 
   .vtt-meta-chip {
     border-right: none;
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    padding: 0.4rem 0.3rem;
+  }
+
+  .vtt-meta-chip span {
+    font-size: 0.48rem;
+  }
+
+  .vtt-meta-chip strong {
+    font-size: 0.6rem;
   }
 
   .vtt-sidebar-block {
-    min-width: 220px;
+    min-width: min(280px, 80vw);
+    scroll-snap-align: start;
+    overflow-y: auto;
+  }
+}
+
+/* ─── MOBILE PEQUENO ≤ 480px ─────────────────────────────── */
+
+@media (max-width: 480px) {
+  /* Toolbar: esconde badge de papel e contador — economiza altura */
+  .vtt-tb-top,
+  .vtt-tb-foot {
+    display: none;
+  }
+
+  .vtt-toolbar {
+    height: 44px;
+    padding: 0 0.25rem;
+    gap: 0;
+  }
+
+  .vtt-tb-divider {
+    display: none;
+  }
+
+  .vtt-tb-btn,
+  .vtt-layer-btn {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.52rem;
+  }
+
+  /* Canvas: altura fixa — deixa mais espaço para sidebar */
+  .vtt-canvas {
+    flex: 0 0 44vh;
+    min-height: 180px;
+  }
+
+  /* Sidebar: coluna vertical, ocupa o resto da tela */
+  .vtt-sidebar {
+    flex: 1;
+    height: auto;
+    max-height: none;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-snap-type: none;
+  }
+
+  /* Meta chips: linha horizontal no topo da sidebar */
+  .vtt-sidebar-meta {
+    flex-direction: row;
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+    flex-wrap: wrap;
+  }
+
+  .vtt-meta-chip {
+    flex: 1;
+    border-bottom: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
+    padding: 0.35rem 0.5rem;
+    flex-direction: row;
+    gap: 0.3rem;
+    align-items: center;
+  }
+
+  /* Blocks: largura total, sem mínimo horizontal */
+  .vtt-sidebar-block {
+    min-width: unset;
+    width: 100%;
+    scroll-snap-align: unset;
+    overflow-y: visible;
+  }
+
+  /* Zoom control: menor e mais compacto */
+  .vtt-zoom-ctrl {
+    padding: 5px 4px;
+    gap: 1px;
+  }
+
+  .vtt-zoom-track {
+    height: 48px;
   }
 }
 
@@ -989,4 +1095,229 @@
 }
 .mesa-stage-wrap[data-interaction-mode="move"]:active {
   cursor: grabbing !important;
+}
+
+/* ── TRACKER DE INICIATIVA ──────────────────────────────────── */
+
+/* Botão toolbar ativo */
+.vtt-tb-btn#mesaInitiativeBtn.is-active {
+  color: var(--red-mid);
+  background: hsla(0, 70%, 30%, 0.25);
+}
+
+/* Painel sidebar */
+.init-round-badge {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.init-round-num { color: var(--gold); }
+
+.init-status {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 0 0 var(--sp-2);
+  min-height: 1.1em;
+}
+
+.init-master-controls {
+  display: flex;
+  gap: var(--sp-1);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-2);
+}
+
+.init-order-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.init-entry {
+  display: grid;
+  grid-template-columns: 1.2rem 1fr auto auto;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 5px var(--sp-2);
+  border-radius: 5px;
+  background: hsla(0,0%,100%,0.04);
+  font-size: 0.75rem;
+  transition: background 0.15s;
+}
+
+.init-entry.is-current {
+  background: hsla(0, 65%, 28%, 0.35);
+  outline: 1px solid hsla(0, 70%, 45%, 0.5);
+}
+
+.init-pos {
+  color: var(--text-secondary);
+  font-size: 0.65rem;
+  text-align: right;
+}
+
+.init-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.init-roll {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+.init-roll strong { color: var(--gold); }
+
+.init-remove-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.65rem;
+  padding: 2px 4px;
+  border-radius: 3px;
+  line-height: 1;
+  opacity: 0.5;
+  transition: opacity 0.15s, color 0.15s;
+}
+.init-remove-btn:hover { opacity: 1; color: var(--red-mid); }
+
+.init-empty {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  padding: var(--sp-2) 0;
+  text-align: center;
+}
+
+/* Banner de combate para jogadores */
+.initiative-banner {
+  position: absolute;
+  top: var(--sp-3);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  background: hsla(0, 60%, 15%, 0.95);
+  border: 1px solid hsla(0, 70%, 40%, 0.6);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 0.82rem;
+  box-shadow: 0 4px 20px hsla(0,0%,0%,0.5);
+  backdrop-filter: blur(6px);
+  animation: init-banner-in 0.35s ease;
+}
+
+@keyframes init-banner-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.initiative-banner-icon { font-size: 1.1rem; }
+.initiative-banner-text { color: var(--text-primary); }
+
+/* Popup de rolagem */
+.initiative-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: hsla(0,0%,0%,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.initiative-popup {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid hsla(0,0%,100%,0.1);
+  border-radius: 12px;
+  padding: var(--sp-5) var(--sp-5) var(--sp-4);
+  min-width: 280px;
+  max-width: 360px;
+  text-align: center;
+  box-shadow: 0 12px 48px hsla(0,0%,0%,0.6);
+  animation: popup-in 0.25s ease;
+}
+
+@keyframes popup-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.initiative-popup-close {
+  position: absolute;
+  top: var(--sp-2);
+  right: var(--sp-2);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+.initiative-popup-close:hover { color: var(--text-primary); }
+
+.initiative-popup-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 var(--sp-2);
+  color: var(--gold);
+}
+
+.initiative-popup-hero {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 var(--sp-3);
+}
+.initiative-popup-hero strong { color: var(--text-primary); }
+
+.initiative-popup-formula {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-3);
+}
+.initiative-popup-mod-wrap strong { color: var(--gold); }
+
+.initiative-popup-result-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+.initiative-popup-result-label {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.initiative-popup-big {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--gold);
+  min-width: 2.5ch;
+  display: inline-block;
+}
+
+/* Btn danger (encerrar combate) */
+.btn.btn-danger {
+  background: hsla(0,60%,30%,0.4);
+  border-color: hsla(0,60%,45%,0.5);
+  color: hsl(0,80%,70%);
+}
+.btn.btn-danger:hover {
+  background: hsla(0,60%,35%,0.6);
 }

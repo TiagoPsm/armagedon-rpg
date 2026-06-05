@@ -1,4 +1,4 @@
-const MESA_STORAGE_KEY = "tc_virtual_mesa_mock_v1";
+﻿const MESA_STORAGE_KEY = "tc_virtual_mesa_mock_v1";
 const SHEETS_KEY = "tc_sheets";
 const REMOTE_SHEETS_KEY = "tc_remote_sheets";
 const NPCS_KEY = "tc_npcs";
@@ -70,7 +70,9 @@ const MESA_REALTIME_DELTA_TYPES = new Set([
   "mesa:token:upsert",
   "mesa:token:remove",
   "mesa:scene:clear",
-  "mesa:drawings:update"
+  "mesa:drawings:update",
+  "mesa:initiative:update",
+  "mesa:initiative:roll"
 ]);
 const MESA_SHEET_PATCH_TYPE = "mesa:sheet:patch";
 const MESA_ATTRIBUTE_NAMES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"];
@@ -155,7 +157,7 @@ async function initMesaPage() {
   state.role = resolveInitialRole(session);
 
   // Paraleliza as 3 requests independentes: diretorio, ficha propria e cena da mesa.
-  // Cada uma e independente das outras — rodando em paralelo economiza ~300-400ms.
+  // Cada uma e independente das outras â€” rodando em paralelo economiza ~300-400ms.
   const [, , prefetchedScene] = await Promise.all([
     refreshMesaDirectoryBeforeRoster(),   // GET /directory
     hydrateOwnMesaSheetSnapshot(),        // GET /characters/:key (apenas jogadores)
@@ -168,13 +170,13 @@ async function initMesaPage() {
   bindMesaStorageSync();
   renderAll();
 
-  // Busca fichas faltantes do backend em background (não bloqueia o render)
+  // Busca fichas faltantes do backend em background (nÃ£o bloqueia o render)
   hydrateAllMesaSheetSnapshots().catch(() => {});
 
-  // Inicializa o módulo de mapa após o render inicial:
-  // abre IndexedDB, restaura mapa da sessão anterior e registra
-  // listeners de presença / WebRTC. É seguro chamar aqui porque
-  // window.APP já está conectado via bindMesaRealtime() acima.
+  // Inicializa o mÃ³dulo de mapa apÃ³s o render inicial:
+  // abre IndexedDB, restaura mapa da sessÃ£o anterior e registra
+  // listeners de presenÃ§a / WebRTC. Ã‰ seguro chamar aqui porque
+  // window.APP jÃ¡ estÃ¡ conectado via bindMesaRealtime() acima.
   if (typeof initMesaMap === "function") {
     await initMesaMap();
   }
@@ -233,8 +235,8 @@ function bindEvents() {
   stage?.addEventListener("pointerdown", handleTokenPointerDown);
   stage?.addEventListener("mousedown", handleTokenMouseDown);
 
-  // Deselect ao clicar em espaço vazio — usa 'click' em vez de 'mousedown'
-  // para não conflitar com pan (arrastar não dispara 'click' no browser).
+  // Deselect ao clicar em espaÃ§o vazio â€” usa 'click' em vez de 'mousedown'
+  // para nÃ£o conflitar com pan (arrastar nÃ£o dispara 'click' no browser).
   stage?.addEventListener("click", function(event) {
     if (window._mesaStagePanMoved) return;
     if (typeof getMesaActiveLayer === "function" && getMesaActiveLayer() !== "tokens") return;
@@ -444,7 +446,7 @@ async function applyMesaRealtimeDelta(payload) {
     if (typeof setDrawingsFromRemote === "function") {
       setDrawingsFromRemote(payload.drawings);
     }
-    return; // não precisa scheduleMesaRender
+    return; // nÃ£o precisa scheduleMesaRender
   }
 
   if (!changed && !needsRosterRefresh) return;
@@ -673,12 +675,12 @@ async function hydrateOwnMesaSheetSnapshot() {
 
 
 // Busca em background as fichas de todos os personagens do roster que ainda
-// não têm avatar cacheado. Chamado depois do render inicial para não bloquear
-// a exibição da mesa. Só atua em modo backend.
+// nÃ£o tÃªm avatar cacheado. Chamado depois do render inicial para nÃ£o bloquear
+// a exibiÃ§Ã£o da mesa. SÃ³ atua em modo backend.
 async function hydrateAllMesaSheetSnapshots() {
-  // Só o mestre pode buscar fichas de outros personagens via /api/characters/:key
-  // Jogadores recebem o avatar pelo /api/directory (campo avatar) — não precisam
-  // de requisições individuais que retornariam 403.
+  // SÃ³ o mestre pode buscar fichas de outros personagens via /api/characters/:key
+  // Jogadores recebem o avatar pelo /api/directory (campo avatar) â€” nÃ£o precisam
+  // de requisiÃ§Ãµes individuais que retornariam 403.
   if (!isMaster()) return;
   if (!window.AUTH?.isBackendEnabled?.() || !window.APP?.getCharacter) return;
 
@@ -701,7 +703,7 @@ async function hydrateAllMesaSheetSnapshots() {
         changed = true;
       }
     } catch {
-      // silencioso — avatar simplesmente nao aparece
+      // silencioso â€” avatar simplesmente nao aparece
     }
   }
 
@@ -720,7 +722,7 @@ async function hydrateAllMesaSheetSnapshots() {
 }
 
 // Quando ficha.html salva tc_sheets em outra aba (modo local), sincroniza o
-// roster da mesa sem forçar reload da página.
+// roster da mesa sem forÃ§ar reload da pÃ¡gina.
 function bindMesaStorageSync() {
   window.addEventListener("storage", event => {
     if (event.key !== SHEETS_KEY && event.key !== REMOTE_SHEETS_KEY) return;
@@ -928,7 +930,7 @@ function buildPlayers(directory, sheets) {
     })
   );
 
-  // Em modo backend, o diretório da API é a única fonte de quem entra no roster.
+  // Em modo backend, o diretÃ³rio da API Ã© a Ãºnica fonte de quem entra no roster.
   // Em modo local (sem backend), fichas do localStorage complementam a lista.
   if (!isMesaBackendEnabled()) {
     Object.keys(sheets || {}).forEach(rawKey => {
@@ -1343,7 +1345,7 @@ function buildFallbackRoster(sheets = {}) {
   ];
 }
 
-// Busca a cena remotamente sem aplicar — usada para iniciar o request
+// Busca a cena remotamente sem aplicar â€” usada para iniciar o request
 // em paralelo com /directory, antes do roster estar pronto.
 async function prefetchMesaSceneSnapshot() {
   if (!window.AUTH?.isBackendEnabled?.() || !window.APP?.getMesaScene) return null;
@@ -1399,7 +1401,7 @@ async function loadMesaSceneSnapshot(prefetchedResult) {
 
 function applyMesaSceneSnapshot(saved) {
   const savedTokens = Array.isArray(saved?.tokens) ? saved.tokens : [];
-  // hasExplicitSave = true quando o usuário já salvou a cena ao menos uma vez
+  // hasExplicitSave = true quando o usuÃ¡rio jÃ¡ salvou a cena ao menos uma vez
   // (mesmo que vazia). Impede o auto-seed sobrescrever uma cena intencionalmente limpa.
   const hasExplicitSave = Array.isArray(saved?.tokens);
   const mergedTokens = savedTokens
@@ -1412,7 +1414,12 @@ function applyMesaSceneSnapshot(saved) {
   state.sceneVersion = asPositiveInt(saved?.sceneVersion, state.sceneVersion);
   state.selectedTokenId = pickInitialSelectedToken(saved?.selectedTokenId);
 
-  // Restaura estilo dos tokens — apenas o mestre pode ter alterado esta config
+  // Restaura estado de iniciativa
+  if (saved?.initiative && typeof applyInitiativeState === 'function') {
+    applyInitiativeState(saved.initiative);
+  }
+
+  // Restaura estilo dos tokens â€” apenas o mestre pode ter alterado esta config
   const savedStyle = saved?.tokenStyle;
   if (isMaster() && (savedStyle === "card" || savedStyle === "minimal")) {
     state.tokenStyle = savedStyle;
@@ -1423,7 +1430,7 @@ function applyMesaSceneSnapshot(saved) {
 
 function shouldSeedMesaTokens(savedTokenCount, hasExplicitSave) {
   if (!state.roster.length) return false;
-  if (hasExplicitSave) return false;  // cena já foi salva explicitamente — respeitar o estado
+  if (hasExplicitSave) return false;  // cena jÃ¡ foi salva explicitamente â€” respeitar o estado
   if (state.scenePersistence !== "remote") return true;
   if (!state.sceneRemoteExists) return true;
   return savedTokenCount > 0;
@@ -1639,7 +1646,12 @@ function createMesaScenePayloadFromState() {
       statsVisibleToPlayers: normalizeStatsVisibility(token.type, token.statsVisibleToPlayers),
       order: token.order || 1,
       tokenScale: roundTo(token.tokenScale || 1, 2)
-    }))
+    })),
+    initiative: (() => {
+      const s = typeof getInitiativeState === 'function' ? getInitiativeState() : null;
+      if (!s || !s.active) return { active: false, round: 1, currentIndex: -1, order: [] };
+      return { active: true, round: s.round, currentIndex: s.currentIndex, order: s.order };
+    })()
   };
 }
 
@@ -1690,3 +1702,4 @@ function renderHeader() {
     headerUser.textContent = state.session?.username || "Convidado";
   }
 }
+

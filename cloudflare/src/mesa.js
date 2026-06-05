@@ -69,11 +69,28 @@ function normalizeMesaScene(payload) {
     ? source.tokens.map(normalizeSceneToken).filter(Boolean).slice(0, MAX_TOKENS)
     : [];
 
+  const rawInit = source?.initiative;
+  const initiative = rawInit && rawInit.active ? {
+    active:       true,
+    round:        (Number.isFinite(rawInit.round) && rawInit.round > 0) ? Math.floor(rawInit.round) : 1,
+    currentIndex: Number.isFinite(rawInit.currentIndex) ? Math.floor(rawInit.currentIndex) : -1,
+    order: Array.isArray(rawInit.order) ? rawInit.order.slice(0, 50).map(e => ({
+      id:           String(e?.id || e?.characterKey || "").slice(0, 64),
+      characterKey: String(e?.characterKey || e?.id || "").slice(0, 64),
+      name:         String(e?.name || "?").slice(0, 64),
+      roll:         Number.isFinite(e?.roll) ? e.roll : 0,
+      modifier:     Number.isFinite(e?.modifier) ? e.modifier : 0,
+      total:        Number.isFinite(e?.total) ? e.total : 0,
+      rolled:       Boolean(e?.rolled)
+    })) : []
+  } : { active: false, round: 1, currentIndex: -1, order: [] };
+
   return {
     sceneVersion: normalizeSceneVersion(source?.sceneVersion),
     previewPlayerView: Boolean(source?.previewPlayerView),
     selectedTokenId: normalizeText(source?.selectedTokenId).toLowerCase(),
-    tokens
+    tokens,
+    initiative
   };
 }
 

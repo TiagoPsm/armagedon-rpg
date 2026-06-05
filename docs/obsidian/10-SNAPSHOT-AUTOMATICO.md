@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-05 17:22:57 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-05 17:50:00 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,21 +13,23 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `e1052fb 2026-06-01 fix(worker): preserva tokenScale ao normalizar e salvar cena da Mesa`
+- Ultimo commit: `d5712a3 2026-06-05 fix(mesa-map): corrige _deleteCFActiveMapFromIDB apagando chave errada`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
- M DEV_STATUS.md
+M  DEV_STATUS.md
+M  cloudflare/src/mesa.js
  M css/components.css
  M css/ficha.css
  M css/mesa-roster.css
- M css/mesa.css
+M  css/mesa.css
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
  M ficha.html
  M index.html
-M  js/mesa-map.js
+M  js/mesa-core.js
+A  js/mesa-initiative.js
 M  mesa.html
  M regras.html
 ```
@@ -36,11 +38,9 @@ M  mesa.html
 
 ```text
 .claude/settings.local.json
-DEV_STATUS.md
 css/components.css
 css/ficha.css
 css/mesa-roster.css
-css/mesa.css
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ficha.html
 index.html
@@ -50,7 +50,11 @@ regras.html
 ### Arquivos Em Stage
 
 ```text
-js/mesa-map.js
+DEV_STATUS.md
+cloudflare/src/mesa.js
+css/mesa.css
+js/mesa-core.js
+js/mesa-initiative.js
 mesa.html
 ```
 
@@ -64,7 +68,7 @@ mesa.html
 
 ## Contagem Rapida
 
-- JavaScript em `js/`: 32 arquivo(s)
+- JavaScript em `js/`: 33 arquivo(s)
 - CSS em `css/`: 12 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
@@ -143,8 +147,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
    18,23 MB  node_modules\@img\sharp-win32-x64\lib\libvips-42.dll
-   13,08 MB  assets\sheet-fire-background.mp4
    13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
+   13,08 MB  assets\sheet-fire-background.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     1,03 MB  node_modules\terser\dist\bundle.min.js
     0,99 MB  assets\logo-rpg-armagedon.png

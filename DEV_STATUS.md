@@ -57,6 +57,62 @@ Registro minimo esperado:
 - Tratar `C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign` como copia antiga/local, nao como fonte para commits
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
+
+## Ultima Etapa Concluida (2026-06-05 — Tracker de Iniciativa)
+
+### Funcionalidade implementada
+- Tracker de iniciativa na Mesa Virtual com sincronizacao em tempo real via WebSocket
+- Mestre ativa/encerra o combate com botao INIC. na toolbar
+- Jogadores recebem banner "Combate iniciado!" e abrem popup para rolar 1d20 + mod Agilidade (floor(Agilidade/3))
+- Resultado enviado ao mestre via mesa:initiative:roll; mestre ordena por total descrescente e faz broadcast
+- Mestre avanca turnos (Proximo), reinicia rodada, remove participante individual ou encerra o combate
+- Estado da iniciativa persiste na cena (localStorage + Cloudflare D1) e restaurado ao recarregar
+
+### Arquivos principais alterados
+- js/mesa-initiative.js (NOVO) — modulo completo de iniciativa
+- js/mesa-core.js — delta types adicionados, initiative no payload da cena, restauro no applyMesaSceneSnapshot, init no boot
+- cloudflare/src/mesa.js — normalizeMesaScene preserva initiative
+- mesa.html — botao toolbar, painel sidebar #vttInitiativeBlock, banner #initiativeBanner, popup #initiativeRollPopup, script tag
+- css/mesa.css — estilos do tracker, banner, popup
+
+### Validacoes
+- npm run check:js: OK (40 arquivos)
+- npm run audit:static: OK
+
+## Ultima Etapa Concluida (2026-06-05)
+
+- Responsividade da Mesa e da Ficha revisada:
+
+  **Mesa mobile (≤480px):**
+  - sidebar passou de scrollável horizontal para coluna vertical, ocupando o espaço restante abaixo do canvas
+  - meta chips (Modo/Papel/Fichas) ficam em linha horizontal no topo da sidebar
+  - toolbar reduzida a 44px sem o badge de papel e o contador; separadores ocultos
+  - canvas fixado em 44vh para garantir espaço ao roster abaixo
+  - tabs do roster em grade 2×2, sem overflow
+  - botões de ação do token (FOCAR/RETIRAR) com largura completa
+
+  **Mesa tablet (≤900px):**
+  - cabeçalho de bloco da sidebar aceita quebra de linha (`flex-wrap: wrap`)
+  - badge "X/N PARA COLOCAR" usa fonte e padding menores para não transbordar
+
+  **Mesa ≤700px:**
+  - sidebar horizontal com scroll snap (um bloco por vez, largura `min(280px, 80vw)`)
+  - meta chips mais compactos
+
+  **Ficha mobile (≤480px):**
+  - campos de identidade (Nome/Aspecto/Raça/Facção) empilham em coluna única via `form-row { flex-wrap: wrap }`
+  - `soul-core-panel` empilha verticalmente
+  - recursos empilham em coluna
+
+  **Ficha tablet (≤768px):**
+  - `soul-attribute-cap-grid` quebra para segunda linha no `soul-core-panel`
+
+  **Header global (≤480px):**
+  - logo menor (32×32), subtítulo oculto, badge de usuário truncado com ellipsis
+
+  - arquivos alterados: `css/mesa.css`, `css/mesa-roster.css`, `css/components.css`, `css/ficha.css`
+  - validações executadas: `npm run check:js` (39 arquivos OK), `npm run audit:static` (OK), QA visual por Playwright em 360px e 768px para mesa e ficha
+
 ## Ultima Etapa Concluida (2026-06-01)
 
 - Correcao de sincronizacao do roster e botao de configuracoes da Mesa sempre visivel:
