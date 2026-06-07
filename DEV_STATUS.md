@@ -58,6 +58,20 @@ Registro minimo esperado:
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
 
+## Ultima Etapa Concluida (2026-06-07 — Responsividade do painel "Meu personagem")
+
+### O que mudou
+- Corrigido layout quebrado/estourando a largura do painel "Meu personagem" em telas/sidebar estreitas: cartoes de Vida/Integridade e o botao "Abrir minha ficha completa" estavam sendo cortados na borda direita.
+- `css/mesa-roster.css`:
+  - `.player-resource-grid`/`.player-panel-meta-grid` passaram de `repeat(2, minmax(0,1fr))` (fixo) para `repeat(auto-fit, minmax(118px, 1fr))` — os cartoes agora se ajustam ao espaco real do container (a sidebar pode ser mais estreita que o viewport, entao basear-se so em media queries de viewport nao bastava).
+  - Reduzido padding/gap/font-size dos cartoes de recurso e dos inputs de Vida/Integridade (`.player-resource-card`, `.player-stat-inputs`, `.player-stat-inputs input`) — caixas menores, conforme pedido.
+  - `.player-open-sheet-btn` ganhou `white-space: normal`, `word-break: break-word` e `box-sizing: border-box` para o texto do botao quebrar em vez de ser cortado.
+  - Nova faixa `@media (max-width: 480px)`: avatar do token reduzido (80px → 56px), grids de recursos forcados a 1 coluna, fonte do botao/cards reduzida — telas pequenas ficam legiveis sem overflow horizontal.
+- mesa.html — cache-bust de `css/mesa-roster.css` para `?v=2026-06-07-responsive-fix-1`.
+
+### Validacoes
+- npm run audit:static: OK
+
 ## Ultima Etapa Concluida (2026-06-06 — Painel "Meu personagem" simplificado)
 
 ### O que mudou

@@ -406,8 +406,8 @@
 .player-resource-grid,
 .player-panel-meta-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 0.4rem;
 }
 
 .player-panel-meta-grid.is-compact {
@@ -418,7 +418,7 @@
 .player-summary-card,
 .player-list-card {
   min-width: 0;
-  padding: 0.65rem 0.75rem;
+  padding: 0.5rem 0.6rem;
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--bg-card);
@@ -426,7 +426,7 @@
 
 .player-resource-card {
   display: grid;
-  gap: 0.45rem;
+  gap: 0.35rem;
 }
 
 .player-resource-card.is-priority {
@@ -437,19 +437,19 @@
 .player-stat-inputs {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.45rem;
+  gap: 0.35rem;
   align-items: center;
 }
 
 .player-stat-inputs.has-editable-max {
-  grid-template-columns: minmax(0, 1fr) minmax(84px, 0.45fr);
+  grid-template-columns: minmax(0, 1fr) minmax(56px, 0.4fr);
   align-items: end;
 }
 
 .player-stat-inputs label {
   min-width: 0;
   display: grid;
-  gap: 0.25rem;
+  gap: 0.2rem;
 }
 
 .player-quick-actions {
@@ -464,8 +464,10 @@
 
 .player-stat-inputs input {
   width: 100%;
-  min-height: 38px;
-  padding: 0.5rem 0.65rem;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0.35rem 0.45rem;
+  font-size: var(--fs-sm);
   border: 1px solid var(--border-strong);
   border-radius: 2px;
   background: var(--bg-card);
@@ -539,8 +541,14 @@
   align-items: center;
   justify-content: center;
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  white-space: normal;
+  word-break: break-word;
   text-align: center;
   text-decoration: none;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
 }
 
 .player-panel-list {
@@ -685,6 +693,35 @@
   /* Tabs de filtro do roster: 2×2 em vez de 1 linha longa */
   .vtt-roster-tabs {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Painel "Meu personagem": avatar e cartoes menores para caber em telas estreitas */
+  .player-sheet-hero {
+    grid-template-columns: 56px minmax(0, 1fr);
+    padding: 0.6rem;
+    gap: 0.55rem;
+  }
+
+  .player-sheet-avatar {
+    width: 56px;
+  }
+
+  .player-sheet-copy h3 {
+    font-size: var(--fs-sm);
+  }
+
+  .player-resource-grid,
+  .player-panel-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .player-stat-inputs.has-editable-max {
+    grid-template-columns: minmax(0, 1fr) minmax(52px, 0.4fr);
+  }
+
+  .player-open-sheet-btn {
+    font-size: 0.62rem;
+    padding: 0.55rem 0.6rem;
   }
 
   /* Header do bloco do roster: compacto */

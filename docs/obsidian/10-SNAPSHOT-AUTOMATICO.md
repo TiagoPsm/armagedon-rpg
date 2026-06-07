@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-06 23:39:58 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-07 00:12:16 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `feae44b 2026-06-06 refactor(mesa): simplifica painel Meu personagem e corrige cache-busting desatualizado`
+- Ultimo commit: `852cd7c 2026-06-06 refactor(mesa): reduz painel do jogador a token, vida/integridade e link para ficha`
 
 ### Alteracoes Locais
 
@@ -21,8 +21,8 @@
  M .claude/settings.local.json
 M  DEV_STATUS.md
 M  css/mesa-roster.css
- M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-roster.js
+MM docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  mesa.html
 ?? tools/fix-mojibake.js
 ?? tools/fix-mojibake2.cjs
 ?? tools/fix-mojibake3.cjs
@@ -41,7 +41,8 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ```text
 DEV_STATUS.md
 css/mesa-roster.css
-js/mesa-roster.js
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+mesa.html
 ```
 
 ## Paginas Principais
