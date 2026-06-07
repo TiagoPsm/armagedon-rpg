@@ -534,15 +534,13 @@
   font-size: var(--fs-xs);
 }
 
-.player-panel-hint {
-  margin: 0;
-  padding: 0.6rem 0.75rem;
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-md);
-  color: var(--text-soft);
-  font-size: var(--fs-xs);
-  line-height: 1.5;
+.player-open-sheet-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
   text-align: center;
+  text-decoration: none;
 }
 
 .player-panel-list {

@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-06 23:32:35 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-06 23:39:58 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `346a0ec 2026-06-05 fix(mesa): reinsere botao INIC. e painel de iniciativa perdidos no fix de mojibake`
+- Ultimo commit: `feae44b 2026-06-06 refactor(mesa): simplifica painel Meu personagem e corrige cache-busting desatualizado`
 
 ### Alteracoes Locais
 
@@ -23,7 +23,6 @@ M  DEV_STATUS.md
 M  css/mesa-roster.css
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  js/mesa-roster.js
-M  mesa.html
 ?? tools/fix-mojibake.js
 ?? tools/fix-mojibake2.cjs
 ?? tools/fix-mojibake3.cjs
@@ -43,7 +42,6 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 DEV_STATUS.md
 css/mesa-roster.css
 js/mesa-roster.js
-mesa.html
 ```
 
 ## Paginas Principais

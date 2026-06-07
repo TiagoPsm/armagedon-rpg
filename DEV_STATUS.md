@@ -61,14 +61,14 @@ Registro minimo esperado:
 ## Ultima Etapa Concluida (2026-06-06 — Painel "Meu personagem" simplificado)
 
 ### O que mudou
-- O painel pessoal do jogador na Mesa Virtual ("Meu personagem", `renderPlayerSheetPanel` em `js/mesa-roster.js`) foi enxugado: deixou de exibir/editar Atributos completos (Forca, Agilidade, Inteligencia, Resistencia, Alma), "Dados rapidos" (Nome/Classe/Raca/Faccao/Anotacoes) e as listas detalhadas de Inventario e Memorias direto na mesa.
-- Mantido: avatar, nome, status em cena, seletor de personagem (quando ha mais de um), editores de Vida/Integridade (atual e maximo) e os cards-resumo com contagem de itens/memorias.
-- Adicionada uma dica fixa orientando o jogador a usar a Ficha de Personagem para editar atributos, inventario, memorias e dados da ficha.
-- Motivo: excesso de informacao/edicao duplicada na mesa — o jogador ja tem a Ficha de Personagem para isso; a visao na mesa deve ser rapida e focada no que importa durante a sessao (status, vida/integridade).
+- O painel pessoal do jogador na Mesa Virtual ("Meu personagem", `renderPlayerSheetPanel` em `js/mesa-roster.js`) foi reduzido ao essencial para uso durante a sessao: imagem/avatar do token, nome, status em cena, seletor de personagem (quando ha mais de um) e os editores de Vida e Integridade (atual e maximo).
+- Removido completamente da mesa: Atributos (Forca, Agilidade, Inteligencia, Resistencia, Alma), "Dados rapidos" (Nome/Classe/Raca/Faccao/Anotacoes), listas/edicao detalhada de Inventario e Memorias e os cards-resumo de contagem — tudo isso agora vive somente na Ficha de Personagem.
+- Adicionado botao "Abrir minha ficha completa" (`a.player-open-sheet-btn`, link para `ficha.html`) ao final do painel, para o jogador navegar direto para a ficha quando precisar editar o restante.
+- Motivo: o jogador reportou excesso de informacao/edicao duplicada bagunçando o painel da mesa — a visao ali deve ser rapida e focada no que muda durante o combate (status, vida/integridade), com tudo o mais delegado a ficha completa.
 
 ### Arquivos alterados
-- js/mesa-roster.js — removidas as funcoes `renderPlayerIdentityEditor`, `renderPlayerTextField`, `renderPlayerAttributeEditor`, `renderPlayerInventoryList`, `renderPlayerInventoryItem`, `renderPlayerMemoryList`, `formatMesaItemType` (ficaram sem uso) e as chamadas correspondentes em `renderPlayerSheetPanel`
-- css/mesa-roster.css — adicionado `.player-panel-hint`
+- js/mesa-roster.js — `renderPlayerSheetPanel` enxugado; removidas as funcoes que ficaram sem uso (`renderPlayerIdentityEditor`, `renderPlayerTextField`, `renderPlayerAttributeEditor`, `renderPlayerInventoryList`, `renderPlayerInventoryItem`, `renderPlayerMemoryList`, `formatMesaItemType`)
+- css/mesa-roster.css — adicionado `.player-open-sheet-btn` (botao de link para a ficha, full width)
 - mesa.html — cache-bust atualizado: `css/mesa-roster.css`, `js/mesa-roster.js` e `js/mesa-inspector.js` para `?v=2026-06-06-simplify-player-panel-1` (as strings anteriores estavam desatualizadas em relacao ao ultimo commit que tocou esses arquivos, o que fazia alteracoes recentes parecerem "sem efeito" por cache do navegador)
 
 ### Validacoes

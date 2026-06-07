@@ -189,9 +189,6 @@ function renderPlayerSheetPanel(rosterList, rosterCountBadge) {
   const maxLife = Math.max(1, asPositiveInt(sheet.vidaMax, source?.maxLife || 1));
   const currentIntegrity = clamp(asPositiveInt(sheet.integAtual, source?.currentIntegrity || 0), 0, asPositiveInt(sheet.integMax, source?.maxIntegrity || 0));
   const maxIntegrity = Math.max(0, asPositiveInt(sheet.integMax, source?.maxIntegrity || 0));
-  const inventory = Array.isArray(sheet.inv) ? sheet.inv.map(normalizeMesaItem) : [];
-  const memories = Array.isArray(sheet.ownedMemories) ? sheet.ownedMemories.filter(memory => String(memory.name || memory.desc || "").trim()) : [];
-  const inventorySlots = Math.max(MESA_DEFAULT_INVENTORY_SLOTS, asPositiveInt(sheet.inventorySlots, MESA_DEFAULT_INVENTORY_SLOTS), inventory.length);
   const selectedKey = context.characterKey || normalizeMesaCharacterKey(state.session?.username);
 
   rosterCountBadge.textContent = context.isOnStage ? "Em cena" : "Fora da cena";
@@ -222,20 +219,7 @@ function renderPlayerSheetPanel(rosterList, rosterCountBadge) {
         })}
       </div>
 
-      <div class="player-panel-meta-grid">
-        <article class="player-summary-card">
-          <span class="panel-kicker">Inventario</span>
-          <strong>${inventory.length}/${inventorySlots}</strong>
-          <small>Slots ocupados</small>
-        </article>
-        <article class="player-summary-card">
-          <span class="panel-kicker">Memorias</span>
-          <strong>${memories.length}</strong>
-          <small>Registradas na ficha</small>
-        </article>
-      </div>
-
-      <p class="player-panel-hint">Para editar atributos, inventario, memorias e dados da ficha, use sua Ficha de Personagem.</p>
+      <a href="ficha.html" class="btn btn-primary btn-block player-open-sheet-btn">Abrir minha ficha completa</a>
     </section>
   `;
 }
