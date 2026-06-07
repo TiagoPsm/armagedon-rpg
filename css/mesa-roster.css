@@ -534,6 +534,17 @@
   font-size: var(--fs-xs);
 }
 
+.player-panel-hint {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-soft);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  text-align: center;
+}
+
 .player-panel-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));

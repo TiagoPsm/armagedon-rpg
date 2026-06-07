@@ -58,6 +58,23 @@ Registro minimo esperado:
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
 
+## Ultima Etapa Concluida (2026-06-06 — Painel "Meu personagem" simplificado)
+
+### O que mudou
+- O painel pessoal do jogador na Mesa Virtual ("Meu personagem", `renderPlayerSheetPanel` em `js/mesa-roster.js`) foi enxugado: deixou de exibir/editar Atributos completos (Forca, Agilidade, Inteligencia, Resistencia, Alma), "Dados rapidos" (Nome/Classe/Raca/Faccao/Anotacoes) e as listas detalhadas de Inventario e Memorias direto na mesa.
+- Mantido: avatar, nome, status em cena, seletor de personagem (quando ha mais de um), editores de Vida/Integridade (atual e maximo) e os cards-resumo com contagem de itens/memorias.
+- Adicionada uma dica fixa orientando o jogador a usar a Ficha de Personagem para editar atributos, inventario, memorias e dados da ficha.
+- Motivo: excesso de informacao/edicao duplicada na mesa — o jogador ja tem a Ficha de Personagem para isso; a visao na mesa deve ser rapida e focada no que importa durante a sessao (status, vida/integridade).
+
+### Arquivos alterados
+- js/mesa-roster.js — removidas as funcoes `renderPlayerIdentityEditor`, `renderPlayerTextField`, `renderPlayerAttributeEditor`, `renderPlayerInventoryList`, `renderPlayerInventoryItem`, `renderPlayerMemoryList`, `formatMesaItemType` (ficaram sem uso) e as chamadas correspondentes em `renderPlayerSheetPanel`
+- css/mesa-roster.css — adicionado `.player-panel-hint`
+- mesa.html — cache-bust atualizado: `css/mesa-roster.css`, `js/mesa-roster.js` e `js/mesa-inspector.js` para `?v=2026-06-06-simplify-player-panel-1` (as strings anteriores estavam desatualizadas em relacao ao ultimo commit que tocou esses arquivos, o que fazia alteracoes recentes parecerem "sem efeito" por cache do navegador)
+
+### Validacoes
+- npm run check:js: OK (40 arquivos)
+- npm run audit:static: OK
+
 ## Ultima Etapa Concluida (2026-06-05 — Tracker de Iniciativa)
 
 ### Funcionalidade implementada
