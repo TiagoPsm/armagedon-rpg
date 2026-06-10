@@ -94,7 +94,7 @@ function assertCharacterAccess(user, character, mode = "read") {
 
 function assertSoulProgressionAccess(user, character) {
   if (!user || !character) {
-    throw jsonError("SessÃ£o invÃ¡lida.", 401);
+    throw jsonError("Sessão inválida.", 401);
   }
 
   if (user.role === "master") {
@@ -105,7 +105,7 @@ function assertSoulProgressionAccess(user, character) {
     return true;
   }
 
-  throw jsonError("VocÃª nÃ£o pode alterar o nÃºcleo desta ficha.", 403);
+  throw jsonError("Você não pode alterar o núcleo desta ficha.", 403);
 }
 
 async function getCharacterByKey(env, key) {
@@ -216,7 +216,7 @@ async function saveCharacterBundle(env, character, payload, actor) {
 async function awardSoulExperienceToCharacter(env, actor, targetKey, payload = {}) {
   const target = await getCharacterByKey(env, targetKey);
   if (!target) {
-    throw jsonError("Ficha nÃ£o encontrada.", 404);
+    throw jsonError("Ficha não encontrada.", 404);
   }
 
   assertSoulProgressionAccess(actor, target);
@@ -243,7 +243,7 @@ async function awardSoulExperienceToCharacter(env, actor, targetKey, payload = {
 async function completeSoulNightmareForCharacter(env, actor, targetKey) {
   const target = await getCharacterByKey(env, targetKey);
   if (!target) {
-    throw jsonError("Ficha nÃ£o encontrada.", 404);
+    throw jsonError("Ficha não encontrada.", 404);
   }
 
   assertSoulProgressionAccess(actor, target);
@@ -252,7 +252,7 @@ async function completeSoulNightmareForCharacter(env, actor, targetKey) {
   const result = completeSoulNightmare(targetData, target.kind);
 
   if (!result.completed) {
-    throw jsonError(result.summary?.reason || "O nÃºcleo ainda nÃ£o estÃ¡ pronto para concluir o pesadelo.", 409);
+    throw jsonError(result.summary?.reason || "O núcleo ainda não está pronto para concluir o pesadelo.", 409);
   }
 
   const saved = await persistCharacterData(env, target, normalizeSheetData(result.data, target.kind, target.name));

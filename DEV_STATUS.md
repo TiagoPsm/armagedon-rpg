@@ -58,6 +58,31 @@ Registro minimo esperado:
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
 
+## Ultima Etapa Concluida (2026-06-10 — Etapa 1 da auditoria: seguranca do Worker)
+
+### Contexto
+Auditoria completa do projeto identificou achados de seguranca/logica/UI. Plano de correcao em etapas acordado com o Tiago; esta e a Etapa 1 (Worker). Senha do mestre foi rotacionada manualmente no Cloudflare (Etapa 0) antes desta etapa.
+
+### O que mudou
+- `cloudflare/src/mesa-realtime.js`: sinais de mapa que distribuem/limpam conteudo (`mesa:map:announce/set/clear/offer/ws:*`) agora exigem `role === "master"` no Durable Object; jogador que tentar recebe `mesa:map:relay:ack` com `ok: false`. Sinais jogador -> mestre (`have/need/answer/ice`) continuam liberados. Antes, qualquer jogador autenticado conseguia trocar ou limpar o mapa de todos.
+- `cloudflare/src/characters.js`: corrigido mojibake em 5 mensagens de erro visiveis ao usuario ("Sessao invalida", "Voce nao pode alterar o nucleo desta ficha", "Ficha nao encontrada" x2, "O nucleo ainda nao esta pronto para concluir o pesadelo").
+- `cloudflare/src/index.js`: resposta 500 nao vaza mais `error.message` interno; o erro completo vai para `console.error` (visivel em `wrangler tail`) e o cliente recebe mensagem generica.
+- `SYSTEM_RULES.md`: regras atualizadas conforme alinhamento — nucleo da alma gerenciado pelo dono da ficha (mestre em todas), sinais de mapa master-only, e registradas como planejadas: notificacao de XP ao mestre, jogador mover o proprio token com trava do mestre, aceite de transferencia pelo destino. Corrigido caminho da pasta oficial (faltava OneDrive).
+
+### Validacoes
+- npm run check:js: OK
+- npx wrangler deploy --dry-run --config cloudflare/wrangler.toml: OK
+- Deploy em producao: pendente de aprovacao do Tiago
+
+### Proximas etapas do plano
+2. Frontend sessao confiavel (flag dev no lugar do login local hardcoded, health-check 5s sem clearSession, unificacao de cache-busting)
+3. Endurecimento do Worker (ensureMasterUser fora do hot path, limite de avatar, auth no GET de mapa, CORS allowlist)
+4. PBKDF2 + rate-limit de login
+5. Limpeza (codigo morto, grafia oficial "Armagedom", CLAUDE.md, checagem de cache-busting no audit:static)
+6. Notificacao de ganho de XP ao mestre
+7. Jogador move o proprio token (com trava do mestre)
+8. Aceite de transferencia pelo destino
+
 ## Ultima Etapa Concluida (2026-06-07 — Responsividade do painel "Meu personagem")
 
 ### O que mudou

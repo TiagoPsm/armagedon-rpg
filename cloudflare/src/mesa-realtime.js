@@ -45,6 +45,18 @@ const MAP_SIGNAL_TYPES = new Set([
   "mesa:map:clear",      // mestre → todos (sem "to")
 ]);
 
+// Sinais de mapa que só o mestre pode emitir. Os demais (have/need/answer/ice)
+// fazem parte do fluxo jogador → mestre e continuam liberados.
+const MASTER_ONLY_MAP_SIGNAL_TYPES = new Set([
+  "mesa:map:announce",
+  "mesa:map:offer",
+  "mesa:map:ws:start",
+  "mesa:map:ws:chunk",
+  "mesa:map:ws:end",
+  "mesa:map:set",
+  "mesa:map:clear",
+]);
+
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
     ...init,
@@ -375,6 +387,18 @@ class MesaRealtimeRoom extends DurableObject {
     const attachment = readAttachment(ws) || {};
     const senderUsername = String(attachment.username || "usuario").trim() || "usuario";
     const targetUsername  = String(payload?.to || "").trim();
+    const signalType = String(payload?.type || "");
+
+    if (MASTER_ONLY_MAP_SIGNAL_TYPES.has(signalType) && attachment.role !== "master") {
+      sendJson(ws, {
+        type:   "mesa:map:relay:ack",
+        for:    signalType,
+        ok:     false,
+        reason: "Apenas o mestre pode enviar este sinal de mapa.",
+        sentAt: new Date().toISOString(),
+      });
+      return;
+    }
 
     const enriched = {
       ...payload,

@@ -11,7 +11,7 @@ Sempre que uma mudanca alterar ou esclarecer regra de gameplay, permissao, persi
 Mudancas de regra, persistencia ou permissao devem ser feitas no checkout Git oficial:
 
 ```text
-C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
+C:\Users\tiago\OneDrive\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 ```
 
 Nao use a pasta antiga `rpg-campaign` para alterar regras ou publicar commits.
@@ -41,7 +41,8 @@ Permissoes importantes:
 - apenas o mestre cria NPCs
 - apenas o mestre cria monstros
 - apenas o mestre publica, edita e exclui regras
-- apenas o mestre adiciona Essencia da Alma ao nucleo dos jogadores
+- o jogador gerencia o nucleo da alma apenas da propria ficha (aplicar Essencia e concluir pesadelo); o mestre gerencia o nucleo de todas as fichas
+- todo ganho de Essencia aplicado por jogador deve gerar auditoria e aviso em tempo real ao mestre (planejado, ainda nao implementado)
 
 ## Fichas
 
@@ -127,6 +128,7 @@ Regras importantes:
 - destino nao pode receber item se a mochila estiver cheia
 - operacoes multi-etapa devem evitar estado parcial sempre que o backend permitir transacao/batch
 - no Worker, transferencias jogador-para-jogador devem gravar origem, destino e auditoria no mesmo `DB.batch`
+- transferencia jogador -> jogador passara a exigir aceite do destino; o item so sai da origem no momento do aceite, com revalidacao; envios do mestre entram direto (planejado, ainda nao implementado)
 
 ## Sessao e Modo Offline
 
@@ -140,7 +142,9 @@ Regras importantes:
 - `localStorage` da Mesa e apenas fallback/cache local, nao fonte principal da cena publicada
 - Jogadores podem ler a cena oficial liberada pelo mestre
 - Apenas o mestre pode salvar posicao, ordem, visibilidade e exposicao de status dos tokens da cena
-- Realtime/WebSocket e etapa posterior; ate la, jogadores podem precisar recarregar a pagina para ver a cena atualizada
+- Realtime/WebSocket ja existe via Durable Object (`MesaRealtimeRoom`); alteracoes de cena em tempo real (`mesa:token:*`, `mesa:scene:clear`) sao exclusivas do mestre
+- Sinais de mapa que distribuem ou limpam conteudo (`mesa:map:announce`, `mesa:map:set`, `mesa:map:clear`, `mesa:map:offer`, `mesa:map:ws:*`) sao exclusivos do mestre; sinais jogador -> mestre (`have`, `need`, `answer`, `ice`) continuam liberados
+- Jogador podera mover o proprio token, com trava global controlada pelo mestre (planejado, ainda nao implementado)
 
 ## Rolagem de Dados
 

@@ -91,8 +91,10 @@ O campo `data_json` em `mesa_scenes` guarda a cena visual da Mesa: tokens ativos
 
 - Producao deve salvar no D1, nao depender de `localStorage`
 - Jogador so pode editar a propria ficha
-- Mestre controla jogadores, NPCs, monstros, regras e concessao de Essencia da Alma
+- Mestre controla jogadores, NPCs, monstros e regras; o nucleo da alma (Essencia/pesadelo) pode ser gerenciado pelo dono da ficha na propria ficha e pelo mestre em todas
 - Jogadores podem ler a cena da Mesa, mas apenas o mestre pode salvar posicao, ordem e visibilidade dos tokens
+- No Durable Object `MesaRealtimeRoom`, sinais de mapa que distribuem/limpam conteudo (`mesa:map:announce/set/clear/offer/ws:*`) exigem role master; sinais jogador -> mestre (`have/need/answer/ice`) sao liberados
+- Respostas 500 nao devem expor `error.message` interno ao cliente; detalhes vao para `console.error` (acessivel via `wrangler tail`)
 - Vida atual nao pode passar da Vida maxima
 - Integridade maxima de jogador/NPC e editavel; o Worker preserva `integMax` enviado pelo cliente e apenas clampa Integridade atual pelo maximo salvo
 - Integridade atual nao pode passar da Integridade maxima

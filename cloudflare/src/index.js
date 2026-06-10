@@ -804,7 +804,8 @@ export default {
         return withCors(error, origin);
       }
 
-      return errorJson(error?.message || "Erro interno no Worker.", 500, origin);
+      console.error("Erro interno no Worker.", error);
+      return errorJson("Erro interno no Worker.", 500, origin);
     }
   }
 };
