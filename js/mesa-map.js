@@ -1016,8 +1016,16 @@ async function sendMapViaWS(userId, entry) {
 function bindPlayerMapListeners() {
   if (!window.APP?.on) return;
 
+  // Defesa em profundidade: o Durable Object já bloqueia sinais de
+  // distribuição de mapa vindos de não-mestre, mas o cliente também
+  // descarta mensagens cujo fromRole (carimbado pelo DO) não é master.
+  // Mensagens sem fromRole (worker antigo) são toleradas.
+  const isFromMaster = msg => !msg || msg.fromRole === undefined || msg.fromRole === "master";
+
   // 1. Mestre anuncia novo mapa — verificar cache primeiro
-  window.APP.on(EV_MAP_ANNOUNCE, async ({ mapId, hash, name, size, from }) => {
+  window.APP.on(EV_MAP_ANNOUNCE, async (msg) => {
+    if (!isFromMaster(msg)) return;
+    const { mapId, hash, name, size, from } = msg;
     const cached = await findCachedMapByHash(hash);
     if (cached) {
       console.info(`[mesa-map] Cache hit: ${name} (hash ${hash.slice(0, 8)})`);
@@ -1044,7 +1052,9 @@ function bindPlayerMapListeners() {
   });
 
   // 4. Início de transfer WS
-  window.APP.on(EV_MAP_WS_START, ({ to, hash, name, size, chunks }) => {
+  window.APP.on(EV_MAP_WS_START, (msg) => {
+    if (!isFromMaster(msg)) return;
+    const { to, hash, name, size, chunks } = msg;
     if (to && to !== mesaMapState.myUserId) return;
     mesaWsBuffer.chunks   = new Array(chunks);
     mesaWsBuffer.received = 0;
@@ -1070,13 +1080,16 @@ function bindPlayerMapListeners() {
   });
 
   // 7. Compatibilidade Fase 3 (R2 URL direta)
-  window.APP.on(EV_MAP_SET, ({ url, mapId }) => {
+  window.APP.on(EV_MAP_SET, (msg) => {
+    if (!isFromMaster(msg)) return;
+    const { url, mapId } = msg;
     if (!url) return;
     renderMesaMapLayer(url, mapId || "Mapa");
   });
 
   // 8. Mestre limpou o mapa
-  window.APP.on(EV_MAP_CLEAR, () => {
+  window.APP.on(EV_MAP_CLEAR, (msg) => {
+    if (!isFromMaster(msg)) return;
     renderMesaMapLayer("", "");
   });
 }

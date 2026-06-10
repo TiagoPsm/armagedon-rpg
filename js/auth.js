@@ -1,12 +1,26 @@
 const AUTH = {
-  MASTER_USER: "mestre",
-  MASTER_PASS: "Mestre123",
   SESSION_KEY: "tc_session",
   PLAYERS_KEY: "tc_players",
   DIRECTORY_KEY: "tc_directory_cache",
   TOKEN_KEY: "tc_session_token",
+  DEV_MODE_KEY: "armagedonDevMode",
   _initPromise: null,
   _backendReady: false,
+  _backendDown: false,
+
+  // Modo local (sem API) só existe para desenvolvimento, atrás de flag
+  // explícita. Em produção, sem API = bloqueio, nunca login local.
+  isDevModeEnabled() {
+    try {
+      return localStorage.getItem(this.DEV_MODE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  },
+
+  isBackendDown() {
+    return this._backendDown;
+  },
 
   async init() {
     if (this._initPromise) return this._initPromise;
@@ -17,8 +31,11 @@ const AUTH = {
       const storedToken = String(localStorage.getItem(this.TOKEN_KEY) || "").trim();
 
       if (!this._backendReady && session?.backend) {
-        this.clearSession();
-        return null;
+        // API fora do ar com sessão backend ativa: NUNCA derrubar para o
+        // modo local nem apagar a sessão — o token continua válido e o
+        // usuário volta a entrar quando o servidor responder.
+        this._backendDown = true;
+        return session;
       }
 
       if (this._backendReady && !session?.token && storedToken) {
@@ -177,6 +194,13 @@ const AUTH = {
   requireAuth() {
     const session = this.getSession();
     if (!session) {
+      window.location.href = "index.html";
+      return null;
+    }
+
+    // Sessão backend com API fora do ar: bloquear a página em vez de
+    // operar silenciosamente em modo local (a sessão fica preservada).
+    if (session.backend && this._backendDown) {
       window.location.href = "index.html";
       return null;
     }
@@ -366,40 +390,18 @@ async function handleLogin() {
     }
   }
 
+  if (!AUTH.isDevModeEnabled()) {
+    errorEl.textContent =
+      "Servidor da campanha indispon\u00edvel no momento. Recarregue a p\u00e1gina e tente novamente.";
+    return;
+  }
+
+  // Modo dev local (flag armagedonDevMode): qualquer credencial entra,
+  // dados ficam apenas neste navegador. "mestre" recebe papel de master.
   const userLower = userRaw.toLowerCase();
-
-  if (userLower === AUTH.MASTER_USER && pass === AUTH.MASTER_PASS) {
-    AUTH.setSession(userRaw, "master");
-    await onLoginSuccess(userRaw, "master");
-    return;
-  }
-
-  const players = AUTH.getPlayers();
-  const player = players.find(
-    candidate => candidate.username.toLowerCase() === userLower && candidate.password === pass
-  );
-
-  if (player) {
-    AUTH.setSession(player.username, "player");
-    await onLoginSuccess(player.username, "player");
-    return;
-  }
-
-  const userExists =
-    userLower === AUTH.MASTER_USER ||
-    players.some(candidate => candidate.username.toLowerCase() === userLower);
-
-  if (userExists) {
-    errorEl.textContent = "Senha incorreta.";
-    passInput.classList.add("error");
-    passInput.value = "";
-    passInput.focus();
-    return;
-  }
-
-  errorEl.textContent = "Usu\u00e1rio n\u00e3o encontrado.";
-  userInput.classList.add("error");
-  userInput.focus();
+  const devRole = userLower === "mestre" ? "master" : "player";
+  AUTH.setSession(userRaw, devRole);
+  await onLoginSuccess(userRaw, devRole);
 }
 
 async function onLoginSuccess(username, role = "player") {
@@ -545,7 +547,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const session = await AUTH.init();
 
-  if (session && document.getElementById("homeScreen")) {
+  if (session?.backend && AUTH.isBackendDown()) {
+    // Sessão preservada, mas API fora do ar: mostra o login bloqueado
+    // com aviso em vez de abrir a home em modo local.
+    showLoginScreen();
+    const errorEl = document.getElementById("loginError");
+    if (errorEl) {
+      errorEl.textContent =
+        "Servidor da campanha indisponível no momento. Sua sessão foi preservada — recarregue a página para tentar novamente.";
+    }
+  } else if (session && document.getElementById("homeScreen")) {
     await onLoginSuccess(session.username, session.role);
   } else if (document.getElementById("loginScreen")) {
     showLoginScreen();

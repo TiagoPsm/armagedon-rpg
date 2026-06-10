@@ -76,7 +76,7 @@ async function addPlayer() {
     return;
   }
 
-  if (username.toLowerCase() === AUTH.MASTER_USER) {
+  if (username.toLowerCase() === "mestre") {
     errEl.textContent = "Nome reservado.";
     return;
   }

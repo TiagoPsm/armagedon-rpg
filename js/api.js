@@ -1,7 +1,10 @@
 (function () {
   const DEFAULT_BASE_URL =
     window.ARMAGEDON_CONFIG?.apiBaseUrl || localStorage.getItem("tc_api_base_url") || "http://localhost:4000/api";
-  const HEALTH_TIMEOUT_MS = 600;
+  // Tempo generoso: cold start do Worker no Cloudflare pode passar de 1s.
+  // Um timeout curto aqui derrubava a sessão para o modo local indevidamente.
+  const HEALTH_TIMEOUT_MS = 5000;
+  const HEALTH_ATTEMPTS = 2;
   const REALTIME_RECONNECT_DELAY_MS = 1800;
   const REALTIME_ENABLED = window.ARMAGEDON_CONFIG?.realtimeEnabled === true;
   const eventBus = new EventTarget();
@@ -199,23 +202,31 @@
     if (state.initPromise) return state.initPromise;
 
     state.initPromise = (async () => {
-      try {
-        const response = await fetchWithTimeout(buildUrl("/health"), {
-          headers: {
-            Accept: "application/json"
-          }
-        });
-        state.backendAvailable = response.ok;
-        if (state.backendAvailable && state.token && state.socketIntent) {
-          await ensureSocket();
+      state.backendAvailable = false;
+
+      for (let attempt = 1; attempt <= HEALTH_ATTEMPTS; attempt += 1) {
+        try {
+          const response = await fetchWithTimeout(buildUrl("/health"), {
+            headers: {
+              Accept: "application/json"
+            }
+          });
+          state.backendAvailable = response.ok;
+          if (state.backendAvailable) break;
+        } catch {
+          state.backendAvailable = false;
         }
-      } catch {
-        state.backendAvailable = false;
-        disconnectSocket();
-      } finally {
-        state.initialized = true;
       }
 
+      if (state.backendAvailable) {
+        if (state.token && state.socketIntent) {
+          await ensureSocket();
+        }
+      } else {
+        disconnectSocket();
+      }
+
+      state.initialized = true;
       return state.backendAvailable;
     })();
 

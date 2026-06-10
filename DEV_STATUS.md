@@ -58,6 +58,22 @@ Registro minimo esperado:
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
 
+## Ultima Etapa Concluida (2026-06-10 — Etapa 2 da auditoria: sessao confiavel no frontend)
+
+### O que mudou
+- `js/auth.js`: removidas as credenciais hardcoded do mestre (`MASTER_USER`/`MASTER_PASS`) e todo o login local de producao. O modo local agora so ativa com a flag de dev `localStorage.armagedonDevMode = "1"` (qualquer credencial entra; usuario `mestre` vira master; dados so no navegador). Sem a flag e sem API, o login mostra "Servidor da campanha indisponivel".
+- `js/auth.js`: falha de health-check com sessao backend NAO apaga mais a sessao (`clearSession` removido desse fluxo). A pagina e bloqueada com aviso e a sessao/token fica preservada; novo estado `AUTH.isBackendDown()`. `requireAuth()` redireciona para o index quando a API esta fora, em vez de deixar a pagina operar em modo local.
+- `js/api.js`: `HEALTH_TIMEOUT_MS` de 600ms para 5000ms, com 2 tentativas — cold start do Worker nao derruba mais a sessao para o modo local (bug que impediu login de jogadores em navegador anonimo em 2026-06-10).
+- `js/mesa-map.js`: listeners de jogador descartam `mesa:map:announce/ws:start/set/clear` cujo `fromRole` (carimbado pelo Durable Object) nao seja master — defesa em profundidade da Etapa 1; mensagens sem `fromRole` (worker antigo) sao toleradas.
+- `cloudflare/src/mesa-realtime.js`: sinais de mapa retransmitidos agora carregam `fromRole` do remetente autenticado.
+- `js/ficha-master.js`: validacao de nome reservado "mestre" deixou de depender da constante removida.
+- Cache-busting unificado: `api.js`, `auth.js` e `ui.js` agora usam `?v=2026-06-10-session-1` identico nas 5 paginas (antes `api.js` tinha 4 versoes diferentes entre paginas); `mesa-map.js` e `ficha-master.js` tambem atualizados.
+
+### Validacoes
+- npm run check:js: OK / npm run audit:static: OK
+- Teste manual via preview (API simulada fora do ar): sessao backend e PRESERVADA, pagina bloqueia com aviso, ficha/mesa redirecionam para o index; login sem flag de dev mostra "Servidor indisponivel"; com a flag entra em modo Navegador
+- npm run test:ficha / test:mesa: 24/28 e 3/5 passam. As 6 falhas sao PRE-EXISTENTES (confirmado rodando os mesmos specs no HEAD limpo via git stash): os testes esperam layout/campos antigos do painel do jogador (ex.: attrForca, data-player-item-field) removidos pelas simplificacoes de 2026-06-06/07. Pendencia aberta: atualizar os specs para a UI atual.
+
 ## Ultima Etapa Concluida (2026-06-10 — Etapa 1 da auditoria: seguranca do Worker)
 
 ### Contexto

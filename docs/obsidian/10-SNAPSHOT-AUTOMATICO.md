@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-10 13:50:23 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-10 14:10:53 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `87c5cc6 2026-06-07 fix(mesa): corrige overflow e responsividade do painel Meu personagem`
+- Ultimo commit: `6964333 2026-06-10 fix(worker): sinais de mapa master-only no DO, mojibake em erros e 500 sem vazamento`
 
 ### Alteracoes Locais
 
@@ -21,11 +21,17 @@
  M .claude/settings.local.json
 M  DEV_STATUS.md
 M  SYSTEM_RULES.md
-M  cloudflare/README.md
-M  cloudflare/src/characters.js
-M  cloudflare/src/index.js
 M  cloudflare/src/mesa-realtime.js
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  ficha.html
+M  index.html
+M  js/api.js
+M  js/auth.js
+M  js/ficha-master.js
+M  js/mesa-map.js
+M  mesa.html
+M  regras.html
+M  sugestoes.html
 ?? tools/fix-mojibake.js
 ?? tools/fix-mojibake2.cjs
 ?? tools/fix-mojibake3.cjs
@@ -44,10 +50,16 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ```text
 DEV_STATUS.md
 SYSTEM_RULES.md
-cloudflare/README.md
-cloudflare/src/characters.js
-cloudflare/src/index.js
 cloudflare/src/mesa-realtime.js
+ficha.html
+index.html
+js/api.js
+js/auth.js
+js/ficha-master.js
+js/mesa-map.js
+mesa.html
+regras.html
+sugestoes.html
 ```
 
 ## Paginas Principais
@@ -139,8 +151,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
    18,23 MB  node_modules\@img\sharp-win32-x64\lib\libvips-42.dll
-   13,08 MB  assets\sheet-fire-background.mp4
    13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
+   13,08 MB  assets\sheet-fire-background.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     1,03 MB  node_modules\terser\dist\bundle.min.js
     0,99 MB  assets\logo-rpg-armagedon.png

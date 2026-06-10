@@ -133,8 +133,10 @@ Regras importantes:
 ## Sessao e Modo Offline
 
 - Sessao criada pelo servidor nao pode cair silenciosamente para salvamento local
-- Se a API publicada estiver indisponivel durante uma sessao backend, o fluxo deve bloquear/limpar a sessao em vez de salvar divergencia no navegador
-- Fallback local existe para desenvolvimento e apoio, nao como modo automatico de producao logada
+- Se a API publicada estiver indisponivel durante uma sessao backend, o fluxo bloqueia a pagina e PRESERVA a sessao (token continua no navegador); o usuario ve aviso de servidor indisponivel e volta a entrar quando a API responder
+- O health-check da API usa timeout de 5s com 2 tentativas (cold start do Worker nao pode derrubar a sessao)
+- O modo local (sem API) so ativa com a flag explicita `localStorage.armagedonDevMode = "1"`, exclusiva para desenvolvimento; nesse modo qualquer credencial entra e o usuario `mestre` recebe papel master, com dados somente no navegador
+- Nao existem mais credenciais de login embutidas no codigo do site
 
 ## Mesa Digital
 

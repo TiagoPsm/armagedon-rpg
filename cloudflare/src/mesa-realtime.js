@@ -402,8 +402,9 @@ class MesaRealtimeRoom extends DurableObject {
 
     const enriched = {
       ...payload,
-      from:    senderUsername,
-      sentAt:  payload?.sentAt || new Date().toISOString(),
+      from:     senderUsername,
+      fromRole: String(attachment.role || "player").trim() || "player",
+      sentAt:   payload?.sentAt || new Date().toISOString(),
     };
 
     if (targetUsername) {
