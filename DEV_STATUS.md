@@ -58,6 +58,26 @@ Registro minimo esperado:
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
 
+## Ultima Etapa Concluida (2026-06-11 — Etapa 5 da auditoria: limpeza e consistencia)
+
+### O que mudou
+- Removidos arquivos JS mortos (nao referenciados por nenhum HTML): `js/main.js` (vazio), `js/ficha.js`, `js/home.js`, `js/mesa.js`. Tambem deletados os scripts one-off `tools/fix-mojibake*.{js,cjs}` (nunca versionados).
+- `js/regras.js`: removidas ~54 linhas de codigo morto em `renderRules` (bloco inalcancavel apos `return`).
+- `js/mesa-core.js`: corrigido mojibake em 17 linhas de comentarios (acentos quebrados por dupla codificacao). Zero mojibake restante em `js/`.
+- `tools/audit-static.cjs`: nova checagem — `api.js`, `auth.js` e `ui.js` devem usar o MESMO `?v=` em todas as paginas; divergencia agora falha o audit (impede regressao do bug M2 da auditoria).
+- `CLAUDE.md`: grafia oficial "Armagedom" registrada; mapeamento de paginas corrigido (inclui `sugestoes.html`, `mesa-initiative.js`, `mesa-init.js`, `ficha-habs.js`, `ficha-passives.js`); nome correto dos secrets (`MASTER_BOOTSTRAP_PASSWORD`, nao `ARMAGEDON_MASTER_PASSWORD`); auth atualizado para PBKDF2/throttle.
+- Cache-bust: `mesa-core.js` e `regras.js` para `?v=2026-06-11-cleanup-1`.
+
+### Validacoes
+- npm run check:js: OK / npm run audit:static: OK (incluindo a checagem nova)
+
+### Pendencias conhecidas (proximas etapas)
+- Specs Playwright desatualizados (6 falhas pre-existentes, ver entrada da Etapa 2)
+- Etapa 6: notificacao de ganho de XP ao mestre
+- Etapa 7: jogador move o proprio token com trava do mestre
+- Etapa 8: aceite de transferencia pelo destino
+- UI: texto "JOGADOR" quebrando no card "Acesso" da home; painel "Nucleo da Alma" vazando do card na ficha
+
 ## Ultima Etapa Concluida (2026-06-11 — Etapa 4 da auditoria: PBKDF2 e rate-limit de login)
 
 ### O que mudou

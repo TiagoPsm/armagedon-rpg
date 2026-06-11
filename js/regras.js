@@ -236,60 +236,6 @@ function createRuleId() {
 async function renderRules(options = {}) {
   await loadRules(options);
   renderRulesFromCache();
-  return;
-  const ruleCount = document.getElementById("ruleCount");
-  const lastRuleUpdate = document.getElementById("lastRuleUpdate");
-  const rulesUpdatedText = document.getElementById("rulesUpdatedText");
-  const rulesList = document.getElementById("rulesList");
-  const isMaster = currentSession.role === "master";
-
-  if (ruleCount) ruleCount.textContent = String(rules.length);
-  if (lastRuleUpdate) {
-    lastRuleUpdate.textContent = rules.length ? formatRuleDate(rules[0].updatedAt) : "Nenhuma";
-  }
-  if (rulesUpdatedText) {
-    rulesUpdatedText.textContent = rules.length
-      ? `Atualizado em ${formatRuleDateTime(rules[0].updatedAt)}`
-      : "Nenhuma regra publicada.";
-  }
-
-  if (!rulesList) return;
-
-  if (!rules.length) {
-    rulesList.innerHTML = '<p class="empty-msg">Nenhuma regra publicada.</p>';
-    return;
-  }
-
-  rulesList.innerHTML = rules
-    .map(
-      rule => `
-        <article class="rule-card">
-          <div class="rule-card-head">
-            <div class="rule-card-head-main">
-              ${rule.tag ? `<span class="rule-tag">${esc(rule.tag)}</span>` : ""}
-              <h3 class="rule-card-title">${esc(rule.title || "Regra sem título")}</h3>
-              <div class="rule-card-meta">
-                <span>Criada em ${esc(formatRuleDateTime(rule.createdAt))}</span>
-                <span>Atualizada em ${esc(formatRuleDateTime(rule.updatedAt))}</span>
-              </div>
-            </div>
-            ${
-              isMaster
-                ? `
-                  <div class="rule-actions">
-                    <button class="rule-btn" onclick="editRule('${jsEsc(rule.id)}')">Editar</button>
-                    <button class="rule-btn rule-btn-danger" onclick="deleteRule('${jsEsc(rule.id)}')">Excluir</button>
-                  </div>
-                `
-                : ""
-            }
-          </div>
-
-          <p class="rule-card-content">${esc(rule.content || "Sem conteúdo.")}</p>
-        </article>
-      `
-    )
-    .join("");
 }
 
 function renderRulesFromCache() {

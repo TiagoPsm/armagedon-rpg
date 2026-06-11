@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**Armagedon** — static RPG campaign portal for a tabletop group. Frontend is plain HTML/CSS/JS with no bundler. The live API runs on Cloudflare Workers + D1. Realtime (Mesa scene sync) uses Cloudflare Durable Objects via WebSocket.
+**Armagedom** (official spelling, with M; the API URL keeps "armagedon" for historical reasons) — static RPG campaign portal for a tabletop group. Frontend is plain HTML/CSS/JS with no bundler. The live API runs on Cloudflare Workers + D1. Realtime (Mesa scene sync) uses Cloudflare Durable Objects via WebSocket.
 
 Owner: Tiago (TiagoPsm) — game master. Respond in **PT-BR**.
 
@@ -55,9 +55,10 @@ Scripts load via `<script src="...">` tags in order. **Script order in `ficha.ht
 | Page | Main JS files |
 |---|---|
 | `index.html` | `js/auth.js`, `js/api.js`, `js/ui.js` |
-| `ficha.html` | `js/ficha-core.js`, `js/ficha-sheet.js`, `js/ficha-master.js`, `js/ficha-inventory.js`, `js/ficha-memories.js`, `js/ficha-soul.js`, `js/ficha-dice.js`, `js/ficha-init.js` |
-| `mesa.html` | `js/mesa-core.js`, `js/mesa-stage.js`, `js/mesa-roster.js`, `js/mesa-inspector.js`, `js/mesa-storage.js`, `js/mesa-renderer-v2.js`, `js/mesa-drawing.js`, `js/mesa-select.js`, `js/mesa-map.js` |
+| `ficha.html` | `js/ficha-core.js`, `js/ficha-sheet.js`, `js/ficha-master.js`, `js/ficha-inventory.js`, `js/ficha-memories.js`, `js/ficha-soul.js`, `js/ficha-dice.js`, `js/ficha-habs.js`, `js/ficha-passives.js`, `js/ficha-init.js` |
+| `mesa.html` | `js/mesa-core.js`, `js/mesa-stage.js`, `js/mesa-roster.js`, `js/mesa-inspector.js`, `js/mesa-storage.js`, `js/mesa-renderer-v2.js`, `js/mesa-drawing.js`, `js/mesa-select.js`, `js/mesa-map.js`, `js/mesa-initiative.js`, `js/mesa-init.js` |
 | `regras.html` | `js/regras.js` |
+| `sugestoes.html` | `js/sugestoes.js` |
 
 ### API and persistence
 
@@ -69,7 +70,7 @@ Scripts load via `<script src="...">` tags in order. **Script order in `ficha.ht
 ### Cloudflare Worker (`cloudflare/`)
 
 - Entry: `cloudflare/src/index.js`
-- Auth: JWT via `cloudflare/src/auth.js`; master bootstrap via env secret `ARMAGEDON_MASTER_PASSWORD`
+- Auth: JWT via `cloudflare/src/auth.js`; passwords use PBKDF2 with per-user salt (legacy sha256 hashes migrate on first valid login); master bootstrap via env secrets `MASTER_BOOTSTRAP_PASSWORD`, `PASSWORD_PEPPER`, `JWT_SECRET`; login rate-limited via D1 table `login_throttle`
 - Sheet normalisation: `cloudflare/src/sheet.js` — must preserve skill `id`, `name`, `type`, `trigger`, `desc` and clamp Vida/Integridade before saving
 - Mesa realtime: `cloudflare/src/mesa-realtime.js` — Durable Object `MesaRealtimeRoom`; binding `MESA_REALTIME`
 - D1 schema: `cloudflare/d1/schema.sql`

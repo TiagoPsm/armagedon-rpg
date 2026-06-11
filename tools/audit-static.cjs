@@ -93,6 +93,31 @@ publishedRoots.forEach(root => {
   }
 });
 
+// Arquivos JS compartilhados entre paginas devem usar o MESMO ?v= em todas —
+// versoes divergentes fazem paginas diferentes servirem copias diferentes do cache.
+const sharedScripts = ["js/api.js", "js/auth.js", "js/ui.js"];
+const versionsByScript = new Map();
+
+htmlFiles.forEach(fileName => {
+  const html = fs.readFileSync(path.join(repoRoot, fileName), "utf8");
+  sharedScripts.forEach(script => {
+    const pattern = new RegExp(`${script.replace(/[./]/g, "\\$&")}\\?v=([^"']+)`, "g");
+    let match;
+    while ((match = pattern.exec(html))) {
+      if (!versionsByScript.has(script)) versionsByScript.set(script, new Map());
+      versionsByScript.get(script).set(fileName, match[1]);
+    }
+  });
+});
+
+versionsByScript.forEach((byPage, script) => {
+  const versions = new Set(byPage.values());
+  if (versions.size > 1) {
+    const detail = [...byPage.entries()].map(([page, v]) => `${page}=${v}`).join(", ");
+    fail(`Cache-busting divergente para ${script}: ${detail}`);
+  }
+});
+
 const authSource = fs.readFileSync(path.join(repoRoot, "js", "auth.js"), "utf8");
 if (!/window\.AUTH\s*=/.test(authSource)) {
   fail("window.AUTH nao foi encontrado em js/auth.js");

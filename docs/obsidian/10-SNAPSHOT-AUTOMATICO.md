@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-11 16:43:26 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-11 17:10:10 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,23 +13,24 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `93c45b4 2026-06-11 fix(worker): CORS allowlist, bootstrap do mestre fora do hot path e limites de upload`
+- Ultimo commit: `501bc49 2026-06-11 feat(worker): senhas PBKDF2 com migracao transparente e rate-limit de login`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-M  .gitignore
+M  CLAUDE.md
 M  DEV_STATUS.md
-M  cloudflare/README.md
-M  cloudflare/d1/schema.sql
-M  cloudflare/src/auth.js
-M  cloudflare/src/index.js
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-?? tools/fix-mojibake.js
-?? tools/fix-mojibake2.cjs
-?? tools/fix-mojibake3.cjs
-?? tools/fix-mojibake4.cjs
+D  js/ficha.js
+D  js/home.js
+D  js/main.js
+M  js/mesa-core.js
+D  js/mesa.js
+M  js/regras.js
+M  mesa.html
+M  regras.html
+M  tools/audit-static.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -42,12 +43,17 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ### Arquivos Em Stage
 
 ```text
-.gitignore
+CLAUDE.md
 DEV_STATUS.md
-cloudflare/README.md
-cloudflare/d1/schema.sql
-cloudflare/src/auth.js
-cloudflare/src/index.js
+js/ficha.js
+js/home.js
+js/main.js
+js/mesa-core.js
+js/mesa.js
+js/regras.js
+mesa.html
+regras.html
+tools/audit-static.cjs
 ```
 
 ## Paginas Principais
@@ -60,7 +66,7 @@ cloudflare/src/index.js
 
 ## Contagem Rapida
 
-- JavaScript em `js/`: 33 arquivo(s)
+- JavaScript em `js/`: 29 arquivo(s)
 - CSS em `css/`: 12 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
@@ -139,8 +145,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
    18,23 MB  node_modules\@img\sharp-win32-x64\lib\libvips-42.dll
-   13,08 MB  assets\sheet-fire-background.mp4
    13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
+   13,08 MB  assets\sheet-fire-background.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     1,03 MB  node_modules\terser\dist\bundle.min.js
     0,99 MB  assets\logo-rpg-armagedon.png
