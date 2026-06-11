@@ -93,12 +93,31 @@ function json(data, init = {}) {
   });
 }
 
+// Origens autorizadas a chamar a API pelo navegador. Outras origens
+// recebem o dominio canonico no header (efetivamente bloqueadas pelo CORS).
+const ALLOWED_ORIGINS = new Set([
+  "https://tiagopsm.github.io",
+  "https://armagedon-rpg.pages.dev"
+]);
+const CANONICAL_ORIGIN = "https://tiagopsm.github.io";
+
+function isAllowedOrigin(origin) {
+  const value = String(origin || "").trim();
+  if (!value) return false;
+  if (ALLOWED_ORIGINS.has(value)) return true;
+  // Previews do Cloudflare Pages (<hash>.armagedon-rpg.pages.dev)
+  if (/^https:\/\/[a-z0-9-]+\.armagedon-rpg\.pages\.dev$/.test(value)) return true;
+  // Desenvolvimento local
+  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(value);
+}
+
 function createCorsHeaders(origin) {
   return {
-    "access-control-allow-origin": origin || "*",
+    "access-control-allow-origin": isAllowedOrigin(origin) ? origin : CANONICAL_ORIGIN,
     "access-control-allow-methods": "GET,POST,PUT,DELETE,OPTIONS",
     "access-control-allow-headers": "content-type,authorization",
-    "access-control-max-age": "86400"
+    "access-control-max-age": "86400",
+    "vary": "origin"
   };
 }
 

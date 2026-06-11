@@ -58,6 +58,19 @@ Registro minimo esperado:
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
 
+## Ultima Etapa Concluida (2026-06-11 — Etapa 3 da auditoria: endurecimento do Worker)
+
+### O que mudou
+- `cloudflare/src/auth.js`: CORS deixou de refletir qualquer origem; agora usa allowlist (`tiagopsm.github.io`, `armagedon-rpg.pages.dev` + previews `*.armagedon-rpg.pages.dev`, `localhost`/`127.0.0.1` em qualquer porta). Origem fora da lista recebe o dominio canonico no header (bloqueada pelo navegador). Header `vary: origin` adicionado.
+- `cloudflare/src/index.js`: `ensureMasterUser` saiu do topo do `fetch` (rodava SELECT+UPDATE no D1 em TODA requisicao) e agora roda apenas na rota de login.
+- `cloudflare/src/index.js`: upload de avatar valida content-type (`image/webp`/`image/jpeg`, senao 415) e tamanho (max 2 MB, senao 413).
+- `cloudflare/src/index.js`: `GET /api/mesa/map/<key>` valida o formato da chave (`maps/<user>/<id>.webp`) — nao serve mais objetos arbitrarios do bucket. Continua sem auth porque a URL e consumida como background-image (sem headers); mitigacao adicional e o TTL do R2 (`MAP_R2_TTL`).
+
+### Validacoes
+- npm run check:js: OK
+- npx wrangler deploy --dry-run: OK
+- Pos-deploy: login mestre/jogador, upload de avatar na ficha e envio de mapa na Mesa devem ser smoke-testados
+
 ## Ultima Etapa Concluida (2026-06-10 — Etapa 2 da auditoria: sessao confiavel no frontend)
 
 ### O que mudou

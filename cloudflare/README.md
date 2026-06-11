@@ -95,6 +95,10 @@ O campo `data_json` em `mesa_scenes` guarda a cena visual da Mesa: tokens ativos
 - Jogadores podem ler a cena da Mesa, mas apenas o mestre pode salvar posicao, ordem e visibilidade dos tokens
 - No Durable Object `MesaRealtimeRoom`, sinais de mapa que distribuem/limpam conteudo (`mesa:map:announce/set/clear/offer/ws:*`) exigem role master; sinais jogador -> mestre (`have/need/answer/ice`) sao liberados
 - Respostas 500 nao devem expor `error.message` interno ao cliente; detalhes vao para `console.error` (acessivel via `wrangler tail`)
+- CORS usa allowlist (github.io, armagedon-rpg.pages.dev + previews, localhost); novos dominios do site precisam ser adicionados em `ALLOWED_ORIGINS` no `src/auth.js`
+- `ensureMasterUser` roda somente na rota de login, nao em todas as requisicoes
+- Upload de avatar: maximo 2 MB, apenas `image/webp` ou `image/jpeg`
+- `GET /api/mesa/map/<key>` continua sem auth (URL vira background-image, sem headers), mas so serve chaves `maps/<user>/<id>.webp`; mitigacao extra e o TTL do R2
 - Vida atual nao pode passar da Vida maxima
 - Integridade maxima de jogador/NPC e editavel; o Worker preserva `integMax` enviado pelo cliente e apenas clampa Integridade atual pelo maximo salvo
 - Integridade atual nao pode passar da Integridade maxima

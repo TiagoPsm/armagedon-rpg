@@ -214,8 +214,6 @@ export default {
       });
     }
 
-    await ensureMasterUser(env);
-
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/+$/, "") || "/";
 
@@ -229,6 +227,10 @@ export default {
       }
 
       if (path === "/api/auth/login" && request.method === "POST") {
+        // Bootstrap do mestre roda apenas aqui (rota fria) em vez de em toda
+        // requisicao — evita um UPDATE no D1 por request.
+        await ensureMasterUser(env);
+
         const body = await readJson(request);
         const user = await getUserByUsername(env, body.username);
         const pepper = String(env.PASSWORD_PEPPER || "");
@@ -478,10 +480,16 @@ export default {
           return errorJson("Sem permissao para enviar avatar.", 403, origin);
         }
 
+        const contentType = request.headers.get("content-type") || "image/webp";
+        if (!/^image\/(webp|jpeg|jpg)$/i.test(contentType.split(";")[0].trim())) {
+          return errorJson("Formato de avatar invalido. Use webp ou jpeg.", 415, origin);
+        }
+
         const bodyBytes = await request.arrayBuffer();
         if (!bodyBytes.byteLength) return errorJson("Body vazio.", 400, origin);
-
-        const contentType = request.headers.get("content-type") || "image/webp";
+        if (bodyBytes.byteLength > 2 * 1024 * 1024) {
+          return errorJson("Avatar muito grande. Limite de 2 MB.", 413, origin);
+        }
         const ext = contentType.includes("jpeg") || contentType.includes("jpg") ? "jpg" : "webp";
         const safeKey = String(key).replace(/[^a-z0-9_-]/gi, "_").toLowerCase().slice(0, 64);
         const r2Key = `avatars/${safeKey}.${ext}`;
@@ -555,7 +563,13 @@ export default {
       if (mapServeMatch && request.method === "GET") {
         if (!env.MAPS) return errorJson("Bucket R2 nao configurado.", 503, origin);
 
-        const r2Key  = decodePathParam(mapServeMatch[1]);
+        // Sem auth (a URL e usada como background-image, sem headers),
+        // mas restrita ao prefixo maps/ — nao serve outros objetos do bucket.
+        // Mitigacao adicional: mapas expiram do R2 via MAP_R2_TTL.
+        const r2Key = decodePathParam(mapServeMatch[1]);
+        if (!/^maps\/[a-z0-9_-]+\/[a-z0-9_-]+\.webp$/i.test(r2Key)) {
+          return errorJson("Chave de mapa invalida.", 400, origin);
+        }
         const object = await env.MAPS.get(r2Key);
         if (!object) return errorJson("Mapa nao encontrado.", 404, origin);
 
