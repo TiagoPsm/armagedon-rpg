@@ -1,12 +1,14 @@
 import {
   createCorsHeaders,
+  createPasswordHash,
   ensureMasterUser,
   getUserByUsername,
-  hashPassword,
+  isLegacyPasswordHash,
   json,
   readJson,
   requireAuth,
-  signToken
+  signToken,
+  verifyPassword
 } from "./auth.js";
 import {
   assertCharacterAccess,
@@ -128,6 +130,58 @@ function errorJson(message, status = 400, origin = "*") {
   return withCors(json({ error: message }, { status }), origin);
 }
 
+/* ── THROTTLE DE LOGIN ─────────────────────────────────────────────
+   Chave: username|ip. Apos LOGIN_MAX_FAILS falhas o par fica bloqueado
+   por LOGIN_LOCK_MINUTES. Sucesso limpa o contador. */
+
+const LOGIN_MAX_FAILS = 8;
+const LOGIN_LOCK_MINUTES = 10;
+
+function getClientIp(request) {
+  return request.headers.get("cf-connecting-ip") || "ip-desconhecido";
+}
+
+async function getLoginLockMinutes(env, key) {
+  const row = await env.DB.prepare(
+    "select locked_until from login_throttle where key = ? limit 1"
+  ).bind(key).first();
+
+  if (!row?.locked_until) return 0;
+  const remainingMs = Date.parse(row.locked_until) - Date.now();
+  if (!Number.isFinite(remainingMs) || remainingMs <= 0) return 0;
+  return Math.max(1, Math.ceil(remainingMs / 60000));
+}
+
+async function registerLoginFailure(env, key) {
+  const now = new Date();
+  const row = await env.DB.prepare(
+    "select fail_count from login_throttle where key = ? limit 1"
+  ).bind(key).first();
+
+  const failCount = (Number(row?.fail_count) || 0) + 1;
+  const shouldLock = failCount >= LOGIN_MAX_FAILS;
+  const lockedUntil = shouldLock
+    ? new Date(now.getTime() + LOGIN_LOCK_MINUTES * 60000).toISOString()
+    : null;
+
+  await env.DB.prepare(
+    `
+      insert into login_throttle (key, fail_count, locked_until, updated_at)
+      values (?, ?, ?, ?)
+      on conflict(key) do update set
+        fail_count = excluded.fail_count,
+        locked_until = excluded.locked_until,
+        updated_at = excluded.updated_at
+    `
+  )
+    .bind(key, shouldLock ? 0 : failCount, lockedUntil, now.toISOString())
+    .run();
+}
+
+async function clearLoginThrottle(env, key) {
+  await env.DB.prepare("delete from login_throttle where key = ?").bind(key).run();
+}
+
 function decodePathParam(value) {
   try {
     return decodeURIComponent(String(value || ""));
@@ -232,16 +286,41 @@ export default {
         await ensureMasterUser(env);
 
         const body = await readJson(request);
-        const user = await getUserByUsername(env, body.username);
         const pepper = String(env.PASSWORD_PEPPER || "");
+        const password = String(body.password || "");
+        const normalizedUsername = String(body.username || "").trim().toLowerCase();
+        const throttleKey = `${normalizedUsername}|${getClientIp(request)}`;
 
-        if (!user || !user.is_active) {
+        const lockedMinutes = await getLoginLockMinutes(env, throttleKey);
+        if (lockedMinutes > 0) {
+          return errorJson(
+            `Muitas tentativas de login. Tente novamente em ${lockedMinutes} min.`,
+            429,
+            origin
+          );
+        }
+
+        const user = await getUserByUsername(env, normalizedUsername);
+        const validCredentials =
+          Boolean(user && user.is_active) &&
+          (await verifyPassword(password, pepper, user.password_hash));
+
+        if (!validCredentials) {
+          await registerLoginFailure(env, throttleKey);
           return errorJson("Usuário ou senha inválidos.", 401, origin);
         }
 
-        const incomingHash = await hashPassword(body.password || "", pepper);
-        if (incomingHash !== user.password_hash) {
-          return errorJson("Usuário ou senha inválidos.", 401, origin);
+        await clearLoginThrottle(env, throttleKey);
+
+        // Migracao transparente: hash legado (sha256 sem salt) vira PBKDF2
+        // no primeiro login valido.
+        if (isLegacyPasswordHash(user.password_hash)) {
+          const upgradedHash = await createPasswordHash(password, pepper);
+          await env.DB.prepare(
+            "update users set password_hash = ?, updated_at = ? where id = ?"
+          )
+            .bind(upgradedHash, new Date().toISOString(), user.id)
+            .run();
         }
 
         const now = Math.floor(Date.now() / 1000);
@@ -310,7 +389,7 @@ export default {
 
         const now = new Date().toISOString();
         const userId = crypto.randomUUID();
-        const passwordHash = await hashPassword(password, String(env.PASSWORD_PEPPER || ""));
+        const passwordHash = await createPasswordHash(password, String(env.PASSWORD_PEPPER || ""));
 
         await env.DB.prepare(
           `

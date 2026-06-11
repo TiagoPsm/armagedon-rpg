@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-11 16:30:03 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-11 16:43:26 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,14 +13,16 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `0db9bbe 2026-06-10 fix(site): sessao resiliente a cold start, login local atras de flag de dev e cache-busting unificado`
+- Ultimo commit: `93c45b4 2026-06-11 fix(worker): CORS allowlist, bootstrap do mestre fora do hot path e limites de upload`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
+M  .gitignore
 M  DEV_STATUS.md
 M  cloudflare/README.md
+M  cloudflare/d1/schema.sql
 M  cloudflare/src/auth.js
 M  cloudflare/src/index.js
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
@@ -40,8 +42,10 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ### Arquivos Em Stage
 
 ```text
+.gitignore
 DEV_STATUS.md
 cloudflare/README.md
+cloudflare/d1/schema.sql
 cloudflare/src/auth.js
 cloudflare/src/index.js
 ```
@@ -135,8 +139,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
 
 ```text
    18,23 MB  node_modules\@img\sharp-win32-x64\lib\libvips-42.dll
-   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
    13,08 MB  assets\sheet-fire-background.mp4
+   13,08 MB  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     1,03 MB  node_modules\terser\dist\bundle.min.js
     0,99 MB  assets\logo-rpg-armagedon.png

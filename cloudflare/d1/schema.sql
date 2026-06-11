@@ -68,6 +68,13 @@ create table if not exists transfer_audit (
   created_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
+create table if not exists login_throttle (
+  key text primary key,
+  fail_count integer not null default 0,
+  locked_until text,
+  updated_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
 create table if not exists mesa_scenes (
   id text primary key,
   data_json text not null default '{}',

@@ -99,6 +99,8 @@ O campo `data_json` em `mesa_scenes` guarda a cena visual da Mesa: tokens ativos
 - `ensureMasterUser` roda somente na rota de login, nao em todas as requisicoes
 - Upload de avatar: maximo 2 MB, apenas `image/webp` ou `image/jpeg`
 - `GET /api/mesa/map/<key>` continua sem auth (URL vira background-image, sem headers), mas so serve chaves `maps/<user>/<id>.webp`; mitigacao extra e o TTL do R2
+- Senhas: PBKDF2-SHA256 com salt por usuario (25k iteracoes) + pepper de secret; hashes legados sha256 migram sozinhos no primeiro login valido — nao remover o caminho legado enquanto houver hash antigo no banco
+- Rate-limit de login: tabela `login_throttle` (usuario+IP, 8 falhas = 10 min de bloqueio); manter schema.sql sincronizado e aplicar migracao remota antes de deploys que dependam de tabela nova
 - Vida atual nao pode passar da Vida maxima
 - Integridade maxima de jogador/NPC e editavel; o Worker preserva `integMax` enviado pelo cliente e apenas clampa Integridade atual pelo maximo salvo
 - Integridade atual nao pode passar da Integridade maxima

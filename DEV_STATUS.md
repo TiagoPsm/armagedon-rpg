@@ -58,6 +58,26 @@ Registro minimo esperado:
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
 
+## Ultima Etapa Concluida (2026-06-11 — Etapa 4 da auditoria: PBKDF2 e rate-limit de login)
+
+### O que mudou
+- `cloudflare/src/auth.js`: senhas agora usam PBKDF2-SHA256 com salt aleatorio por usuario (25k iteracoes, formato `pbkdf2$<iter>$<salt>$<hash>`); comparacao em tempo constante. O hash legado (sha256 sem salt + pepper) continua aceito no login e e migrado para PBKDF2 de forma transparente no primeiro login valido — nenhum jogador precisa trocar senha.
+- `cloudflare/src/auth.js`: `ensureMasterUser` so grava no banco quando algo mudou (senha do secret rotacionada, hash legado ou role/ativacao divergente); antes regravava o hash a cada chamada.
+- `cloudflare/src/index.js`: rate-limit de login por usuario+IP (tabela `login_throttle`): 8 falhas seguidas bloqueiam o par por 10 minutos (HTTP 429); login valido limpa o contador.
+- `cloudflare/d1/schema.sql`: nova tabela `login_throttle` (migracao remota necessaria antes do deploy do Worker — o login consulta a tabela).
+- `.gitignore`: ignora `cloudflare/.dev.vars` e `.wrangler/` (artefatos de dev local).
+
+### Validacoes (wrangler dev + D1 local, 10 casos)
+- Bootstrap do mestre gera hash PBKDF2; login OK
+- 8 senhas erradas -> 429 na 9a; senha correta tambem bloqueada durante o lock; outro usuario nao afetado
+- Usuario com hash legado loga, hash migra para PBKDF2, segundo login OK, senha errada segue 401
+- Jogador novo criado pelo mestre ja nasce com hash PBKDF2 e loga normalmente
+- npm run check:js: OK / wrangler deploy --dry-run: OK
+
+### Ordem de deploy (importante)
+1. `npx wrangler d1 execute armagedon --remote --file cloudflare/d1/schema.sql --config cloudflare/wrangler.toml` (cria `login_throttle`; schema usa IF NOT EXISTS, e idempotente)
+2. `npx wrangler deploy --config cloudflare/wrangler.toml`
+
 ## Ultima Etapa Concluida (2026-06-11 — Etapa 3 da auditoria: endurecimento do Worker)
 
 ### O que mudou

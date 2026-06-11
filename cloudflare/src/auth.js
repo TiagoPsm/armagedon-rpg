@@ -20,8 +20,82 @@ async function sha256Hex(value) {
   return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("");
 }
 
-async function hashPassword(password, pepper = "") {
+// Hash legado (sem salt). Mantido apenas para verificar senhas antigas;
+// no primeiro login valido o hash e migrado para PBKDF2.
+async function legacyHashPassword(password, pepper = "") {
   return sha256Hex(`${pepper}:${password}`);
+}
+
+// 25k iteracoes: equilibrio entre custo para atacante e limite de CPU do
+// Worker (PBKDF2 nativo via WebCrypto). Aumentar exige validar o plano.
+const PBKDF2_ITERATIONS = 25000;
+const PBKDF2_HASH_BYTES = 32;
+const PBKDF2_SALT_BYTES = 16;
+
+async function derivePbkdf2Bits(password, pepper, salt, iterations) {
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(`${pepper}:${password}`),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      hash: "SHA-256",
+      salt,
+      iterations
+    },
+    keyMaterial,
+    PBKDF2_HASH_BYTES * 8
+  );
+
+  return new Uint8Array(bits);
+}
+
+// Formato armazenado: pbkdf2$<iteracoes>$<salt base64url>$<hash base64url>
+async function createPasswordHash(password, pepper = "") {
+  const salt = crypto.getRandomValues(new Uint8Array(PBKDF2_SALT_BYTES));
+  const hash = await derivePbkdf2Bits(password, pepper, salt, PBKDF2_ITERATIONS);
+  return `pbkdf2$${PBKDF2_ITERATIONS}$${base64UrlEncode(salt)}$${base64UrlEncode(hash)}`;
+}
+
+function isLegacyPasswordHash(stored) {
+  return !String(stored || "").startsWith("pbkdf2$");
+}
+
+function timingSafeEqual(left, right) {
+  const a = new TextEncoder().encode(String(left || ""));
+  const b = new TextEncoder().encode(String(right || ""));
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let index = 0; index < a.length; index += 1) {
+    diff |= a[index] ^ b[index];
+  }
+  return diff === 0;
+}
+
+async function verifyPassword(password, pepper, stored) {
+  const value = String(stored || "");
+
+  if (isLegacyPasswordHash(value)) {
+    const candidate = await legacyHashPassword(password, pepper);
+    return timingSafeEqual(candidate, value);
+  }
+
+  const [, rawIterations, rawSalt, rawHash] = value.split("$");
+  const iterations = Number.parseInt(rawIterations, 10);
+  if (!Number.isFinite(iterations) || iterations < 1 || iterations > 1000000) return false;
+
+  try {
+    const salt = base64UrlDecode(rawSalt);
+    const candidate = await derivePbkdf2Bits(password, pepper, salt, iterations);
+    return timingSafeEqual(base64UrlEncode(candidate), rawHash);
+  } catch {
+    return false;
+  }
 }
 
 async function signToken(payload, secret) {
@@ -131,15 +205,26 @@ async function ensureMasterUser(env) {
   }
 
   const now = new Date().toISOString();
-  const passwordHash = await hashPassword(password, pepper);
 
   const existing = await env.DB.prepare(
-    "select id from users where lower(username) = lower(?) limit 1"
+    "select id, password_hash, role, is_active from users where lower(username) = lower(?) limit 1"
   )
     .bind(username)
     .first();
 
   if (existing) {
+    // So grava quando algo realmente mudou (senha rotacionada no secret,
+    // role/ativacao divergente ou hash ainda no formato legado).
+    const passwordMatches = await verifyPassword(password, pepper, existing.password_hash);
+    const needsUpdate =
+      !passwordMatches ||
+      isLegacyPasswordHash(existing.password_hash) ||
+      existing.role !== "master" ||
+      !existing.is_active;
+
+    if (!needsUpdate) return;
+
+    const passwordHash = await createPasswordHash(password, pepper);
     await env.DB.prepare(
       `
         update users
@@ -153,6 +238,7 @@ async function ensureMasterUser(env) {
   }
 
   const userId = crypto.randomUUID();
+  const passwordHash = await createPasswordHash(password, pepper);
 
   await env.DB.prepare(
     `
@@ -197,4 +283,15 @@ async function requireAuth(request, env) {
   }
 }
 
-export { createCorsHeaders, ensureMasterUser, getUserByUsername, hashPassword, json, readJson, requireAuth, signToken };
+export {
+  createCorsHeaders,
+  createPasswordHash,
+  ensureMasterUser,
+  getUserByUsername,
+  isLegacyPasswordHash,
+  json,
+  readJson,
+  requireAuth,
+  signToken,
+  verifyPassword
+};

@@ -5,3 +5,8 @@ server/.env
 server/*.log
 *.log
 _site/
+
+# Wrangler local dev
+cloudflare/.dev.vars
+cloudflare/.wrangler/
+.wrangler/
