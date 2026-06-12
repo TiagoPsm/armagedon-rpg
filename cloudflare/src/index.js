@@ -115,6 +115,37 @@ async function broadcastSheetChanged(env, characterKey, actor) {
   }
 }
 
+// Avisa o mestre (somente sockets master, via DO) sobre progressao da alma
+// feita por um jogador. type: "soul:awarded" | "soul:nightmare".
+async function broadcastSoulEvent(env, type, summary, actor) {
+  const stub = getMesaRealtimeStub(env);
+  if (!stub) return;
+
+  try {
+    await stub.fetch("https://mesa-realtime.local/broadcast", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json; charset=utf-8"
+      },
+      body: JSON.stringify({
+        type,
+        targetKey: summary?.targetKey || "",
+        targetName: summary?.targetName || "",
+        totalExperience: summary?.totalExperience ?? summary?.appliedExperience ?? 0,
+        rankName: summary?.rankName || "",
+        actor: {
+          id: actor.sub,
+          username: actor.username,
+          role: actor.role
+        },
+        sentAt: new Date().toISOString()
+      })
+    });
+  } catch (error) {
+    console.warn("Falha ao transmitir evento de alma.", error);
+  }
+}
+
 function withCors(response, origin) {
   const headers = new Headers(response.headers);
   const corsHeaders = createCorsHeaders(origin);
@@ -512,10 +543,12 @@ export default {
         const key = decodePathParam(characterSoulMatch[1]);
         const body = await readJson(request);
 
-        return withCors(
-          json(await awardSoulExperienceToCharacter(env, session, key, body)),
-          origin
-        );
+        const result = await awardSoulExperienceToCharacter(env, session, key, body);
+        if (session.role !== "master") {
+          await broadcastSoulEvent(env, "soul:awarded", result.summary, session);
+        }
+        await broadcastSheetChanged(env, key, session);
+        return withCors(json(result), origin);
       }
 
       const characterNightmareMatch = path.match(/^\/api\/characters\/([^/]+)\/soul-nightmare$/);
@@ -523,10 +556,12 @@ export default {
         const session = await requireAuth(request, env);
         const key = decodePathParam(characterNightmareMatch[1]);
 
-        return withCors(
-          json(await completeSoulNightmareForCharacter(env, session, key)),
-          origin
-        );
+        const result = await completeSoulNightmareForCharacter(env, session, key);
+        if (session.role !== "master") {
+          await broadcastSoulEvent(env, "soul:nightmare", result.summary, session);
+        }
+        await broadcastSheetChanged(env, key, session);
+        return withCors(json(result), origin);
       }
 
       if (path === "/api/mesa/scene" && request.method === "GET") {

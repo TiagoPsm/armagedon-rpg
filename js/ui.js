@@ -344,7 +344,63 @@
     resolve(result);
   }
 
+  let toastRoot = null;
+
+  function ensureToastRoot() {
+    if (toastRoot) return toastRoot;
+    toastRoot = document.createElement("div");
+    toastRoot.className = "ui-toast-root";
+    toastRoot.setAttribute("aria-live", "polite");
+    document.body.appendChild(toastRoot);
+    return toastRoot;
+  }
+
+  function showToast(message, options = {}) {
+    const root = ensureToastRoot();
+    const toast = document.createElement("div");
+    toast.className = "ui-toast";
+    toast.innerHTML = `
+      <p class="ui-toast-kicker">${escapeHtml(options.kicker || "// Aviso")}</p>
+      <p class="ui-toast-message">${escapeHtml(message)}</p>
+    `;
+    root.appendChild(toast);
+    window.requestAnimationFrame(() => toast.classList.add("is-visible"));
+
+    const duration = Number(options.duration) || 8000;
+    window.setTimeout(() => {
+      toast.classList.remove("is-visible");
+      window.setTimeout(() => toast.remove(), 400);
+    }, duration);
+  }
+
+  // Avisos de progressao da alma. O Durable Object entrega soul:awarded /
+  // soul:nightmare apenas aos sockets do mestre, entao basta exibir.
+  function bindSoulNotifications() {
+    if (!window.APP?.on) return;
+
+    window.APP.on("soul:awarded", detail => {
+      const actor = detail?.actor?.username || "Jogador";
+      const target = detail?.targetName || detail?.targetKey || "ficha";
+      const xp = Number(detail?.totalExperience) || 0;
+      const xpText = xp > 0 ? ` (+${xp} XP)` : "";
+      showToast(`${actor} absorveu Essência da Alma na ficha ${target}${xpText}.`, {
+        kicker: "// Essência da alma"
+      });
+    });
+
+    window.APP.on("soul:nightmare", detail => {
+      const actor = detail?.actor?.username || "Jogador";
+      const target = detail?.targetName || detail?.targetKey || "ficha";
+      const rank = detail?.rankName ? ` Novo rank: ${detail.rankName}.` : "";
+      showToast(`${actor} concluiu o pesadelo da ficha ${target}.${rank}`, {
+        kicker: "// Núcleo da alma"
+      });
+    });
+  }
+
   window.UI = {
+    toast: showToast,
+
     activateModal(root, panel, options = {}) {
       if (!(root instanceof HTMLElement) || !(panel instanceof HTMLElement)) return null;
       if (managedModals.has(root)) return managedModals.get(root);
@@ -471,10 +527,12 @@
       ensureModal();
       initCursorGlow();
       initFichaPrefetch();
+      bindSoulNotifications();
     }, { once: true });
   } else {
     ensureModal();
     initCursorGlow();
     initFichaPrefetch();
+    bindSoulNotifications();
   }
 })();

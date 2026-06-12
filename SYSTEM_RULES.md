@@ -42,7 +42,7 @@ Permissoes importantes:
 - apenas o mestre cria monstros
 - apenas o mestre publica, edita e exclui regras
 - o jogador gerencia o nucleo da alma apenas da propria ficha (aplicar Essencia e concluir pesadelo); o mestre gerencia o nucleo de todas as fichas
-- todo ganho de Essencia aplicado por jogador deve gerar auditoria e aviso em tempo real ao mestre (planejado, ainda nao implementado)
+- todo ganho de Essencia ou conclusao de pesadelo gera auditoria no D1 (`soul_audit`); quando o ator e jogador, o mestre conectado recebe aviso em tempo real (toast) via eventos `soul:awarded` / `soul:nightmare`, entregues somente a sockets master
 
 ## Fichas
 

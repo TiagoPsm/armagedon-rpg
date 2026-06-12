@@ -68,6 +68,15 @@ create table if not exists transfer_audit (
   created_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
+create table if not exists soul_audit (
+  id text primary key,
+  event_type text not null check (event_type in ('essence-award', 'nightmare-complete')),
+  actor_user_id text references users(id) on delete set null,
+  target_character_id text references characters(id) on delete set null,
+  payload_json text not null default '{}',
+  created_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
 create table if not exists login_throttle (
   key text primary key,
   fail_count integer not null default 0,

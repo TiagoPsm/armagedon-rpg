@@ -213,6 +213,24 @@ async function saveCharacterBundle(env, character, payload, actor) {
   return persistCharacterData(env, character, normalizedData);
 }
 
+async function insertSoulAudit(env, eventType, actor, target, payload) {
+  await env.DB.prepare(
+    `
+      insert into soul_audit (id, event_type, actor_user_id, target_character_id, payload_json, created_at)
+      values (?, ?, ?, ?, ?, ?)
+    `
+  )
+    .bind(
+      crypto.randomUUID(),
+      eventType,
+      actor?.sub || null,
+      target?.id || null,
+      JSON.stringify(payload || {}),
+      new Date().toISOString()
+    )
+    .run();
+}
+
 async function awardSoulExperienceToCharacter(env, actor, targetKey, payload = {}) {
   const target = await getCharacterByKey(env, targetKey);
   if (!target) {
@@ -228,15 +246,26 @@ async function awardSoulExperienceToCharacter(env, actor, targetKey, payload = {
   });
   const saved = await persistCharacterData(env, target, normalizeSheetData(result.data, target.kind, target.name));
 
+  const summary = {
+    ...result.summary,
+    targetKey: target.key,
+    targetKind: target.kind,
+    targetName: target.name,
+    rankName: getRankName(result.core.rank)
+  };
+
+  await insertSoulAudit(env, "essence-award", actor, target, {
+    actorUsername: actor?.username || "",
+    actorRole: actor?.role || "",
+    creatureRank: payload?.creatureRank,
+    creatureClass: payload?.creatureClass,
+    amount: payload?.amount,
+    summary
+  });
+
   return {
     character: saved,
-    summary: {
-      ...result.summary,
-      targetKey: target.key,
-      targetKind: target.kind,
-      targetName: target.name,
-      rankName: getRankName(result.core.rank)
-    }
+    summary
   };
 }
 
@@ -257,15 +286,23 @@ async function completeSoulNightmareForCharacter(env, actor, targetKey) {
 
   const saved = await persistCharacterData(env, target, normalizeSheetData(result.data, target.kind, target.name));
 
+  const summary = {
+    ...result.summary,
+    targetKey: target.key,
+    targetKind: target.kind,
+    targetName: target.name,
+    rankName: getRankName(result.core.rank)
+  };
+
+  await insertSoulAudit(env, "nightmare-complete", actor, target, {
+    actorUsername: actor?.username || "",
+    actorRole: actor?.role || "",
+    summary
+  });
+
   return {
     character: saved,
-    summary: {
-      ...result.summary,
-      targetKey: target.key,
-      targetKind: target.kind,
-      targetName: target.name,
-      rankName: getRankName(result.core.rank)
-    }
+    summary
   };
 }
 

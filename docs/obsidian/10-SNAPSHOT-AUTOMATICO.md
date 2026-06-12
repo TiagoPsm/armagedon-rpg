@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-11 17:10:10 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-11 23:42:52 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,24 +13,27 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `501bc49 2026-06-11 feat(worker): senhas PBKDF2 com migracao transparente e rate-limit de login`
+- Ultimo commit: `8741108 2026-06-11 chore: remove codigo morto, zera mojibake e adiciona guarda de cache-busting no audit`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-M  CLAUDE.md
 M  DEV_STATUS.md
+M  SYSTEM_RULES.md
+M  cloudflare/README.md
+M  cloudflare/d1/schema.sql
+M  cloudflare/src/characters.js
+M  cloudflare/src/index.js
+M  cloudflare/src/mesa-realtime.js
+M  css/components.css
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-D  js/ficha.js
-D  js/home.js
-D  js/main.js
-M  js/mesa-core.js
-D  js/mesa.js
-M  js/regras.js
+M  ficha.html
+M  index.html
+M  js/ui.js
 M  mesa.html
 M  regras.html
-M  tools/audit-static.cjs
+M  sugestoes.html
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -43,17 +46,20 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ### Arquivos Em Stage
 
 ```text
-CLAUDE.md
 DEV_STATUS.md
-js/ficha.js
-js/home.js
-js/main.js
-js/mesa-core.js
-js/mesa.js
-js/regras.js
+SYSTEM_RULES.md
+cloudflare/README.md
+cloudflare/d1/schema.sql
+cloudflare/src/characters.js
+cloudflare/src/index.js
+cloudflare/src/mesa-realtime.js
+css/components.css
+ficha.html
+index.html
+js/ui.js
 mesa.html
 regras.html
-tools/audit-static.cjs
+sugestoes.html
 ```
 
 ## Paginas Principais

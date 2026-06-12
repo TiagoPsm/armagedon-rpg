@@ -244,6 +244,10 @@ class MesaRealtimeRoom extends DurableObject {
         this.broadcastToCharacterAudience(payload, payload.characterKey || payload.key);
         return json({ ok: true, room: ROOM_NAME, online: this.getPresence() });
       }
+      if (payload?.type === "soul:awarded" || payload?.type === "soul:nightmare") {
+        this.broadcastToMasters(payload);
+        return json({ ok: true, room: ROOM_NAME, online: this.getPresence() });
+      }
       this.broadcast(payload);
       return json({ ok: true, room: ROOM_NAME, online: this.getPresence() });
     }
@@ -523,6 +527,19 @@ class MesaRealtimeRoom extends DurableObject {
       const username = normalizeCharacterKey(attachment.username);
       const role = String(attachment.role || "player").trim() || "player";
       if (role !== "master" && username !== key) return;
+      sendJson(ws, message);
+    });
+  }
+
+  broadcastToMasters(payload) {
+    const message = {
+      ...payload,
+      sentAt: payload?.sentAt || new Date().toISOString()
+    };
+
+    this.ctx.getWebSockets().forEach(ws => {
+      const attachment = readAttachment(ws) || {};
+      if (String(attachment.role || "player") !== "master") return;
       sendJson(ws, message);
     });
   }

@@ -58,6 +58,26 @@ Registro minimo esperado:
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
 
+## Ultima Etapa Concluida (2026-06-11 — Etapa 6: notificacao de progressao da alma ao mestre)
+
+### O que mudou
+- `cloudflare/d1/schema.sql`: nova tabela `soul_audit` (event_type `essence-award`/`nightmare-complete`, ator, ficha alvo, payload com resumo). Migracao remota necessaria antes do deploy.
+- `cloudflare/src/characters.js`: `awardSoulExperienceToCharacter` e `completeSoulNightmareForCharacter` gravam auditoria em `soul_audit` (sempre, inclusive quando o ator e o mestre).
+- `cloudflare/src/index.js`: quando o ator e jogador, as rotas de soul-essence/soul-nightmare disparam `soul:awarded`/`soul:nightmare` via Durable Object; ambas tambem disparam `sheet:changed` (ficha aberta do mestre atualiza sozinha).
+- `cloudflare/src/mesa-realtime.js`: novo `broadcastToMasters` — eventos de alma sao entregues SOMENTE a sockets com role master.
+- `js/ui.js`: novo `UI.toast(mensagem, {kicker, duration})` (aviso nao bloqueante, canto inferior direito) + listeners de `soul:awarded`/`soul:nightmare` que exibem o toast (qualquer pagina com socket ativo: Mesa e Ficha).
+- `css/components.css`: estilos `.ui-toast*` usando tokens do design system.
+- Cache-bust: `ui.js` e `components.css` para `?v=2026-06-11-soul-notify-1` em todas as paginas.
+
+### Validacoes (wrangler dev + D1 local)
+- Jogador aplica Essencia na propria ficha -> mestre conectado recebe `soul:awarded` com ator/alvo/XP; socket de jogador NAO recebe; linha gravada em `soul_audit`
+- npm run check:js: OK / npm run audit:static: OK / wrangler deploy --dry-run: OK
+
+### Ordem de deploy
+1. `npx wrangler d1 execute armagedon --remote --file cloudflare/d1/schema.sql --config cloudflare/wrangler.toml` (cria `soul_audit`)
+2. `npx wrangler deploy --config cloudflare/wrangler.toml`
+3. push do site (toast no ui.js)
+
 ## Ultima Etapa Concluida (2026-06-11 — Etapa 5 da auditoria: limpeza e consistencia)
 
 ### O que mudou
