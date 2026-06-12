@@ -9,6 +9,10 @@ const MASTER_ONLY_TYPES = new Set([
 ]);
 const SHEET_PATCH_TYPE = "mesa:sheet:patch";
 const SHEET_CHANGED_TYPE = "sheet:changed";
+// Trava global de movimento: quando ativa, jogadores nao movem nem o proprio
+// token. Persistida no storage do DO; mestre alterna via mesa:move:lock.
+const MOVE_LOCK_TYPE = "mesa:move:lock";
+const MOVE_LOCK_STORAGE_KEY = "playersMoveLocked";
 const DEFAULT_INVENTORY_SLOTS = 10;
 const ATTRIBUTES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"];
 const SHEET_TEXT_FIELDS = new Set(["charName", "charClass", "charRace", "charFaction", "charNotes", "sheetNotes"]);
@@ -259,10 +263,15 @@ class MesaRealtimeRoom extends DurableObject {
     return json({ error: "Rota realtime invalida." }, { status: 404 });
   }
 
-  acceptClient(request) {
+  async isPlayersMoveLocked() {
+    return Boolean(await this.ctx.storage.get(MOVE_LOCK_STORAGE_KEY));
+  }
+
+  async acceptClient(request) {
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     const user = normalizeSocketUser(request);
+    const playersMoveLocked = await this.isPlayersMoveLocked();
 
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment({
@@ -274,6 +283,7 @@ class MesaRealtimeRoom extends DurableObject {
       type: "mesa:ready",
       room: ROOM_NAME,
       user,
+      playersMoveLocked,
       online: this.getPresence(),
       sentAt: new Date().toISOString()
     });
@@ -311,8 +321,13 @@ class MesaRealtimeRoom extends DurableObject {
       return;
     }
 
+    if (String(payload?.type || "") === MOVE_LOCK_TYPE) {
+      await this.handleMoveLockToggle(ws, payload);
+      return;
+    }
+
     if (RELAY_TYPES.has(String(payload?.type || ""))) {
-      this.handleRealtimeRelay(ws, payload);
+      await this.handleRealtimeRelay(ws, payload);
       return;
     }
 
@@ -321,7 +336,45 @@ class MesaRealtimeRoom extends DurableObject {
     }
   }
 
-  handleRealtimeRelay(ws, payload) {
+  async handleMoveLockToggle(ws, payload) {
+    const attachment = readAttachment(ws) || {};
+    if (attachment.role !== "master") {
+      sendJson(ws, {
+        type: "mesa:scene:ack",
+        ok: false,
+        reason: "Apenas o mestre pode travar ou liberar o movimento.",
+        messageId: payload?.messageId || "",
+        sentAt: new Date().toISOString()
+      });
+      return;
+    }
+
+    const locked = Boolean(payload?.locked);
+    await this.ctx.storage.put(MOVE_LOCK_STORAGE_KEY, locked);
+
+    this.broadcast({
+      type: MOVE_LOCK_TYPE,
+      locked,
+      actor: {
+        username: attachment.username || "usuario",
+        role: "master"
+      },
+      sentAt: new Date().toISOString()
+    });
+  }
+
+  // Jogador pode emitir mesa:token:move quando a trava global esta aberta e o
+  // movimento declara o proprio characterKey. A validacao de posse do token em
+  // si acontece nos clientes (que conhecem o dono de cada token) ao aplicar o
+  // delta — aqui filtramos o que da para filtrar sem estado da cena.
+  async canPlayerRelayTokenMove(payload, attachment) {
+    if (await this.isPlayersMoveLocked()) return false;
+    const declaredKey = normalizeCharacterKey(payload?.characterKey);
+    const username = normalizeCharacterKey(attachment.username);
+    return Boolean(declaredKey && username && declaredKey === username);
+  }
+
+  async handleRealtimeRelay(ws, payload) {
     const attachment = readAttachment(ws) || {};
     const type = String(payload?.type || "");
     if (type === SHEET_PATCH_TYPE) {
@@ -335,14 +388,19 @@ class MesaRealtimeRoom extends DurableObject {
     const isMasterPayload = MASTER_ONLY_TYPES.has(type) || messages.length > 0;
 
     if (isMasterPayload && attachment.role !== "master") {
-      sendJson(ws, {
-        type: "mesa:scene:ack",
-        ok: false,
-        reason: "Apenas o mestre pode alterar a cena em tempo real.",
-        messageId: payload?.messageId || "",
-        sentAt: new Date().toISOString()
-      });
-      return;
+      const allowedPlayerMove =
+        type === "mesa:token:move" && (await this.canPlayerRelayTokenMove(payload, attachment));
+
+      if (!allowedPlayerMove) {
+        sendJson(ws, {
+          type: "mesa:scene:ack",
+          ok: false,
+          reason: "Apenas o mestre pode alterar a cena em tempo real.",
+          messageId: payload?.messageId || "",
+          sentAt: new Date().toISOString()
+        });
+        return;
+      }
     }
 
     const actor = {

@@ -681,7 +681,7 @@ function handleTokenPointerDown(event) {
   const previousTokenId = state.selectedTokenId;
   state.selectedTokenId = tokenId;
 
-  if (!canMoveTokens()) return;
+  if (!canMoveTokens(token)) return;
   if (event.button !== 0) return;
   if (event.target.closest("input, button, a")) return;
 
@@ -708,7 +708,7 @@ function handleTokenMouseDown(event) {
   const previousTokenId = state.selectedTokenId;
   state.selectedTokenId = tokenId;
 
-  if (!canMoveTokens()) return;
+  if (!canMoveTokens(token)) return;
   if (event.button !== 0) return;
   if (event.target.closest("input, button, a")) return;
 
@@ -1560,8 +1560,12 @@ function isLocalMesaPreview() {
   return protocol === "file:" || hostname === "localhost" || hostname === "127.0.0.1";
 }
 
-function canMoveTokens() {
-  return isMaster();
+// Sem token: capacidade geral (mestre, ou jogador com a trava aberta).
+// Com token: o jogador so pode arrastar o proprio token.
+function canMoveTokens(token = null) {
+  if (isMaster()) return true;
+  if (state.role !== "player" || state.playersMoveLocked) return false;
+  return token ? isOwnPlayerToken(token) : true;
 }
 
 function canViewTokenStats(token) {

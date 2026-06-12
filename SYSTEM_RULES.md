@@ -146,7 +146,9 @@ Regras importantes:
 - Apenas o mestre pode salvar posicao, ordem, visibilidade e exposicao de status dos tokens da cena
 - Realtime/WebSocket ja existe via Durable Object (`MesaRealtimeRoom`); alteracoes de cena em tempo real (`mesa:token:*`, `mesa:scene:clear`) sao exclusivas do mestre
 - Sinais de mapa que distribuem ou limpam conteudo (`mesa:map:announce`, `mesa:map:set`, `mesa:map:clear`, `mesa:map:offer`, `mesa:map:ws:*`) sao exclusivos do mestre; sinais jogador -> mestre (`have`, `need`, `answer`, `ice`) continuam liberados
-- Jogador podera mover o proprio token, com trava global controlada pelo mestre (planejado, ainda nao implementado)
+- Jogador pode mover o proprio token em tempo real quando a trava global esta aberta; o mestre alterna a trava pelo botao "Travar/Liberar movimento" (estado persistido no Durable Object e anunciado a todos via `mesa:move:lock`)
+- Clientes descartam movimentos vindos de jogador que nao sejam do proprio token (validacao de posse no consumidor, ja que o DO nao conhece a cena)
+- Jogador continua sem poder criar/remover tokens, limpar cena ou salvar a cena oficial
 
 ## Rolagem de Dados
 

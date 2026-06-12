@@ -58,6 +58,19 @@ Registro minimo esperado:
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
 
+## Ultima Etapa Concluida (2026-06-11 — Etapa 7: jogador move o proprio token + trava do mestre)
+
+### O que mudou
+- `cloudflare/src/mesa-realtime.js`: novo tipo `mesa:move:lock` (master-only) — alterna a trava global de movimento, persistida no storage do DO e anunciada a todos; `mesa:ready` agora inclui `playersMoveLocked`. `mesa:token:move` de jogador passa a ser retransmitido quando a trava esta aberta e o `characterKey` declarado e o do proprio jogador.
+- `js/mesa-core.js`: `state.playersMoveLocked`; listeners de `mesa:ready`/`mesa:move:lock` (jogador ve toast quando o mestre trava/libera); `broadcastMesaTokenMove` envia movimento do proprio token do jogador (com `characterKey`); `applyMesaTokenMoveDelta` descarta deltas de jogador para tokens que nao sao dele (anti-forja — o DO nao conhece a posse, os clientes conhecem); `toggleMesaMoveLock()`.
+- `js/mesa-stage.js`: `canMoveTokens(token)` — mestre move tudo; jogador move apenas o proprio token e somente com a trava aberta.
+- `js/mesa-roster.js`: botao `#moveLockBtn` (so mestre, so online) com label "Travar/Liberar movimento"; hint do palco reflete o estado para o jogador.
+- `mesa.html`: novo botao no overlay de acoes; cache-bust `mesa-core/mesa-stage/mesa-roster` para `?v=2026-06-11-player-move-1`.
+
+### Validacoes
+- Protocolo testado local (wrangler dev, 11 casos): movimento proprio ok + mestre recebe; token de outro recusado; jogador nao trava; trava bloqueia e libera; novo socket recebe estado da trava; mestre move qualquer token
+- npm run check:js / audit:static: OK; test:mesa 3/5 (mesmas 2 falhas pre-existentes documentadas, sem regressao)
+
 ## Ultima Etapa Concluida (2026-06-11 — Etapa 6: notificacao de progressao da alma ao mestre)
 
 ### O que mudou

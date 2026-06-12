@@ -62,15 +62,31 @@ function renderControls() {
   }
 
   if (stageHintBadge) {
-    stageHintBadge.textContent = canMoveTokens()
-      ? "Arraste os tokens para organizar a cena."
-      : "Selecione seu token para ajustar vida e integridade.";
+    if (isMaster()) {
+      stageHintBadge.textContent = "Arraste os tokens para organizar a cena.";
+    } else if (state.playersMoveLocked) {
+      stageHintBadge.textContent = "Movimento travado pelo mestre. Selecione seu token para ajustar vida e integridade.";
+    } else {
+      stageHintBadge.textContent = "Arraste o seu token e ajuste vida e integridade.";
+    }
   }
 
   if (resetMesaBtn) {
     resetMesaBtn.hidden = !isMaster();
     resetMesaBtn.disabled = !isMaster();
     resetMesaBtn.setAttribute("aria-hidden", isMaster() ? "false" : "true");
+  }
+
+  const moveLockBtn = document.getElementById("moveLockBtn");
+  if (moveLockBtn) {
+    const online = window.AUTH?.isBackendEnabled?.() === true;
+    moveLockBtn.hidden = !isMaster() || !online;
+    moveLockBtn.disabled = !isMaster() || !online;
+    moveLockBtn.textContent = state.playersMoveLocked ? "Liberar movimento" : "Travar movimento";
+    moveLockBtn.setAttribute("aria-pressed", state.playersMoveLocked ? "true" : "false");
+    moveLockBtn.title = state.playersMoveLocked
+      ? "Jogadores nao podem mover os proprios tokens"
+      : "Jogadores podem mover os proprios tokens";
   }
 
   if (fullscreenMesaBtn) {

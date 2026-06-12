@@ -62,7 +62,10 @@ const state = {
   scenePersistence: "local",
   sceneRemoteExists: false,
   realtimeStatus: "offline",
-  onlineUsers: []
+  onlineUsers: [],
+  // Trava global controlada pelo mestre: quando true, jogadores nao movem
+  // nem o proprio token. Estado vem do Durable Object (mesa:ready / mesa:move:lock).
+  playersMoveLocked: false
 };
 const MESA_CLIENT_ID_KEY = "tc_mesa_client_id";
 const MESA_REALTIME_DELTA_TYPES = new Set([
@@ -215,6 +218,10 @@ function bindEvents() {
     scheduleMesaRender({ roster: true });
   });
 
+  document.getElementById("moveLockBtn")?.addEventListener("click", () => {
+    toggleMesaMoveLock();
+  });
+
   resetMesaBtn?.addEventListener("click", () => {
     if (!isMaster()) return;
     resetPrototype();
@@ -303,8 +310,24 @@ function bindMesaRealtime() {
 
   window.APP.on("mesa:ready", payload => {
     state.realtimeStatus = "online";
+    state.playersMoveLocked = Boolean(payload?.playersMoveLocked);
     updateMesaPresence(payload);
-    scheduleMesaRender({ summary: true });
+    scheduleMesaRender({ summary: true, controls: true });
+  });
+
+  window.APP.on("mesa:move:lock", payload => {
+    const locked = Boolean(payload?.locked);
+    if (state.playersMoveLocked === locked) return;
+    state.playersMoveLocked = locked;
+    if (!isMaster() && window.UI?.toast) {
+      window.UI.toast(
+        locked
+          ? "O mestre travou o movimento dos tokens."
+          : "O mestre liberou o movimento dos tokens.",
+        { kicker: "// Mesa" }
+      );
+    }
+    scheduleMesaRender({ summary: true, controls: true });
   });
 
   window.APP.on("mesa:presence", payload => {
@@ -469,6 +492,16 @@ async function applyMesaRealtimeDelta(payload) {
 function applyMesaTokenMoveDelta(payload) {
   const token = findToken(payload?.tokenId);
   if (!token) return false;
+
+  // Movimento vindo de jogador so vale para o token DELE — descarta deltas
+  // forjados (o DO nao conhece a posse dos tokens; os clientes conhecem).
+  const actorRole = String(payload?.actor?.role || "");
+  if (actorRole && actorRole !== "master") {
+    const actorName = normalizeMesaUsername(payload?.actor?.username);
+    const ownerName = normalizeMesaUsername(token.ownerUsername || token.characterKey || token.id);
+    if (!actorName || token.type !== "player" || actorName !== ownerName) return false;
+  }
+
   const nextX = roundTo(clamp(Number(payload.x), 0, 100), 2);
   const nextY = roundTo(clamp(Number(payload.y), 0, 100), 2);
   const nextOrder = asPositiveInt(payload.order, token.order || 1);
@@ -1596,14 +1629,32 @@ function serializeMesaRealtimeToken(token) {
   };
 }
 
+function canPlayerMoveOwnToken(token) {
+  return (
+    state.role === "player"
+    && !state.playersMoveLocked
+    && isOwnPlayerToken(token)
+  );
+}
+
 function broadcastMesaTokenMove(token) {
-  if (!token || !isMaster()) return false;
+  if (!token) return false;
+  if (!isMaster() && !canPlayerMoveOwnToken(token)) return false;
   return sendMesaRealtimeDelta("mesa:token:move", {
     tokenId: token.id,
+    characterKey: token.characterKey || token.id,
     x: roundTo(token.x, 2),
     y: roundTo(token.y, 2),
     order: token.order || 1
   });
+}
+
+function toggleMesaMoveLock() {
+  if (!isMaster()) return;
+  const nextLocked = !state.playersMoveLocked;
+  state.playersMoveLocked = nextLocked;
+  sendMesaRealtimeDelta("mesa:move:lock", { locked: nextLocked });
+  scheduleMesaRender({ controls: true });
 }
 
 function broadcastMesaTokenUpsert(token) {
