@@ -3,7 +3,7 @@ const path = require("node:path");
 
 const repoRoot = path.resolve(__dirname, "..");
 const htmlFiles = ["index.html", "ficha.html", "mesa.html", "regras.html", "sugestoes.html"];
-const publishedRoots = new Set(["css", "data", "js"]);
+const publishedRoots = new Set(["css", "js"]);
 const localRefPattern = /\b(?:src|href)=["']([^"']+)["']/g;
 const cssUrlPattern = /url\((?!['"]?(?:data:|https?:|#))['"]?([^'")]+)['"]?\)/g;
 let failed = false;

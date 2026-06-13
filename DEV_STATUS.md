@@ -58,7 +58,28 @@ Registro minimo esperado:
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
 
-## Ultima Etapa Concluida (2026-06-12 — Etapa 9: revisao tecnica — correcoes, performance e limpeza)
+## Ultima Etapa Concluida (2026-06-13 — Etapa 10: login semantico e varredura de performance)
+
+Resumo: melhorias opcionais da revisao + varredura adicional de performance/qualidade com evidencia.
+
+O que mudou:
+
+- Login agora e um `<form id="loginForm">` real (`index.html`): campos com `name`, botao `type="submit"`, submit tratado no `auth.js`. Elimina o aviso do Chrome ("Password field is not contained in a form") e faz os gerenciadores de senha/autofill funcionarem. Enter no usuario ainda avanca para a senha; Enter na senha submete. Validado ao vivo no preview (submit dispara `handleLogin`, sem erro de JS).
+- Limpeza coerente com a remocao do `data/`: regra orfa `/data/*` removida do `_headers` e `data` tirado de `publishedRoots` no `audit-static.cjs`.
+
+Varredura de performance (sem acao necessaria — ja otimizado):
+
+- Glow do cursor (`auth/regras/sugestoes.js`): ja usa `requestAnimationFrame` com cancelamento.
+- Drag de tokens (`mesa-stage.js`): `scheduleDragPosition` ja deduplica via guard de rAF; o listener `mousemove` redundante (par do `pointermove`) NAO causa render duplo — so duas atribuicoes por evento. Mantido por compatibilidade (navegadores sem Pointer Events); registrado como debito tecnico opcional, nao gargalo.
+- `console.log`/`console.debug` de debug no frontend: zero (os 38 `console.*` sao `.warn`/`.error` de tratamento de erro).
+
+Arquivos alterados: `index.html`, `js/auth.js`, `_headers`, `tools/audit-static.cjs`, `tools/build-pages.cjs` (bump bundles → 2026-06-13-revisao-2), `js/auth.js?v=` → 2026-06-13-login-form-1 nas 5 paginas, este arquivo.
+
+Validacoes: `audit:static`, `check:js` (36), `build:pages`, `test-worker` 53/53, Playwright 33/33 — tudo verde.
+
+Debito tecnico opcional (anotado, nao bloqueia): caminho de drag por `mouse*` em `mesa-core.js`/`mesa-stage.js` e redundante ao `pointer*` em navegadores modernos; pode ser removido se o suporte a navegadores sem Pointer Events for descartado.
+
+## Etapa Concluida (2026-06-12 — Etapa 9: revisao tecnica — correcoes, performance e limpeza)
 
 Resumo: execucao do plano de correcao da revisao tecnica completa. Quatro frentes: defeitos (cache-busting, regra de farm), performance (diretorio sem base64, login sem PBKDF2 extra, fontes), limpeza (server/ legado e videos fora do repo) e consistencia (normalizacao Mesa = Ficha).
 

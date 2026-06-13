@@ -67,12 +67,13 @@
           <p class="login-card-copy">Digite seu usu&aacute;rio e senha.</p>
         </div>
 
-        <div class="login-card-form">
+        <form class="login-card-form" id="loginForm" novalidate>
           <div class="form-group">
             <label class="form-label" for="loginUser">Usu&aacute;rio</label>
             <input
               type="text"
               id="loginUser"
+              name="username"
               class="form-input"
               placeholder="Digite seu usu&aacute;rio"
               autocomplete="username"
@@ -85,6 +86,7 @@
               <input
                 type="password"
                 id="loginPass"
+                name="password"
                 class="form-input"
                 placeholder="Digite sua senha"
                 autocomplete="current-password"
@@ -103,10 +105,10 @@
 
           <p class="login-error" id="loginError"></p>
 
-          <button type="button" class="btn btn-primary btn-full" onclick="handleLogin()">
+          <button type="submit" class="btn btn-primary btn-full">
             Entrar
           </button>
-        </div>
+        </form>
 
         <div class="login-footnote">
           <span>Acesso direto</span>
@@ -249,6 +251,6 @@
   <script src="js/runtime-config.js?v=2026-05-04-mesa-realtime-1" defer></script>
   <script src="js/ui.js?v=2026-06-11-soul-notify-1" defer></script>
   <script src="js/api.js?v=2026-06-12-transfer-accept-1" defer></script>
-  <script src="js/auth.js?v=2026-06-10-session-1" defer></script>
+  <script src="js/auth.js?v=2026-06-13-login-form-1" defer></script>
 </body>
 </html>

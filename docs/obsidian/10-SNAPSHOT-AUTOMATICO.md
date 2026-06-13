@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-13 16:02:54 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-13 16:35:26 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,78 +13,22 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `c68ad67 2026-06-12 feat(mesa): jogador move o proprio token com trava global do mestre`
+- Ultimo commit: `d47c047 2026-06-13 fix+perf+chore: revisao tecnica (cache-busting, regra de farm, R2, limpeza)`
 
 ### Alteracoes Locais
 
 ```text
-M  .claude/settings.local.json
-M  .gitignore
-M  DEPLOY_FREE.md
 M  DEV_STATUS.md
-M  README.md
-M  SYSTEM_RULES.md
-M  VISUAL_RULES.md
-D  assets/sheet-fire-background.mp4
-M  cloudflare/README.md
-M  cloudflare/d1/schema.sql
-M  cloudflare/src/characters.js
-M  cloudflare/src/index.js
-M  cloudflare/src/mesa-realtime.js
-M  cloudflare/src/soul-progression.js
-M  css/components.css
-M  css/ficha.css
-M  css/mesa.css
-M  css/tokens.css
-D  data/personagens.json
+M  _headers
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  ficha.html
 M  index.html
-M  js/api.js
-M  js/ficha-core.js
-M  js/ficha-inventory.js
-M  js/ficha-memories.js
-M  js/ficha-soul.js
-M  js/soul-essence.js
+M  js/auth.js
 M  mesa.html
 M  regras.html
-D  render.yaml
-D  server/.dockerignore
-D  server/.env.example
-D  server/Dockerfile
-D  server/Procfile
-D  server/README.md
-D  server/package-lock.json
-D  server/package.json
-D  server/sql/schema.sql
-D  server/src/app.js
-D  server/src/config.js
-D  server/src/db.js
-D  server/src/middleware/auth.js
-D  server/src/middleware/require-role.js
-D  server/src/routes/auth.js
-D  server/src/routes/characters.js
-D  server/src/routes/directory.js
-D  server/src/routes/rules.js
-D  server/src/routes/suggestions.js
-D  server/src/routes/transfers.js
-D  server/src/services/characters.js
-D  server/src/services/rules.js
-D  server/src/services/suggestions.js
-D  server/src/services/users.js
-D  server/src/utils/async-handler.js
-D  server/src/utils/http-error.js
-D  server/src/utils/jwt.js
-D  server/src/utils/password.js
-D  server/src/utils/sheet.js
-D  server/src/utils/soul-progression.js
 M  sugestoes.html
-M  test-worker.mjs
-M  tests/ficha.spec.cjs
-M  tests/mesa.spec.cjs
 M  tools/audit-static.cjs
 M  tools/build-pages.cjs
-D  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -96,73 +40,17 @@ D  vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.
 ### Arquivos Em Stage
 
 ```text
-.claude/settings.local.json
-.gitignore
-DEPLOY_FREE.md
 DEV_STATUS.md
-README.md
-SYSTEM_RULES.md
-VISUAL_RULES.md
-assets/sheet-fire-background.mp4
-cloudflare/README.md
-cloudflare/d1/schema.sql
-cloudflare/src/characters.js
-cloudflare/src/index.js
-cloudflare/src/mesa-realtime.js
-cloudflare/src/soul-progression.js
-css/components.css
-css/ficha.css
-css/mesa.css
-css/tokens.css
-data/personagens.json
+_headers
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ficha.html
 index.html
-js/api.js
-js/ficha-core.js
-js/ficha-inventory.js
-js/ficha-memories.js
-js/ficha-soul.js
-js/soul-essence.js
+js/auth.js
 mesa.html
 regras.html
-render.yaml
-server/.dockerignore
-server/.env.example
-server/Dockerfile
-server/Procfile
-server/README.md
-server/package-lock.json
-server/package.json
-server/sql/schema.sql
-server/src/app.js
-server/src/config.js
-server/src/db.js
-server/src/middleware/auth.js
-server/src/middleware/require-role.js
-server/src/routes/auth.js
-server/src/routes/characters.js
-server/src/routes/directory.js
-server/src/routes/rules.js
-server/src/routes/suggestions.js
-server/src/routes/transfers.js
-server/src/services/characters.js
-server/src/services/rules.js
-server/src/services/suggestions.js
-server/src/services/users.js
-server/src/utils/async-handler.js
-server/src/utils/http-error.js
-server/src/utils/jwt.js
-server/src/utils/password.js
-server/src/utils/sheet.js
-server/src/utils/soul-progression.js
 sugestoes.html
-test-worker.mjs
-tests/ficha.spec.cjs
-tests/mesa.spec.cjs
 tools/audit-static.cjs
 tools/build-pages.cjs
-vecteezy_abstract-orange-fiery-sparks-and-smoke-from-a-bonfire-with_17782827.mp4
 ```
 
 ## Paginas Principais

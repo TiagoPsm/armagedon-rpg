@@ -532,16 +532,26 @@ function togglePassword() {
 document.addEventListener("DOMContentLoaded", async () => {
   initAuthPageGlow();
 
+  const loginForm = document.getElementById("loginForm");
   const loginUser = document.getElementById("loginUser");
   const loginPass = document.getElementById("loginPass");
 
+  // Submit nativo do <form>: cobre Enter na senha, o botao "Entrar" e os
+  // gerenciadores de senha do navegador (que so disparam em forms reais).
+  if (loginForm) {
+    loginForm.addEventListener("submit", event => {
+      event.preventDefault();
+      handleLogin();
+    });
+  }
+
+  // Enter no usuario avanca para a senha em vez de submeter o formulario.
   if (loginUser && loginPass) {
     loginUser.addEventListener("keydown", event => {
-      if (event.key === "Enter") loginPass.focus();
-    });
-
-    loginPass.addEventListener("keydown", event => {
-      if (event.key === "Enter") handleLogin();
+      if (event.key === "Enter") {
+        event.preventDefault();
+        loginPass.focus();
+      }
     });
   }
 

@@ -31,10 +31,6 @@
 /*.ico
   Cache-Control: public, max-age=2592000
 
-# Dados JSON estáticos — cache por 1 dia
-/data/*
-  Cache-Control: public, max-age=86400
-
 # HTML — sempre revalida para garantir ?v= atualizados
 /*.html
   Cache-Control: public, no-cache
