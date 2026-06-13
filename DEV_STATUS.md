@@ -20,7 +20,7 @@ Registro minimo esperado:
 - Frontend: HTML, CSS e JavaScript puros
 - API publicada: Cloudflare Workers
 - Banco publicado: Cloudflare D1
-- Banco local legado/preparado: PostgreSQL em `server/`
+- Backend legado Express/PostgreSQL: removido do repositorio em 2026-06-12 (historico preservado no git)
 
 ## Arquitetura Atual
 
@@ -58,7 +58,75 @@ Registro minimo esperado:
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
 
-## Ultima Etapa Concluida (2026-06-11 — Etapa 7: jogador move o proprio token + trava do mestre)
+## Ultima Etapa Concluida (2026-06-12 — Etapa 9: revisao tecnica — correcoes, performance e limpeza)
+
+Resumo: execucao do plano de correcao da revisao tecnica completa. Quatro frentes: defeitos (cache-busting, regra de farm), performance (diretorio sem base64, login sem PBKDF2 extra, fontes), limpeza (server/ legado e videos fora do repo) e consistencia (normalizacao Mesa = Ficha).
+
+O que mudou:
+
+- Cache-busting: todos os `<link>` CSS locais das 5 paginas ganharam `?v=` (tokens, reset, index, regras, mesa-drawing; components em sugestoes). `tools/audit-static.cjs` agora FALHA se qualquer referencia local a `css/`/`js/` estiver sem `?v=`.
+- Regra de gameplay (autorizada pelo mestre em 2026-06-12): removido o multiplicador de anti-farm por contagem diaria (`weakKillsToday`) do calculo de XP. A unica modulacao por nivel da criatura e a diferenca de rank (2^diff). Campo legado segue aceito em fichas salvas, sem efeito. Aplicado em `cloudflare/src/soul-progression.js` e `js/soul-essence.js`; previa da UI em `js/ficha-soul.js` sem a linha "Anti-farm".
+- Diretorio: `GET /api/directory` nunca trafega avatar base64 (`data:` vira `""`). Nova rota master-only `POST /api/maintenance/migrate-avatars` migra avatares base64 do D1 para R2 e troca pelo URL publico (idempotente). PENDENTE: executar a migracao uma vez em producao apos o deploy.
+- Login: `ensureMasterUser` so roda quando o username do login e o do mestre — logins de jogador deixam de pagar um PBKDF2 extra por request.
+- Fontes: removido o peso 900 de Cinzel Decorative (nenhum uso no CSS/JS) das 5 paginas; `css/mesa.css` trocou `font-weight: 800` (peso nao carregado) por `700`.
+- Limpeza: pasta `server/` (Express/PostgreSQL legado) e `render.yaml` removidos do repo; dois videos `.mp4` (~27 MB) sairam do versionamento (`git rm --cached` + `*.mp4` no `.gitignore`, arquivos continuam no disco).
+- Consistencia Mesa/Ficha: `cloudflare/src/mesa-realtime.js` alinhado a `sheet.js` — campo vazio permanece vazio (nao vira "0") e atributo minimo e 0 (nao 1) nos patches da Mesa.
+- Testes: `test-worker.mjs` ganhou grupos que importam `sheet.js` e `soul-progression.js` REAIS (contrato de semantica vazio/zero e da regra de XP por diferenca de rank) — 53/53 passando.
+- Decisao registrada em `SYSTEM_RULES.md`: jogador aplicar essencia na propria ficha sem aprovacao previa e por design (confianca + notificacao ao mestre).
+- Suites Playwright atualizadas (liam o `server/` removido) e migradas para o Worker/D1: `tests/ficha.spec.cjs` (28/28) e `tests/mesa.spec.cjs` (5/5) verdes. Specs do painel da Mesa ajustadas ao painel simplificado de 2026-06-06 (so Vida/Integridade, sem atributos/itens/memorias).
+- 4 regressoes visuais REAIS encontradas e corrigidas via QA (eram causa das falhas dos testes, nao testes desatualizados):
+  1. Seletor de tipo de item (`.ui-modal-root`) abria ATRAS do editor de item (mesmo z-index + ordem do DOM) e ficava inclicavel → novo token `--z-modal-top: 1100` em `tokens.css`, aplicado a `.ui-modal-root` em `components.css`.
+  2. Linha de transferencia do editor de item estourava a largura do dialogo → `.item-transfer-row` virou grid (picker+qtd) com botao "Enviar" em linha cheia (`ficha.css`).
+  3. Cartao de Lore/Anotacoes nao recolhia de fato e o botao Minimizar/Expandir mudava de largura → regras `.notes-collapsible.is-collapsed`, cabecalho com `.notes-card-heading` e `min-width` fixo no `.notes-toggle-btn` (`ficha.css` + `ficha.html`).
+  4. Nucleo da alma caia numa coluna lateral estreita de 300px → `.identity-block` virou coluna unica e a progressao ocupa largura cheia (`ficha.css`).
+- QA mobile 360px confirmado via medicao de layout: painel "Meu personagem" 100% dentro do card (sem filhos vazando), home sem overflow horizontal, label "Jogador" sem quebra.
+
+Arquivos principais alterados:
+
+- `index.html`, `ficha.html`, `mesa.html`, `regras.html`, `sugestoes.html` (cache-busting + fontes)
+- `tools/audit-static.cjs` (guarda de `?v=`), `tools/build-pages.cjs` (bump dos bundles)
+- `cloudflare/src/soul-progression.js`, `js/soul-essence.js`, `js/ficha-soul.js` (regra de farm)
+- `cloudflare/src/index.js` (rota migrate-avatars + bootstrap condicionado), `cloudflare/src/characters.js` (diretorio sem base64)
+- `cloudflare/src/mesa-realtime.js` (normalizacao alinhada), `test-worker.mjs` (testes de contrato)
+- `css/tokens.css` (token z-modal-top), `css/components.css` (z-index do seletor generico), `css/ficha.css` (transfer-row, lore collapse, identity-block), `css/mesa.css` (font-weight 700)
+- `tests/ficha.spec.cjs`, `tests/mesa.spec.cjs` (migrados para Worker/D1 e painel simplificado)
+- Docs: `README.md`, `DEPLOY_FREE.md`, `SYSTEM_RULES.md`, `cloudflare/README.md`, este arquivo
+- Removidos: `server/` (29 arquivos), `render.yaml`, `.server-*.log`; destracked: 2 `.mp4`
+
+Validacoes executadas:
+
+- `node tools/check-js.cjs` OK (36 arquivos)
+- `node tools/audit-static.cjs` OK (incluindo a nova guarda de `?v=`)
+- `node test-worker.mjs` 53/53
+- `npx playwright test tests/ficha.spec.cjs` 28/28 ; `tests/mesa.spec.cjs` 5/5
+- `npx wrangler deploy --dry-run` OK (bindings preservados)
+- QA mobile 360px (home + painel "Meu personagem") sem overflow
+
+Pendencias abertas:
+
+- Deploy do Worker + rodar `POST /api/maintenance/migrate-avatars` uma vez (mestre autenticado) — unico passo manual de producao
+- `npm run test:mesa:online` com credenciais reais (smoke contra o site publicado)
+
+## Etapa Concluida (2026-06-12 — Etapa 8: aceite de transferencia jogador->jogador)
+
+### O que mudou
+- `cloudflare/d1/schema.sql`: nova tabela `transfer_proposals` (status pending/accepted/rejected/cancelled, payload com snapshot do item/memoria, indices parciais por origem/destino pendente). Migracao remota necessaria antes do deploy.
+- `cloudflare/src/characters.js`: `createTransferProposal` (snapshot + merge key, item fica na origem; limite de 10 pendentes por origem), `listTransferProposals` (incoming/outgoing; mestre ve todas), `acceptTransferProposal` (revalida item por merge key/quantidade e mochila do destino; origem sem o item => proposta cancelada + 409; efetiva fichas + `transfer_audit` com `proposalId` + resolucao no mesmo `DB.batch`), `declineTransferProposal` (reject pelo destino, cancel por quem enviou), `getCharacterById`. Rotas diretas jogador->jogador agora respondem 403 para jogador (somente mestre).
+- `cloudflare/src/index.js`: rotas `POST/GET /api/transfers/proposals` e `POST /api/transfers/proposals/:id/(accept|reject|cancel)`; na criacao, sessao master efetiva direto (`direct: true`).
+- `js/api.js`: wrappers `createTransferProposal`, `listTransferProposals`, `accept/reject/cancelTransferProposal`.
+- `js/ficha-core.js`: painel "Propostas de transferencia" (`refreshTransferProposals`, render + acoes Aceitar/Recusar/Cancelar com confirmacao; aceite recarrega a ficha aberta); chamado em `loadSheet`.
+- `js/ficha-inventory.js` / `js/ficha-memories.js`: envio de jogador para jogador em modo backend cria proposta (item/memoria permanece na origem) e mostra status; mestre segue fluxo direto.
+- `ficha.html`: secao `#transferProposalsSection` no topo da ficha; `css/ficha.css`: estilos `.transfer-proposal-*`.
+- Cache-bust: `api.js` para `?v=2026-06-12-transfer-accept-1` em todas as paginas; `ficha-core/ficha-inventory/ficha-memories/ficha.css` idem em `ficha.html`.
+
+### Validacoes
+- Protocolo testado local (wrangler dev + D1 local, 24 casos, todos OK): rotas diretas bloqueadas para jogador; criacao/listagem incoming/outgoing; terceiros e remetente nao aceitam; aceite move item/memoria e grava auditoria com `proposalId`; revalidacao cancela proposta com origem vazia (409); recusa e cancelamento; mestre efetiva direto.
+- npm run check:js (36 arquivos) / audit:static: OK; wrangler deploy --dry-run: OK; test:ficha 24/28 (mesmas 4 falhas pre-existentes de layout/editor de item, sem regressao).
+
+### Pendencias
+- Aplicar `schema.sql` no D1 remoto antes do deploy do Worker (tabela `transfer_proposals`).
+
+## Etapa Concluida (2026-06-11 — Etapa 7: jogador move o proprio token + trava do mestre)
 
 ### O que mudou
 - `cloudflare/src/mesa-realtime.js`: novo tipo `mesa:move:lock` (master-only) — alterna a trava global de movimento, persistida no storage do DO e anunciada a todos; `mesa:ready` agora inclui `playersMoveLocked`. `mesa:token:move` de jogador passa a ser retransmitido quando a trava esta aberta e o `characterKey` declarado e o do proprio jogador.

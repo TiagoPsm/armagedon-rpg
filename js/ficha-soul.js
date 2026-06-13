@@ -522,7 +522,6 @@ function renderSoulAwardPreview() {
     <p>${getSoulRankName(currentCore.rank)} recebe ${formatSoulXp(calculation.baseXp)} XP base por ${esc(selectedClass)} de rank ${selectedRank}.</p>
     <ul>
       <li>Quantidade: ${normalizedAmount}</li>
-      <li>Anti-farm: ${calculation.isWeakKill ? "aplicado por rank inferior" : "sem penalidade"}</li>
       <li>${potential.points} ${potential.points === 1 ? "ponto" : "pontos"} de atributo possível${potential.points === 1 ? "" : "is"}${potential.rawPoints > potential.points ? ` (${potential.rawPoints - potential.points} bloqueado(s) por teto)` : ""}</li>
       <li>Progresso final: ${formatSoulXp(finalXp)} / ${formatSoulXp(currentCore.xpLimit)} XP</li>
       ${overloadItems.map(item => `<li>${item}</li>`).join("")}

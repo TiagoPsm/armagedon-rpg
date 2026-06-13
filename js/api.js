@@ -464,6 +464,30 @@
         body: payload
       });
     },
+    async createTransferProposal(payload) {
+      return request("/transfers/proposals", {
+        method: "POST",
+        body: payload
+      });
+    },
+    async listTransferProposals() {
+      return request("/transfers/proposals");
+    },
+    async acceptTransferProposal(id) {
+      return request(`/transfers/proposals/${encodeURIComponent(id)}/accept`, {
+        method: "POST"
+      });
+    },
+    async rejectTransferProposal(id) {
+      return request(`/transfers/proposals/${encodeURIComponent(id)}/reject`, {
+        method: "POST"
+      });
+    },
+    async cancelTransferProposal(id) {
+      return request(`/transfers/proposals/${encodeURIComponent(id)}/cancel`, {
+        method: "POST"
+      });
+    },
     async rollMonsterMemory(payload) {
       return request("/transfers/memories/monster-roll", {
         method: "POST",

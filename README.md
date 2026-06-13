@@ -12,7 +12,6 @@ No minimo:
 - atualize `SYSTEM_RULES.md` quando a mudanca tocar regra de gameplay, permissao ou persistencia
 - atualize `VISUAL_RULES.md` quando a mudanca criar ou consolidar decisao visual
 - atualize `cloudflare/README.md` quando a mudanca tocar Worker, D1, rotas ou deploy Cloudflare
-- atualize `server/README.md` quando a mudanca tocar o backend Express/PostgreSQL legado
 - atualize `DEPLOY_FREE.md` quando a mudanca alterar publicacao, workflow ou arquivos enviados
 
 Cada atualizacao deve registrar: o que mudou, quais arquivos foram afetados, como validar e quais pendencias continuam abertas. Esta regra existe para reduzir contexto em conversas futuras.
@@ -47,7 +46,6 @@ Para entender o projeto sem reler historico de conversa:
 - `SYSTEM_RULES.md`: regras funcionais que nao devem mudar sem autorizacao
 - `VISUAL_RULES.md`: padroes visuais consolidados
 - `cloudflare/README.md`: API ativa em Workers + D1
-- `server/README.md`: backend Express/PostgreSQL legado e referencia local
 - `DEPLOY_FREE.md`: roteiro de publicacao gratuita e observacoes de deploy
 
 O diretorio `docs/obsidian/` pode ser aberto como vault no Obsidian. Ele deve guardar contexto curto, decisoes e pendencias para reduzir custo de tokens em sessoes futuras.
@@ -85,7 +83,8 @@ Hoje o frontend funciona como site estatico puro, sem build e sem bundler:
 - `css/`: estilos separados por pagina e dominio
 - `js/`: logica separada por dominio
 - `cloudflare/`: API ativa em Cloudflare Workers + D1
-- `server/`: backend Express/PostgreSQL legado, mantido como referencia e alternativa local
+
+O backend legado Express/PostgreSQL (`server/`) foi removido do repositorio em 2026-06-12; o historico do git preserva a referencia caso precise ser consultada.
 
 ## Como colocar em pratica
 
@@ -160,8 +159,6 @@ Manter a ordem de carregamento nos HTMLs e preservar funcoes globais usadas por 
 
 ## O que ja foi preparado ou mantido
 
-- backend em `server/`
-- esquema SQL inicial em `server/sql/schema.sql`
 - autenticacao por `usuario + senha` criada pelo mestre
 - APIs para jogadores, NPCs, monstros, fichas, regras e transferencias
 - base para troca de itens e memorias no servidor
@@ -171,38 +168,23 @@ Manter a ordem de carregamento nos HTMLs e preservar funcoes globais usadas por 
 
 ## Como prosseguir com banco de dados
 
-Este caminho usa o backend Express/PostgreSQL legado. O caminho publicado atual recomendado e Cloudflare Workers + D1, documentado em `cloudflare/README.md`.
-
-1. Instale Node.js 18+ na maquina onde o backend vai rodar.
-2. Crie um banco PostgreSQL.
-3. Aplique `server/sql/schema.sql`.
-4. Copie `server/.env.example` para `server/.env` e ajuste as variaveis.
-5. Entre em `server/` e rode `npm.cmd install`.
-6. Rode `npm.cmd start`.
-7. Mantenha o frontend em `http://localhost:8000` e o backend em `http://localhost:4000`.
-
-Detalhes completos estao em `server/README.md`.
+O caminho publicado e Cloudflare Workers + D1, documentado em `cloudflare/README.md` (schema em `cloudflare/d1/schema.sql`, aplicado com `npx wrangler d1 execute`).
 
 ## Publicacao gratuita recomendada
 
-Se o objetivo for publicar rapido com poucas mudancas, o caminho mais simples continua sendo:
+O stack publicado do projeto:
 
-- frontend estatico no GitHub Pages
-- backend Node.js no Render
-- banco PostgreSQL no Neon
-
-Se o objetivo for a melhor base gratuita possivel no medio prazo, a migracao recomendada agora passa a ser:
-
-- frontend: Cloudflare Pages
+- frontend: GitHub Pages (workflow em `.github/workflows/pages.yml`)
 - API: Cloudflare Workers
 - banco: Cloudflare D1
 - realtime: Durable Objects
+- avatares/mapas: Cloudflare R2
 
-A base inicial dessa migracao esta em `cloudflare/`.
+A base esta em `cloudflare/`.
 
 ### Antes de publicar
 
-1. Nao publique `server/.env`.
+1. Nao exponha segredos no repositorio; use `wrangler secret put` para `JWT_SECRET`, `PASSWORD_PEPPER` e `MASTER_BOOTSTRAP_PASSWORD`.
 2. Confirme que `.gitignore` esta ativo.
 3. Gere um `JWT_SECRET` proprio em producao.
 4. Troque a senha padrao do mestre.
@@ -216,46 +198,30 @@ O frontend ja esta pronto para GitHub Pages:
 - `.github/workflows/pages.yml` publica so os arquivos estaticos do portal
 - `mesa.html` deve ser publicado junto com `index.html`, `ficha.html` e `regras.html`
 
-Para publicar, edite `js/runtime-config.js` e troque:
+A URL da API publicada fica em `js/runtime-config.js`:
 
 ```js
-apiBaseUrl: "http://localhost:4000/api"
+apiBaseUrl: "https://armagedon-api.tiagopsm2008.workers.dev/api"
 ```
 
-por algo como:
-
-```js
-apiBaseUrl: "https://api-seu-projeto.exemplo.com/api"
-```
-
-Depois envie o repositorio ao GitHub e publique a raiz do projeto como site estatico.
+Para apontar para outro backend, basta editar esse arquivo. Depois envie o repositorio ao GitHub e publique a raiz do projeto como site estatico.
 
 Se sua branch principal nao se chama `main`, ajuste isso em `.github/workflows/pages.yml`.
 
 ### Backend
 
-O backend agora esta pronto para o Render com:
+A API roda em Cloudflare Workers. Deploy a partir de `cloudflare/`:
 
-- `render.yaml`
+```powershell
+npx wrangler deploy --dry-run --config cloudflare/wrangler.toml
+npx wrangler deploy --config cloudflare/wrangler.toml
+```
 
-Tambem continua compativel com hosts Node/Docker usando:
-
-- `server/Procfile`
-- `server/Dockerfile`
-
-No Render, basta conectar o repositorio e preencher os segredos do Blueprint. Em outros hosts, a configuracao minima continua sendo:
-
-- `PORT`
-- `DATABASE_URL`
-- `DATABASE_SSL`
-- `JWT_SECRET`
-- `CORS_ORIGIN`
-- `MASTER_BOOTSTRAP_USERNAME`
-- `MASTER_BOOTSTRAP_PASSWORD`
+Segredos via `wrangler secret put`: `JWT_SECRET`, `PASSWORD_PEPPER`, `MASTER_BOOTSTRAP_PASSWORD`.
 
 ### Banco
 
-Use um PostgreSQL externo e passe a string completa em `DATABASE_URL`.
+Cloudflare D1 (`armagedon`); schema idempotente em `cloudflare/d1/schema.sql`, aplicado com `npx wrangler d1 execute armagedon --remote --file cloudflare/d1/schema.sql`.
 
 ### Dominio proprio
 
@@ -281,7 +247,7 @@ Existe tambem um roteiro direto em `DEPLOY_FREE.md` para seguir a publicacao gra
 - Vida atual e Integridade atual sao limitadas ao maximo antes de salvar
 - jogador pode alterar Integridade atual na propria ficha e na mesa
 - transferencias jogador-para-jogador no Worker validam tipo `player` e persistem origem, destino e auditoria em lote D1
-- Express/PostgreSQL em `server/` continua como legado/referencia
+- o backend legado Express/PostgreSQL foi removido do repositorio em 2026-06-12 (historico preservado no git)
 
 ## Proxima Etapa da Mesa Realtime
 

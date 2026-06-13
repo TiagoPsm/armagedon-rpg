@@ -122,6 +122,7 @@
   --z-sticky: 50;
   --z-overlay: 100;
   --z-modal:   1000;
+  --z-modal-top: 1100; /* seletor generico aberto por cima de outro dialogo */
   --z-toast:   9999;
 
   /* Aliases de compatibilidade (mesa-stage/roster/inspector usam vars legadas) */

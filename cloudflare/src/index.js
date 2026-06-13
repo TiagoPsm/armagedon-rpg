@@ -11,10 +11,14 @@ import {
   verifyPassword
 } from "./auth.js";
 import {
+  acceptTransferProposal,
   assertCharacterAccess,
   awardSoulExperienceToCharacter,
   awardMonsterMemoryDrop,
   buildCharacterKey,
+  createTransferProposal,
+  declineTransferProposal,
+  listTransferProposals,
   completeSoulNightmareForCharacter,
   createMonsterCharacter,
   createNpcCharacter,
@@ -312,15 +316,20 @@ export default {
       }
 
       if (path === "/api/auth/login" && request.method === "POST") {
-        // Bootstrap do mestre roda apenas aqui (rota fria) em vez de em toda
-        // requisicao — evita um UPDATE no D1 por request.
-        await ensureMasterUser(env);
-
         const body = await readJson(request);
         const pepper = String(env.PASSWORD_PEPPER || "");
         const password = String(body.password || "");
         const normalizedUsername = String(body.username || "").trim().toLowerCase();
         const throttleKey = `${normalizedUsername}|${getClientIp(request)}`;
+
+        // Bootstrap do mestre roda apenas no login do proprio mestre: o
+        // ensureMasterUser verifica a senha de bootstrap com PBKDF2 (25k
+        // iteracoes), e pagar esse custo em todo login de jogador so
+        // adicionava latencia sem efeito.
+        const masterUsername = String(env.MASTER_BOOTSTRAP_USERNAME || "mestre").trim().toLowerCase();
+        if (normalizedUsername === masterUsername) {
+          await ensureMasterUser(env);
+        }
 
         const lockedMinutes = await getLoginLockMinutes(env, throttleKey);
         if (lockedMinutes > 0) {
@@ -638,6 +647,92 @@ export default {
         return new Response(object.body, { headers });
       }
 
+      /* ── AVATAR: migração one-shot de base64 (D1) para R2 ───────────── */
+      // Fichas antigas guardavam o avatar como data URL dentro do data_json,
+      // inflando o D1 e o payload de GET /api/characters. Esta rota move os
+      // bytes para o R2 e troca o campo pela URL pública. Idempotente:
+      // re-executar só reprocessa o que ainda estiver em base64.
+
+      if (path === "/api/maintenance/migrate-avatars" && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        if (session.role !== "master") return errorJson("Apenas o mestre pode migrar avatares.", 403, origin);
+        if (!env.MAPS) return errorJson("Bucket R2 nao configurado.", 503, origin);
+
+        const { results } = await env.DB.prepare(
+          `select id, sheet_key, data_json from characters where data_json like '%"avatar":"data:%'`
+        ).all();
+
+        const requestOrigin = new URL(request.url).origin;
+        const migrated = [];
+        const skipped = [];
+
+        for (const row of results || []) {
+          let data;
+          try {
+            data = JSON.parse(row.data_json || "{}");
+          } catch {
+            skipped.push({ key: row.sheet_key, reason: "data_json invalido" });
+            continue;
+          }
+
+          const avatarMatch = String(data.avatar || "").match(/^data:(image\/(?:webp|jpeg|jpg));base64,(.+)$/);
+          if (!avatarMatch) {
+            skipped.push({ key: row.sheet_key, reason: "avatar nao e base64 webp/jpeg" });
+            continue;
+          }
+
+          const [, contentType, b64] = avatarMatch;
+          let bytes;
+          try {
+            const binary = atob(b64);
+            bytes = new Uint8Array(binary.length);
+            for (let index = 0; index < binary.length; index += 1) {
+              bytes[index] = binary.charCodeAt(index);
+            }
+          } catch {
+            skipped.push({ key: row.sheet_key, reason: "base64 invalido" });
+            continue;
+          }
+
+          if (bytes.byteLength > 2 * 1024 * 1024) {
+            skipped.push({ key: row.sheet_key, reason: "avatar acima de 2 MB" });
+            continue;
+          }
+
+          const ext = contentType.includes("jpeg") || contentType.includes("jpg") ? "jpg" : "webp";
+          const safeKey = String(row.sheet_key).replace(/[^a-z0-9_-]/gi, "_").toLowerCase().slice(0, 64);
+          await env.MAPS.put(`avatars/${safeKey}.${ext}`, bytes, {
+            httpMetadata: { contentType },
+            customMetadata: {
+              characterKey: row.sheet_key,
+              uploadedBy: session.username,
+              uploadedAt: new Date().toISOString(),
+              migratedFrom: "base64"
+            }
+          });
+
+          // Troca apenas o campo avatar, preservando o resto do data_json
+          // byte a byte (sem renormalizar a ficha inteira nesta rota).
+          data.avatar = `${requestOrigin}/api/avatars/${encodeURIComponent(row.sheet_key)}`;
+          await env.DB.prepare("update characters set data_json = ?, updated_at = ? where id = ?")
+            .bind(JSON.stringify(data), new Date().toISOString(), row.id)
+            .run();
+
+          migrated.push({ key: row.sheet_key, ext, size: bytes.byteLength });
+        }
+
+        return withCors(
+          json({
+            ok: true,
+            migratedCount: migrated.length,
+            skippedCount: skipped.length,
+            migrated,
+            skipped
+          }),
+          origin
+        );
+      }
+
       /* ── MAPA: upload para R2 (último recurso, só mestre) ──────────── */
 
       if (path === "/api/mesa/map" && request.method === "POST") {
@@ -710,6 +805,52 @@ export default {
 
         await env.MAPS.delete(r2Key);
         return withCors(json({ ok: true, r2Key }), origin);
+      }
+
+      if (path === "/api/transfers/proposals" && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        const body = await readJson(request);
+        const transferType = String(body.transferType || "").trim();
+        const sourceKey = String(body.sourceKey || "").trim().toLowerCase();
+        const targetKey = String(body.targetKey || "").trim().toLowerCase();
+
+        if (!sourceKey || !targetKey) {
+          return errorJson("Origem e destino são obrigatórios.", 400, origin);
+        }
+
+        if (session.role === "master") {
+          // Envio do mestre nao exige aceite: efetiva direto.
+          const result = transferType === "memory"
+            ? await transferMemoryBetweenPlayers(env, session, sourceKey, targetKey, body.memoryIndex)
+            : await transferItemBetweenPlayers(env, session, sourceKey, targetKey, body.itemIndex, body.quantity);
+          return withCors(json({ direct: true, result }), origin);
+        }
+
+        const proposal = await createTransferProposal(env, session, {
+          transferType,
+          sourceKey,
+          targetKey,
+          itemIndex: body.itemIndex,
+          memoryIndex: body.memoryIndex,
+          quantity: body.quantity
+        });
+        return withCors(json({ direct: false, proposal }), origin);
+      }
+
+      if (path === "/api/transfers/proposals" && request.method === "GET") {
+        const session = await requireAuth(request, env);
+        return withCors(json({ proposals: await listTransferProposals(env, session) }), origin);
+      }
+
+      const proposalActionMatch = path.match(/^\/api\/transfers\/proposals\/([a-z0-9-]+)\/(accept|reject|cancel)$/i);
+      if (proposalActionMatch && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        const proposalId = proposalActionMatch[1];
+        const action = proposalActionMatch[2].toLowerCase();
+        const result = action === "accept"
+          ? await acceptTransferProposal(env, session, proposalId)
+          : await declineTransferProposal(env, session, proposalId, action);
+        return withCors(json(result), origin);
       }
 
       if (path === "/api/transfers/items/player-to-player" && request.method === "POST") {

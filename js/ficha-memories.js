@@ -178,6 +178,31 @@ async function transferOwnedMemory(index) {
 
   if (!confirmed) return;
 
+  if (isBackendMode() && currentRole !== "master") {
+    try {
+      await APP.createTransferProposal({
+        transferType: "memory",
+        sourceKey: currentSheetTarget.key,
+        targetKey: target.key,
+        memoryIndex: index
+      });
+      ownedMemoryTransferStates[index] = {
+        ...state,
+        tone: "ok",
+        text: `Proposta enviada para ${target.label}. A memória sai da ficha quando o destino aceitar.`
+      };
+      refreshTransferProposals();
+    } catch (error) {
+      ownedMemoryTransferStates[index] = {
+        ...state,
+        tone: "fail",
+        text: error.message || "Falha ao enviar a proposta de transferência."
+      };
+    }
+    renderOwnedMemories(ownedMemories);
+    return;
+  }
+
   if (isBackendMode()) {
     try {
       await APP.transferOwnedMemory({

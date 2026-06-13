@@ -653,6 +653,36 @@ async function transferItem(index) {
 
   if (!nextConfirmed) return;
 
+  if (isBackendMode() && currentRole !== "master" && nextTarget.kind === "player") {
+    try {
+      await APP.createTransferProposal({
+        transferType: "item",
+        sourceKey: currentSheetTarget.key,
+        targetKey: nextTarget.value,
+        itemIndex: index,
+        quantity: nextQuantity
+      });
+      itemTransferStates[index] = {
+        ...nextState,
+        tone: "ok",
+        text: `Proposta enviada para ${nextTarget.label}. O item sai da mochila quando o destino aceitar.`
+      };
+      refreshTransferProposals();
+    } catch (error) {
+      itemTransferStates[index] = {
+        ...nextState,
+        tone: "fail",
+        text: error.message || "Falha ao enviar a proposta de transferência."
+      };
+    }
+    if (itemEditorIndex === index) {
+      renderItemEditorTransfer(index);
+    } else {
+      renderInv(inv);
+    }
+    return;
+  }
+
   if (isBackendMode()) {
     try {
       await APP.transferItem({

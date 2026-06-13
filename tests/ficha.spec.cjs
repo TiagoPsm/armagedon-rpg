@@ -11,22 +11,13 @@ test.afterAll(async () => {
 
 test.describe("Fichas", () => {
   test("auditoria de transferencia usa somente tipos aceitos pelo schema", async () => {
-    const serverCharacters = fs.readFileSync(path.join(repoRoot, "server", "src", "services", "characters.js"), "utf8");
     const workerCharacters = fs.readFileSync(path.join(repoRoot, "cloudflare", "src", "characters.js"), "utf8");
-    const schemas = [
-      fs.readFileSync(path.join(repoRoot, "server", "sql", "schema.sql"), "utf8"),
-      fs.readFileSync(path.join(repoRoot, "cloudflare", "d1", "schema.sql"), "utf8")
-    ].join("\n");
+    const schemas = fs.readFileSync(path.join(repoRoot, "cloudflare", "d1", "schema.sql"), "utf8");
 
-    expect(serverCharacters).not.toContain("item-character-to-character");
     expect(workerCharacters).not.toContain("item-character-to-character");
     expect(schemas).not.toContain("item-character-to-character");
-    expect(serverCharacters).toContain("function normalizeTransferAuditType");
-    expect(serverCharacters).toContain("normalizeTransferAuditType(transferType)");
     expect(workerCharacters).toContain("function normalizeTransferAuditType");
     expect(workerCharacters).toContain("normalizeTransferAuditType(transferType)");
-    expect(serverCharacters).toContain("sourceKind");
-    expect(serverCharacters).toContain("targetKind");
     expect(workerCharacters).toContain("sourceKind");
     expect(workerCharacters).toContain("targetKind");
   });
@@ -34,11 +25,10 @@ test.describe("Fichas", () => {
   test("contrato de XP do nucleo usa criatura classe quantidade e teto sem estado do corpo", async () => {
     const browserSoul = fs.readFileSync(path.join(repoRoot, "js", "soul-essence.js"), "utf8");
     const workerSoul = fs.readFileSync(path.join(repoRoot, "cloudflare", "src", "soul-progression.js"), "utf8");
-    const serverSheet = fs.readFileSync(path.join(repoRoot, "server", "src", "utils", "sheet.js"), "utf8");
     const workerCharacters = fs.readFileSync(path.join(repoRoot, "cloudflare", "src", "characters.js"), "utf8");
-    const serverRoutes = fs.readFileSync(path.join(repoRoot, "server", "src", "routes", "characters.js"), "utf8");
+    const workerIndex = fs.readFileSync(path.join(repoRoot, "cloudflare", "src", "index.js"), "utf8");
     const fichaHtml = fs.readFileSync(path.join(repoRoot, "ficha.html"), "utf8");
-    const allSoulCode = [browserSoul, workerSoul, serverSheet, workerCharacters, serverRoutes, fichaHtml].join("\n");
+    const allSoulCode = [browserSoul, workerSoul, workerCharacters, workerIndex, fichaHtml].join("\n");
 
     expect(allSoulCode).not.toMatch(/corpseState|estado do corpo|corpo limpo|corpo danificado|corpo destru/i);
     expect(browserSoul).toContain("XP_LIMIT");
@@ -54,12 +44,12 @@ test.describe("Fichas", () => {
     expect(workerSoul).toContain("applySoulExperience");
     expect(workerCharacters).toContain("awardSoulExperienceToCharacter");
     expect(workerCharacters).toContain("completeSoulNightmareForCharacter");
-    expect(serverRoutes).toContain("/:key/soul-essence");
-    expect(serverRoutes).toContain("/:key/soul-nightmare");
+    expect(workerIndex).toContain("soul-essence");
+    expect(workerIndex).toContain("soul-nightmare");
   });
 
-  test("XP do nucleo gera atributos somando a partir de zero", () => {
-    const { applySoulExperience, calculateCreatureExperience } = require("../server/src/utils/soul-progression");
+  test("XP do nucleo gera atributos somando a partir de zero", async () => {
+    const { applySoulExperience, calculateCreatureExperience } = await import("../cloudflare/src/soul-progression.js");
     const data = {
       charName: "Ana Rubra",
       charLevel: "1",
@@ -100,8 +90,8 @@ test.describe("Fichas", () => {
     expect(result.core.lastAttributeGain).toEqual([{ attr: "Forca", amount: 1, value: 1 }]);
   });
 
-  test("XP excedente satura o rank atual e entra em sobrecarga", () => {
-    const { applySoulExperience, calculateCreatureExperience } = require("../server/src/utils/soul-progression");
+  test("XP excedente satura o rank atual e entra em sobrecarga", async () => {
+    const { applySoulExperience, calculateCreatureExperience } = await import("../cloudflare/src/soul-progression.js");
     const data = {
       charName: "Ana Rubra",
       charLevel: "1",
@@ -145,8 +135,8 @@ test.describe("Fichas", () => {
     expect(result.core.attributeGainProgress).toBe(10);
   });
 
-  test("nucleo sobrecarregado recebe apenas um quinto de novos XP ate concluir pesadelo", () => {
-    const { applySoulExperience } = require("../server/src/utils/soul-progression");
+  test("nucleo sobrecarregado recebe apenas um quinto de novos XP ate concluir pesadelo", async () => {
+    const { applySoulExperience } = await import("../cloudflare/src/soul-progression.js");
     const data = {
       charName: "Ana Rubra",
       charLevel: "1",
@@ -190,8 +180,8 @@ test.describe("Fichas", () => {
     expect(result.core.lastAttributeGain).toEqual([]);
   });
 
-  test("concluir pesadelo aplica XP sobrecarregado ao novo rank e gera atributos", () => {
-    const { completeSoulNightmare } = require("../server/src/utils/soul-progression");
+  test("concluir pesadelo aplica XP sobrecarregado ao novo rank e gera atributos", async () => {
+    const { completeSoulNightmare } = await import("../cloudflare/src/soul-progression.js");
     const data = {
       charName: "Ana Rubra",
       charLevel: "1",
@@ -1270,18 +1260,14 @@ test.describe("Inicio", () => {
 test.describe("Sugestoes", () => {
   test("contrato de sugestoes existe no frontend backend worker e schemas", async () => {
     const apiSource = fs.readFileSync(path.join(repoRoot, "js", "api.js"), "utf8");
-    const serverApp = fs.readFileSync(path.join(repoRoot, "server", "src", "app.js"), "utf8");
     const worker = fs.readFileSync(path.join(repoRoot, "cloudflare", "src", "index.js"), "utf8");
-    const serverSchema = fs.readFileSync(path.join(repoRoot, "server", "sql", "schema.sql"), "utf8");
     const d1Schema = fs.readFileSync(path.join(repoRoot, "cloudflare", "d1", "schema.sql"), "utf8");
 
     expect(apiSource).toContain("listSuggestions");
     expect(apiSource).toContain("createSuggestion");
     expect(apiSource).toContain("updateSuggestion");
     expect(apiSource).toContain("deleteSuggestion");
-    expect(serverApp).toContain("/api/suggestions");
     expect(worker).toContain("/api/suggestions");
-    expect(serverSchema).toContain("create table if not exists suggestions");
     expect(d1Schema).toContain("create table if not exists suggestions");
   });
 
@@ -1865,13 +1851,9 @@ test.describe("UX avancada", () => {
 test.describe("Regras com tags", () => {
   test("contrato de regras aceita tags multiplas mantendo tag legado", async () => {
     const apiSource = fs.readFileSync(path.join(repoRoot, "js", "api.js"), "utf8");
-    const serverRules = fs.readFileSync(path.join(repoRoot, "server", "src", "services", "rules.js"), "utf8");
-    const serverRoutes = fs.readFileSync(path.join(repoRoot, "server", "src", "routes", "rules.js"), "utf8");
     const worker = fs.readFileSync(path.join(repoRoot, "cloudflare", "src", "index.js"), "utf8");
 
     expect(apiSource).toContain("tags");
-    expect(serverRules).toContain("tags");
-    expect(serverRoutes).toContain("tags");
     expect(worker).toContain("tags");
   });
 

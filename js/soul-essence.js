@@ -211,14 +211,10 @@
     return CREATURE_CLASSES.find(entry => entry.key === key) || CREATURE_CLASSES[0];
   }
 
-  function getWeakKillFarmMultiplier(weakKillsToday) {
-    const kills = Math.max(0, normalizeInteger(weakKillsToday, 0));
-    if (kills <= 5) return 1;
-    if (kills <= 10) return 0.75;
-    if (kills <= 20) return 0.5;
-    return 0.25;
-  }
-
+  // A modulacao de XP por nivel da criatura vem somente da diferenca de rank
+  // (2^(rankCriatura - rankPersonagem)): criatura mais fraca rende menos,
+  // mais forte rende mais. O antigo multiplicador de farm por contagem
+  // diaria (weakKillsToday) foi removido por decisao de regra (2026-06-12).
   function calculateCreatureExperience(core, creatureRank, creatureClass, amount = 1) {
     const normalizedCore = normalizeSoulCore(core);
     const normalizedCreatureRank = clampRank(creatureRank);
@@ -226,22 +222,16 @@
     const classInfo = getCreatureClassInfo(creatureClass);
     const rankDifference = normalizedCreatureRank - normalizedCore.rank;
     const baseXp = roundToQuarter(classInfo.coreCount * (2 ** rankDifference));
-    const isWeakKill = normalizedCreatureRank < normalizedCore.rank;
-    let weakKills = normalizedCore.weakKillsToday;
     let totalXp = 0;
     const applications = [];
 
     for (let index = 0; index < normalizedAmount; index += 1) {
-      if (isWeakKill) weakKills += 1;
-      const farmMultiplier = isWeakKill ? getWeakKillFarmMultiplier(weakKills) : 1;
-      const gainedXp = roundToQuarter(baseXp * farmMultiplier);
-      totalXp = roundToQuarter(totalXp + gainedXp);
+      totalXp = roundToQuarter(totalXp + baseXp);
       applications.push({
         creatureRank: normalizedCreatureRank,
         creatureClass: classInfo.key,
         baseXp,
-        farmMultiplier,
-        gainedXp
+        gainedXp: baseXp
       });
     }
 
@@ -252,9 +242,6 @@
       amount: normalizedAmount,
       baseXp,
       totalXp,
-      isWeakKill,
-      weakKillsBefore: normalizedCore.weakKillsToday,
-      weakKillsAfter: weakKills,
       applications
     };
   }
@@ -413,7 +400,6 @@
         overloaded: application.overloadedAfter,
         overloadXp: application.overloadXpAfter,
         attributeGainProgress: attributeProgress.attributeGainProgress,
-        weakKillsToday: calculation.weakKillsAfter,
         attributeCaps: before.attributeCaps,
         lastAttributeGain: aggregatedGains,
         history: [
@@ -608,7 +594,6 @@
     getNextRankRequirement,
     getEssenceBaseExperience,
     getExperienceMultiplier,
-    getWeakKillFarmMultiplier,
     normalizeSoulCore,
     normalizeAttributeCaps,
     calculateEssenceExperience,

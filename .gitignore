@@ -10,3 +10,6 @@ _site/
 cloudflare/.dev.vars
 cloudflare/.wrangler/
 .wrangler/
+
+# Videos locais (assets pesados fora do repo)
+*.mp4

@@ -128,7 +128,12 @@ Regras importantes:
 - destino nao pode receber item se a mochila estiver cheia
 - operacoes multi-etapa devem evitar estado parcial sempre que o backend permitir transacao/batch
 - no Worker, transferencias jogador-para-jogador devem gravar origem, destino e auditoria no mesmo `DB.batch`
-- transferencia jogador -> jogador passara a exigir aceite do destino; o item so sai da origem no momento do aceite, com revalidacao; envios do mestre entram direto (planejado, ainda nao implementado)
+- transferencia jogador -> jogador exige aceite do destinatario (proposta em `transfer_proposals`); o item/memoria so sai da origem no momento do aceite, com revalidacao (item ainda disponivel na origem e mochila do destino com espaco)
+- se a revalidacao falhar no aceite (item/memoria sumiu da origem), a proposta e cancelada automaticamente
+- o destinatario pode recusar e quem enviou pode cancelar a proposta pendente; maximo de 10 propostas pendentes por ficha de origem
+- envios do mestre entram direto, sem aceite; as rotas diretas de transferencia jogador->jogador sao exclusivas do mestre
+- o aceite efetiva ambas as fichas, a auditoria (`transfer_audit` com `proposalId`) e a resolucao da proposta no mesmo `DB.batch`
+- o painel "Propostas de transferencia" aparece na ficha do jogador logado com acoes Aceitar/Recusar (recebidas) e Cancelar envio (enviadas)
 
 ## Sessao e Modo Offline
 
@@ -179,9 +184,20 @@ Regras consolidadas:
 
 - ganho de XP baseado no rank da essencia
 - multiplicador conforme diferenca entre rank da essencia e rank do personagem
+- a diferenca de rank e a UNICA modulacao por nivel da criatura: criatura mais
+  fraca rende exponencialmente menos (2^diferenca), mais forte rende mais
+- removido em 2026-06-12: multiplicador de anti-farm por contagem de abates
+  diarios (`weakKillsToday`) — o campo segue aceito em fichas antigas, mas nao
+  e mais incrementado nem usado no calculo
 - XP final arredondado para baixo
 - mantem excedente ao subir
 - nao sobe alem do rank 7
+
+Aplicacao de essencia pelo jogador:
+
+- por design, o jogador aplica essencia na PROPRIA ficha sem aprovacao previa
+  do mestre; o controle e por confianca + notificacao em tempo real ao mestre
+  (toast via WebSocket, evento `soul:awarded`)
 
 Progressao atual mais dificil:
 

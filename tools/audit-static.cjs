@@ -46,6 +46,17 @@ function assertLocalRef(fromFile, ref) {
   }
 }
 
+// CSS e JS publicados ficam com cache imutavel de 1 ano (_headers). Sem ?v=
+// o navegador pode segurar a versao antiga por ate 1 ano apos uma mudanca.
+function assertVersionedAsset(fileName, ref) {
+  if (!isLocalRef(ref)) return;
+  const clean = stripQuery(ref);
+  if (!clean.startsWith("css/") && !clean.startsWith("js/")) return;
+  if (!/\?v=.+/.test(ref)) {
+    fail(`Referencia sem cache-busting (?v=) em ${fileName}: ${ref}`);
+  }
+}
+
 htmlFiles.forEach(fileName => {
   const filePath = path.join(repoRoot, fileName);
   const html = fs.readFileSync(filePath, "utf8");
@@ -54,6 +65,7 @@ htmlFiles.forEach(fileName => {
 
   while ((match = localRefPattern.exec(html))) {
     assertLocalRef(filePath, match[1]);
+    assertVersionedAsset(fileName, match[1]);
   }
 
   const idPattern = /\bid=["']([^"']+)["']/g;

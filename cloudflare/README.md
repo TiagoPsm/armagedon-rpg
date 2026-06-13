@@ -49,6 +49,11 @@ Esta base cobre a API em Workers com:
 - `POST /api/characters/:key/soul-essence`
 - `GET /api/mesa/scene`
 - `PUT /api/mesa/scene`
+- `POST /api/transfers/proposals`
+- `GET /api/transfers/proposals`
+- `POST /api/transfers/proposals/:id/accept`
+- `POST /api/transfers/proposals/:id/reject`
+- `POST /api/transfers/proposals/:id/cancel`
 - `POST /api/transfers/items/player-to-player`
 - `POST /api/transfers/memories/player-to-player`
 - `POST /api/transfers/memories/monster-roll`
@@ -57,6 +62,7 @@ Esta base cobre a API em Workers com:
 - `POST /api/rules`
 - `PUT /api/rules/:id`
 - `DELETE /api/rules/:id`
+- `POST /api/maintenance/migrate-avatars` (master-only; one-shot)
 
 E tambem inclui:
 
@@ -83,6 +89,7 @@ Para acelerar a migracao, a modelagem do D1 segue a mesma ideia do backend atual
 - `rules_posts`
 - `mesa_scenes`
 - `transfer_audit`
+- `transfer_proposals`
 
 O campo `data_json` em `characters` guarda a ficha inteira em JSON.
 O campo `data_json` em `mesa_scenes` guarda a cena visual da Mesa: tokens ativos, posicao, ordem, visibilidade e exposicao de status.
@@ -96,10 +103,12 @@ O campo `data_json` em `mesa_scenes` guarda a cena visual da Mesa: tokens ativos
 - No Durable Object `MesaRealtimeRoom`, sinais de mapa que distribuem/limpam conteudo (`mesa:map:announce/set/clear/offer/ws:*`) exigem role master; sinais jogador -> mestre (`have/need/answer/ice`) sao liberados
 - Respostas 500 nao devem expor `error.message` interno ao cliente; detalhes vao para `console.error` (acessivel via `wrangler tail`)
 - CORS usa allowlist (github.io, armagedon-rpg.pages.dev + previews, localhost); novos dominios do site precisam ser adicionados em `ALLOWED_ORIGINS` no `src/auth.js`
-- `ensureMasterUser` roda somente na rota de login, nao em todas as requisicoes
+- `ensureMasterUser` roda somente na rota de login e apenas quando o username do login e o do mestre (evita um PBKDF2 extra em todo login de jogador)
 - Upload de avatar: maximo 2 MB, apenas `image/webp` ou `image/jpeg`
+- `GET /api/directory` nunca trafega avatar em base64 (`data:`): avatares legados em base64 ficam vazios no diretorio ate serem migrados para R2 via `POST /api/maintenance/migrate-avatars` (master-only, idempotente) ou pelo save automatico da ficha
 - `GET /api/mesa/map/<key>` continua sem auth (URL vira background-image, sem headers), mas so serve chaves `maps/<user>/<id>.webp`; mitigacao extra e o TTL do R2
 - Senhas: PBKDF2-SHA256 com salt por usuario (25k iteracoes) + pepper de secret; hashes legados sha256 migram sozinhos no primeiro login valido — nao remover o caminho legado enquanto houver hash antigo no banco
+- Sessao: o JWT expira em 7 dias e NAO ha refresh automatico — apos expirar, o usuario precisa logar de novo (qualquer doc que afirme renovacao automatica esta errada)
 - Rate-limit de login: tabela `login_throttle` (usuario+IP, 8 falhas = 10 min de bloqueio); manter schema.sql sincronizado e aplicar migracao remota antes de deploys que dependam de tabela nova
 - Progressao da alma: ganhos de Essencia e pesadelos gravam auditoria em `soul_audit`; quando o ator e jogador, o Worker dispara `soul:awarded`/`soul:nightmare` e o DO entrega apenas a sockets master (`broadcastToMasters`)
 - Movimento de token: `mesa:move:lock` (master-only) alterna a trava global persistida no storage do DO; `mesa:token:move` de jogador so e retransmitido com a trava aberta e `characterKey` igual ao username autenticado; a posse do token e validada nos clientes ao aplicar o delta
@@ -110,6 +119,10 @@ O campo `data_json` em `mesa_scenes` guarda a cena visual da Mesa: tokens ativos
 - Monstros nao devem ganhar inventario, faccao ou memorias possuidas
 - Troca de itens deve ser limitada a jogador para jogador
 - Transferencias jogador-para-jogador devem persistir origem, destino e auditoria via `DB.batch`
+- Transferencia jogador->jogador exige proposta com aceite (`transfer_proposals`): `POST /api/transfers/proposals` cria a proposta; o mestre na mesma rota efetiva direto (`direct: true`); o item/memoria fica na origem ate o aceite
+- No aceite (`/accept`, somente dono do destino ou mestre) o Worker revalida: item localizado por merge key com quantidade suficiente na origem e mochila do destino com espaco; se a origem nao tem mais o item/memoria, a proposta e cancelada automaticamente e a rota responde 409
+- O aceite efetiva fichas + `transfer_audit` (payload com `proposalId`) + resolucao da proposta no mesmo `DB.batch`; `/reject` e do destinatario, `/cancel` e de quem enviou; limite de 10 propostas pendentes por ficha de origem
+- As rotas diretas (`items/player-to-player`, `memories/player-to-player`, `items/character-to-character` quando origem e destino sao jogadores) respondem 403 para jogador — somente o mestre transfere direto
 
 ## Registro de revisao estatica 2026-04-30
 

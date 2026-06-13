@@ -338,9 +338,13 @@ async function listDirectory(env, user) {
     const character = serializeCharacter(mapCharacterRow(row));
     const inventorySlots = Number(character.data.inventorySlots || 0);
     const usedSlots = Array.isArray(character.data.inv) ? character.data.inv.length : 0;
-    // Inclui avatar completo (URL ou base64) para que a Mesa não precise
-    // de uma segunda busca por personagem só para obter o avatar.
-    const avatar = String(character.data.avatar || "").trim();
+    // Inclui o avatar como URL para que a Mesa não precise de uma segunda
+    // busca por personagem. Avatares ainda em base64 NÃO trafegam aqui
+    // (payload gigante em toda carga de página) — ficam vazios até a
+    // migração para R2 (POST /api/maintenance/migrate-avatars ou o save
+    // automático da ficha, que já converte base64 em URL).
+    const rawAvatar = String(character.data.avatar || "").trim();
+    const avatar = rawAvatar.startsWith("data:") ? "" : rawAvatar;
 
     if (character.kind === "player") {
       players.push({
@@ -706,6 +710,10 @@ async function transferItemBetweenPlayers(env, actor, sourceKey, targetKey, item
     throw jsonError("A origem e o destino não podem ser a mesma ficha.", 400);
   }
 
+  if (actor.role !== "master") {
+    throw jsonError("Transferência entre jogadores exige proposta com aceite do destinatário.", 403);
+  }
+
   assertCharacterAccess(actor, source, "write");
 
   const sourceData = normalizeSheetData(source.data || {}, "player", source.name);
@@ -757,6 +765,10 @@ async function transferItemBetweenCharacters(env, actor, sourceKey, targetKey, i
 
   if (source.id === target.id) {
     throw jsonError("A origem e o destino nao podem ser a mesma ficha.", 400);
+  }
+
+  if (actor.role !== "master" && source.kind === "player" && target.kind === "player") {
+    throw jsonError("Transferência entre jogadores exige proposta com aceite do destinatário.", 403);
   }
 
   assertCharacterAccess(actor, source, "write");
@@ -812,6 +824,10 @@ async function transferMemoryBetweenPlayers(env, actor, sourceKey, targetKey, me
     throw jsonError("A origem e o destino não podem ser a mesma ficha.", 400);
   }
 
+  if (actor.role !== "master") {
+    throw jsonError("Transferência entre jogadores exige proposta com aceite do destinatário.", 403);
+  }
+
   assertCharacterAccess(actor, source, "write");
 
   const sourceData = normalizeSheetData(source.data || {}, "player", source.name);
@@ -848,6 +864,334 @@ async function transferMemoryBetweenPlayers(env, actor, sourceKey, targetKey, me
     sourceKey: source.key,
     targetKey: target.key
   };
+}
+
+const TRANSFER_PROPOSAL_TYPES = new Set(["item", "memory"]);
+const MAX_PENDING_PROPOSALS_PER_SOURCE = 10;
+
+async function getCharacterById(env, id) {
+  if (!id) return null;
+
+  const row = await env.DB.prepare(
+    `
+      select
+        c.id,
+        c.sheet_key,
+        c.kind,
+        c.owner_user_id,
+        c.name,
+        c.data_json,
+        c.created_by_user_id,
+        u.username as owner_username
+      from characters c
+      left join users u on u.id = c.owner_user_id
+      where c.id = ?
+      limit 1
+    `
+  )
+    .bind(id)
+    .first();
+
+  return mapCharacterRow(row);
+}
+
+function parseProposalPayload(value) {
+  if (!value) return {};
+  try {
+    return JSON.parse(value);
+  } catch {
+    return {};
+  }
+}
+
+function mapTransferProposalRow(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    transferType: row.transfer_type,
+    status: row.status,
+    actorUserId: row.actor_user_id || null,
+    sourceCharacterId: row.source_character_id,
+    targetCharacterId: row.target_character_id,
+    sourceKey: row.source_key || null,
+    sourceName: row.source_name || null,
+    targetKey: row.target_key || null,
+    targetName: row.target_name || null,
+    payload: parseProposalPayload(row.payload_json),
+    resolutionNote: row.resolution_note || "",
+    createdAt: row.created_at,
+    resolvedAt: row.resolved_at || null
+  };
+}
+
+const TRANSFER_PROPOSAL_SELECT = `
+  select
+    p.id,
+    p.transfer_type,
+    p.status,
+    p.actor_user_id,
+    p.source_character_id,
+    p.target_character_id,
+    p.payload_json,
+    p.resolution_note,
+    p.created_at,
+    p.resolved_at,
+    s.sheet_key as source_key,
+    s.name as source_name,
+    t.sheet_key as target_key,
+    t.name as target_name
+  from transfer_proposals p
+  left join characters s on s.id = p.source_character_id
+  left join characters t on t.id = p.target_character_id
+`;
+
+async function getTransferProposalById(env, proposalId) {
+  const id = String(proposalId || "").trim();
+  if (!id) return null;
+
+  const row = await env.DB.prepare(`${TRANSFER_PROPOSAL_SELECT} where p.id = ? limit 1`)
+    .bind(id)
+    .first();
+
+  return mapTransferProposalRow(row);
+}
+
+async function createTransferProposal(env, actor, options = {}) {
+  const transferType = String(options.transferType || "").trim();
+  if (!TRANSFER_PROPOSAL_TYPES.has(transferType)) {
+    throw jsonError("Tipo de transferência inválido.", 400);
+  }
+
+  const source = await getCharacterByKey(env, options.sourceKey);
+  const target = await getCharacterByKey(env, options.targetKey);
+
+  if (!source || !target) {
+    throw jsonError("Ficha de origem ou destino não encontrada.", 404);
+  }
+
+  if (source.kind !== "player" || target.kind !== "player") {
+    throw jsonError("Propostas de transferência só existem entre jogadores.", 400);
+  }
+
+  if (source.id === target.id) {
+    throw jsonError("A origem e o destino não podem ser a mesma ficha.", 400);
+  }
+
+  assertCharacterAccess(actor, source, "write");
+
+  const sourceData = normalizeSheetData(source.data || {}, "player", source.name);
+  let payload = null;
+
+  if (transferType === "item") {
+    const index = Number.parseInt(options.itemIndex, 10);
+    if (Number.isNaN(index) || index < 0 || index >= sourceData.inv.length) {
+      throw jsonError("Item de origem nao encontrado.", 404);
+    }
+
+    const sourceItem = normalizeItem(sourceData.inv[index]);
+    const availableQuantity = getItemQuantity(sourceItem);
+    if (availableQuantity <= 0) {
+      throw jsonError("O item de origem nao possui quantidade disponivel.", 400);
+    }
+
+    const quantity = getTransferQuantity(options.quantity, availableQuantity);
+    if (quantity < 1) {
+      throw jsonError("Informe uma quantidade positiva para transferir.", 400);
+    }
+
+    payload = {
+      item: normalizeItem({
+        ...sourceItem,
+        qty: String(quantity),
+        armor: sourceItem.type === "armadura"
+          ? { ...(sourceItem.armor || {}), equipped: false }
+          : sourceItem.armor
+      }),
+      mergeKey: getItemMergeKey(sourceItem),
+      quantity
+    };
+  } else {
+    const index = Number.parseInt(options.memoryIndex, 10);
+    if (Number.isNaN(index) || index < 0 || index >= sourceData.ownedMemories.length) {
+      throw jsonError("Memória não encontrada.", 404);
+    }
+
+    payload = {
+      memory: normalizeOwnedMemory(sourceData.ownedMemories[index])
+    };
+  }
+
+  const pendingRow = await env.DB.prepare(
+    "select count(*) as total from transfer_proposals where status = 'pending' and source_character_id = ?"
+  )
+    .bind(source.id)
+    .first();
+
+  if ((pendingRow?.total || 0) >= MAX_PENDING_PROPOSALS_PER_SOURCE) {
+    throw jsonError("Limite de propostas pendentes atingido. Aguarde os aceites ou cancele propostas antigas.", 429);
+  }
+
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+
+  await env.DB.prepare(
+    `
+      insert into transfer_proposals (
+        id, transfer_type, status, actor_user_id, source_character_id, target_character_id, payload_json, created_at
+      )
+      values (?, ?, 'pending', ?, ?, ?, ?, ?)
+    `
+  )
+    .bind(id, transferType, actor.sub, source.id, target.id, JSON.stringify(payload), now)
+    .run();
+
+  return getTransferProposalById(env, id);
+}
+
+async function listTransferProposals(env, actor) {
+  let rows;
+
+  if (actor.role === "master") {
+    rows = await env.DB.prepare(
+      `${TRANSFER_PROPOSAL_SELECT} where p.status = 'pending' order by p.created_at asc`
+    ).all();
+  } else {
+    rows = await env.DB.prepare(
+      `
+        ${TRANSFER_PROPOSAL_SELECT}
+        where p.status = 'pending'
+          and (t.owner_user_id = ? or p.actor_user_id = ?)
+        order by p.created_at asc
+      `
+    )
+      .bind(actor.sub, actor.sub)
+      .all();
+  }
+
+  const proposals = (rows?.results || []).map(mapTransferProposalRow);
+  return proposals.map(proposal => ({
+    ...proposal,
+    direction: proposal.actorUserId === actor.sub ? "outgoing" : "incoming"
+  }));
+}
+
+function buildResolveProposalStatement(env, proposalId, status, note, now) {
+  return env.DB.prepare(
+    "update transfer_proposals set status = ?, resolution_note = ?, resolved_at = ? where id = ? and status = 'pending'"
+  ).bind(status, String(note || ""), now, proposalId);
+}
+
+async function markProposalResolved(env, proposalId, status, note) {
+  const now = new Date().toISOString();
+  await buildResolveProposalStatement(env, proposalId, status, note, now).run();
+}
+
+async function acceptTransferProposal(env, actor, proposalId) {
+  const proposal = await getTransferProposalById(env, proposalId);
+  if (!proposal || proposal.status !== "pending") {
+    throw jsonError("Proposta não encontrada ou já resolvida.", 404);
+  }
+
+  const source = await getCharacterById(env, proposal.sourceCharacterId);
+  const target = await getCharacterById(env, proposal.targetCharacterId);
+  if (!source || !target) {
+    await markProposalResolved(env, proposal.id, "cancelled", "Ficha de origem ou destino não existe mais.");
+    throw jsonError("Ficha de origem ou destino não existe mais; proposta cancelada.", 409);
+  }
+
+  if (actor.role !== "master" && target.ownerUserId !== actor.sub) {
+    throw jsonError("Somente o destinatário pode aceitar esta proposta.", 403);
+  }
+
+  const sourceData = normalizeSheetData(source.data || {}, "player", source.name);
+  const targetData = normalizeSheetData(target.data || {}, "player", target.name);
+  let auditType = null;
+  let auditPayload = null;
+
+  if (proposal.transferType === "item") {
+    const mergeKey = String(proposal.payload?.mergeKey || "");
+    const quantity = Math.max(1, Number.parseInt(proposal.payload?.quantity, 10) || 1);
+    const index = sourceData.inv.findIndex(candidate => getItemMergeKey(candidate) === mergeKey);
+    const available = index >= 0 ? getItemQuantity(normalizeItem(sourceData.inv[index])) : 0;
+
+    if (index < 0 || available < quantity) {
+      await markProposalResolved(env, proposal.id, "cancelled", "O item não está mais disponível na origem.");
+      throw jsonError("O item não está mais disponível na origem; proposta cancelada.", 409);
+    }
+
+    const transfer = applyItemQuantityTransfer(sourceData, targetData, "player", "player", index, quantity);
+    auditType = "item-player-to-player";
+    auditPayload = {
+      proposalId: proposal.id,
+      item: transfer.item,
+      quantity: transfer.quantity,
+      mergeMode: transfer.mergeMode,
+      sourceKey: source.key,
+      sourceKind: source.kind,
+      targetKey: target.key,
+      targetKind: target.kind
+    };
+  } else {
+    const wanted = JSON.stringify(normalizeOwnedMemory(proposal.payload?.memory || {}));
+    const index = sourceData.ownedMemories.findIndex(
+      candidate => JSON.stringify(normalizeOwnedMemory(candidate)) === wanted
+    );
+
+    if (index < 0) {
+      await markProposalResolved(env, proposal.id, "cancelled", "A memória não está mais disponível na origem.");
+      throw jsonError("A memória não está mais disponível na origem; proposta cancelada.", 409);
+    }
+
+    const transferredMemory = normalizeOwnedMemory(sourceData.ownedMemories[index]);
+    sourceData.ownedMemories.splice(index, 1);
+    targetData.ownedMemories.push(transferredMemory);
+    auditType = "memory-player-to-player";
+    auditPayload = {
+      proposalId: proposal.id,
+      memory: transferredMemory,
+      sourceKey: source.key,
+      targetKey: target.key
+    };
+  }
+
+  const now = new Date().toISOString();
+  await env.DB.batch([
+    buildPersistCharacterStatement(env, source, sourceData, now),
+    buildPersistCharacterStatement(env, target, targetData, now),
+    buildTransferAuditStatement(env, auditType, actor.sub, source.id, target.id, auditPayload, now),
+    buildResolveProposalStatement(env, proposal.id, "accepted", "", now)
+  ]);
+
+  return {
+    proposalId: proposal.id,
+    status: "accepted",
+    transferType: proposal.transferType,
+    sourceKey: source.key,
+    targetKey: target.key,
+    payload: auditPayload
+  };
+}
+
+async function declineTransferProposal(env, actor, proposalId, action) {
+  const proposal = await getTransferProposalById(env, proposalId);
+  if (!proposal || proposal.status !== "pending") {
+    throw jsonError("Proposta não encontrada ou já resolvida.", 404);
+  }
+
+  if (action === "reject") {
+    const target = await getCharacterById(env, proposal.targetCharacterId);
+    if (actor.role !== "master" && target?.ownerUserId !== actor.sub) {
+      throw jsonError("Somente o destinatário pode recusar esta proposta.", 403);
+    }
+    await markProposalResolved(env, proposal.id, "rejected", "Recusada pelo destinatário.");
+    return { proposalId: proposal.id, status: "rejected" };
+  }
+
+  if (actor.role !== "master" && proposal.actorUserId !== actor.sub) {
+    throw jsonError("Somente quem enviou pode cancelar esta proposta.", 403);
+  }
+  await markProposalResolved(env, proposal.id, "cancelled", "Cancelada por quem enviou.");
+  return { proposalId: proposal.id, status: "cancelled" };
 }
 
 async function rollMonsterMemoryDrop(env, actor, monsterKey, dropIndex) {
@@ -940,8 +1284,12 @@ async function awardMonsterMemoryDrop(env, actor, monsterKey, dropIndex, targetK
 }
 
 export {
+  acceptTransferProposal,
   assertCharacterAccess,
   awardMonsterMemoryDrop,
+  createTransferProposal,
+  declineTransferProposal,
+  listTransferProposals,
   awardSoulExperienceToCharacter,
   buildCharacterKey,
   completeSoulNightmareForCharacter,

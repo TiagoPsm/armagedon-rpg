@@ -128,6 +128,12 @@ Comportamento visual consolidado:
 - Superficies com `backdrop-filter` precisam manter contraste e legibilidade mesmo quando o navegador nao suportar blur
 - O fundo principal do site deve ser preto estatico, com brilho vermelho muito sutil e sem animacoes decorativas continuas
 - Camadas como orbitas, cinzas, brasas e glow dinamico de pagina devem ficar desligadas por padrao para melhorar fluidez
+- Fontes Google: carregar apenas os pesos realmente usados no CSS. Hoje sao
+  Cinzel 400/500/600/700, Cinzel Decorative 400/700 e Crimson Text 400/600/700
+  (+ italico 400). Antes de adicionar um `font-weight` novo, confirme que o peso
+  esta na URL do Google Fonts nas 5 paginas.
+- Avatares e mapas trafegam como URL (R2), nunca base64 embutido em respostas de
+  listagem — base64 inflava cada carga de pagina (ver `cloudflare/README.md`)
 
 ## Ficha
 
@@ -148,6 +154,13 @@ Comportamento visual consolidado:
 - Conteudo sempre bem dimensionado
 - Nunca deixar textos espremidos ou botoes mal distribuidos
 - Preferir composicao simples, clara e premium
+- Escala de z-index (em `tokens.css`): `--z-modal: 1000` para dialogos; um
+  seletor generico aberto POR CIMA de outro dialogo (ex.: escolher o tipo de
+  item dentro do editor de item) usa `--z-modal-top: 1100`. Empate de z-index
+  faz o DOM decidir a ordem — sem o token superior o seletor fica clicavel só
+  visualmente, mas atras do dialogo que o abriu.
+- Botoes que alternam rotulo (ex.: "Minimizar"/"Expandir" no cartao de Lore)
+  precisam de largura minima fixa para o cabecalho nao "pular" ao alternar.
 
 ## Painel do Mestre
 

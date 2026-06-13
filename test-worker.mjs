@@ -8,6 +8,9 @@
  * Execute:  node test-worker.mjs
  */
 
+import { normalizeSheetData } from "./cloudflare/src/sheet.js";
+import { calculateCreatureExperience, applySoulExperience } from "./cloudflare/src/soul-progression.js";
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Mini framework de teste (igual ao test-logic.mjs da Task #30)
 // ──────────────────────────────────────────────────────────────────────────────
@@ -354,6 +357,106 @@ group("DO handleMapSignal — remetente não recebe a própria mensagem");
   assert("jogador (remetente) NÃO recebe o próprio broadcast",
     jogador._sent.length === 0
   );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// [5] Normalização de ficha (sheet.js REAL) — semântica de vazio e zero
+// ──────────────────────────────────────────────────────────────────────────────
+
+group("sheet.js — campo vazio permanece vazio, atributo 0 é válido");
+
+{
+  const data = normalizeSheetData(
+    { charName: "Teste", attrForca: "0", vidaAtual: "", vidaMax: "", integAtual: "5", integMax: "3" },
+    "player",
+    "Teste"
+  );
+
+  assertEqual("attrForca 0 não vira 1", data.attrForca, "0");
+  assertEqual("vidaAtual vazia permanece vazia", data.vidaAtual, "");
+  assertEqual("vidaMax vazia permanece vazia", data.vidaMax, "");
+  assertEqual("integAtual clampada pela integMax", data.integAtual, "3");
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// [6] DO mesa-realtime — réplica da normalização de patch (deve espelhar [5])
+//
+// Réplica de normalizeResourceValue/normalizeAttrValue em
+// cloudflare/src/mesa-realtime.js (pós-alinhamento 2026-06-12). Se este grupo
+// divergir do [5], a Mesa exibe valores diferentes da Ficha.
+// ──────────────────────────────────────────────────────────────────────────────
+
+function mesaNormalizeResourceValue(value, fallback = "") {
+  if (value === "" || value === null || value === undefined) return String(fallback);
+  const numeric = Number.parseInt(value, 10);
+  if (Number.isNaN(numeric)) return String(fallback);
+  return String(Math.max(0, numeric));
+}
+
+function mesaNormalizeAttrValue(value, fallback = "") {
+  if (value === "" || value === null || value === undefined) return String(fallback);
+  const numeric = Number.parseInt(value, 10);
+  if (Number.isNaN(numeric)) return String(fallback);
+  return String(Math.max(0, numeric));
+}
+
+group("mesa-realtime — patch espelha a semântica da ficha");
+
+assertEqual("recurso vazio no patch permanece vazio (não vira '0')",
+  mesaNormalizeResourceValue("", ""), ""
+);
+
+assertEqual("atributo 0 no patch permanece 0 (não vira 1)",
+  mesaNormalizeAttrValue("0", ""), "0"
+);
+
+assertEqual("recurso negativo clampa em 0",
+  mesaNormalizeResourceValue("-3", ""), "0"
+);
+
+// ──────────────────────────────────────────────────────────────────────────────
+// [7] soul-progression.js REAL — XP modulado só pela diferença de rank
+// ──────────────────────────────────────────────────────────────────────────────
+
+group("soul-progression — escala por diferença de rank, sem anti-farm por contagem");
+
+{
+  const coreRank3 = { rank: 3, xp: 0 };
+
+  // Beast (coreCount 1): 2^(rankCriatura - rankPersonagem)
+  assertEqual("criatura 2 ranks abaixo rende 1/4 do XP base",
+    calculateCreatureExperience(coreRank3, 1, "Beast", 1).totalXp, 0.25
+  );
+
+  assertEqual("criatura do mesmo rank rende XP base cheio",
+    calculateCreatureExperience(coreRank3, 3, "Beast", 1).totalXp, 1
+  );
+
+  assertEqual("criatura 2 ranks acima rende 4x o XP base",
+    calculateCreatureExperience(coreRank3, 5, "Beast", 1).totalXp, 4
+  );
+
+  // Sem decaimento por contagem: 20 abates fracos = 20 × XP unitário
+  const single = calculateCreatureExperience(coreRank3, 1, "Beast", 1).totalXp;
+  const twenty = calculateCreatureExperience(coreRank3, 1, "Beast", 20).totalXp;
+  assertEqual("20 abates fracos rendem exatamente 20x o XP unitário (sem decaimento)",
+    twenty, single * 20
+  );
+
+  // weakKillsToday legado não influencia o cálculo
+  const withLegacyKills = calculateCreatureExperience({ rank: 3, xp: 0, weakKillsToday: 50 }, 1, "Beast", 1).totalXp;
+  assertEqual("weakKillsToday salvo em ficha antiga não altera o XP",
+    withLegacyKills, single
+  );
+}
+
+{
+  // applySoulExperience integra o cálculo sem o campo de farm
+  const data = { charName: "Teste", soulCore: { rank: 2, xp: 0 }, attrForca: "10" };
+  const result = applySoulExperience(data, "player", { creatureRank: 2, creatureClass: "Beast", amount: 4 });
+
+  assertEqual("XP aplicado = 4 abates de mesmo rank × 1 XP", result.summary.totalExperience, 4);
+  assert("histórico registra a aplicação", result.core.history.length === 1);
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

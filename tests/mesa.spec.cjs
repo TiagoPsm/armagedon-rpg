@@ -210,30 +210,17 @@ test.describe("Mesa virtual", () => {
     await expect(page.locator('[data-player-stat-field="currentIntegrity"]')).toHaveValue("");
     await page.locator('[data-player-stat-field="currentIntegrity"]').type("10");
     await page.locator('[data-player-sheet-field="integMax"]').fill("6");
-    await page.locator('[data-player-sheet-field="attrForca"]').focus();
+    await page.locator('[data-player-stat-field="currentLife"]').focus();
     await expect(page.locator('[data-player-stat-field="currentIntegrity"]')).toHaveValue("6");
     await page.locator('[data-player-sheet-field="integMax"]').fill("30");
     await page.locator('[data-player-stat-field="currentIntegrity"]').fill("10");
 
-    await page.locator('[data-player-sheet-field="attrForca"]').fill("");
-    await expect(page.locator('[data-player-sheet-field="attrForca"]')).toHaveValue("");
-    await page.locator('[data-player-sheet-field="attrForca"]').fill("7");
-    await page.locator('[data-player-sheet-field="attrAlma"]').fill("15");
-
-    await page.locator('[data-player-sheet-field="charClass"]').fill("Sentinela");
-
-    await expect(page.locator('[data-player-item-field="name"]').first()).toHaveValue("Lamina curta");
-    await page.locator('[data-player-item-field="name"]').first().fill("Lamina longa");
-    await page.locator('[data-player-item-field="qty"]').first().fill("");
-    await expect(page.locator('[data-player-item-field="qty"]').first()).toHaveValue("");
-    await page.locator('[data-player-item-field="qty"]').first().fill("2");
-    await page.locator('[data-player-item-field="damage"]').first().fill("1d8");
-    await page.locator('[data-player-panel-action="add-inventory-item"]').click();
-    await expect(page.locator('[data-player-item-field="name"]')).toHaveCount(2);
-    await page.locator('[data-player-item-field="name"]').last().fill("Bandagem");
-    await page.locator('[data-player-item-field="type"]').last().selectOption("acessorio");
-
-    await expect(playerPanel).toContainText("Memoria do Portao");
+    // Painel simplificado (2026-06-06): atributos, classe, inventario e
+    // memorias sairam do painel da Mesa — a edicao completa fica na ficha.
+    await expect(page.locator('[data-player-sheet-field="attrForca"]')).toHaveCount(0);
+    await expect(page.locator('[data-player-sheet-field="charClass"]')).toHaveCount(0);
+    await expect(page.locator('[data-player-item-field="name"]')).toHaveCount(0);
+    await expect(page.locator('[data-player-panel-action="add-inventory-item"]')).toHaveCount(0);
 
     const savedSheet = await page.evaluate(() => {
       const sheets = JSON.parse(localStorage.getItem("tc_sheets") || "{}");
@@ -243,15 +230,12 @@ test.describe("Mesa virtual", () => {
     expect(savedSheet.vidaMax).toBe("30");
     expect(savedSheet.integAtual).toBe("10");
     expect(savedSheet.integMax).toBe("30");
-    expect(savedSheet.attrForca).toBe("7");
-    expect(savedSheet.attrAlma).toBe("15");
-    expect(savedSheet.charClass).toBe("Sentinela");
-    expect(savedSheet.inv).toHaveLength(2);
-    expect(savedSheet.inv[0].name).toBe("Lamina longa");
-    expect(savedSheet.inv[0].qty).toBe("2");
-    expect(savedSheet.inv[0].damage).toBe("1d8");
-    expect(savedSheet.inv[1].name).toBe("Bandagem");
-    expect(savedSheet.inv[1].type).toBe("acessorio");
+    // O painel nao pode sobrescrever o que ele nao edita.
+    expect(savedSheet.attrForca).toBe("2");
+    expect(savedSheet.attrAlma).toBe("18");
+    expect(savedSheet.charClass).toBe("Flagelante");
+    expect(savedSheet.inv).toHaveLength(1);
+    expect(savedSheet.inv[0].name).toBe("Lamina curta");
 
     const savedScene = await page.evaluate(() => JSON.parse(localStorage.getItem("tc_virtual_mesa_mock_v1") || "{}"));
     expect(savedScene.tokens).toHaveLength(3);
@@ -491,14 +475,11 @@ test.describe("Mesa virtual", () => {
     expect(cachedAfterStaleRefresh.integAtual).toBe("2");
     expect(cachedAfterStaleRefresh.integMax).toBe("11");
 
-    await expect(page.locator('[data-player-item-field="name"]').first()).toHaveValue("Rosa de Ferro");
-    await page.locator('[data-player-item-field="name"]').first().fill("Rosa de Ferro Reforcada");
-
-    await expect(playerPanel).toContainText("Juramento Rubro");
-
-    await page.locator('[data-player-sheet-field="attrAgilidade"]').fill("9");
-
-    await page.locator('[data-player-sheet-field="charRace"]').fill("Marcada");
+    // Painel simplificado (2026-06-06): itens, memorias e atributos nao sao
+    // editaveis pela Mesa — somente Vida/Integridade (atual e maxima).
+    await expect(page.locator('[data-player-item-field="name"]')).toHaveCount(0);
+    await expect(page.locator('[data-player-sheet-field="attrAgilidade"]')).toHaveCount(0);
+    await expect(page.locator('[data-player-sheet-field="charRace"]')).toHaveCount(0);
 
     await expect.poll(() => putRequests.length, { timeout: 4000 }).toBeGreaterThan(0);
     await expect.poll(() => (
@@ -506,11 +487,13 @@ test.describe("Mesa virtual", () => {
       && characterData.vidaMax === "22"
       && characterData.integAtual === "2"
       && characterData.integMax === "11"
-      && characterData.attrAgilidade === "9"
-      && characterData.charRace === "Marcada"
-      && Array.isArray(characterData.inv)
-      && characterData.inv[0]?.name === "Rosa de Ferro Reforcada"
     ), { timeout: 4000 }).toBe(true);
+
+    // O PUT da Mesa nao pode sobrescrever campos que o painel nao edita.
+    expect(characterData.attrAgilidade).toBe("3");
+    expect(characterData.charRace || "").toBe("");
+    expect(Array.isArray(characterData.inv)).toBe(true);
+    expect(characterData.inv[0]?.name).toBe("Rosa de Ferro");
 
     const cachedRemoteSheet = await page.evaluate(() => {
       const sheets = JSON.parse(localStorage.getItem("tc_remote_sheets") || "{}");
@@ -520,8 +503,7 @@ test.describe("Mesa virtual", () => {
     expect(cachedRemoteSheet.vidaMax).toBe("22");
     expect(cachedRemoteSheet.integAtual).toBe("2");
     expect(cachedRemoteSheet.integMax).toBe("11");
-    expect(cachedRemoteSheet.attrAgilidade).toBe("9");
-    expect(cachedRemoteSheet.charRace).toBe("Marcada");
-    expect(cachedRemoteSheet.inv[0].name).toBe("Rosa de Ferro Reforcada");
+    expect(cachedRemoteSheet.attrAgilidade).toBe("3");
+    expect(cachedRemoteSheet.inv[0].name).toBe("Rosa de Ferro");
   });
 });

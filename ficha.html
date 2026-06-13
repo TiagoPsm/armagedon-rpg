@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -12,12 +12,12 @@
   <link rel="preconnect" href="https://armagedon-api.tiagopsm2008.workers.dev" crossorigin />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="css/tokens.css" />
-  <link rel="stylesheet" href="css/reset.css" />
-  <link rel="stylesheet" href="css/components.css?v=2026-06-11-soul-notify-1" />
-  <link rel="stylesheet" href="css/ficha.css?v=2026-06-05-responsive-1" />
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap"></noscript>
+  <link rel="stylesheet" href="css/tokens.css?v=2026-06-12-cache-fix-1" />
+  <link rel="stylesheet" href="css/reset.css?v=2026-06-12-cache-fix-1" />
+  <link rel="stylesheet" href="css/components.css?v=2026-06-12-modal-stack-1" />
+  <link rel="stylesheet" href="css/ficha.css?v=2026-06-12-revisao-1" />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap"></noscript>
 </head>
 <body>
   <div class="bg-fixed bg-noise"></div>
@@ -262,6 +262,14 @@
     </header>
 
     <main class="page-main page-main-sheet">
+      <section class="sheet-block transfer-proposals-block" id="transferProposalsSection" hidden>
+        <header class="section-head">
+          <h2>Propostas de transferência</h2>
+          <span class="section-meta">Aceite ou recuse itens e memórias enviados por outros jogadores</span>
+        </header>
+        <div id="transferProposalsList" class="transfer-proposals-list"></div>
+      </section>
+
       <section class="sheet-block identity-block sheet-hero">
         <div class="identity-main">
           <div class="avatar-col">
@@ -399,13 +407,15 @@
         <div class="identity-side">
           <article class="sheet-block identity-note identity-lore-card notes-collapsible" id="identityLoreCard" data-notes-section="charNotes">
             <div class="notes-card-head">
-              <span class="section-label">Lore</span>
+              <div class="notes-card-heading">
+                <span class="section-label">Lore</span>
+                <strong>História e detalhes</strong>
+              </div>
               <div class="notes-card-actions">
                 <span class="notes-collapse-summary" data-notes-summary="charNotes">Sem conteudo</span>
                 <button type="button" class="btn-inline notes-toggle-btn" data-notes-toggle="charNotes" aria-expanded="true">Minimizar</button>
               </div>
             </div>
-            <strong>História e detalhes</strong>
             <p class="identity-note-copy">Registre a lore, motivações, vínculos e segredos importantes da ficha.</p>
             <label class="form-label identity-lore-label" for="charNotes">Lore do personagem</label>
             <textarea
@@ -971,18 +981,18 @@
 
   <script src="js/runtime-config.js?v=2026-05-04-mesa-realtime-1" defer></script>
   <script src="js/ui.js?v=2026-06-11-soul-notify-1" defer></script>
-  <script src="js/api.js?v=2026-06-10-session-1" defer></script>
+  <script src="js/api.js?v=2026-06-12-transfer-accept-1" defer></script>
   <script src="js/auth.js?v=2026-06-10-session-1" defer></script>
-  <script src="js/soul-essence.js?v=2026-04-05-polish" defer></script>
-  <script src="js/ficha-core.js?v=2026-05-25-avatar-sync-1" defer></script>
+  <script src="js/soul-essence.js?v=2026-06-12-farm-removal-1" defer></script>
+  <script src="js/ficha-core.js?v=2026-06-12-transfer-accept-1" defer></script>
   <script src="js/ficha-master.js?v=2026-06-10-session-1" defer></script>
   <script src="js/ficha-sheet.js?v=2026-05-24-avatar-compress-1" defer></script>
-  <script src="js/ficha-inventory.js?v=2026-05-13-ficha-fixes-1" defer></script>
+  <script src="js/ficha-inventory.js?v=2026-06-12-transfer-accept-1" defer></script>
   <script src="js/ficha-dice.js?v=2026-04-24-split-1" defer></script>
   <script src="js/ficha-habs.js?v=2026-04-24-split-1" defer></script>
   <script src="js/ficha-passives.js?v=2026-05-13-ficha-fixes-1" defer></script>
-  <script src="js/ficha-memories.js?v=2026-05-07-master-sheet-key-1" defer></script>
-  <script src="js/ficha-soul.js?v=2026-05-14-soul-details-1" defer></script>
+  <script src="js/ficha-memories.js?v=2026-06-12-transfer-accept-1" defer></script>
+  <script src="js/ficha-soul.js?v=2026-06-12-farm-removal-1" defer></script>
   <script src="js/ficha-init.js?v=2026-05-13-ficha-fixes-1" defer></script>
 </body>
 </html>

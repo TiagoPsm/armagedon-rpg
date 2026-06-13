@@ -406,6 +406,7 @@ async function loadSheet(username, kind = "player") {
   const cachedSheets = readSheets();
   const cachedData = normalizeSheetData(cachedSheets[username] || {}, kind);
   applySheetData(cachedData, kind);
+  refreshTransferProposals();
 
   if (isBackendMode()) {
     try {
@@ -1310,4 +1311,132 @@ function esc(value) {
 
 function jsEsc(value) {
   return String(value || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
+let transferProposalsCache = [];
+
+function describeTransferProposal(proposal) {
+  if (proposal.transferType === "item") {
+    const item = proposal.payload?.item || {};
+    const quantity = proposal.payload?.quantity || 1;
+    return `${quantity}x "${item.name || "Item sem nome"}"`;
+  }
+  const memory = proposal.payload?.memory || {};
+  return `Memória "${memory.name || "Sem nome"}"`;
+}
+
+function renderTransferProposals() {
+  const section = document.getElementById("transferProposalsSection");
+  const list = document.getElementById("transferProposalsList");
+  if (!section || !list) return;
+
+  if (!transferProposalsCache.length) {
+    section.hidden = true;
+    list.innerHTML = "";
+    return;
+  }
+
+  section.hidden = false;
+  list.innerHTML = transferProposalsCache.map(proposal => {
+    const isIncoming = proposal.direction === "incoming";
+    const summary = describeTransferProposal(proposal);
+    const counterpart = isIncoming
+      ? `de ${proposal.sourceName || proposal.sourceKey || "?"}`
+      : `para ${proposal.targetName || proposal.targetKey || "?"}`;
+    const actions = isIncoming
+      ? `
+        <button class="btn-inline transfer-proposal-accept" onclick="acceptTransferProposalUi('${jsEsc(proposal.id)}')">Aceitar</button>
+        <button class="btn-inline transfer-proposal-reject" onclick="rejectTransferProposalUi('${jsEsc(proposal.id)}')">Recusar</button>
+      `
+      : `<button class="btn-inline transfer-proposal-cancel" onclick="cancelTransferProposalUi('${jsEsc(proposal.id)}')">Cancelar envio</button>`;
+
+    return `
+      <article class="transfer-proposal-card" data-direction="${isIncoming ? "incoming" : "outgoing"}">
+        <div class="transfer-proposal-info">
+          <strong>${esc(summary)}</strong>
+          <span class="transfer-proposal-meta">${isIncoming ? "Recebendo" : "Enviada"} ${esc(counterpart)}</span>
+        </div>
+        <div class="transfer-proposal-actions">${actions}</div>
+      </article>
+    `;
+  }).join("");
+}
+
+async function refreshTransferProposals() {
+  if (!isBackendMode() || currentRole === "master") return;
+
+  try {
+    const response = await APP.listTransferProposals();
+    transferProposalsCache = Array.isArray(response?.proposals) ? response.proposals : [];
+  } catch {
+    transferProposalsCache = [];
+  }
+
+  renderTransferProposals();
+}
+
+async function resolveTransferProposalUi(id, action, confirmMessage) {
+  const proposal = transferProposalsCache.find(candidate => candidate.id === id);
+  if (!proposal) return;
+
+  const confirmed = await UI.confirm(confirmMessage, {
+    title: "Propostas de transferência",
+    kicker: "// Transferências",
+    confirmLabel: action === "accept" ? "Aceitar" : "Confirmar",
+    cancelLabel: "Voltar"
+  });
+  if (!confirmed) return;
+
+  try {
+    if (action === "accept") {
+      await APP.acceptTransferProposal(id);
+    } else if (action === "reject") {
+      await APP.rejectTransferProposal(id);
+    } else {
+      await APP.cancelTransferProposal(id);
+    }
+  } catch (error) {
+    await UI.alert(error.message || "Falha ao resolver a proposta.", {
+      title: "Propostas de transferência",
+      kicker: "// Transferências"
+    });
+  }
+
+  await refreshTransferProposals();
+  scheduleDirectoryRefresh();
+  if (action === "accept" && currentSheetTarget?.key) {
+    try {
+      await loadSheet(currentSheetTarget.key, currentSheetTarget.kind);
+    } catch {}
+  }
+}
+
+function acceptTransferProposalUi(id) {
+  const proposal = transferProposalsCache.find(candidate => candidate.id === id);
+  if (!proposal) return;
+  resolveTransferProposalUi(
+    id,
+    "accept",
+    `Aceitar ${describeTransferProposal(proposal)} de ${proposal.sourceName || proposal.sourceKey || "?"}?`
+  );
+}
+
+function rejectTransferProposalUi(id) {
+  const proposal = transferProposalsCache.find(candidate => candidate.id === id);
+  if (!proposal) return;
+  resolveTransferProposalUi(
+    id,
+    "reject",
+    `Recusar ${describeTransferProposal(proposal)} de ${proposal.sourceName || proposal.sourceKey || "?"}?`
+  );
+}
+
+function cancelTransferProposalUi(id) {
+  const proposal = transferProposalsCache.find(candidate => candidate.id === id);
+  if (!proposal) return;
+  resolveTransferProposalUi(
+    id,
+    "cancel",
+    `Cancelar o envio de ${describeTransferProposal(proposal)} para ${proposal.targetName || proposal.targetKey || "?"}?`
+  );
 }

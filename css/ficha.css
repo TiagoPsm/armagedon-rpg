@@ -124,9 +124,12 @@
  * SHEET SCREEN — IDENTIDADE
  * ════════════════════════════════════════════════════════════ */
 
+/* Coluna unica: identidade (avatar + campos), depois a progressao da alma
+   em largura cheia, depois a lore. A antiga coluna lateral de 300px jogava
+   a progressao para uma sidebar estreita via auto-placement do grid. */
 .identity-block {
   display: grid;
-  grid-template-columns: 1fr 300px;
+  grid-template-columns: 1fr;
   gap: var(--sp-6);
   align-items: start;
 }
@@ -134,7 +137,7 @@
 .identity-main {
   display: flex;
   gap: var(--sp-5);
-  align-items: flex-start;
+  align-items: stretch; /* avatar e campos terminam alinhados na base */
 }
 
 /* Avatar */
@@ -184,6 +187,20 @@
 
 .progression-row {
   margin-top: var(--sp-2);
+}
+
+/* Dentro do grid da identidade o espacamento ja vem do gap (--sp-6);
+   o margin-top extra empurrava a progressao para 32px de distancia. */
+.identity-block > .identity-progression {
+  margin-top: 0;
+}
+
+/* A progressao da alma ocupa a largura cheia do bloco (igual a lore). Sem
+   isto o .compact-field (flex:0 0 auto) prendia o nucleo no tamanho do
+   conteudo (~680px) numa coluna estreita a esquerda. */
+.identity-block > .identity-progression > .level-field-group {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .compact-field { flex: 0 0 auto; }
@@ -365,11 +382,37 @@
   gap: var(--sp-2);
 }
 
+/* Label + titulo empilhados no cabecalho; as acoes centram na vertical
+   contra esse bloco de texto (align-items do .notes-card-head). */
+.notes-card-heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+
+/* Recolhido: so o cabecalho permanece visivel. Sem estas regras o botao
+   "Minimizar" trocava o texto mas nao escondia nada. */
+.notes-collapsible.is-collapsed {
+  height: auto;
+}
+
+.notes-collapsible.is-collapsed > :not(.notes-card-head):not(.block-title-bar) {
+  display: none;
+}
+
 .notes-collapse-summary {
   font-family: var(--font-body);
   font-size: var(--fs-xs);
   color: var(--text-faint);
   font-style: italic;
+}
+
+/* Largura fixa que acomoda "Minimizar" e "Expandir" — sem isso o botao
+   muda de largura ao alternar e o cabecalho inteiro pula. */
+.notes-toggle-btn {
+  min-width: 9.5em;
+  text-align: center;
 }
 
 .identity-lore-label { margin-top: var(--sp-2); }
@@ -1247,8 +1290,23 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--sp-3);
+}
+
+/* Picker + quantidade lado a lado; "Enviar" ocupa a linha inteira para
+   nao estourar a largura do dialogo em telas estreitas. */
+.item-transfer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--sp-2);
+  align-items: center;
+  min-width: 0;
+}
+
+.item-transfer-send {
+  grid-column: 1 / -1;
 }
 
 .item-editor-desc {
@@ -1409,4 +1467,49 @@
   .armor-stats-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Propostas de transferencia (aceite jogador -> jogador) */
+.transfer-proposals-block {
+  border-left: 3px solid var(--accent);
+}
+
+.transfer-proposals-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.transfer-proposal-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.transfer-proposal-card[data-direction="outgoing"] {
+  opacity: 0.85;
+}
+
+.transfer-proposal-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.transfer-proposal-meta {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+.transfer-proposal-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-shrink: 0;
 }

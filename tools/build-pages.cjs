@@ -5,8 +5,8 @@ const repoRoot = path.resolve(__dirname, "..");
 const outDir = path.join(repoRoot, "_site");
 
 // Bump aqui quando mudar arquivos dos bundles
-const FICHA_BUNDLE_VERSION = "2026-05-25-avatar-sync-1";
-const MESA_BUNDLE_VERSION  = "2026-05-27-select-1";
+const FICHA_BUNDLE_VERSION = "2026-06-12-revisao-1";
+const MESA_BUNDLE_VERSION  = "2026-06-12-revisao-1";
 
 const files = [
   "index.html", "ficha.html", "mesa.html", "regras.html", "sugestoes.html",
@@ -17,7 +17,7 @@ const files = [
   "apple-touch-icon.png", "apple-touch-icon.webp",
   "_headers"
 ];
-const dirs = ["css", "js", "data"];
+const dirs = ["css", "js"];
 
 const fichaCssBundle = "css/ficha-page.bundle.css";
 const fichaJsBundle  = "js/ficha-page.bundle.js";

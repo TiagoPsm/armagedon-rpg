@@ -527,6 +527,14 @@ textarea.form-input {
   display: flex;
 }
 
+/* O seletor generico (.ui-modal-root) abre por cima de outros dialogos —
+   ex.: escolher o tipo de item dentro do editor de item. Com o mesmo
+   z-index dos app-modal-root ele ficava ATRAS do dialogo que o abriu
+   (a ordem do DOM decide o empate) e os botoes ficavam inclicaveis. */
+.ui-modal-root {
+  z-index: var(--z-modal-top, 1100);
+}
+
 .app-modal-backdrop,
 .ui-modal-backdrop {
   position: fixed;

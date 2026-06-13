@@ -68,6 +68,24 @@ create table if not exists transfer_audit (
   created_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
+create table if not exists transfer_proposals (
+  id text primary key,
+  transfer_type text not null check (transfer_type in ('item', 'memory')),
+  status text not null default 'pending' check (status in ('pending', 'accepted', 'rejected', 'cancelled')),
+  actor_user_id text references users(id) on delete set null,
+  source_character_id text not null references characters(id) on delete cascade,
+  target_character_id text not null references characters(id) on delete cascade,
+  payload_json text not null default '{}',
+  resolution_note text not null default '',
+  created_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  resolved_at text
+);
+
+create index if not exists transfer_proposals_target_pending_idx
+  on transfer_proposals (target_character_id) where status = 'pending';
+create index if not exists transfer_proposals_source_pending_idx
+  on transfer_proposals (source_character_id) where status = 'pending';
+
 create table if not exists soul_audit (
   id text primary key,
   event_type text not null check (event_type in ('essence-award', 'nightmare-complete')),

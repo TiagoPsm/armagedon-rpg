@@ -2,7 +2,7 @@
 
 ## Regra Obrigatoria de Documentacao
 
-Sempre que qualquer etapa de deploy, workflow, dominio, API publicada ou lista de arquivos publicados mudar, atualize este arquivo e `DEV_STATUS.md`. Se a mudanca for em Cloudflare, atualize tambem `cloudflare/README.md`. Se for no backend Express/PostgreSQL legado, atualize `server/README.md`.
+Sempre que qualquer etapa de deploy, workflow, dominio, API publicada ou lista de arquivos publicados mudar, atualize este arquivo e `DEV_STATUS.md`. Se a mudanca for em Cloudflare, atualize tambem `cloudflare/README.md`.
 
 ## Pasta Oficial Para Deploy
 
@@ -20,21 +20,17 @@ Este arquivo existe para evitar depender do historico de conversa na hora de pub
 
 ## Status Atual
 
-O caminho publicado principal do projeto e:
-
-- frontend estatico
-- API em Cloudflare Workers
-- banco em Cloudflare D1
-
-O roteiro abaixo com GitHub Pages + Render + Neon continua util como alternativa gratuita/legada para o backend Express/PostgreSQL em `server/`.
-
-Este roteiro usa:
+O caminho publicado do projeto e:
 
 - frontend: GitHub Pages
-- backend Node.js: Render
-- banco PostgreSQL: Neon
+- API: Cloudflare Workers
+- banco: Cloudflare D1
+- realtime: Durable Objects
+- avatares/mapas: Cloudflare R2
 
-Essa combinacao exige pouco retrabalho no projeto atual e evita o fluxo do Koyeb que hoje pede verificacao de cartao.
+O roteiro legado com Render + Neon (backend Express/PostgreSQL em `server/`) foi
+removido junto com a pasta `server/` em 2026-06-12; o historico do git preserva
+a versao antiga deste arquivo caso precise ser consultada.
 
 ## 1. Subir o repositorio para o GitHub
 
@@ -45,83 +41,40 @@ Essa combinacao exige pouco retrabalho no projeto atual e evita o fluxo do Koyeb
 
 Se a branch principal tiver outro nome, ajuste `.github/workflows/pages.yml`.
 
-## 2. Criar o banco no Neon
+## 2. Publicar a API no Cloudflare (Workers + D1)
 
-1. Crie uma conta no Neon.
-2. Crie um projeto novo.
-3. Abra o modal `Connect`.
-4. Copie a `connection string`.
-5. Guarde a `connection string` direta e a `connection string` com pooling.
-
-Exemplo esperado:
-
-```text
-postgresql://usuario:senha@host/neondb?sslmode=require
-```
-
-Observacao:
-
-- em producao, use `sslmode=require`
-- no Neon, o `DATABASE_SSL` do projeto deve ficar `true`
-
-## 3. Criar as tabelas no banco publicado
-
-No seu computador, rode o schema do projeto usando a URL direta do Neon:
+Na raiz do repositorio:
 
 ```powershell
-& "C:\Program Files\PostgreSQL\17\bin\psql.exe" "postgresql://USUARIO:SENHA@HOST/neondb?sslmode=require" -f ".\server\sql\schema.sql"
+# aplicar o schema (idempotente) no D1 remoto
+npx wrangler d1 execute armagedon --remote --file cloudflare/d1/schema.sql
+
+# validar e publicar o Worker
+npx wrangler deploy --dry-run --config cloudflare/wrangler.toml
+npx wrangler deploy --config cloudflare/wrangler.toml
 ```
 
-Se preferir, substitua a string inteira direto no comando e nao use `PGPASSWORD`.
-
-## 4. Publicar o backend no Render
-
-1. Crie uma conta no Render.
-2. Clique em `New +`.
-3. Escolha `Blueprint`.
-4. Conecte o seu GitHub ao Render.
-5. Escolha este repositorio.
-6. O Render deve detectar automaticamente o arquivo `render.yaml`.
-7. Preencha os segredos pedidos pelo Blueprint:
+Segredos exigidos (uma unica vez, via `npx wrangler secret put <NOME> --config cloudflare/wrangler.toml`):
 
 ```text
-DATABASE_URL=postgresql://USUARIO:SENHA@HOST/neondb?sslmode=require
-JWT_SECRET=UMA_CHAVE_BEM_GRANDE_E_UNICA
-CORS_ORIGIN=https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO
-MASTER_BOOTSTRAP_PASSWORD=SUA_NOVA_SENHA_DO_MESTRE
+JWT_SECRET
+PASSWORD_PEPPER
+MASTER_BOOTSTRAP_PASSWORD
 ```
 
-Se voce for usar dominio proprio no frontend depois, inclua tambem:
+Detalhes completos em `cloudflare/README.md`.
 
-```text
-https://www.seudominio.com
-```
+## 3. Apontar o frontend para a API publicada
 
-em `CORS_ORIGIN`, separado por virgula.
-
-Observacoes:
-
-- o `render.yaml` ja fixa o plano `free`
-- o backend deve usar a string com pooling do Neon
-- o Render Free pode dormir depois de 15 minutos sem trafego
-
-## 5. Apontar o frontend para a API publicada
-
-Edite `js/runtime-config.js` e troque:
+A URL fica centralizada em `js/runtime-config.js`:
 
 ```js
-apiBaseUrl: "http://localhost:4000/api"
+apiBaseUrl: "https://armagedon-api.tiagopsm2008.workers.dev/api"
 ```
 
-por:
+Se o Worker mudar de nome/conta, ajuste apenas esse arquivo e envie ao GitHub.
 
-```js
-apiBaseUrl: "https://SEU-BACKEND.onrender.com/api"
-```
-
-Depois envie esse ajuste ao GitHub.
-
-## 6. Publicar o frontend no GitHub Pages
+## 4. Publicar o frontend no GitHub Pages
 
 1. No repositorio do GitHub, abra `Settings > Pages`.
 2. Confirme que GitHub Pages esta ativo.
@@ -134,29 +87,13 @@ Quando terminar, o frontend deve ficar em algo como:
 https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO/
 ```
 
-## 7. Ajustar o CORS do backend
+## 5. Ajustar o CORS do Worker
 
-Quando o GitHub Pages te entregar a URL final, volte no Render e ajuste `CORS_ORIGIN` com a URL real do site.
+O CORS usa allowlist fixa em `cloudflare/src/auth.js` (`ALLOWED_ORIGINS`):
+github.io, `armagedon-rpg.pages.dev` + previews e `localhost`. Se o site ganhar
+um dominio novo, adicione a origem na allowlist e re-publique o Worker.
 
-Se voce usar:
-
-```text
-https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO
-```
-
-entao essa URL precisa estar autorizada no backend.
-
-## 8. Limites do Render Free
-
-Pontos comuns do plano gratuito do Render que devem ser confirmados antes de publicar:
-
-- web services free entram em spin down apos 15 minutos sem trafego
-- o primeiro acesso depois disso pode levar ate cerca de 1 minuto
-- mensagens WebSocket tambem contam como atividade
-
-Isso serve para hobby e teste, mas nao e o ideal para uso com exigencia de resposta imediata o tempo todo.
-
-## 9. Teste final
+## 6. Teste final
 
 Teste em producao:
 
@@ -172,14 +109,14 @@ Teste em producao:
 10. troca de item
 11. atualizacao entre duas abas
 
-## 10. Seguranca minima
+## 7. Seguranca minima
 
 Antes de usar com outras pessoas:
 
 - troque a senha padrao do mestre
-- gere um `JWT_SECRET` novo
-- nao publique `server/.env`
-- faca backup regular do banco
+- gere um `JWT_SECRET` novo (via `wrangler secret put`)
+- nao exponha segredos no repositorio (`.dev.vars` local fica fora do git)
+- faca backup regular do banco (export do D1 via `wrangler d1 export`)
 
 ## Arquivos Que Normalmente Precisam Ir no Deploy
 

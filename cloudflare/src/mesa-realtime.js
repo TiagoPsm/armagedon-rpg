@@ -117,18 +117,21 @@ function normalizeTextField(field, value) {
   return normalizeTextValue(value, 160);
 }
 
-function normalizeResourceValue(value, fallback = "0") {
+// Mesma semantica de sheet.js (normalizeResourceValue/sanitizeAttrValue):
+// campo vazio permanece vazio (""), valor minimo e 0. Divergir daqui fazia o
+// patch da Mesa transformar Vida/Integridade vazias em "0" e atributo 0 em 1.
+function normalizeResourceValue(value, fallback = "") {
   if (value === "" || value === null || value === undefined) return String(fallback);
   const numeric = Number.parseInt(value, 10);
   if (Number.isNaN(numeric)) return String(fallback);
   return String(Math.max(0, numeric));
 }
 
-function normalizeAttrValue(value, fallback = "1") {
+function normalizeAttrValue(value, fallback = "") {
   if (value === "" || value === null || value === undefined) return String(fallback);
   const numeric = Number.parseInt(value, 10);
   if (Number.isNaN(numeric)) return String(fallback);
-  return String(Math.max(1, numeric));
+  return String(Math.max(0, numeric));
 }
 
 function normalizeInventorySlotsValue(value, used = 0) {
@@ -194,13 +197,13 @@ function normalizeSheetPatchPayload(payload) {
       patch[field] = normalizeInventorySlotsValue(payload[field], used);
       return;
     }
-    patch[field] = normalizeResourceValue(payload[field], "0");
+    patch[field] = normalizeResourceValue(payload[field], "");
   });
 
   ATTRIBUTES.forEach(attr => {
     const field = `attr${attr}`;
     if (payload?.[field] !== undefined) {
-      patch[field] = normalizeAttrValue(payload[field], "1");
+      patch[field] = normalizeAttrValue(payload[field], "");
     }
   });
 
