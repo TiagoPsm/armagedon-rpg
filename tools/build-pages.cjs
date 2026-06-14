@@ -36,9 +36,13 @@ const mesaCssFiles  = [
   "css/mesa-stage.css","css/mesa-roster.css","css/mesa-inspector.css","css/mesa-map.css",
   "css/mesa-drawing.css"
 ];
+// mesa-renderer-worker.js NAO entra no bundle: ele e carregado em runtime via
+// new Worker("js/mesa-renderer-worker.js") (thread separada), nao como <script>.
+// Inclui-lo aqui inflava o bundle e colidia `function clamp` com mesa-storage.js
+// (quebrava a minificacao). O arquivo segue copiado standalone em _site/js/.
 const mesaJsFiles = [
   "js/runtime-config.js","js/api.js","js/ui.js","js/auth.js",
-  "js/mesa-renderer-v2.js","js/mesa-renderer-worker.js",
+  "js/mesa-renderer-v2.js",
   "js/mesa-stage.js","js/mesa-roster.js","js/mesa-inspector.js",
   "js/mesa-storage.js","js/mesa-core.js","js/mesa-init.js","js/mesa-map.js",
   "js/mesa-drawing.js","js/mesa-select.js"

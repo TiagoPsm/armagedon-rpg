@@ -6,6 +6,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", ".", "--listen", "8000", "--no-clipboard"],
       "port": 8000
+    },
+    {
+      "name": "armagedon-dist",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "_site", "--listen", "8001", "--no-clipboard"],
+      "port": 8001
     }
   ]
 }

@@ -58,7 +58,38 @@ Registro minimo esperado:
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
 
-## Ultima Etapa Concluida (2026-06-13 — Etapa 10: login semantico e varredura de performance)
+## Ultima Etapa Concluida (2026-06-13 — Etapa 11: minificacao no deploy + correcao do bundle)
+
+Resumo: maior ganho de performance de carregamento da sessao. O deploy servia JS/CSS NAO-minificados porque o workflow rodava `npm run build:pages` (so bundle). Agora roda `npm run build` (bundle + terser + clean-css).
+
+Causa-raiz corrigida antes de ativar:
+
+- `mesa-renderer-worker.js` estava no `mesaJsFiles` do bundle, mas e carregado em runtime via `new Worker("js/mesa-renderer-worker.js")` (thread separada) — nem aparece como `<script>` no `mesa.html`. Isso inflava o bundle e colidia `function clamp` com `mesa-storage.js`, gerando `SyntaxError: Identifier 'clamp' has already been declared` quando o terser minificava → minificacao quebrava. Removido do bundle (`build-pages.cjs`); o worker segue copiado standalone em `_site/js/` para o `new Worker`.
+
+Mudancas:
+
+- `tools/build-pages.cjs`: `mesa-renderer-worker.js` fora do `mesaJsFiles`.
+- `.github/workflows/pages.yml`: adiciona `setup-node@v4` (node 24, cache npm) + `npm ci --ignore-scripts` (pula postinstall pesado de sharp/playwright, nao usados no build) e troca `build:pages` por `build`.
+
+Ganho medido (gzip — o que trafega):
+
+- mesa JS: 83 KB → 52 KB (−37%)
+- ficha JS: 55 KB → 41 KB (−25%)
+- mesa CSS: 22 KB → 14 KB (−36%)
+- ficha CSS: 9 KB → 6 KB (−33%)
+- Pagina da Mesa (JS+CSS): ~105 KB → ~66 KB
+
+Validacao (artefato `_site` minificado servido em :8001 e exercitado no browser):
+
+- Mesa: bundle carrega, funcoes globais preservadas (mangle nao toca top-level), Web Worker minificado ATIVO (`mode: canvas-worker`, `workerReady: true`, canvas transferido), zero erros de console.
+- Ficha: `onclick` globais funcionam (abrir editor de item, seletor de tipo clicavel — fix de z-index sobreviveu), zero erros.
+- `npm ci --ignore-scripts` simulado em tmpdir: terser + clean-css carregaveis (exit 0).
+- `audit:static`, `check:js`, `test-worker` 53/53, Playwright 33/33, `node --check` nos dois bundles minificados — tudo verde.
+- `.claude/launch.json`: adicionada config `armagedon-dist` (serve `_site` em :8001) para validar o artefato de producao localmente.
+
+Observacao: esta etapa muda o pipeline de CI. Se o deploy do Pages falhar, o site NAO republica (o que esta no ar continua), e o erro aparece em Actions — basta reverter o `pages.yml` para `npm run build:pages`.
+
+## Etapa Concluida (2026-06-13 — Etapa 10: login semantico e varredura de performance)
 
 Resumo: melhorias opcionais da revisao + varredura adicional de performance/qualidade com evidencia.
 

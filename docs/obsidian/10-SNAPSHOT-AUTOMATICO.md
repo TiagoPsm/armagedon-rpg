@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-13 16:35:26 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-14 00:44:30 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,21 +13,15 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `d47c047 2026-06-13 fix+perf+chore: revisao tecnica (cache-busting, regra de farm, R2, limpeza)`
+- Ultimo commit: `3e2da97 2026-06-13 feat+chore: login em form semantico, limpeza de data/ orfao e varredura de performance`
 
 ### Alteracoes Locais
 
 ```text
+M  .claude/launch.json
+M  .github/workflows/pages.yml
 M  DEV_STATUS.md
-M  _headers
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  ficha.html
-M  index.html
-M  js/auth.js
-M  mesa.html
-M  regras.html
-M  sugestoes.html
-M  tools/audit-static.cjs
 M  tools/build-pages.cjs
 ```
 
@@ -40,16 +34,10 @@ M  tools/build-pages.cjs
 ### Arquivos Em Stage
 
 ```text
+.claude/launch.json
+.github/workflows/pages.yml
 DEV_STATUS.md
-_headers
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-ficha.html
-index.html
-js/auth.js
-mesa.html
-regras.html
-sugestoes.html
-tools/audit-static.cjs
 tools/build-pages.cjs
 ```
 
