@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-14 11:55:21 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-14 12:02:37 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,19 +13,12 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `8fd5df4 2026-06-14 perf(build): minificar JS/CSS no deploy + tirar worker do bundle`
+- Ultimo commit: `9250ea1 2026-06-14 perf(home): recomprimir logo fallback (-72%) e tirar prefetch de sugestoes`
 
 ### Alteracoes Locais
 
 ```text
-M  DEV_STATUS.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  ficha.html
-M  index.html
-M  logo-rpg-armagedon.png
-M  mesa.html
-M  regras.html
-M  sugestoes.html
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -37,14 +30,7 @@ M  sugestoes.html
 ### Arquivos Em Stage
 
 ```text
-DEV_STATUS.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-ficha.html
-index.html
-logo-rpg-armagedon.png
-mesa.html
-regras.html
-sugestoes.html
 ```
 
 ## Paginas Principais
