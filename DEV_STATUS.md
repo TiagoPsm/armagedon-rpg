@@ -58,7 +58,16 @@ Registro minimo esperado:
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
 
-## Ultima Etapa Concluida (2026-06-13 — Etapa 11: minificacao no deploy + correcao do bundle)
+## Ultima Etapa Concluida (2026-06-14 — Etapa 12: polimento de carga inicial)
+
+Resumo: dois ajustes leves de performance de primeiro carregamento, sem mudanca de comportamento.
+
+- `logo-rpg-armagedon.png` (fallback do `<picture>` da home, usado so se o `.jpg`/`.webp` falham): recomprimido de 1024x1024/124 KB para 512x512/34 KB (-72%) via sharp. `?v=` bumpado para `2026-06-14-opt-2` em todos os HTML que o referenciam (index, ficha, mesa, regras, sugestoes).
+- `index.html`: removido o `<link rel="prefetch" href="sugestoes.html">` — pagina pouco acessada que disputava banda no carregamento da home. Mantidos os prefetch de `regras.html` e `ficha.html` (paginas quentes).
+
+Validacao: `npm run audit:static` e `npm run build` verdes; `_site/logo-rpg-armagedon.png` confirmado em 34 KB.
+
+## Etapa anterior (2026-06-13 — Etapa 11: minificacao no deploy + correcao do bundle)
 
 Resumo: maior ganho de performance de carregamento da sessao. O deploy servia JS/CSS NAO-minificados porque o workflow rodava `npm run build:pages` (so bundle). Agora roda `npm run build` (bundle + terser + clean-css).
 
