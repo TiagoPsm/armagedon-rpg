@@ -371,6 +371,20 @@ function handleInspectorStatInput(event) {
   if (isBlankMesaNumberInput(input)) return;
   if (field === "maxLife" || field === "maxIntegrity") return;
 
+  // Echo nao tem ficha: Vida/Integridade atuais vivem na tabela echos e
+  // sincronizam por um canal proprio (mesa:echo:vitals), nao pelo sheet patch.
+  if (token.type === "echo") {
+    if (!canEditCurrentStats(token)) return;
+    if (field !== "currentLife" && field !== "currentIntegrity") return;
+    const isLife = field === "currentLife";
+    const max = isLife ? token.maxLife : token.maxIntegrity;
+    const value = clamp(asPositiveInt(input.value, isLife ? token.currentLife : token.currentIntegrity), 0, max);
+    updateEchoTokenVitals(token, isLife ? { vidaAtual: value } : { integAtual: value });
+    syncInspectorStatInputCard(input, field, getSelectedToken() || token);
+    scheduleMesaRender({ stage: true });
+    return;
+  }
+
   const nextValue = Number.parseInt(input.value, 10);
   const sheetPatch = buildSheetPatchFromMesa(field, nextValue, token);
   if (!sheetPatch) return;
@@ -1576,11 +1590,14 @@ function canViewTokenStats(token) {
 function canEditCurrentStats(token) {
   if (!token) return false;
   if (isMaster()) return true;
-  return state.role === "player" && isOwnPlayerToken(token);
+  return state.role === "player" && (isOwnPlayerToken(token) || isOwnEchoToken(token));
 }
 
+// Edicao de maximos (Vida/Integridade) e so do mestre e nao se aplica a Echos:
+// o maximo do Echo e ajustado pelo mestre na pagina de Echos, nao na Mesa
+// (a Mesa nao sabe persistir maximos de Echo pelo fluxo de ficha).
 function canEditAllStats(token) {
-  return Boolean(token) && isMaster();
+  return Boolean(token) && isMaster() && token.type !== "echo";
 }
 
 function canConfigureStatsVisibility(token) {

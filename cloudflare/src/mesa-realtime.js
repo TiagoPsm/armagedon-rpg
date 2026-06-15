@@ -8,6 +8,7 @@ const MASTER_ONLY_TYPES = new Set([
   "mesa:scene:clear"
 ]);
 const SHEET_PATCH_TYPE = "mesa:sheet:patch";
+const ECHO_VITALS_TYPE = "mesa:echo:vitals";
 const SHEET_CHANGED_TYPE = "sheet:changed";
 // Trava global de movimento: quando ativa, jogadores nao movem nem o proprio
 // token. Persistida no storage do DO; mestre alterna via mesa:move:lock.
@@ -29,6 +30,7 @@ const PLAYER_PATCH_FIELDS = new Set([
 const RELAY_TYPES = new Set([
   ...MASTER_ONLY_TYPES,
   SHEET_PATCH_TYPE,
+  ECHO_VITALS_TYPE,
   "mesa:batch"
 ]);
 
@@ -235,6 +237,18 @@ function filterPlayerSheetPatch(patch) {
   return filtered;
 }
 
+function normalizeEchoVitals(vitals) {
+  const source = isPlainObject(vitals) ? vitals : {};
+  const result = {};
+  ["vidaAtual", "integAtual"].forEach(field => {
+    if (source[field] === undefined) return;
+    const numeric = Number.parseInt(source[field], 10);
+    if (Number.isNaN(numeric)) return;
+    result[field] = Math.max(0, numeric);
+  });
+  return result;
+}
+
 class MesaRealtimeRoom extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
@@ -382,6 +396,11 @@ class MesaRealtimeRoom extends DurableObject {
     const type = String(payload?.type || "");
     if (type === SHEET_PATCH_TYPE) {
       this.handleSheetPatchRelay(ws, payload, attachment);
+      return;
+    }
+
+    if (type === ECHO_VITALS_TYPE) {
+      this.handleEchoVitalsRelay(ws, payload, attachment);
       return;
     }
 
@@ -543,6 +562,74 @@ class MesaRealtimeRoom extends DurableObject {
     this.broadcastToCharacterAudience(relayPayload, characterKey, ws);
     sendJson(ws, {
       type: "mesa:sheet:ack",
+      ok: true,
+      messageId: payload?.messageId || "",
+      characterKey,
+      sentAt: new Date().toISOString()
+    });
+  }
+
+  // Vida/Integridade atuais de um token de Echo. characterKey e "echo:<id>";
+  // ownerKey e a ficha dona (== username do jogador dono). Mestre sempre pode;
+  // jogador so pode mexer no Echo proprio. A persistencia (autoritativa) ja foi
+  // validada pela API; aqui apenas retransmitimos para o mestre e o dono.
+  handleEchoVitalsRelay(ws, payload, attachment) {
+    const actor = {
+      username: attachment.username || "usuario",
+      role: attachment.role || "player"
+    };
+    const characterKey = normalizeCharacterKey(payload?.characterKey || payload?.key);
+    const ownerKey = normalizeCharacterKey(payload?.ownerKey);
+    const vitals = normalizeEchoVitals(payload?.vitals);
+
+    if (!characterKey || !ownerKey || !Object.keys(vitals).length) {
+      sendJson(ws, {
+        type: "mesa:echo:ack",
+        ok: false,
+        reason: "Vitais de Echo invalidos.",
+        messageId: payload?.messageId || "",
+        sentAt: new Date().toISOString()
+      });
+      return;
+    }
+
+    if (actor.role !== "master" && normalizeCharacterKey(actor.username) !== ownerKey) {
+      sendJson(ws, {
+        type: "mesa:echo:ack",
+        ok: false,
+        reason: "Jogador so pode alterar o proprio Echo.",
+        messageId: payload?.messageId || "",
+        sentAt: new Date().toISOString()
+      });
+      return;
+    }
+
+    const relayPayload = {
+      type: ECHO_VITALS_TYPE,
+      clientId: payload?.clientId || "",
+      messageId: payload?.messageId || "",
+      characterKey,
+      key: characterKey,
+      ownerKey,
+      vitals,
+      actor,
+      online: this.getPresence(),
+      sentAt: payload?.sentAt || new Date().toISOString()
+    };
+
+    // Entrega ao mestre e ao dono, preservando characterKey "echo:<id>"
+    // (broadcastToCharacterAudience sobrescreveria characterKey pela chave de audiencia).
+    this.ctx.getWebSockets().forEach(sock => {
+      if (sock === ws) return;
+      const att = readAttachment(sock) || {};
+      const username = normalizeCharacterKey(att.username);
+      const role = String(att.role || "player").trim() || "player";
+      if (role !== "master" && username !== ownerKey) return;
+      sendJson(sock, relayPayload);
+    });
+
+    sendJson(ws, {
+      type: "mesa:echo:ack",
       ok: true,
       messageId: payload?.messageId || "",
       characterKey,

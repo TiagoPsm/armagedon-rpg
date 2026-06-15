@@ -84,6 +84,7 @@ const MESA_REALTIME_DELTA_TYPES = new Set([
   "mesa:initiative:roll"
 ]);
 const MESA_SHEET_PATCH_TYPE = "mesa:sheet:patch";
+const MESA_ECHO_VITALS_TYPE = "mesa:echo:vitals";
 const MESA_ATTRIBUTE_NAMES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"];
 const MESA_SHEET_TEXT_FIELDS = new Set(["charName", "charClass", "charRace", "charFaction", "charNotes"]);
 const MESA_SHEET_RESOURCE_FIELDS = new Set(["vidaAtual", "vidaMax", "integAtual", "integMax", "inventorySlots"]);
@@ -357,6 +358,10 @@ function bindMesaRealtime() {
 
   window.APP.on(MESA_SHEET_PATCH_TYPE, payload => {
     applyMesaSheetPatchRealtime(payload);
+  });
+
+  window.APP.on(MESA_ECHO_VITALS_TYPE, payload => {
+    applyMesaEchoVitalsRealtime(payload);
   });
 
   window.APP.on("sheet:changed", payload => {
@@ -976,7 +981,7 @@ function buildEchos() {
       id: `echo:${echo.id}`,
       characterKey: `echo:${echo.id}`,
       type: "echo",
-      ownerUsername: echo.ownerName || "mestre",
+      ownerUsername: echo.ownerKey || "mestre",
       createdBy: "mestre",
       name: echo.displayName || echo.name || "Echo",
       imageUrl: String(echo.avatar || "").trim(),
@@ -1300,6 +1305,15 @@ function isOwnPlayerToken(token) {
   return normalizeMesaUsername(token.ownerUsername || token.characterKey || token.id) === username;
 }
 
+// Token de Echo pertencente ao ator atual. Mestre controla todos; o jogador
+// controla os Echos que estao no seu roster (listEchos so retorna os proprios).
+function isOwnEchoToken(token) {
+  if (!token || token.type !== "echo") return false;
+  if (isMaster()) return true;
+  const key = normalizeMesaCharacterKey(token.characterKey || token.id);
+  return Boolean(getRosterEntryByCharacterKey(key));
+}
+
 function getOwnPlayerTokens() {
   return state.tokens.filter(isOwnPlayerToken);
 }
@@ -1307,7 +1321,7 @@ function getOwnPlayerTokens() {
 function canViewDetailedTokenInfo(token) {
   if (!token) return false;
   if (!isPlayerPerspective()) return true;
-  if (state.role === "player") return isOwnPlayerToken(token);
+  if (state.role === "player") return isOwnPlayerToken(token) || isOwnEchoToken(token);
   return false;
 }
 
@@ -1647,6 +1661,90 @@ function broadcastMesaSheetPatch(characterKey, patch) {
     characterKey: payload.characterKey,
     ...payload.patch
   });
+}
+
+/* ── Vitais de Echo (Vida/Integridade atuais do token de Echo) ─────────── */
+
+function normalizeMesaEchoVitals(vitals) {
+  const source = vitals && typeof vitals === "object" ? vitals : {};
+  const result = {};
+  ["vidaAtual", "integAtual"].forEach(field => {
+    if (source[field] === undefined) return;
+    const numeric = Number.parseInt(source[field], 10);
+    if (Number.isNaN(numeric)) return;
+    result[field] = Math.max(0, numeric);
+  });
+  return result;
+}
+
+// Aplica novos vitais ao Echo nos caches locais: mesaEchos, entrada de roster
+// e tokens em cena. Reflete imediatamente na barra do token.
+function applyEchoVitalsToMesa(characterKey, vitals) {
+  const key = normalizeMesaCharacterKey(characterKey);
+  const clean = normalizeMesaEchoVitals(vitals);
+  if (!key || !Object.keys(clean).length) return false;
+
+  const echoId = key.replace(/^echo:/, "");
+  const echo = (mesaEchos || []).find(item => String(item.id) === echoId);
+  if (echo) {
+    echo.stats = echo.stats || {};
+    if (clean.vidaAtual !== undefined) {
+      echo.stats.vidaAtual = clamp(clean.vidaAtual, 0, asPositiveInt(echo.stats.vidaMax, 0));
+    }
+    if (clean.integAtual !== undefined) {
+      echo.stats.integAtual = clamp(clean.integAtual, 0, asPositiveInt(echo.stats.integMax, 0));
+    }
+  }
+
+  const entry = getRosterEntryByCharacterKey(key);
+  if (entry) {
+    if (clean.vidaAtual !== undefined) entry.currentLife = clamp(clean.vidaAtual, 0, entry.maxLife);
+    if (clean.integAtual !== undefined) entry.currentIntegrity = clamp(clean.integAtual, 0, entry.maxIntegrity);
+  }
+
+  state.tokens = state.tokens.map(token => {
+    if (normalizeMesaCharacterKey(token.characterKey || token.id) !== key) return token;
+    const next = { ...token };
+    if (clean.vidaAtual !== undefined) next.currentLife = clamp(clean.vidaAtual, 0, token.maxLife);
+    if (clean.integAtual !== undefined) next.currentIntegrity = clamp(clean.integAtual, 0, token.maxIntegrity);
+    return next;
+  });
+
+  syncSelectedToken();
+  return true;
+}
+
+function persistMesaEchoVitals(characterKey, vitals) {
+  if (!window.AUTH?.isBackendEnabled?.() || !window.APP?.setEchoVitals) return;
+  const echoId = normalizeMesaCharacterKey(characterKey).replace(/^echo:/, "");
+  if (!echoId) return;
+  window.APP.setEchoVitals(echoId, normalizeMesaEchoVitals(vitals)).catch(error => {
+    console.warn("Falha ao salvar vitais do Echo.", error);
+  });
+}
+
+function broadcastMesaEchoVitals(token, vitals) {
+  const clean = normalizeMesaEchoVitals(vitals);
+  if (!token || !Object.keys(clean).length) return false;
+  const entry = getRosterEntryByCharacterKey(token.characterKey || token.id) || token;
+  return sendMesaRealtimeDelta(MESA_ECHO_VITALS_TYPE, {
+    characterKey: token.characterKey || token.id,
+    ownerKey: normalizeMesaCharacterKey(entry.ownerUsername),
+    vitals: clean
+  });
+}
+
+// Edita os vitais do Echo a partir da Mesa: aplica local, persiste e sincroniza.
+function updateEchoTokenVitals(token, vitals) {
+  if (!applyEchoVitalsToMesa(token.characterKey || token.id, vitals)) return;
+  persistMesaEchoVitals(token.characterKey || token.id, vitals);
+  broadcastMesaEchoVitals(token, vitals);
+}
+
+function applyMesaEchoVitalsRealtime(payload) {
+  const characterKey = payload?.characterKey || payload?.key;
+  if (!applyEchoVitalsToMesa(characterKey, payload?.vitals)) return;
+  scheduleMesaRender({ stage: true, inspector: true, roster: true });
 }
 
 function serializeMesaRealtimeToken(token) {

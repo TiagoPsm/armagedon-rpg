@@ -128,6 +128,8 @@ Regras consolidadas:
 - o mestre tem acesso total: ve Echos de todos os jogadores e de NPCs, cria/edita/remove, altera proprietario, ajusta atributos, rank, XP e raridade
 - Echos podem ser transferidos entre jogadores com consentimento (proposta com aceite), como as memorias; o mestre transfere direto
 - na Mesa, o mestre pode colocar o Echo de um jogador no palco como token aliado (modelo master-invoke, pois a cena e gravada apenas pelo mestre)
+- na Mesa, Vida e Integridade ATUAIS dos tokens podem ser ajustadas no inspetor: o mestre ajusta as de qualquer token; o jogador ajusta apenas as do proprio token e dos proprios Echos. Os maximos continuam sendo definidos pelo mestre (na ficha, ou na pagina de Echos para Echos)
+- a vida atual do Echo (`vidaAtual`/`integAtual`) e salva na tabela `echos` via `POST /api/echos/:id/vitals` (mestre ou dono) e sincroniza em tempo real entre mestre e dono pelo canal `mesa:echo:vitals` do Durable Object
 
 ## Transferencias
 

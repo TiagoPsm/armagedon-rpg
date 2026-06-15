@@ -43,6 +43,7 @@ import {
   listEchos,
   rollMonsterEchoDrop,
   setEchoAvatar,
+  setEchoVitals,
   transferEchoBetweenPlayers,
   updateEcho
 } from "./echos.js";
@@ -1029,6 +1030,16 @@ export default {
         const body = await readJson(request);
         return withCors(
           json(await grantEchoExperience(env, session, decodePathParam(echoXpMatch[1]), body.amount)),
+          origin
+        );
+      }
+
+      const echoVitalsMatch = path.match(/^\/api\/echos\/([^/]+)\/vitals$/);
+      if (echoVitalsMatch && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        const body = await readJson(request);
+        return withCors(
+          json(await setEchoVitals(env, session, decodePathParam(echoVitalsMatch[1]), body)),
           origin
         );
       }

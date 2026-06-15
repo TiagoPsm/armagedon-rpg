@@ -536,6 +536,12 @@
         body: { amount }
       });
     },
+    async setEchoVitals(id, vitals) {
+      return request(`/echos/${encodeURIComponent(id)}/vitals`, {
+        method: "POST",
+        body: vitals
+      });
+    },
     async uploadEchoAvatar(id, blob) {
       const contentType = blob.type || "image/webp";
       const response = await fetch(buildUrl(`/avatars/echo/${encodeURIComponent(id)}`), {

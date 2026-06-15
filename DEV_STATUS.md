@@ -964,3 +964,10 @@ Sistema de Echos: manifestacoes residuais de monstros derrotados, colecionaveis 
 - A migracao `0002_add_echos.sql` precisa ser aplicada no D1 remoto antes do deploy do Worker (recria `transfer_proposals` e `transfer_audit` para aceitar `echo`).
 - Invocacao na Mesa e feita pelo mestre (modelo master-invoke), pois a gravacao da cena (`PUT /api/mesa/scene`) e exclusiva do mestre. Permitir o jogador invocar o proprio Echo diretamente exige mudanca futura nas permissoes de escrita da cena.
 - Um Echo so renderiza como token nos clientes que o tem no roster (mestre ve todos; jogador ve os proprios). O Echo de um jogador nao aparece no roster de outro jogador.
+
+### Etapa Echos — controle de vida na Mesa (2026-06-15)
+
+- Inspetor da Mesa passou a permitir ajustar Vida e Integridade ATUAIS dos tokens: mestre em qualquer token; jogador no proprio token e nos proprios Echos (`canEditCurrentStats` + `isOwnEchoToken`).
+- Echos nao tem ficha, entao a vida do token de Echo segue caminho proprio: `POST /api/echos/:id/vitals` (mestre ou dono) salva `vidaAtual`/`integAtual`, e o canal realtime `mesa:echo:vitals` (novo tipo no `MesaRealtimeRoom`) sincroniza entre mestre e dono.
+- Arquivos: `cloudflare/src/echos.js` (`setEchoVitals`), `cloudflare/src/index.js` (rota), `cloudflare/src/mesa-realtime.js` (tipo + relay com gating), `js/api.js` (`setEchoVitals`), `js/mesa-core.js` (isOwnEchoToken, applyEchoVitalsToMesa, broadcast/persist/realtime), `js/mesa-stage.js` (permissoes + branch do inspetor).
+- Validado: `npm run check:js`, `npm run audit:static`, `wrangler dry-run`. Exige `wrangler deploy` (mudanca no Durable Object); sem mudanca no banco.

@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-15 13:28:42 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-15 14:11:13 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `efc52db 2026-06-14 perf(home): recomprimir logo fallback (-72%) e tirar prefetch de sugestoes`
+- Ultimo commit: `4c6db6d 2026-06-15 feat(echos): sistema de Echos (drop de monstro, pagina, transferencia, Mesa)`
 
 ### Alteracoes Locais
 
@@ -23,28 +23,16 @@ M  DEV_STATUS.md
 M  SYSTEM_RULES.md
 M  VISUAL_RULES.md
 M  cloudflare/README.md
-A  cloudflare/d1/migrations/0002_add_echos.sql
-M  cloudflare/d1/schema.sql
-M  cloudflare/src/characters.js
-A  cloudflare/src/echos.js
+M  cloudflare/src/echos.js
 M  cloudflare/src/index.js
-M  cloudflare/src/sheet.js
-A  css/echos.css
-M  css/ficha.css
-M  css/tokens.css
+M  cloudflare/src/mesa-realtime.js
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-A  echos.html
+M  echos.html
 M  ficha.html
 M  index.html
 M  js/api.js
-A  js/echos-core.js
-A  js/echos-init.js
-A  js/echos-page.js
-M  js/ficha-core.js
-A  js/ficha-echos.js
-M  js/ficha-sheet.js
 M  js/mesa-core.js
-M  js/mesa-roster.js
+M  js/mesa-stage.js
 M  mesa.html
 M  regras.html
 M  sugestoes.html
@@ -64,27 +52,15 @@ DEV_STATUS.md
 SYSTEM_RULES.md
 VISUAL_RULES.md
 cloudflare/README.md
-cloudflare/d1/migrations/0002_add_echos.sql
-cloudflare/d1/schema.sql
-cloudflare/src/characters.js
 cloudflare/src/echos.js
 cloudflare/src/index.js
-cloudflare/src/sheet.js
-css/echos.css
-css/ficha.css
-css/tokens.css
+cloudflare/src/mesa-realtime.js
 echos.html
 ficha.html
 index.html
 js/api.js
-js/echos-core.js
-js/echos-init.js
-js/echos-page.js
-js/ficha-core.js
-js/ficha-echos.js
-js/ficha-sheet.js
 js/mesa-core.js
-js/mesa-roster.js
+js/mesa-stage.js
 mesa.html
 regras.html
 sugestoes.html

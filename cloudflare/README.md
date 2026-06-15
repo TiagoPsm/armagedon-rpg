@@ -65,6 +65,7 @@ Esta base cobre a API em Workers com:
 - `POST /api/echos/monster-roll` (master-only)
 - `POST /api/echos/monster-award` (master-only)
 - `POST /api/echos/:id/xp` (master-only)
+- `POST /api/echos/:id/vitals` (mestre ou dono; Vida/Integridade atuais)
 - `POST /api/avatars/echo/:id` (mestre ou dono do Echo)
 - `GET /api/rules`
 - `POST /api/rules`
@@ -130,6 +131,7 @@ O campo `data_json` em `mesa_scenes` guarda a cena visual da Mesa: tokens ativos
 - Transferencia de Echo reaproveita `transfer_proposals` (tipo `echo`, payload `{ echoId }`): o mestre transfere direto pela rota generica de propostas; o jogador cria proposta e o aceite troca `echos.owner_character_id` em `DB.batch` com auditoria (`echo-player-to-player`) e resolucao da proposta
 - A configuracao de drop de Echo do monstro (`echoDropConfig`: chance + raridade) e normalizada em `src/sheet.js` e preservada no `data_json` do monstro
 - Migracao `d1/migrations/0002_add_echos.sql` deve ser aplicada no D1 remoto antes do deploy que depende de Echos: recria `transfer_proposals` e `transfer_audit` (CHECK agora aceita `echo`) preservando dados e cria a tabela `echos`. Manter `d1/schema.sql` como fonte de verdade para bases novas
+- Vida do Echo na Mesa: `POST /api/echos/:id/vitals` salva apenas `vidaAtual`/`integAtual` (clamp pelo maximo), permitido a mestre ou dono. A sincronizacao em tempo real usa o tipo `mesa:echo:vitals` no `MesaRealtimeRoom`: o DO retransmite ao mestre e ao dono (jogador so emite para o proprio Echo, validado por `ownerKey == username`); a persistencia autoritativa e sempre a API. Mudancas no DO exigem `wrangler deploy`
 - Monstros nao devem ganhar inventario, faccao ou memorias possuidas
 - Troca de itens deve ser limitada a jogador para jogador
 - Transferencias jogador-para-jogador devem persistir origem, destino e auditoria via `DB.batch`

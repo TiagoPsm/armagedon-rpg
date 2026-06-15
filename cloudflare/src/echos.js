@@ -485,6 +485,29 @@ async function updateEcho(env, actor, echoId, patch = {}) {
   return serializeEcho(saved);
 }
 
+// Atualiza só Vida/Integridade atuais do Echo. Permitido ao mestre ou ao dono
+// (usado pela Mesa: o dono ajusta a vida do proprio Echo em cena). Os maximos
+// nao mudam aqui — sao definidos pelo mestre na pagina de Echos.
+async function setEchoVitals(env, actor, echoId, vitals = {}) {
+  const echo = await getEchoRowById(env, echoId);
+  if (!echo) throw jsonError("Echo não encontrado.", 404);
+  assertEchoReadAccess(actor, echo);
+
+  const data = normalizeEchoData(echo.data);
+  const stats = { ...data.stats };
+
+  if (vitals.vidaAtual !== undefined) {
+    stats.vidaAtual = Math.max(0, Math.min(toInt(vitals.vidaAtual, stats.vidaAtual), stats.vidaMax));
+  }
+  if (vitals.integAtual !== undefined) {
+    stats.integAtual = Math.max(0, Math.min(toInt(vitals.integAtual, stats.integAtual), stats.integMax));
+  }
+
+  data.stats = normalizeEchoStats(stats);
+  const saved = await persistEcho(env, { ...echo, data });
+  return serializeEcho(saved);
+}
+
 // Atualiza só o avatar (usado pela rota de upload de imagem do Echo).
 async function setEchoAvatar(env, actor, echoId, avatarUrl) {
   const echo = await getEchoRowById(env, echoId);
@@ -587,6 +610,7 @@ export {
   listEchos,
   rollMonsterEchoDrop,
   setEchoAvatar,
+  setEchoVitals,
   transferEchoBetweenPlayers,
   updateEcho
 };
