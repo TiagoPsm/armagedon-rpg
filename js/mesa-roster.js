@@ -131,7 +131,7 @@ function renderRoster() {
     return;
   }
 
-  const groups = ["player", "npc", "monster"]
+  const groups = ["player", "npc", "monster", "echo"]
     .map(type => ({
       type,
       label: TYPE_LABELS[type],
@@ -236,6 +236,7 @@ function renderPlayerSheetPanel(rosterList, rosterCountBadge) {
       </div>
 
       <a href="ficha.html" class="btn btn-primary btn-block player-open-sheet-btn">Abrir minha ficha completa</a>
+      <a href="echos.html" class="btn btn-ghost btn-block player-open-echos-btn">Meus Echos</a>
     </section>
   `;
 }

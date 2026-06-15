@@ -518,7 +518,9 @@ async function deleteCharacterByKey(env, key, kind) {
 const TRANSFER_AUDIT_TYPES = new Set([
   "item-player-to-player",
   "memory-player-to-player",
-  "memory-drop-award"
+  "memory-drop-award",
+  "echo-player-to-player",
+  "echo-drop-award"
 ]);
 
 function normalizeTransferAuditType(transferType) {
@@ -866,7 +868,7 @@ async function transferMemoryBetweenPlayers(env, actor, sourceKey, targetKey, me
   };
 }
 
-const TRANSFER_PROPOSAL_TYPES = new Set(["item", "memory"]);
+const TRANSFER_PROPOSAL_TYPES = new Set(["item", "memory", "echo"]);
 const MAX_PENDING_PROPOSALS_PER_SOURCE = 10;
 
 async function getCharacterById(env, id) {
@@ -1010,6 +1012,22 @@ async function createTransferProposal(env, actor, options = {}) {
       mergeKey: getItemMergeKey(sourceItem),
       quantity
     };
+  } else if (transferType === "echo") {
+    const echoId = String(options.echoId || "").trim();
+    const echo = await env.DB.prepare(
+      "select id, owner_character_id, name, custom_name from echos where id = ? limit 1"
+    )
+      .bind(echoId)
+      .first();
+
+    if (!echo || echo.owner_character_id !== source.id) {
+      throw jsonError("Echo não encontrado nesta ficha.", 404);
+    }
+
+    payload = {
+      echoId: echo.id,
+      echoName: String(echo.custom_name || echo.name || "Echo")
+    };
   } else {
     const index = Number.parseInt(options.memoryIndex, 10);
     if (Number.isNaN(index) || index < 0 || index >= sourceData.ownedMemories.length) {
@@ -1101,6 +1119,44 @@ async function acceptTransferProposal(env, actor, proposalId) {
 
   if (actor.role !== "master" && target.ownerUserId !== actor.sub) {
     throw jsonError("Somente o destinatário pode aceitar esta proposta.", 403);
+  }
+
+  // Echos não vivem no data_json da ficha; a posse muda na tabela echos.
+  if (proposal.transferType === "echo") {
+    const echoId = String(proposal.payload?.echoId || "");
+    const echo = await env.DB.prepare(
+      "select id, owner_character_id from echos where id = ? limit 1"
+    )
+      .bind(echoId)
+      .first();
+
+    if (!echo || echo.owner_character_id !== source.id) {
+      await markProposalResolved(env, proposal.id, "cancelled", "O Echo não está mais disponível na origem.");
+      throw jsonError("O Echo não está mais disponível na origem; proposta cancelada.", 409);
+    }
+
+    const now = new Date().toISOString();
+    const echoAuditPayload = {
+      proposalId: proposal.id,
+      echoId: echo.id,
+      sourceKey: source.key,
+      targetKey: target.key
+    };
+
+    await env.DB.batch([
+      env.DB.prepare("update echos set owner_character_id = ?, updated_at = ? where id = ?").bind(target.id, now, echo.id),
+      buildTransferAuditStatement(env, "echo-player-to-player", actor.sub, source.id, target.id, echoAuditPayload, now),
+      buildResolveProposalStatement(env, proposal.id, "accepted", "", now)
+    ]);
+
+    return {
+      proposalId: proposal.id,
+      status: "accepted",
+      transferType: "echo",
+      sourceKey: source.key,
+      targetKey: target.key,
+      payload: echoAuditPayload
+    };
   }
 
   const sourceData = normalizeSheetData(source.data || {}, "player", source.name);

@@ -107,12 +107,27 @@ Regras consolidadas:
 - monstros nao tem inventario
 - monstros nao tem faccao
 - monstros possuem secao de drop de memoria
+- monstros possuem configuracao de drop de Echo (chance + raridade padrao)
 
 ## Memorias
 
 - jogadores e NPCs tem memorias possuidas
 - memorias podem ser transferidas entre jogadores
 - mestre pode conceder memoria dropada de monstro
+
+## Echos
+
+- Echo e uma manifestacao residual de um monstro derrotado; e um item raro e dificil de obter
+- a chance de drop e baixa e ajustavel pelo mestre na ficha do monstro (campo `echoDropConfig`: chance + raridade padrao)
+- apenas o mestre rola o drop e concede o Echo; o destino pode ser jogador ou NPC
+- ao ser concedido, o Echo passa a pertencer permanentemente ao dono; pode haver multiplos Echos do mesmo monstro
+- cada Echo guarda: nome, aparencia (imagem), descricao, atributos adaptados, habilidades e passivas herdadas do monstro, raridade, rank/XP proprios, data de obtencao e dono
+- raridades: `comum`, `raro`, `epico`, `lendario`
+- o Echo evolui com rank e XP proprios (independentes do dono): comeca no rank 1 e sobe quando o mestre concede XP; ranks de 1 a 7 (Fragmento ate Ressonancia)
+- jogador comum visualiza e gerencia apenas os proprios Echos; edita apelido, anotacoes e imagem do proprio Echo
+- o mestre tem acesso total: ve Echos de todos os jogadores e de NPCs, cria/edita/remove, altera proprietario, ajusta atributos, rank, XP e raridade
+- Echos podem ser transferidos entre jogadores com consentimento (proposta com aceite), como as memorias; o mestre transfere direto
+- na Mesa, o mestre pode colocar o Echo de um jogador no palco como token aliado (modelo master-invoke, pois a cena e gravada apenas pelo mestre)
 
 ## Transferencias
 
@@ -121,6 +136,8 @@ Tipos ja previstos e auditados:
 - item de jogador para jogador
 - memoria de jogador para jogador
 - memoria obtida por drop de monstro
+- Echo de jogador para jogador (proposta com aceite; mestre direto)
+- Echo obtido por drop de monstro
 
 Regras importantes:
 

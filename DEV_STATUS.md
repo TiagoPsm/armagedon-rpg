@@ -932,3 +932,35 @@ Sempre confirmar os arquivos exatos da etapa antes do upload.
 - servidor estatico temporario respondeu `200` para `ficha.html` e `mesa.html`
 - workflow de Pages revisado para incluir `mesa.html`
 - Browser Use abriu `http://127.0.0.1:8012/mesa.html` sem erros de console registrados
+
+## Etapa Echos (2026-06-15)
+
+Sistema de Echos: manifestacoes residuais de monstros derrotados, colecionaveis pelos jogadores, com rank e XP proprios.
+
+### Resumo do que mudou
+
+- Monstro ganhou configuracao de drop de Echo na ficha (chance + raridade padrao), ao lado do drop de memoria.
+- O mestre testa o drop e, em caso de sucesso, concede o Echo a um jogador ou NPC.
+- Echos viram entidades proprias no banco (tabela `echos`), com nome, aparencia, descricao, habilidades/passivas e atributos derivados do monstro, alem de rank/XP independentes.
+- Nova pagina `echos.html` lista, filtra, detalha e edita os Echos. Jogador edita apelido, anotacoes e imagem do proprio Echo; o mestre edita tudo, concede XP, transfere e remove.
+- Transferencia de Echo reutiliza o fluxo de propostas (`transfer_proposals`, tipo `echo`): mestre transfere direto, jogador envia proposta com aceite.
+- Mesa: o roster do mestre ganhou o grupo "Echos"; o mestre coloca o Echo de um jogador no palco como token aliado. O painel do jogador ganhou link para `echos.html`.
+
+### Arquivos principais
+
+- Novos: `echos.html`, `css/echos.css`, `js/echos-core.js`, `js/echos-page.js`, `js/echos-init.js`, `js/ficha-echos.js`, `cloudflare/src/echos.js`, `cloudflare/d1/migrations/0002_add_echos.sql`
+- Backend alterado: `cloudflare/src/sheet.js` (`echoDropConfig`), `cloudflare/src/characters.js` (proposta/aceite tipo `echo`), `cloudflare/src/index.js` (rotas `/api/echos*`, upload de avatar de Echo), `cloudflare/d1/schema.sql`
+- Frontend alterado: `js/api.js` (metodos de Echo), `js/ficha-core.js`, `js/ficha-sheet.js`, `js/mesa-core.js`, `js/mesa-roster.js`, `css/tokens.css` (tokens de raridade), `css/ficha.css`
+- Navegacao + cache-busting: `index.html`, `ficha.html`, `mesa.html`, `regras.html`, `sugestoes.html`
+
+### Validacoes executadas
+
+- `npm run check:js`: OK (41 arquivos)
+- `npm run audit:static`: OK
+- `npx wrangler deploy --dry-run --config cloudflare/wrangler.toml`: bundle OK
+
+### Pendencias / riscos
+
+- A migracao `0002_add_echos.sql` precisa ser aplicada no D1 remoto antes do deploy do Worker (recria `transfer_proposals` e `transfer_audit` para aceitar `echo`).
+- Invocacao na Mesa e feita pelo mestre (modelo master-invoke), pois a gravacao da cena (`PUT /api/mesa/scene`) e exclusiva do mestre. Permitir o jogador invocar o proprio Echo diretamente exige mudanca futura nas permissoes de escrita da cena.
+- Um Echo so renderiza como token nos clientes que o tem no roster (mestre ve todos; jogador ve os proprios). O Echo de um jogador nao aparece no roster de outro jogador.

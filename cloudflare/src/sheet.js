@@ -132,6 +132,22 @@ function normalizeMemoryDrop(drop = {}) {
   };
 }
 
+const ECHO_RARITIES = new Set(["comum", "raro", "epico", "lendario"]);
+
+function normalizeEchoRarity(value) {
+  const normalized = String(value || "comum").trim().toLowerCase();
+  return ECHO_RARITIES.has(normalized) ? normalized : "comum";
+}
+
+// Configuração de drop de Echo guardada na ficha do monstro. A chance é baixa
+// por padrão (Echos são raros) e a raridade padrão alimenta o Echo gerado.
+function normalizeEchoDropConfig(config = {}) {
+  return {
+    chance: sanitizeChance(config.chance, "0"),
+    defaultRarity: normalizeEchoRarity(config.defaultRarity)
+  };
+}
+
 function normalizeSheetData(data = {}, kind = "player", charNameFallback = "") {
   const isMonster = kind === "monster";
   const inventory = !isMonster && Array.isArray(data.inv) ? data.inv.map(normalizeItem) : [];
@@ -177,6 +193,7 @@ function normalizeSheetData(data = {}, kind = "player", charNameFallback = "") {
         ? data.memoryDrops.map(normalizeMemoryDrop)
         : []
       : [],
+    echoDropConfig: isMonster ? normalizeEchoDropConfig(data.echoDropConfig) : null,
     ...attrData
   };
 
@@ -215,7 +232,10 @@ function buildDefaultSheet(kind, charName) {
 export {
   ATTRIBUTES,
   DEFAULT_INVENTORY_SLOTS,
+  ECHO_RARITIES,
   buildDefaultSheet,
+  normalizeEchoDropConfig,
+  normalizeEchoRarity,
   normalizeInventorySlots,
   normalizeItem,
   normalizeMemoryDrop,

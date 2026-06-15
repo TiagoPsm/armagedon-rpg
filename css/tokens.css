@@ -55,6 +55,24 @@
   --token-player:  #4a5d9d;
   --token-npc:     #8a7438;
   --token-monster: #7a1f1f;
+  --token-echo:    #6b4a9d;
+
+  /* ── RARIDADE DE ECHO ───────────────────────────────────── */
+  --echo-comum-text:     #8a8272;
+  --echo-comum-border:   var(--border-strong);
+  --echo-comum-bg:       rgba(138, 130, 114, 0.10);
+
+  --echo-raro-text:      #8a9bd2;
+  --echo-raro-border:    rgba(93, 114, 184, 0.55);
+  --echo-raro-bg:        rgba(61, 79, 138, 0.12);
+
+  --echo-epico-text:     #b98ad6;
+  --echo-epico-border:   rgba(120, 50, 170, 0.55);
+  --echo-epico-bg:       rgba(120, 50, 170, 0.12);
+
+  --echo-lendario-text:  #d4ba6b;
+  --echo-lendario-border: rgba(212, 186, 107, 0.60);
+  --echo-lendario-bg:    rgba(138, 116, 56, 0.14);
 
   /* ── TIPOGRAFIA ─────────────────────────────────────────── */
   --font-display: "Cinzel Decorative", "Cinzel", serif;

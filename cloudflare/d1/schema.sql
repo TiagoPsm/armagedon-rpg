@@ -58,7 +58,9 @@ create table if not exists transfer_audit (
     transfer_type in (
       'item-player-to-player',
       'memory-player-to-player',
-      'memory-drop-award'
+      'memory-drop-award',
+      'echo-player-to-player',
+      'echo-drop-award'
     )
   ),
   actor_user_id text references users(id) on delete set null,
@@ -70,7 +72,7 @@ create table if not exists transfer_audit (
 
 create table if not exists transfer_proposals (
   id text primary key,
-  transfer_type text not null check (transfer_type in ('item', 'memory')),
+  transfer_type text not null check (transfer_type in ('item', 'memory', 'echo')),
   status text not null default 'pending' check (status in ('pending', 'accepted', 'rejected', 'cancelled')),
   actor_user_id text references users(id) on delete set null,
   source_character_id text not null references characters(id) on delete cascade,
@@ -110,3 +112,27 @@ create table if not exists mesa_scenes (
   created_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   updated_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
+
+-- Echos: manifestações residuais de monstros derrotados, com rank e XP próprios.
+-- owner_character_id aponta para a ficha do jogador dono; data_json guarda
+-- avatar, descrição, habilidades, passivas e atributos derivados do monstro.
+create table if not exists echos (
+  id text primary key,
+  owner_character_id text not null references characters(id) on delete cascade,
+  source_monster_id text references characters(id) on delete set null,
+  source_monster_name text not null default '',
+  name text not null,
+  custom_name text not null default '',
+  rarity text not null default 'comum' check (rarity in ('comum', 'raro', 'epico', 'lendario')),
+  rank integer not null default 1 check (rank between 1 and 7),
+  xp integer not null default 0,
+  notes text not null default '',
+  data_json text not null default '{}',
+  obtained_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  granted_by_user_id text references users(id) on delete set null,
+  created_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+create index if not exists echos_owner_idx on echos (owner_character_id);
+create index if not exists echos_source_idx on echos (source_monster_id);

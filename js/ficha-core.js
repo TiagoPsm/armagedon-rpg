@@ -208,6 +208,8 @@ let inv = [];
 let inventorySlots = DEFAULT_INVENTORY_SLOTS;
 let memoryDrops = [];
 let ownedMemories = [];
+let echoDropConfig = null;
+let echoRollState = {};
 let memoryRollStates = {};
 let ownedMemoryTransferStates = {};
 let itemTransferStates = {};
@@ -494,6 +496,8 @@ function applySheetData(data, kind = "player") {
   inventorySlots = data.inventorySlots;
   memoryDrops = data.memoryDrops;
   ownedMemories = data.ownedMemories;
+  echoDropConfig = data.echoDropConfig;
+  echoRollState = {};
   soulCore = normalizeSoulCoreState(
     data.soulCore,
     data.charLevel || 1,
@@ -513,6 +517,7 @@ function applySheetData(data, kind = "player") {
   renderOwnedMemories(ownedMemories);
   renderInv(inv);
   renderMemoryDrops(memoryDrops);
+  renderEchoDropSection(kind);
   renderSheetNotesField(kind);
   updateNotesCollapseUI();
   renderProgressionField(kind);
@@ -783,7 +788,8 @@ function collectSheetData(kind = "player") {
       ownedMemories: isMonster ? [] : collectOwnedMemories(),
       inventorySlots: isMonster ? 0 : inventorySlots,
       inv: isMonster ? [] : collectInv(),
-      memoryDrops: isMonster ? collectMemoryDrops() : []
+      memoryDrops: isMonster ? collectMemoryDrops() : [],
+      echoDropConfig: isMonster ? collectEchoDropConfig() : null
     },
     kind
   );
@@ -890,6 +896,7 @@ function normalizeSheetData(data, kind = "player") {
     inventorySlots: isMonster ? 0 : normalizeInventorySlots(kind, data.inventorySlots),
     inv: isMonster ? [] : Array.isArray(data.inv) ? data.inv.map(normalizeItem) : [],
     memoryDrops: isMonster ? (Array.isArray(data.memoryDrops) ? data.memoryDrops.map(normalizeMemoryDrop) : []) : [],
+    echoDropConfig: isMonster ? normalizeEchoDropConfig(data.echoDropConfig) : null,
     ...attrData
   };
 
@@ -1120,6 +1127,19 @@ function normalizeMemoryDrop(drop) {
     name: drop.name || "",
     desc: drop.desc || "",
     chance: sanitizeChance(drop.chance, "0")
+  };
+}
+
+function normalizeEchoRarityValue(value) {
+  const normalized = String(value || "comum").trim().toLowerCase();
+  return ["comum", "raro", "epico", "lendario"].includes(normalized) ? normalized : "comum";
+}
+
+function normalizeEchoDropConfig(config) {
+  const source = config && typeof config === "object" ? config : {};
+  return {
+    chance: sanitizeChance(source.chance, "0"),
+    defaultRarity: normalizeEchoRarityValue(source.defaultRarity)
   };
 }
 

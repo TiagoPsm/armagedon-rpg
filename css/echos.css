@@ -1,0 +1,550 @@
+/* ============================================================
+ * echos.css — Página de Echos (manifestações residuais)
+ * Usa exclusivamente tokens de tokens.css. Visual dark fantasy.
+ * ============================================================ */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.page-main-echos {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: var(--sp-8) var(--sp-5) var(--sp-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+/* ── HERO ─────────────────────────────────────────────────── */
+
+.echos-hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-6) var(--sp-6) var(--sp-5);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--border-accent);
+  border-radius: var(--radius-lg);
+}
+
+.echos-hero .page-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-3xl);
+  letter-spacing: var(--tracking-wide);
+  color: var(--text);
+}
+
+.echos-intro {
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  color: var(--text-soft);
+  max-width: 64ch;
+  line-height: var(--lh-relaxed);
+}
+
+/* ── TOOLBAR ──────────────────────────────────────────────── */
+
+.echos-toolbar {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-4) var(--sp-5);
+}
+
+.echos-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-4);
+}
+
+.echos-search {
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+
+.echos-filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+.echos-filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 140px;
+}
+
+.echos-filter select {
+  min-width: 140px;
+}
+
+.echos-count-badge {
+  margin-left: auto;
+  align-self: center;
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-soft);
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+/* ── GRID DE CARDS ────────────────────────────────────────── */
+
+.echos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--sp-4);
+}
+
+.echos-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: var(--sp-10) var(--sp-4);
+  color: var(--text-soft);
+}
+
+.echo-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--echo-comum-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: transform var(--transition, 0.18s ease), border-color var(--transition, 0.18s ease);
+}
+
+.echo-card:hover {
+  transform: translateY(-2px);
+}
+
+.echo-card[data-rarity="raro"]     { border-color: var(--echo-raro-border); }
+.echo-card[data-rarity="epico"]    { border-color: var(--echo-epico-border); }
+.echo-card[data-rarity="lendario"] { border-color: var(--echo-lendario-border); }
+
+.echo-card-portrait {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: var(--bg-raised);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.echo-card-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.echo-portrait-fallback {
+  font-family: var(--font-display);
+  font-size: var(--fs-3xl);
+  font-weight: var(--fw-bold);
+  color: var(--text-faint);
+  letter-spacing: var(--tracking-wide);
+}
+
+.echo-rarity-badge {
+  position: absolute;
+  top: var(--sp-2);
+  right: var(--sp-2);
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  padding: 2px var(--sp-2);
+  border-radius: var(--radius-sm);
+  color: var(--echo-comum-text);
+  background: var(--echo-comum-bg);
+  border: 1px solid var(--echo-comum-border);
+}
+
+.echo-rarity-badge[data-rarity="raro"]     { color: var(--echo-raro-text);     background: var(--echo-raro-bg);     border-color: var(--echo-raro-border); }
+.echo-rarity-badge[data-rarity="epico"]    { color: var(--echo-epico-text);    background: var(--echo-epico-bg);    border-color: var(--echo-epico-border); }
+.echo-rarity-badge[data-rarity="lendario"] { color: var(--echo-lendario-text); background: var(--echo-lendario-bg); border-color: var(--echo-lendario-border); }
+
+.echo-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  flex: 1;
+}
+
+.echo-card-name {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  color: var(--text);
+  line-height: var(--lh-tight);
+}
+
+.echo-card-source {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--text-soft);
+}
+
+.echo-card-rank {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin-top: var(--sp-1);
+}
+
+.echo-rank-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+
+.echo-rank-name {
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--text);
+}
+
+.echo-rank-num,
+.echo-xp-text {
+  font-size: var(--fs-2xs);
+  color: var(--text-soft);
+}
+
+.echo-xp-track {
+  width: 100%;
+  height: 4px;
+  background: var(--bg-raised);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.echo-xp-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: var(--radius-full);
+  transition: width var(--transition, 0.3s ease);
+}
+
+.echo-card-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+.echo-stat-chip {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-soft);
+  padding: 2px var(--sp-2);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.echo-stat-chip strong {
+  color: var(--text);
+  font-weight: var(--fw-semibold);
+}
+
+.echo-card-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-top: auto;
+  padding-top: var(--sp-2);
+  font-size: var(--fs-2xs);
+  color: var(--text-faint);
+}
+
+.echo-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  border-top: 1px solid var(--border);
+}
+
+.echo-action-danger {
+  color: var(--danger);
+}
+
+.echo-action-danger:hover {
+  border-color: var(--border-accent);
+}
+
+/* ── MODAL ────────────────────────────────────────────────── */
+
+.echo-modal-dialog {
+  max-width: 680px;
+}
+
+.echo-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.echo-modal-kicker {
+  margin: 0;
+}
+
+.echo-modal-hero {
+  display: flex;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.echo-modal-portrait {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-raised);
+  border: 1px solid var(--echo-comum-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.echo-modal-portrait[data-rarity="raro"]     { border-color: var(--echo-raro-border); }
+.echo-modal-portrait[data-rarity="epico"]    { border-color: var(--echo-epico-border); }
+.echo-modal-portrait[data-rarity="lendario"] { border-color: var(--echo-lendario-border); }
+
+.echo-modal-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.echo-avatar-btn {
+  position: absolute;
+  bottom: var(--sp-1);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: var(--fs-2xs);
+  padding: 2px var(--sp-2);
+  white-space: nowrap;
+}
+
+.echo-modal-headline {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.echo-modal-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  color: var(--text);
+  line-height: var(--lh-tight);
+}
+
+.echo-modal-source {
+  font-size: var(--fs-sm);
+  color: var(--text-soft);
+}
+
+.echo-modal-rank {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin-top: var(--sp-1);
+}
+
+.echo-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+}
+
+.echo-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.echo-modal-field-full {
+  grid-column: 1 / -1;
+}
+
+.echo-modal-field-compact {
+  max-width: 160px;
+}
+
+.echo-readonly-text {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--text-soft);
+  line-height: var(--lh-relaxed);
+  padding: var(--sp-2) 0;
+}
+
+.echo-modal-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border);
+}
+
+.echo-master-block {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-3);
+}
+
+.echo-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--sp-2);
+}
+
+.echo-stat-grid-res {
+  grid-template-columns: repeat(4, 1fr);
+  margin-top: var(--sp-2);
+}
+
+.echo-stat-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--fs-2xs);
+  color: var(--text-soft);
+}
+
+.echo-stat-field input {
+  width: 100%;
+  text-align: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  padding: var(--sp-1);
+}
+
+.echo-ability-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.echo-ability {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-2) var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.echo-ability-empty {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.echo-ability-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.echo-ability-head strong {
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+}
+
+.echo-ability-type {
+  font-size: var(--fs-2xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.echo-ability-trigger {
+  font-size: var(--fs-2xs);
+  color: var(--text-soft);
+}
+
+.echo-ability p {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--text-soft);
+  line-height: var(--lh-normal);
+}
+
+.echo-xp-grant {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+}
+
+.echo-xp-grant input {
+  max-width: 140px;
+}
+
+.echo-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  justify-content: flex-end;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border);
+}
+
+.echo-rarity-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  justify-content: space-between;
+}
+
+.echo-rarity-label {
+  font-weight: var(--fw-semibold);
+}
+
+.echo-rarity-label[data-rarity="raro"]     { color: var(--echo-raro-text); }
+.echo-rarity-label[data-rarity="epico"]    { color: var(--echo-epico-text); }
+.echo-rarity-label[data-rarity="lendario"] { color: var(--echo-lendario-text); }
+
+@media (max-width: 640px) {
+  .echo-modal-grid {
+    grid-template-columns: 1fr;
+  }
+  .echo-stat-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .echo-stat-grid-res {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

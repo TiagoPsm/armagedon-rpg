@@ -284,6 +284,7 @@ function applySheetKindUI(kind) {
   const charFaction = document.getElementById("charFaction");
   const inventorySection = document.getElementById("inventorySection");
   const memorySection = document.getElementById("memorySection");
+  const echoDropSection = document.getElementById("echoDropSection");
   const identityLoreCard = document.getElementById("identityLoreCard");
   const vidaCard = document.getElementById("vidaCard");
   const isMonster = kind === "monster";
@@ -310,6 +311,10 @@ function applySheetKindUI(kind) {
   if (memorySection) {
     memorySection.hidden = !isMonster;
     memorySection.style.display = isMonster ? "" : "none";
+  }
+  if (echoDropSection) {
+    echoDropSection.hidden = !isMonster;
+    echoDropSection.style.display = isMonster ? "" : "none";
   }
   if (identityLoreCard) {
     identityLoreCard.hidden = isMonster;

@@ -228,6 +228,16 @@ Arquivos visuais atuais da Mesa:
 - O HTML da pagina de regras deve permanecer em UTF-8 limpo; qualquer texto corrompido deve ser corrigido na origem antes de novos refinamentos
 - A pagina de regras deve manter estrutura funcional simples; refinamento visual nao deve criar secoes extras sem necessidade
 
+## Pagina de Echos
+
+- Segue a mesma linguagem dark fantasy da ficha: superficie escura em camadas, bordas discretas, tipografia de titulo dramatica
+- Layout: hero curto, barra de filtros (busca, raridade, ordenacao e, para o mestre, dono) e grade de cards responsiva
+- Cada Echo e um card com retrato, badge de raridade, nome, monstro de origem, barra de rank/XP, atributos resumidos e acoes
+- Raridade e codificada por cor de borda/badge via tokens em `tokens.css` (`--echo-comum-*`, `--echo-raro-*`, `--echo-epico-*`, `--echo-lendario-*`); manter dentro da paleta (azul frio, roxo profundo, dourado contido) sem brilho excessivo
+- Detalhes e edicao abrem em modal centralizado seguindo o padrao `app-modal-*`
+- Na ficha do monstro, a secao "Drop de Echo" reaproveita os componentes de rolagem do drop de memoria (`memory-roll-*`) para manter consistencia
+- Token de Echo na Mesa usa a cor `--token-echo` (roxo) e o rotulo de tipo "Echos"
+
 ## O Que Evitar
 
 - excesso de ornamento

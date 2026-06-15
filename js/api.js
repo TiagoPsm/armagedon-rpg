@@ -499,6 +499,58 @@
         method: "POST",
         body: payload
       });
+    },
+    async listEchos(ownerKey) {
+      const query = ownerKey ? `?owner=${encodeURIComponent(ownerKey)}` : "";
+      return request(`/echos${query}`);
+    },
+    async getEcho(id) {
+      return request(`/echos/${encodeURIComponent(id)}`);
+    },
+    async rollMonsterEcho(payload) {
+      return request("/echos/monster-roll", {
+        method: "POST",
+        body: payload
+      });
+    },
+    async awardMonsterEcho(payload) {
+      return request("/echos/monster-award", {
+        method: "POST",
+        body: payload
+      });
+    },
+    async updateEcho(id, patch) {
+      return request(`/echos/${encodeURIComponent(id)}`, {
+        method: "PUT",
+        body: patch
+      });
+    },
+    async deleteEcho(id) {
+      return request(`/echos/${encodeURIComponent(id)}`, {
+        method: "DELETE"
+      });
+    },
+    async grantEchoXp(id, amount) {
+      return request(`/echos/${encodeURIComponent(id)}/xp`, {
+        method: "POST",
+        body: { amount }
+      });
+    },
+    async uploadEchoAvatar(id, blob) {
+      const contentType = blob.type || "image/webp";
+      const response = await fetch(buildUrl(`/avatars/echo/${encodeURIComponent(id)}`), {
+        method: "POST",
+        headers: {
+          "Content-Type": contentType,
+          ...(state.token ? { Authorization: `Bearer ${state.token}` } : {})
+        },
+        body: blob
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err?.error || "Falha ao enviar avatar do Echo.");
+      }
+      return response.json();
     }
   };
 })();

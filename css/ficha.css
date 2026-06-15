@@ -1513,3 +1513,46 @@
   gap: var(--sp-2);
   flex-shrink: 0;
 }
+
+/* ── Seção de drop de Echo (ficha do monstro) ───────────────── */
+
+.echo-drop-config {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.echo-drop-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+}
+
+.echo-drop-fields .memory-field {
+  flex: 1 1 200px;
+  min-width: 180px;
+}
+
+.echo-drop-hint {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--text-soft);
+  line-height: var(--lh-relaxed);
+}
+
+.echo-rarity-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  width: 100%;
+}
+
+.echo-rarity-label {
+  font-weight: var(--fw-semibold);
+  color: var(--text);
+}
+
+.echo-rarity-label[data-rarity="raro"]     { color: var(--echo-raro-text); }
+.echo-rarity-label[data-rarity="epico"]    { color: var(--echo-epico-text); }
+.echo-rarity-label[data-rarity="lendario"] { color: var(--echo-lendario-text); }

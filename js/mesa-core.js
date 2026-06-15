@@ -10,8 +10,14 @@ const MESA_DEFAULT_INVENTORY_SLOTS = 10;
 const TYPE_LABELS = {
   player: "Jogador",
   npc: "NPC",
-  monster: "Monstro"
+  monster: "Monstro",
+  echo: "Echos"
 };
+
+// Echos carregados para a mesa (companheiros invocáveis pelo mestre). Backend:
+// o mestre recebe todos; o jogador recebe os próprios (para resolver o token
+// do próprio Echo quando o mestre o coloca no palco compartilhado).
+let mesaEchos = [];
 const STAGE_SLOT_COLUMNS = 5;
 const STAGE_SLOT_START_X = 5.5;
 const STAGE_SLOT_START_Y = 7.5;
@@ -682,9 +688,21 @@ async function refreshMesaDirectoryBeforeRoster() {
   if (!window.AUTH?.isBackendEnabled?.() || !window.AUTH?.refreshDirectory) return;
 
   try {
-    await window.AUTH.refreshDirectory();
+    await Promise.all([window.AUTH.refreshDirectory(), refreshMesaEchos()]);
   } catch (error) {
     console.warn("Falha ao atualizar diretorio da mesa antes do roster.", error);
+  }
+}
+
+async function refreshMesaEchos() {
+  mesaEchos = [];
+  if (!window.AUTH?.isBackendEnabled?.() || !window.APP?.listEchos) return;
+
+  try {
+    const response = await window.APP.listEchos();
+    mesaEchos = Array.isArray(response?.echos) ? response.echos : [];
+  } catch (error) {
+    console.warn("Falha ao carregar Echos da mesa.", error);
   }
 }
 
@@ -941,10 +959,33 @@ function buildRoster() {
   const players = buildPlayers(directory, sheets);
   const npcs = buildNpcs(directory, sheets);
   const monsters = buildMonsters(directory, sheets);
-  const roster = [...players, ...npcs, ...monsters];
+  const echos = buildEchos();
+  const roster = [...players, ...npcs, ...monsters, ...echos];
 
   if (roster.length) return roster;
   return buildFallbackRoster(sheets);
+}
+
+// Echos viram entradas de roster (id/characterKey "echo:<id>") para que o
+// mestre os coloque no palco como aliados. Os atributos viram vida/integridade
+// do token. Só existe em modo backend (mesaEchos é populado pela API).
+function buildEchos() {
+  return (mesaEchos || []).map(echo => {
+    const stats = echo.stats || {};
+    return createRosterEntry({
+      id: `echo:${echo.id}`,
+      characterKey: `echo:${echo.id}`,
+      type: "echo",
+      ownerUsername: echo.ownerName || "mestre",
+      createdBy: "mestre",
+      name: echo.displayName || echo.name || "Echo",
+      imageUrl: String(echo.avatar || "").trim(),
+      currentLife: stats.vidaAtual,
+      maxLife: stats.vidaMax,
+      currentIntegrity: stats.integAtual,
+      maxIntegrity: stats.integMax
+    });
+  });
 }
 
 function buildPlayers(directory, sheets) {

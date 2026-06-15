@@ -35,6 +35,17 @@ import {
   transferItemBetweenPlayers,
   transferMemoryBetweenPlayers
 } from "./characters.js";
+import {
+  awardMonsterEchoDrop,
+  deleteEcho,
+  getEchoBundleById,
+  grantEchoExperience,
+  listEchos,
+  rollMonsterEchoDrop,
+  setEchoAvatar,
+  transferEchoBetweenPlayers,
+  updateEcho
+} from "./echos.js";
 import { getMesaScene, saveMesaScene } from "./mesa.js";
 import { MesaRealtimeRoom } from "./mesa-realtime.js";
 
@@ -586,6 +597,43 @@ export default {
         return withCors(json(saved), origin);
       }
 
+      /* ── ECHO AVATAR: upload para R2 (mestre ou dono do Echo) ───────── */
+
+      const echoAvatarMatch = path.match(/^\/api\/avatars\/echo\/([^/]+)$/);
+      if (echoAvatarMatch && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        if (!env.MAPS) return errorJson("Bucket R2 de avatares nao configurado.", 503, origin);
+
+        const echoId = decodePathParam(echoAvatarMatch[1]);
+
+        const contentType = request.headers.get("content-type") || "image/webp";
+        if (!/^image\/(webp|jpeg|jpg)$/i.test(contentType.split(";")[0].trim())) {
+          return errorJson("Formato de avatar invalido. Use webp ou jpeg.", 415, origin);
+        }
+
+        const bodyBytes = await request.arrayBuffer();
+        if (!bodyBytes.byteLength) return errorJson("Body vazio.", 400, origin);
+        if (bodyBytes.byteLength > 2 * 1024 * 1024) {
+          return errorJson("Avatar muito grande. Limite de 2 MB.", 413, origin);
+        }
+
+        const ext = contentType.includes("jpeg") || contentType.includes("jpg") ? "jpg" : "webp";
+        const serveKey = `echo-${echoId}`;
+        const safeKey = serveKey.replace(/[^a-z0-9_-]/gi, "_").toLowerCase().slice(0, 64);
+        const r2Key = `avatars/${safeKey}.${ext}`;
+        const publicUrl = `${new URL(request.url).origin}/api/avatars/${encodeURIComponent(serveKey)}`;
+
+        // setEchoAvatar valida que o ator é mestre ou dono do Echo (404/403).
+        const echo = await setEchoAvatar(env, session, echoId, publicUrl);
+
+        await env.MAPS.put(r2Key, bodyBytes, {
+          httpMetadata:   { contentType },
+          customMetadata: { echoId, uploadedBy: session.username, uploadedAt: new Date().toISOString() }
+        });
+
+        return withCors(json({ ok: true, r2Key, url: publicUrl, echo }, { status: 201 }), origin);
+      }
+
       /* ── AVATAR: upload para R2 ─────────────────────────────────────── */
 
       const avatarUploadMatch = path.match(/^\/api\/avatars\/([^/]+)$/);
@@ -820,9 +868,14 @@ export default {
 
         if (session.role === "master") {
           // Envio do mestre nao exige aceite: efetiva direto.
-          const result = transferType === "memory"
-            ? await transferMemoryBetweenPlayers(env, session, sourceKey, targetKey, body.memoryIndex)
-            : await transferItemBetweenPlayers(env, session, sourceKey, targetKey, body.itemIndex, body.quantity);
+          let result;
+          if (transferType === "echo") {
+            result = await transferEchoBetweenPlayers(env, session, body.echoId, targetKey);
+          } else if (transferType === "memory") {
+            result = await transferMemoryBetweenPlayers(env, session, sourceKey, targetKey, body.memoryIndex);
+          } else {
+            result = await transferItemBetweenPlayers(env, session, sourceKey, targetKey, body.itemIndex, body.quantity);
+          }
           return withCors(json({ direct: true, result }), origin);
         }
 
@@ -832,6 +885,7 @@ export default {
           targetKey,
           itemIndex: body.itemIndex,
           memoryIndex: body.memoryIndex,
+          echoId: body.echoId,
           quantity: body.quantity
         });
         return withCors(json({ direct: false, proposal }), origin);
@@ -928,6 +982,72 @@ export default {
           json(await awardMonsterMemoryDrop(env, session, monsterKey, dropIndex, targetKey)),
           origin
         );
+      }
+
+      /* ── ECHOS ──────────────────────────────────────────────────────── */
+
+      if (path === "/api/echos" && request.method === "GET") {
+        const session = await requireAuth(request, env);
+        const ownerKey = url.searchParams.get("owner") || "";
+        return withCors(json({ echos: await listEchos(env, session, { ownerKey }) }), origin);
+      }
+
+      if (path === "/api/echos/monster-roll" && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        const body = await readJson(request);
+        const monsterKey = String(body.monsterKey || "").trim().toLowerCase();
+        if (!monsterKey) return errorJson("Monstro obrigatório.", 400, origin);
+
+        return withCors(json(await rollMonsterEchoDrop(env, session, monsterKey)), origin);
+      }
+
+      if (path === "/api/echos/monster-award" && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        const body = await readJson(request);
+        const monsterKey = String(body.monsterKey || "").trim().toLowerCase();
+        const targetKey = String(body.targetKey || "").trim().toLowerCase();
+        if (!monsterKey || !targetKey) {
+          return errorJson("Monstro e destino são obrigatórios.", 400, origin);
+        }
+
+        return withCors(
+          json(
+            await awardMonsterEchoDrop(env, session, monsterKey, targetKey, {
+              rarity: body.rarity,
+              stats: body.stats,
+              desc: body.desc
+            }),
+            { status: 201 }
+          ),
+          origin
+        );
+      }
+
+      const echoXpMatch = path.match(/^\/api\/echos\/([^/]+)\/xp$/);
+      if (echoXpMatch && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        const body = await readJson(request);
+        return withCors(
+          json(await grantEchoExperience(env, session, decodePathParam(echoXpMatch[1]), body.amount)),
+          origin
+        );
+      }
+
+      const echoItemMatch = path.match(/^\/api\/echos\/([^/]+)$/);
+      if (echoItemMatch && request.method === "GET") {
+        const session = await requireAuth(request, env);
+        return withCors(json(await getEchoBundleById(env, session, decodePathParam(echoItemMatch[1]))), origin);
+      }
+
+      if (echoItemMatch && request.method === "PUT") {
+        const session = await requireAuth(request, env);
+        const body = await readJson(request);
+        return withCors(json(await updateEcho(env, session, decodePathParam(echoItemMatch[1]), body)), origin);
+      }
+
+      if (echoItemMatch && request.method === "DELETE") {
+        const session = await requireAuth(request, env);
+        return withCors(json(await deleteEcho(env, session, decodePathParam(echoItemMatch[1]))), origin);
       }
 
       if (path === "/api/rules" && request.method === "GET") {
