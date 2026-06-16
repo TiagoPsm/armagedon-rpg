@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-16 15:40:03 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-16 15:50:18 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,24 +13,12 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `aa29574 2026-06-16 feat(claude): sistema inteligente de Skills Dispatcher + melhorias de permiss├Áes`
+- Ultimo commit: `412768a 2026-06-16 feat(mesa): painel do jogador com Meu Token + Meus Echos e invocacao de Echo`
 
 ### Alteracoes Locais
 
 ```text
-M  DEV_STATUS.md
-M  SYSTEM_RULES.md
-M  VISUAL_RULES.md
-M  cloudflare/README.md
-M  cloudflare/src/mesa-realtime.js
-M  css/mesa-roster.css
-M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-core.js
-M  js/mesa-inspector.js
-M  js/mesa-roster.js
-M  js/mesa-stage.js
-M  mesa.html
-M  test-worker.mjs
+M  tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -42,19 +30,7 @@ M  test-worker.mjs
 ### Arquivos Em Stage
 
 ```text
-DEV_STATUS.md
-SYSTEM_RULES.md
-VISUAL_RULES.md
-cloudflare/README.md
-cloudflare/src/mesa-realtime.js
-css/mesa-roster.css
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/mesa-core.js
-js/mesa-inspector.js
-js/mesa-roster.js
-js/mesa-stage.js
-mesa.html
-test-worker.mjs
+tools/build-pages.cjs
 ```
 
 ## Paginas Principais
