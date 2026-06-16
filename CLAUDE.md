@@ -123,3 +123,56 @@ The pre-commit hook (`tools/install-obsidian-hooks.ps1`) auto-updates `docs/obsi
 - **Monsters** have no `integMax`, no inventory, no faction.
 - **Transfers** (items, memories) must use `DB.batch` in the Worker to avoid partial state.
 - Do not commit automatically — always ask Tiago first.
+
+---
+
+## Smart Skill Dispatcher
+
+**Available skills** (read `.claude/SKILL_DISPATCHER.md` for auto-selection rules):
+
+1. **code-review-frontend** — Review JS/Canvas code for memory leaks, event handling, security
+2. **dark-mode-design-expert** — Audit visual design, CSS variables, WCAG contrast, dark theme, text integrity
+3. **layout-integrity-checker** — Check layout, spacing, alignment, responsiveness, component-level structure
+4. **page-architecture** ⭐ — NEW! Page-level hierarchy, section organization, visual balance, information design, navigation flow
+5. **canvas-optimization** — Optimize Canvas rendering, FPS, Mesa performance
+6. **frontend-performance-checklist** — Pre-deployment audit, cache-busting, build validation
+7. **canvas-rendering-benchmark** — Profile rendering, measure FPS, validate Canvas API sufficiency
+
+**How it works:** When Tiago writes a prompt mentioning code review, design, performance, deployment, or profiling, read `.claude/SKILL_DISPATCHER.md` to identify which skill(s) apply. Then automatically read the corresponding `.claude/skills/NN-name.md` file and follow its pattern.
+
+**Example:** If Tiago says "Revise o mesa-drawing.js", you automatically use `01-code-review-frontend.md`.
+
+Always show which skill you're using: `✅ Usando skill: code-review-frontend`.
+
+---
+
+## Auto-Improving Skills System
+
+**Skills learn and improve with every use!** Read `.claude/SKILL_IMPROVEMENTS.md` for the feedback log.
+
+**Your responsibilities after each skill use:**
+
+1. **Log the use:** Record in `.claude/SKILL_IMPROVEMENTS.md`:
+   - Was the skill appropriate? (✅ / ⚠️ / ❌)
+   - What worked / what didn't
+   - Any false positives or edge cases
+
+2. **Propose improvements** (after ~10 uses):
+   - Identify patterns in mismatches
+   - Suggest new rules or refined triggers
+   - Update `SKILL_DISPATCHER.md` (with Tiago approval)
+
+3. **Track versions:**
+   - `SKILL_DISPATCHER_v1.0` → v1.1 → v1.2...
+   - Keep changelog in comments
+
+**Example improvement cycle:**
+```
+Use 1-5:  Log feedback
+Use 6-10: Identify patterns ("skill X often triggers for Y")
+Use 11:   Propose: "Add 'Y' as trigger for skill X"
+Use 12:   If Tiago approves → Update SKILL_DISPATCHER.md v1.1
+Use 13+:  Use refined rules
+```
+
+**Goal:** Skills get smarter the more you use them!

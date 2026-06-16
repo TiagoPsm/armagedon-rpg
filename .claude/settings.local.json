@@ -49,7 +49,18 @@
       "Bash(pip install *)",
       "PowerShell(Get-Item \"C:\\\\Users\\\\tiago\\\\Desktop\\\\ARMAGEDON_Documentacao_Completa.txt\" | Select-Object Name, @{Name=\"Tamanho \\(KB\\)\"; Expression={[math]::Round\\($_.Length/1024, 2\\)}}, LastWriteTime)",
       "Read(//c/c/Users/tiago/OneDrive/Desktop/Próxima Campanha/FichaApp/**)",
-      "Read(//c/c/Users/tiago/OneDrive/Desktop/Próxima Campanha/FichaApp/rpg-campaign-git-sync/**)"
+      "Read(//c/c/Users/tiago/OneDrive/Desktop/Próxima Campanha/FichaApp/rpg-campaign-git-sync/**)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\tiago\\\\OneDrive\\\\Desktop\\\\Próxima Campanha\\\\FichaApp\\\\rpg-campaign-git-sync\" -Recurse -File)",
+      "Bash(Select-Object -First 50 FullName)",
+      "Bash(npx wrangler *)",
+      "mcp__f64fefc9-3625-471f-a7ae-ca03a21d92cd__d1_database_query",
+      "Bash(curl -s -o NUL -w \"%{http_code}\\\\n\" https://armagedon-api.tiagopsm2008.workers.dev/api/health)",
+      "Bash(curl -s -o NUL -w \"%{http_code}\\\\n\" https://armagedon-api.tiagopsm2008.workers.dev/api/echos)",
+      "Bash(curl -s -o NUL -w \"%{http_code}\\\\n\" -X POST https://armagedon-api.tiagopsm2008.workers.dev/api/echos/monster-roll)",
+      "Bash(git commit -m 'feat\\(echos\\): sistema de Echos \\(drop de monstro, pagina, transferencia, Mesa\\)' -m 'Echos sao manifestacoes residuais de monstros derrotados, colecionaveis pelos jogadores, com rank e XP proprios. *)",
+      "Bash(git commit -m 'feat\\(echos\\): controlar Vida/Integridade dos tokens na Mesa \\(mestre + dono\\)' -m 'O inspetor da Mesa passa a editar Vida e Integridade atuais dos tokens: o mestre em qualquer token; o jogador no proprio token e nos proprios Echos. *)",
+      "WebSearch",
+      "PowerShell(head -50)"
     ]
   }
 }

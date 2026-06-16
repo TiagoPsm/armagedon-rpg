@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-15 14:11:13 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-16 08:59:38 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,26 +13,31 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `4c6db6d 2026-06-15 feat(echos): sistema de Echos (drop de monstro, pagina, transferencia, Mesa)`
+- Ultimo commit: `3e195a0 2026-06-15 feat(echos): controlar Vida/Integridade dos tokens na Mesa (mestre + dono)`
 
 ### Alteracoes Locais
 
 ```text
- M .claude/settings.local.json
-M  DEV_STATUS.md
-M  SYSTEM_RULES.md
-M  VISUAL_RULES.md
-M  cloudflare/README.md
-M  cloudflare/src/echos.js
-M  cloudflare/src/index.js
-M  cloudflare/src/mesa-realtime.js
- M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+A  .claude/SKILLS_GUIDE.md
+A  .claude/SKILL_DISPATCHER.md
+A  .claude/SKILL_IMPROVEMENTS.md
+A  .claude/SYSTEM_OVERVIEW.md
+A  .claude/VISUAL_FEEDBACK.md
+M  .claude/settings.local.json
+A  .claude/skills/00-skill-maintenance.md
+A  .claude/skills/01-code-review-frontend.md
+A  .claude/skills/02-dark-mode-design-expert.md
+A  .claude/skills/02b-layout-integrity-checker.md
+A  .claude/skills/03-canvas-optimization.md
+A  .claude/skills/03-page-architecture.md
+A  .claude/skills/04-frontend-performance-checklist.md
+A  .claude/skills/05-canvas-rendering-benchmark.md
+A  .claude/skills/README.md
+M  CLAUDE.md
+M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  echos.html
 M  ficha.html
 M  index.html
-M  js/api.js
-M  js/mesa-core.js
-M  js/mesa-stage.js
 M  mesa.html
 M  regras.html
 M  sugestoes.html
@@ -41,26 +46,32 @@ M  sugestoes.html
 ### Arquivos Modificados Sem Stage
 
 ```text
-.claude/settings.local.json
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+(nenhum)
 ```
 
 ### Arquivos Em Stage
 
 ```text
-DEV_STATUS.md
-SYSTEM_RULES.md
-VISUAL_RULES.md
-cloudflare/README.md
-cloudflare/src/echos.js
-cloudflare/src/index.js
-cloudflare/src/mesa-realtime.js
+.claude/SKILLS_GUIDE.md
+.claude/SKILL_DISPATCHER.md
+.claude/SKILL_IMPROVEMENTS.md
+.claude/SYSTEM_OVERVIEW.md
+.claude/VISUAL_FEEDBACK.md
+.claude/settings.local.json
+.claude/skills/00-skill-maintenance.md
+.claude/skills/01-code-review-frontend.md
+.claude/skills/02-dark-mode-design-expert.md
+.claude/skills/02b-layout-integrity-checker.md
+.claude/skills/03-canvas-optimization.md
+.claude/skills/03-page-architecture.md
+.claude/skills/04-frontend-performance-checklist.md
+.claude/skills/05-canvas-rendering-benchmark.md
+.claude/skills/README.md
+CLAUDE.md
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 echos.html
 ficha.html
 index.html
-js/api.js
-js/mesa-core.js
-js/mesa-stage.js
 mesa.html
 regras.html
 sugestoes.html
