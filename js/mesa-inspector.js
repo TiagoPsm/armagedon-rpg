@@ -2,7 +2,21 @@ function renderInspector() {
   const inspector = getMesaDomRef("tokenInspector");
   if (!inspector) return;
 
+  const inspectorBlock = document.getElementById("vttInspectorBlock");
   const token = getSelectedToken();
+
+  // Jogador so ve a aba lateral do inspetor quando o token selecionado e seu
+  // (proprio personagem ou proprio Echo). Sem token proprio selecionado, o
+  // bloco inteiro some — toda a edicao dele fica no painel "Meu Token".
+  if (!isMaster()) {
+    const ownSelected = Boolean(token) && (isOwnPlayerToken(token) || isOwnEchoToken(token));
+    if (inspectorBlock) inspectorBlock.hidden = !ownSelected;
+    if (!ownSelected) {
+      inspector.innerHTML = "";
+      return;
+    }
+  }
+
   if (!token) {
     inspector.innerHTML = `
       <div class="token-inspector-empty">
@@ -16,10 +30,6 @@ function renderInspector() {
   const canEditCurrent = canEditCurrentStats(token);
   const canEditAll = canEditAllStats(token);
   const canViewStats = canViewTokenStats(token);
-  if (!isMaster() && !canViewDetailedTokenInfo(token)) {
-    renderRestrictedPlayerInspector(inspector, token);
-    return;
-  }
   const isHiddenForPlayers = !token.visibleToPlayers;
 
   inspector.innerHTML = `
@@ -87,31 +97,6 @@ function renderInspector() {
           `}
       </div>
     </section>
-  `;
-}
-
-function renderRestrictedPlayerInspector(inspector, token) {
-  inspector.innerHTML = `
-    <section class="token-inspector-card" data-type="${token.type}">
-      <div class="token-inspector-hero">
-        <div class="token-inspector-avatar">
-          <span class="mesa-token-avatar-fallback">?</span>
-        </div>
-        <div class="token-inspector-copy">
-          <div class="token-inspector-badges">
-            <span class="token-type-badge" data-type="${token.type}">${escapeHtml(token.typeLabel)}</span>
-            <span class="token-state-pill">Somente cena</span>
-          </div>
-          <h3 class="token-inspector-name">Token da cena</h3>
-          <p class="token-inspector-owner">As informacoes detalhadas ficam restritas ao proprio token.</p>
-        </div>
-      </div>
-    </section>
-
-    <div class="inspector-note">
-      <strong>Painel pessoal</strong>
-      Use o painel Meu personagem para consultar e editar sua Vida e Integridade.
-    </div>
   `;
 }
 

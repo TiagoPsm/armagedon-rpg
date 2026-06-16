@@ -210,34 +210,87 @@ function renderPlayerSheetPanel(rosterList, rosterCountBadge) {
   rosterCountBadge.textContent = context.isOnStage ? "Em cena" : "Fora da cena";
 
   rosterList.innerHTML = `
-    <section class="player-sheet-panel" data-character-key="${escapeAttribute(selectedKey)}">
-      <div class="player-sheet-hero">
-        <div class="player-sheet-avatar">
-          ${avatar
-            ? `<img src="${escapeAttribute(avatar)}" alt="${escapeAttribute(characterName)}" width="104" height="104" loading="lazy" decoding="async" draggable="false" />`
-            : `<span class="mesa-token-avatar-fallback">${escapeHtml(initials)}</span>`}
+    <section class="player-side-panel" data-character-key="${escapeAttribute(selectedKey)}">
+      <div class="player-side-section player-side-token">
+        <h3 class="player-side-title">Meu Token</h3>
+
+        <div class="player-sheet-hero">
+          <div class="player-sheet-avatar">
+            ${avatar
+              ? `<img src="${escapeAttribute(avatar)}" alt="${escapeAttribute(characterName)}" width="104" height="104" loading="lazy" decoding="async" draggable="false" />`
+              : `<span class="mesa-token-avatar-fallback">${escapeHtml(initials)}</span>`}
+          </div>
+          <div class="player-sheet-copy">
+            <span class="token-type-badge" data-type="player">Jogador</span>
+            <h3>${escapeHtml(characterName)}</h3>
+            <p>${context.isOnStage ? "Seu token esta no palco compartilhado." : "O mestre ainda nao colocou seu token na cena."}</p>
+          </div>
         </div>
-        <div class="player-sheet-copy">
-          <span class="token-type-badge" data-type="player">Jogador</span>
-          <h3>${escapeHtml(characterName)}</h3>
-          <p>${context.isOnStage ? "Seu token esta no palco compartilhado." : "O mestre ainda nao colocou seu token na cena."}</p>
+
+        ${renderPlayerTokenSelector(context, selectedKey)}
+
+        <div class="player-resource-grid">
+          ${renderPlayerResourceEditor("Vida", "currentLife", currentLife, maxLife, "vida", selectedKey, {
+            editableMaxField: "vidaMax"
+          })}
+          ${renderPlayerResourceEditor("Integridade", "currentIntegrity", currentIntegrity, maxIntegrity, "integ", selectedKey, {
+            editableMaxField: "integMax"
+          })}
         </div>
+
+        <a href="ficha.html" class="btn btn-primary btn-block player-open-sheet-btn">Abrir minha ficha completa</a>
       </div>
 
-      ${renderPlayerTokenSelector(context, selectedKey)}
-
-      <div class="player-resource-grid">
-        ${renderPlayerResourceEditor("Vida", "currentLife", currentLife, maxLife, "vida", selectedKey, {
-          editableMaxField: "vidaMax"
-        })}
-        ${renderPlayerResourceEditor("Integridade", "currentIntegrity", currentIntegrity, maxIntegrity, "integ", selectedKey, {
-          editableMaxField: "integMax"
-        })}
-      </div>
-
-      <a href="ficha.html" class="btn btn-primary btn-block player-open-sheet-btn">Abrir minha ficha completa</a>
-      <a href="echos.html" class="btn btn-ghost btn-block player-open-echos-btn">Meus Echos</a>
+      ${renderPlayerEchosSection()}
     </section>
+  `;
+}
+
+// Seção "Meus Echos": só aparece se o jogador tiver Echos. Cada card permite
+// invocar o Echo (colocá-lo na cena) ou removê-lo. As barras de Vida/Integridade
+// do Echo continuam editáveis pelo inspetor ao selecionar o token na cena.
+function renderPlayerEchosSection() {
+  const echos = getPlayerOwnEchos();
+  if (!echos.length) return "";
+
+  return `
+    <div class="player-side-section player-side-echos">
+      <h3 class="player-side-title">Meus Echos</h3>
+      <div class="player-echo-list">
+        ${echos.map(renderPlayerEchoCard).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderPlayerEchoCard(echo) {
+  const echoId = String(echo?.id || "");
+  const name = String(echo?.displayName || echo?.name || "Echo").trim() || "Echo";
+  const rankName = String(echo?.rankName || "").trim();
+  const rank = asPositiveInt(echo?.rank, 1);
+  const rankLabel = rankName || `Rank ${rank}`;
+  const avatar = String(echo?.avatar || "").trim();
+  const initials = getInitials(name);
+  const onStage = isEchoOnStage(echoId);
+
+  return `
+    <article class="player-echo-card" data-echo-id="${escapeAttribute(echoId)}">
+      <div class="player-echo-avatar">
+        ${avatar
+          ? `<img src="${escapeAttribute(avatar)}" alt="${escapeAttribute(name)}" width="44" height="44" loading="lazy" decoding="async" draggable="false" />`
+          : `<span class="mesa-token-avatar-fallback">${escapeHtml(initials)}</span>`}
+      </div>
+      <div class="player-echo-info">
+        <span class="player-echo-name">${escapeHtml(name)}</span>
+        <span class="player-echo-rank">${escapeHtml(rankLabel)}</span>
+      </div>
+      <div class="player-echo-actions">
+        ${onStage
+          ? `<span class="echo-on-stage-badge">Na cena</span>
+             <button type="button" class="mini-btn is-danger" data-echo-action="remove" data-echo-id="${escapeAttribute(echoId)}">Remover</button>`
+          : `<button type="button" class="mini-btn is-primary" data-echo-action="summon" data-echo-id="${escapeAttribute(echoId)}">Invocar</button>`}
+      </div>
+    </article>
   `;
 }
 

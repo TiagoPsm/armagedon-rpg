@@ -58,7 +58,33 @@ Registro minimo esperado:
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
 
-## Ultima Etapa Concluida (2026-06-14 — Etapa 12: polimento de carga inicial)
+## Ultima Etapa Concluida (2026-06-16 — Etapa 13: painel lateral do jogador na Mesa — Meu Token + Meus Echos)
+
+Resumo: redesenho do painel lateral do jogador na Mesa em duas secoes ("Meu Token" e "Meus Echos") e nova capacidade de o jogador invocar/retirar o PROPRIO Echo da cena sem depender do mestre. Inclui mudanca no Durable Object (precisa de deploy do Worker).
+
+O que mudou:
+
+- **Painel do jogador** (`js/mesa-roster.js`): `renderPlayerSheetPanel` agora monta `.player-side-panel` com a secao "Meu Token" (hero + Vida/Integridade atuais editaveis + "Abrir minha ficha completa") e a secao "Meus Echos" (so renderiza se houver Echos). Novos helpers `renderPlayerEchosSection`/`renderPlayerEchoCard` (avatar + nome + rank + botao "Invocar"; quando na cena, chip "Na cena" + "Remover"). O link antigo "Meus Echos -> echos.html" saiu (a navegacao para a pagina de Echos fica no menu).
+- **Helpers de cena** (`js/mesa-core.js`): `getPlayerOwnEchos()` (devolve `mesaEchos`, ja escopado por usuario no backend) e `isEchoOnStage(echoId)`. Novos broadcasters `broadcastEchoTokenUpsert`/`broadcastEchoTokenRemove` (mestre usa o canal padrao; jogador retransmite o proprio Echo com `ownerKey`). O mestre persiste a cena ao receber um delta de Echo vindo de jogador (`applyMesaRealtimeDelta`).
+- **Acoes do painel** (`js/mesa-stage.js`): `handlePlayerEchoAction` + `summonOwnEchoToStage` (coloca no centro) + `removeOwnEchoFromStage`, ligados ao listener do roster.
+- **Inspetor condicional** (`js/mesa-inspector.js`): para o jogador, o bloco `#vttInspectorBlock` so aparece quando o token selecionado e seu (proprio token ou Echo); caso contrario some. Removido o `renderRestrictedPlayerInspector` (placeholder agora sem uso).
+- **Durable Object** (`cloudflare/src/mesa-realtime.js`): `mesa:token:upsert`/`mesa:token:remove` continuam master-only, com nova excecao `canPlayerRelayEchoToken` — jogador retransmite o proprio Echo (`echo:<id>`, `ownerKey == username`), espelhando `mesa:echo:vitals`. **Exige `wrangler deploy`** para a invocacao funcionar em producao.
+- **CSS** (`css/mesa-roster.css`): `.player-side-panel/.player-side-section/.player-side-title/.player-echo-card/.echo-on-stage-badge` + ajuste responsivo (<=480px: acoes do card em segunda linha).
+- **Cache-busting** (`mesa.html`): `mesa-core/mesa-stage/mesa-roster/mesa-inspector.js` e `mesa-roster.css` -> `?v=2026-06-16-echo-panel-1`.
+
+Validacao:
+
+- `npm run check:js` (41 files OK), `npm run audit:static` (OK), `node --check cloudflare/src/mesa-realtime.js` (OK).
+- `node test-worker.mjs`: 60/60 (novo grupo [12] cobre `canPlayerRelayEchoToken`).
+- `npx wrangler deploy --dry-run`: build OK (31 KiB gzip).
+- Browser (preview :8000, papel forcado `player`): painel "Meu Token" renderiza sem erros; inspetor some ao selecionar token alheio e reaparece no proprio; `renderPlayerEchoCard` gera o markup correto (botao "Invocar"). Sem backend a secao "Meus Echos" fica oculta (esperado).
+
+Pendencias/riscos abertos:
+
+- **Deploy do Worker pendente**: a invocacao de Echo pelo jogador so funciona em producao apos `npx wrangler deploy --config cloudflare/wrangler.toml` (a regra do DO e nova). Ate la, o frontend ja esta pronto mas o relay sera rejeitado.
+- Echos so aparecem para o mestre e para o dono — outros jogadores nao tem o Echo no proprio roster, entao o token e descartado na cena deles (limitacao pre-existente do modelo de roster por usuario; fora do escopo desta etapa).
+
+## Etapa Concluida (2026-06-14 — Etapa 12: polimento de carga inicial)
 
 Resumo: dois ajustes leves de performance de primeiro carregamento, sem mudanca de comportamento.
 

@@ -188,6 +188,8 @@ Comportamento visual consolidado:
 - Inspetor lateral deve ser compacto e funcional
 - Jogadores veem palco compartilhado, mas nao veem roster de tokens disponiveis para colocar na cena
 - Jogadores recebem painel pessoal "Meu personagem" com dados da propria ficha; memorias aparecem em leitura
+- O painel lateral do jogador tem duas secoes rotuladas: "Meu Token" (hero + Vida/Integridade atuais editaveis + atalho "Abrir minha ficha completa", sempre visivel) e "Meus Echos" (so renderiza se o jogador tiver Echos)
+- Cada card de Echo do painel mostra avatar + nome + rank e um botao "Invocar"; quando o Echo ja esta na cena, o card mostra o chip "Na cena" ao lado do botao "Remover". Cards usam `.player-echo-card` em `css/mesa-roster.css`
 - Jogadores podem editar dados rapidos, atributos, Vida atual, Vida maxima, Integridade atual, Integridade maxima e inventario da propria ficha pela Mesa
 - O painel do jogador deve manter a interface simples em fluxo unico, sem abas por padrao, com secoes diretas para status, dados, atributos, inventario e memorias
 - Vida e Integridade devem usar inputs diretos e legiveis; botoes rapidos podem voltar apenas se nao deixarem a ficha visualmente pesada
@@ -201,7 +203,7 @@ Comportamento visual consolidado:
 - Gradientes da Mesa devem usar carmesim, preto profundo e acentos frios muito sutis, evitando brilho excessivo ou aparencia colorida demais
 - Gradientes em paineis grandes da Mesa nao podem ter cortes, faixas com altura fixa ou emendas visiveis; preferir camadas radiais/elipticas com fade gradual
 - Otimizacoes com `content-visibility` nao podem criar blocos vazios em areas imediatamente visiveis, como painel pessoal e inspetor
-- Tokens de terceiros no inspetor do jogador devem ficar restritos, sem nome/status/dados detalhados no painel inferior
+- Para o jogador, o bloco do inspetor ("Token selecionado") so aparece quando ele seleciona o proprio token ou Echo; ao selecionar um token alheio (ou nenhum), a aba lateral do inspetor some por completo (nao mostra placeholder de "token restrito")
 - Mestre pode controlar visibilidade, organizacao e valores maximos
 - O inspetor permite editar Vida/Integridade atuais tambem dos tokens de Echo (mestre em todos; jogador nos proprios Echos), reutilizando os mesmos editores de stat; o maximo do Echo fica somente leitura na Mesa (ajustado na pagina de Echos)
 - Visual deve seguir a mesma linguagem dark fantasy da ficha, mas com densidade maior por ser ferramenta de mesa

@@ -274,6 +274,132 @@
   contain: layout paint;
 }
 
+/* ── PAINEL LATERAL DO JOGADOR — Meu Token + Meus Echos ─────── */
+
+.player-side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: 0.5rem;
+  contain: layout paint;
+}
+
+.player-side-section {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.player-side-section + .player-side-section {
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.player-side-title {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 0.58rem;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.player-echo-list {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.player-echo-card {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-card);
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.player-echo-card:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-raised);
+}
+
+.player-echo-avatar {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-raised);
+}
+
+.player-echo-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.player-echo-avatar .mesa-token-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display, "Cinzel Decorative", serif);
+  font-size: 1rem;
+  color: rgba(255, 248, 236, 0.82);
+}
+
+.player-echo-info {
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.player-echo-name {
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-echo-rank {
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.player-echo-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.echo-on-stage-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--accent-deep);
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-soft);
+  white-space: nowrap;
+  line-height: 1.6;
+}
+
 .player-sheet-hero {
   display: grid;
   grid-template-columns: 80px minmax(0, 1fr);
@@ -717,6 +843,21 @@
 
   .player-stat-inputs.has-editable-max {
     grid-template-columns: minmax(0, 1fr) minmax(52px, 0.4fr);
+  }
+
+  /* Card de Echo: acoes vao para uma segunda linha em telas estreitas */
+  .player-echo-card {
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+
+  .player-echo-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .player-echo-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
   }
 
   .player-open-sheet-btn {

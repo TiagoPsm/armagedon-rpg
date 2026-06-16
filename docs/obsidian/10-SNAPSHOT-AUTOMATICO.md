@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-16 08:59:38 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-16 15:40:03 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,34 +13,24 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `3e195a0 2026-06-15 feat(echos): controlar Vida/Integridade dos tokens na Mesa (mestre + dono)`
+- Ultimo commit: `aa29574 2026-06-16 feat(claude): sistema inteligente de Skills Dispatcher + melhorias de permiss├Áes`
 
 ### Alteracoes Locais
 
 ```text
-A  .claude/SKILLS_GUIDE.md
-A  .claude/SKILL_DISPATCHER.md
-A  .claude/SKILL_IMPROVEMENTS.md
-A  .claude/SYSTEM_OVERVIEW.md
-A  .claude/VISUAL_FEEDBACK.md
-M  .claude/settings.local.json
-A  .claude/skills/00-skill-maintenance.md
-A  .claude/skills/01-code-review-frontend.md
-A  .claude/skills/02-dark-mode-design-expert.md
-A  .claude/skills/02b-layout-integrity-checker.md
-A  .claude/skills/03-canvas-optimization.md
-A  .claude/skills/03-page-architecture.md
-A  .claude/skills/04-frontend-performance-checklist.md
-A  .claude/skills/05-canvas-rendering-benchmark.md
-A  .claude/skills/README.md
-M  CLAUDE.md
+M  DEV_STATUS.md
+M  SYSTEM_RULES.md
+M  VISUAL_RULES.md
+M  cloudflare/README.md
+M  cloudflare/src/mesa-realtime.js
+M  css/mesa-roster.css
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  echos.html
-M  ficha.html
-M  index.html
+M  js/mesa-core.js
+M  js/mesa-inspector.js
+M  js/mesa-roster.js
+M  js/mesa-stage.js
 M  mesa.html
-M  regras.html
-M  sugestoes.html
+M  test-worker.mjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -52,29 +42,19 @@ M  sugestoes.html
 ### Arquivos Em Stage
 
 ```text
-.claude/SKILLS_GUIDE.md
-.claude/SKILL_DISPATCHER.md
-.claude/SKILL_IMPROVEMENTS.md
-.claude/SYSTEM_OVERVIEW.md
-.claude/VISUAL_FEEDBACK.md
-.claude/settings.local.json
-.claude/skills/00-skill-maintenance.md
-.claude/skills/01-code-review-frontend.md
-.claude/skills/02-dark-mode-design-expert.md
-.claude/skills/02b-layout-integrity-checker.md
-.claude/skills/03-canvas-optimization.md
-.claude/skills/03-page-architecture.md
-.claude/skills/04-frontend-performance-checklist.md
-.claude/skills/05-canvas-rendering-benchmark.md
-.claude/skills/README.md
-CLAUDE.md
+DEV_STATUS.md
+SYSTEM_RULES.md
+VISUAL_RULES.md
+cloudflare/README.md
+cloudflare/src/mesa-realtime.js
+css/mesa-roster.css
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-echos.html
-ficha.html
-index.html
+js/mesa-core.js
+js/mesa-inspector.js
+js/mesa-roster.js
+js/mesa-stage.js
 mesa.html
-regras.html
-sugestoes.html
+test-worker.mjs
 ```
 
 ## Paginas Principais

@@ -123,6 +123,7 @@ O campo `data_json` em `mesa_scenes` guarda a cena visual da Mesa: tokens ativos
 - Rate-limit de login: tabela `login_throttle` (usuario+IP, 8 falhas = 10 min de bloqueio); manter schema.sql sincronizado e aplicar migracao remota antes de deploys que dependam de tabela nova
 - Progressao da alma: ganhos de Essencia e pesadelos gravam auditoria em `soul_audit`; quando o ator e jogador, o Worker dispara `soul:awarded`/`soul:nightmare` e o DO entrega apenas a sockets master (`broadcastToMasters`)
 - Movimento de token: `mesa:move:lock` (master-only) alterna a trava global persistida no storage do DO; `mesa:token:move` de jogador so e retransmitido com a trava aberta e `characterKey` igual ao username autenticado; a posse do token e validada nos clientes ao aplicar o delta
+- Invocar/retirar Echo proprio: `mesa:token:upsert` e `mesa:token:remove` sao master-only, com excecao para o jogador quando o token e um Echo (`echo:<id>`) e o payload declara `ownerKey == username` (helper `canPlayerRelayEchoToken`, espelha `mesa:echo:vitals`). O DO so retransmite; a persistencia da cena segue master-only, entao o mestre persiste ao receber o delta de um jogador (cliente). Mudancas no DO exigem `wrangler deploy`
 - Vida atual nao pode passar da Vida maxima
 - Integridade maxima de jogador/NPC e editavel; o Worker preserva `integMax` enviado pelo cliente e apenas clampa Integridade atual pelo maximo salvo
 - Integridade atual nao pode passar da Integridade maxima

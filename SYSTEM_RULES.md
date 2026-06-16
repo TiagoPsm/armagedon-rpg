@@ -127,7 +127,9 @@ Regras consolidadas:
 - jogador comum visualiza e gerencia apenas os proprios Echos; edita apelido, anotacoes e imagem do proprio Echo
 - o mestre tem acesso total: ve Echos de todos os jogadores e de NPCs, cria/edita/remove, altera proprietario, ajusta atributos, rank, XP e raridade
 - Echos podem ser transferidos entre jogadores com consentimento (proposta com aceite), como as memorias; o mestre transfere direto
-- na Mesa, o mestre pode colocar o Echo de um jogador no palco como token aliado (modelo master-invoke, pois a cena e gravada apenas pelo mestre)
+- na Mesa, o mestre pode colocar o Echo de qualquer jogador/NPC no palco; o JOGADOR tambem pode invocar (colocar no centro) e retirar o PROPRIO Echo pelo painel lateral "Meus Echos" sem depender do mestre. A invocacao do jogador e retransmitida pelo Durable Object (validacao por `ownerKey` == username, espelhando `mesa:echo:vitals`) e o mestre persiste a cena ao receber (a gravacao oficial continua master-only). Outros jogadores so veem o Echo se tambem forem donos dele (o roster de cada jogador so traz os proprios Echos)
+- na Mesa, o painel lateral do JOGADOR tem duas secoes: "Meu Token" (sempre visivel: editar Vida/Integridade atuais e atalho para a ficha completa) e "Meus Echos" (so aparece se o jogador tiver Echos: invocar/retirar cada Echo da cena)
+- na Mesa, o inspetor ("Token selecionado") so aparece para o JOGADOR quando ele seleciona o proprio token ou Echo; ao selecionar um token alheio (ou nenhum), a aba lateral do inspetor some
 - na Mesa, Vida e Integridade ATUAIS dos tokens podem ser ajustadas no inspetor: o mestre ajusta as de qualquer token; o jogador ajusta apenas as do proprio token e dos proprios Echos. Os maximos continuam sendo definidos pelo mestre (na ficha, ou na pagina de Echos para Echos)
 - a vida atual do Echo (`vidaAtual`/`integAtual`) e salva na tabela `echos` via `POST /api/echos/:id/vitals` (mestre ou dono) e sincroniza em tempo real entre mestre e dono pelo canal `mesa:echo:vitals` do Durable Object
 
@@ -168,11 +170,11 @@ Regras importantes:
 - `localStorage` da Mesa e apenas fallback/cache local, nao fonte principal da cena publicada
 - Jogadores podem ler a cena oficial liberada pelo mestre
 - Apenas o mestre pode salvar posicao, ordem, visibilidade e exposicao de status dos tokens da cena
-- Realtime/WebSocket ja existe via Durable Object (`MesaRealtimeRoom`); alteracoes de cena em tempo real (`mesa:token:*`, `mesa:scene:clear`) sao exclusivas do mestre
+- Realtime/WebSocket ja existe via Durable Object (`MesaRealtimeRoom`); alteracoes de cena em tempo real (`mesa:token:*`, `mesa:scene:clear`) sao exclusivas do mestre, com duas excecoes para o jogador: `mesa:token:move` do proprio token (com a trava aberta) e `mesa:token:upsert`/`mesa:token:remove` do PROPRIO Echo (token `echo:<id>` com `ownerKey` == username)
 - Sinais de mapa que distribuem ou limpam conteudo (`mesa:map:announce`, `mesa:map:set`, `mesa:map:clear`, `mesa:map:offer`, `mesa:map:ws:*`) sao exclusivos do mestre; sinais jogador -> mestre (`have`, `need`, `answer`, `ice`) continuam liberados
 - Jogador pode mover o proprio token em tempo real quando a trava global esta aberta; o mestre alterna a trava pelo botao "Travar/Liberar movimento" (estado persistido no Durable Object e anunciado a todos via `mesa:move:lock`)
 - Clientes descartam movimentos vindos de jogador que nao sejam do proprio token (validacao de posse no consumidor, ja que o DO nao conhece a cena)
-- Jogador continua sem poder criar/remover tokens, limpar cena ou salvar a cena oficial
+- Jogador continua sem poder limpar a cena ou salvar a cena oficial; so pode criar/remover tokens da cena no caso especifico dos PROPRIOS Echos (invocar/retirar pelo painel "Meus Echos")
 
 ## Rolagem de Dados
 

@@ -460,6 +460,94 @@ group("soul-progression — escala por diferença de rank, sem anti-farm por con
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// [12] DO mesa-realtime — jogador relay do PRÓPRIO Echo (invocar/retirar)
+//
+// Réplica de canPlayerRelayEchoToken em cloudflare/src/mesa-realtime.js.
+// O DO autoriza mesa:token:upsert/remove de um jogador apenas quando o token é
+// um Echo ("echo:<id>") e o ownerKey declarado == username autenticado.
+// ──────────────────────────────────────────────────────────────────────────────
+
+function relayNormalizeKey(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function relayIsPlainObject(value) {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function canPlayerRelayEchoToken(payload, attachment) {
+  const username = relayNormalizeKey(attachment.username);
+  const ownerKey = relayNormalizeKey(payload?.ownerKey);
+  if (!username || !ownerKey || username !== ownerKey) return false;
+
+  const type = String(payload?.type || "");
+  if (type === "mesa:token:upsert") {
+    const token = relayIsPlainObject(payload?.token) ? payload.token : null;
+    if (!token || String(token.type || "") !== "echo") return false;
+    return relayNormalizeKey(token.characterKey || token.id).startsWith("echo:");
+  }
+  if (type === "mesa:token:remove") {
+    return relayNormalizeKey(payload?.tokenId).startsWith("echo:");
+  }
+  return false;
+}
+
+group("mesa-realtime — jogador só relata o próprio Echo (upsert/remove)");
+
+{
+  const heroi = { username: "heroi", role: "player" };
+
+  assert("upsert do próprio Echo com ownerKey == username é permitido",
+    canPlayerRelayEchoToken(
+      { type: "mesa:token:upsert", ownerKey: "heroi", token: { type: "echo", characterKey: "echo:abc" } },
+      heroi
+    ) === true
+  );
+
+  assert("remove do próprio Echo com ownerKey == username é permitido",
+    canPlayerRelayEchoToken(
+      { type: "mesa:token:remove", ownerKey: "heroi", tokenId: "echo:abc" },
+      heroi
+    ) === true
+  );
+
+  assert("ownerKey diferente do username é rejeitado",
+    canPlayerRelayEchoToken(
+      { type: "mesa:token:upsert", ownerKey: "outro", token: { type: "echo", characterKey: "echo:abc" } },
+      heroi
+    ) === false
+  );
+
+  assert("upsert de token que não é Echo é rejeitado",
+    canPlayerRelayEchoToken(
+      { type: "mesa:token:upsert", ownerKey: "heroi", token: { type: "player", characterKey: "heroi" } },
+      heroi
+    ) === false
+  );
+
+  assert("upsert de Echo sem characterKey 'echo:' é rejeitado",
+    canPlayerRelayEchoToken(
+      { type: "mesa:token:upsert", ownerKey: "heroi", token: { type: "echo", characterKey: "monster:x" } },
+      heroi
+    ) === false
+  );
+
+  assert("remove de tokenId que não é Echo é rejeitado",
+    canPlayerRelayEchoToken(
+      { type: "mesa:token:remove", ownerKey: "heroi", tokenId: "monster:x" },
+      heroi
+    ) === false
+  );
+
+  assert("tipo fora de upsert/remove é rejeitado",
+    canPlayerRelayEchoToken(
+      { type: "mesa:scene:clear", ownerKey: "heroi" },
+      heroi
+    ) === false
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 // Resumo
 // ──────────────────────────────────────────────────────────────────────────────
 

@@ -490,6 +490,19 @@ async function applyMesaRealtimeDelta(payload) {
   syncSelectedToken();
   cacheMesaSceneSnapshotLocally();
 
+  // Quando um jogador invoca/retira o proprio Echo, o mestre persiste a cena
+  // para que a versao oficial reflita a mudanca e sobreviva a recarregamentos
+  // (a persistencia remota e master-only — ver canPersistRemoteMesaScene).
+  if (isMaster() && (type === "mesa:token:upsert" || type === "mesa:token:remove")) {
+    const actorRole = String(payload?.actor?.role || "");
+    const isEchoDelta = type === "mesa:token:upsert"
+      ? String(payload?.token?.type || "") === "echo"
+      : normalizeMesaCharacterKey(payload?.tokenId).startsWith("echo:");
+    if (actorRole === "player" && isEchoDelta && typeof persistState === "function") {
+      persistState();
+    }
+  }
+
   const membershipChanged = hasMesaTokenMembershipChanged(previousTokenIds, state.tokens);
   scheduleMesaRender({
     summary: true,
@@ -1314,6 +1327,21 @@ function isOwnEchoToken(token) {
   return Boolean(getRosterEntryByCharacterKey(key));
 }
 
+// Echos que o jogador pode invocar a partir do painel lateral. O backend ja
+// escopa /api/echos por usuario para sessoes de jogador (echos.js: where
+// owner_user_id = actor.sub), entao mesaEchos so contem os proprios — basta
+// devolve-lo. O mestre nao usa este painel.
+function getPlayerOwnEchos() {
+  if (isMaster()) return [];
+  return Array.isArray(mesaEchos) ? mesaEchos : [];
+}
+
+// Verifica se um Echo (por id, sem prefixo) ja esta como token na cena.
+function isEchoOnStage(echoId) {
+  const key = normalizeMesaCharacterKey(`echo:${echoId}`);
+  return state.tokens.some(token => normalizeMesaCharacterKey(token.characterKey || token.id) === key);
+}
+
 function getOwnPlayerTokens() {
   return state.tokens.filter(isOwnPlayerToken);
 }
@@ -1807,6 +1835,30 @@ function broadcastMesaTokenRemove(tokenId) {
   if (!tokenId || !isMaster()) return false;
   return sendMesaRealtimeDelta("mesa:token:remove", {
     tokenId
+  });
+}
+
+// Colocacao/remocao de um token de Echo na cena. Mestre usa o canal padrao;
+// o jogador retransmite o PROPRIO Echo declarando ownerKey (== username), que
+// o Durable Object valida (canPlayerRelayEchoToken). O mestre, ao receber o
+// delta de um jogador, persiste a cena (persistencia segue autoritativa nele).
+function broadcastEchoTokenUpsert(token) {
+  if (!token || token.type !== "echo") return false;
+  if (isMaster()) return broadcastMesaTokenUpsert(token);
+  if (!isOwnEchoToken(token)) return false;
+  return sendMesaRealtimeDelta("mesa:token:upsert", {
+    token: serializeMesaRealtimeToken(token),
+    ownerKey: normalizeMesaUsername(state.session?.username)
+  });
+}
+
+function broadcastEchoTokenRemove(token) {
+  if (!token || token.type !== "echo") return false;
+  if (isMaster()) return broadcastMesaTokenRemove(token.id);
+  if (!isOwnEchoToken(token)) return false;
+  return sendMesaRealtimeDelta("mesa:token:remove", {
+    tokenId: token.id,
+    ownerKey: normalizeMesaUsername(state.session?.username)
   });
 }
 

@@ -247,6 +247,12 @@ function renderTokenStatusRow(label, current, max, fillStyle, isConcealed = fals
 }
 
 function handleRosterAction(event) {
+  const echoButton = event.target.closest("[data-echo-action]");
+  if (echoButton) {
+    handlePlayerEchoAction(echoButton);
+    return;
+  }
+
   const playerButton = event.target.closest("[data-player-panel-action]");
   if (playerButton) {
     handlePlayerPanelAction(playerButton);
@@ -1948,6 +1954,67 @@ function removeToken(tokenId) {
 
   bumpMesaSceneVersion();
   broadcastMesaTokenRemove(removedTokenId);
+  persistState();
+  scheduleMesaRender({ summary: true, controls: true, roster: true, stage: true, inspector: true });
+}
+
+/* ── Echos do jogador: invocar / retirar a partir do painel lateral ─────── */
+
+function handlePlayerEchoAction(button) {
+  const action = String(button.dataset.echoAction || "");
+  const echoId = String(button.dataset.echoId || "");
+  if (!echoId) return;
+  if (action === "summon") {
+    summonOwnEchoToStage(echoId);
+  } else if (action === "remove") {
+    removeOwnEchoFromStage(echoId);
+  }
+}
+
+// Coloca o Echo do jogador no centro do palco. Se ja estiver na cena, apenas
+// foca. Broadcast + persistencia seguem broadcastEchoTokenUpsert (mestre persiste
+// ao receber; o jogador grava no cache local via persistState).
+function summonOwnEchoToStage(echoId) {
+  const rosterEntry = getRosterEntryByCharacterKey(normalizeMesaCharacterKey(`echo:${echoId}`));
+  if (!rosterEntry || !isOwnEchoToken(rosterEntry)) return;
+
+  if (isEchoOnStage(echoId)) {
+    selectToken(rosterEntry.id);
+    return;
+  }
+
+  const center = getCenterStagePosition();
+  const token = {
+    ...rosterEntry,
+    visibleToPlayers: true,
+    statsVisibleToPlayers: normalizeStatsVisibility(rosterEntry.type, rosterEntry.statsVisibleToPlayers),
+    x: center.x,
+    y: center.y,
+    order: getNextOrder(),
+    tokenScale: 1
+  };
+
+  state.tokens = [...state.tokens, token];
+  state.selectedTokenId = token.id;
+  bumpMesaSceneVersion();
+  broadcastEchoTokenUpsert(token);
+  persistState();
+  scheduleMesaRender({ summary: true, controls: true, roster: true, stage: true, inspector: true });
+}
+
+function removeOwnEchoFromStage(echoId) {
+  const key = normalizeMesaCharacterKey(`echo:${echoId}`);
+  const token = state.tokens.find(item => normalizeMesaCharacterKey(item.characterKey || item.id) === key);
+  if (!token || !isOwnEchoToken(token)) return;
+
+  const removedTokenId = token.id;
+  state.tokens = state.tokens.filter(item => item.id !== removedTokenId);
+  if (state.selectedTokenId === removedTokenId) {
+    state.selectedTokenId = getNextSelectedTokenId();
+  }
+
+  bumpMesaSceneVersion();
+  broadcastEchoTokenRemove(token);
   persistState();
   scheduleMesaRender({ summary: true, controls: true, roster: true, stage: true, inspector: true });
 }

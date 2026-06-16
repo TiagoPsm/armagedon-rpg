@@ -391,6 +391,28 @@ class MesaRealtimeRoom extends DurableObject {
     return Boolean(declaredKey && username && declaredKey === username);
   }
 
+  // Jogador pode invocar/retirar o PROPRIO Echo (mesa:token:upsert/remove) com
+  // o token "echo:<id>", declarando ownerKey == proprio username. Espelha o
+  // canal mesa:echo:vitals: o DO confirma a identidade do ator; a posse do Echo
+  // especifico e garantida nos clientes (o roster do jogador so traz os proprios
+  // Echos) e na API (dados autoritativos). O mestre persiste a cena ao receber.
+  canPlayerRelayEchoToken(payload, attachment) {
+    const username = normalizeCharacterKey(attachment.username);
+    const ownerKey = normalizeCharacterKey(payload?.ownerKey);
+    if (!username || !ownerKey || username !== ownerKey) return false;
+
+    const type = String(payload?.type || "");
+    if (type === "mesa:token:upsert") {
+      const token = isPlainObject(payload?.token) ? payload.token : null;
+      if (!token || String(token.type || "") !== "echo") return false;
+      return normalizeCharacterKey(token.characterKey || token.id).startsWith("echo:");
+    }
+    if (type === "mesa:token:remove") {
+      return normalizeCharacterKey(payload?.tokenId).startsWith("echo:");
+    }
+    return false;
+  }
+
   async handleRealtimeRelay(ws, payload) {
     const attachment = readAttachment(ws) || {};
     const type = String(payload?.type || "");
@@ -412,8 +434,11 @@ class MesaRealtimeRoom extends DurableObject {
     if (isMasterPayload && attachment.role !== "master") {
       const allowedPlayerMove =
         type === "mesa:token:move" && (await this.canPlayerRelayTokenMove(payload, attachment));
+      const allowedPlayerEcho =
+        (type === "mesa:token:upsert" || type === "mesa:token:remove")
+        && this.canPlayerRelayEchoToken(payload, attachment);
 
-      if (!allowedPlayerMove) {
+      if (!allowedPlayerMove && !allowedPlayerEcho) {
         sendJson(ws, {
           type: "mesa:scene:ack",
           ok: false,
