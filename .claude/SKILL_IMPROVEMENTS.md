@@ -34,6 +34,77 @@ Cada skill use é registrada assim:
 
 ## 📝 Log de Usos
 
+### [2026-06-16] - 03-page-architecture - ✅ APROPRIADA + SKILL APRIMORADA (faixa preta lateral)
+
+**Trigger:**
+User insistiu varias vezes (com screenshots) em "tirar a barra preta lateral" do painel da Mesa; pediu "use as skills que precisar" e depois "melhore a skill relacionada".
+
+**Apropriada?** ✅ Sim
+
+**Feedback:**
+- A skill cobria padding/centralizacao, mas o caso real NAO era isso. Levou muitas iteracoes (gutter stable -> both-edges -> full-bleed -> simetrico) ate o usuario mandar um print com a tela cheia mostrando que a sidebar nao alcancava a borda direita.
+- Causa raiz: `reset.css` tem `html { scrollbar-gutter: stable }` (global). Numa pagina `overflow: hidden` (Mesa) isso reserva ~10px de gutter VAZIO a direita = faixa preta. Diagnostico definitivo so veio do CONSOLE do navegador real do usuario (`innerWidth - clientWidth === 0` mas `innerWidth - sidebar.right === 10`), porque o viewport do preview headless reporta largura falsa.
+- Licao: quando "faixa lateral" persiste apos mexer em padding/gutter da sidebar, suspeitar do ROOT (`html`) e do `scrollbar-gutter` herdado; medir documento vs janela; confiar no console do navegador REAL, nao no preview headless.
+
+**Melhoria aplicada:**
+- Novo padrao de erro em `03-page-architecture.md`: "Faixa preta lateral em pagina full-screen (gutter de scrollbar reservado)" com snippet de diagnostico (`innerWidth - clientWidth` vs `innerWidth - sidebar.right`) e o fix `html { overflow: hidden; scrollbar-gutter: auto }`.
+- Item novo no checklist rapido (conteudo encosta nas duas bordas / checar `scrollbar-gutter` do html).
+
+---
+
+### [2026-06-16] - 03-page-architecture + 02-dark-mode-design-expert - ✅ APROPRIADAS + SKILL APRIMORADA
+
+**Trigger:**
+User pediu (com screenshot) para "tirar a aparência de coisa feita com IA" e reorganizar o cabecalho/hero do painel do jogador: status como bolinha, hierarquia de titulo legivel sem quebra, remover badge "Jogador", foto maior + nome centralizado. E explicitamente: "aprimore as skills que sejam relevantes".
+
+**Habilidades usadas:** 03-page-architecture (hierarquia/organizacao) + 02-dark-mode-design-expert (legibilidade/tokens)
+
+**Apropriadas?** ✅ Sim
+
+**Feedback:**
+- 3 padroes reais e reutilizaveis sairam dessa tarefa, todos sobre "parecer menos generico/IA":
+  1. Estado binario (em cena/fora) -> bolinha colorida, nao badge de texto
+  2. Nao repetir a mesma info (papel ja estava no chip "Papel" + badge "Jogador" no hero)
+  3. Fonte display decorativa (Cinzel Decorative) em titulo pequeno de sidebar estreita quebra e fica ilegivel -> usar fonte UI
+- Verificacao util: medir `titleLines` no browser (altura/line-height) para garantir 1 linha
+
+**Melhoria aplicada (FEITO nesta sessao):**
+- ✅ `03-page-architecture.md`: 3 novos error-patterns ("estado binario como badge", "info repetida", "fonte display em titulo pequeno") + 3 itens no checklist GERAL
+- Proposta p/ Tiago: adicionar trigger "parece feito com IA / generico" no SKILL_DISPATCHER apontando para 03 + 02
+
+**Status:** ✅ IMPLEMENTADO (skill 03 aprimorada) — proposta de trigger aguardando aprovacao
+
+---
+
+### [2026-06-16] - 03-page-architecture + 02-dark-mode-design-expert - ✅ APROPRIADAS + FEEDBACK VISUAL
+
+**Trigger:**
+User forneceu screenshot do painel lateral do jogador na Mesa e pediu: "melhorar essa interface lateral e deixar melhor visualmente, mais organizado e de forma que faça sentido utilizar"
+
+**Habilidades usadas:**
+- 03-page-architecture (hierarquia, organizacao de secoes, fluxo/uso)
+- 02-dark-mode-design-expert (polimento visual com tokens do tema)
+
+**Apropriadas?** ✅ Sim — "mais organizado" + "faça sentido utilizar" mapeiam direto para page-architecture; "melhor visualmente" para dark-mode-design-expert
+
+**Feedback:**
+- Boa combinacao: 03 guiou a reestruturacao das vitais (label + leitura grande + barra + campos rotulados) e os titulos de secao com regua; 02 garantiu uso de tokens (`--fs-*`, `--accent`, `--bg-card`, cores de recurso life/integrity consistentes com a Ficha)
+- Cuidado aplicado: componentes compartilhados com o inspetor (`.bar-preview`) NAO foram alterados globalmente — so override player-scoped. A skill 02b poderia reforcar essa regra ("ao mexer em CSS de um painel, checar se a classe e compartilhada com outra view antes de alterar")
+- Sem falso positivo
+
+**Dados do Exemplo:**
+- Localizacao: painel lateral do jogador na Mesa (`renderPlayerSheetPanel`, `css/mesa-roster.css`)
+- Problema: hierarquia fraca, vitais apertadas lado a lado, status verboso, muito espaco vazio
+- Severidade: 🟡 melhoria de UX
+
+**Proposta de Melhoria (para discutir com Tiago):**
+- Adicionar trigger explicito em 03-page-architecture para "painel/sidebar" alem de "pagina"
+- Adicionar nota em 02b: verificar se classe CSS e compartilhada entre views antes de editar (evitar regressao no inspetor)
+
+**Status:** ⏳ Proposta registrada — aguardando aprovacao do Tiago
+
+---
+
 ### [2026-06-15] - 02b-layout-integrity-checker - ✅ APROPRIADA + FEEDBACK VISUAL
 
 **Trigger:**

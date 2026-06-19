@@ -33,9 +33,6 @@ const MESA_DOM_IDS = {
   roleSummary: "roleSummary",
   sceneStateTitle: "sceneStateTitle",
   sceneStateCopy: "sceneStateCopy",
-  previewRow: "playerPreviewRow",
-  previewToggle: "playerPreviewToggle",
-  stageViewBadge: "stageViewBadge",
   stageHintBadge: "stageHintBadge",
   fullscreenMesaBtn: "fullscreenMesaBtn",
   rosterSearch: "rosterSearch",
@@ -57,7 +54,6 @@ const state = {
   roster: [],
   tokens: [],
   selectedTokenId: "",
-  previewPlayerView: false,
   sceneVersion: 0,
   tokenStyle: "card",
   search: "",
@@ -136,15 +132,15 @@ function preFillMesaPage() {
     const isMaster = s.role === "master";
     const headerUser = document.getElementById("headerUser");
     const roleBadge = document.getElementById("roleBadge");
+    const roleBadge2 = document.getElementById("roleBadge2");
     const roleSummary = document.getElementById("roleSummary");
-    const previewRow = document.getElementById("playerPreviewRow");
     const resetMesaBtn = document.getElementById("resetMesaBtn");
     if (headerUser) headerUser.textContent = s.username;
     if (roleBadge) roleBadge.textContent = isMaster ? "Mestre" : "Jogador";
+    if (roleBadge2) roleBadge2.textContent = isMaster ? "Mestre" : "Jogador";
     if (roleSummary) roleSummary.textContent = isMaster
       ? "Organiza tokens e transmite a cena para jogadores conectados."
       : "Ve a cena compartilhada e edita apenas o proprio estado.";
-    if (previewRow) previewRow.classList.toggle("hidden", !isMaster);
     if (resetMesaBtn) resetMesaBtn.hidden = !isMaster;
   } catch (e) {}
 }
@@ -204,21 +200,12 @@ function bindEvents() {
   if (document.body.dataset.mesaEventsBound === "1") return;
   document.body.dataset.mesaEventsBound = "1";
 
-  const previewToggle = getMesaDomRef("previewToggle");
   const rosterSearch = getMesaDomRef("rosterSearch");
   const resetMesaBtn = getMesaDomRef("resetMesaBtn");
   const stage = getMesaDomRef("stage");
   const fullscreenMesaBtn = getMesaDomRef("fullscreenMesaBtn");
   const rosterList = getMesaDomRef("rosterList");
   const tokenInspector = getMesaDomRef("tokenInspector");
-
-  previewToggle?.addEventListener("change", event => {
-    if (!isMaster()) return;
-    state.previewPlayerView = Boolean(event.target.checked);
-    bumpMesaSceneVersion();
-    persistState();
-    scheduleMesaRender({ summary: true, controls: true, stage: true, inspector: true });
-  });
 
   rosterSearch?.addEventListener("input", event => {
     state.search = String(event.target.value || "").trim().toLowerCase();
@@ -550,7 +537,6 @@ function applyMesaSceneClearDelta(payload) {
   if (!state.tokens.length && !state.selectedTokenId) return false;
   state.tokens = [];
   state.selectedTokenId = "";
-  state.previewPlayerView = isMaster() ? Boolean(payload?.previewPlayerView) : false;
   return true;
 }
 
@@ -687,9 +673,13 @@ function resolveMesaSession() {
 }
 
 function resolveInitialRole(session) {
+  // Override explicito de dev (localStorage.mesaRolePreview = "master"|"player").
   const forcedRole = getForcedMesaPreviewRole();
   if (forcedRole) return forcedRole;
-  if (isLocalMesaPreview()) return "master";
+  // SEMPRE respeitar o papel da sessao real, inclusive em localhost. So quando
+  // NAO ha login em localhost a sessao sintetica de resolveMesaSession() ja vem
+  // com role "master" (preview do mestre sem backend). Forcar "master" aqui
+  // transformava qualquer jogador logado em mestre na versao local — bug.
   return session?.role || "player";
 }
 
@@ -1526,7 +1516,6 @@ function applyMesaSceneSnapshot(saved) {
 
   const seeded = !mergedTokens.length && shouldSeedMesaTokens(savedTokens.length, hasExplicitSave);
   state.tokens = seeded ? seedInitialTokens() : mergedTokens;
-  state.previewPlayerView = isMaster() ? Boolean(saved?.previewPlayerView) : false;
   state.sceneVersion = asPositiveInt(saved?.sceneVersion, state.sceneVersion);
   state.selectedTokenId = pickInitialSelectedToken(saved?.selectedTokenId);
 
@@ -1864,9 +1853,7 @@ function broadcastEchoTokenRemove(token) {
 
 function broadcastMesaSceneClear() {
   if (!isMaster()) return false;
-  return sendMesaRealtimeDelta("mesa:scene:clear", {
-    previewPlayerView: Boolean(state.previewPlayerView)
-  });
+  return sendMesaRealtimeDelta("mesa:scene:clear", {});
 }
 
 function hasPendingMesaScenePersist() {
@@ -1876,7 +1863,6 @@ function hasPendingMesaScenePersist() {
 function createMesaScenePayloadFromState() {
   return {
     sceneVersion: asPositiveInt(state.sceneVersion, 0),
-    previewPlayerView: Boolean(state.previewPlayerView),
     tokenStyle: state.tokenStyle || "card",
     selectedTokenId: state.selectedTokenId,
     tokens: state.tokens.map(token => ({
@@ -1908,7 +1894,6 @@ function normalizeMesaScenePayload(payload = {}) {
   const tokens = Array.isArray(payload?.tokens) ? payload.tokens : [];
   return {
     sceneVersion: asPositiveInt(payload?.sceneVersion, 0),
-    previewPlayerView: Boolean(payload?.previewPlayerView),
     tokenStyle: (payload?.tokenStyle === "minimal") ? "minimal" : "card",
     selectedTokenId: String(payload?.selectedTokenId || ""),
     tokens: tokens

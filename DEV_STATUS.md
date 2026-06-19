@@ -58,7 +58,143 @@ Registro minimo esperado:
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
 
-## Ultima Etapa Concluida (2026-06-16 — Etapa 13: painel lateral do jogador na Mesa — Meu Token + Meus Echos)
+## Ultima Etapa Concluida (2026-06-16 — Etapa 28: inspetor do mestre no estilo card do jogador (compacto) com Vida/Integridade editaveis)
+
+Resumo: o inspetor do mestre (`buildInspectorStatsSection` em `js/mesa-inspector.js`) trocou o layout `.stat-editor` (linha `[−][atual][+] / [max]` + label) por CARDS no mesmo visual do painel "Meu Token" do jogador (`.player-vital-card`: label + leitura grande "atual/max" + barra destacada + stepper), porem COMPACTO via `.is-inspector` (paddings/leitura menores) e com o MAXIMO tambem editavel ao lado do stepper (`[−][atual][+] / [max]`, classe `.inspector-vital-stepper.is-master`). Nova funcao `buildMasterInspectorVital`. O mestre edita Vida/Integridade (atual e max) de QUALQUER token, inclusive dos jogadores — `canEditCurrentStats`/`canEditAllStats` ja retornavam true p/ mestre; os `data-stat-field` (currentLife/maxLife/...) foram preservados, entao handlers/clamp/broadcast nao mudaram. `syncInspectorStatInputCard` (`js/mesa-stage.js`) atualizado p/ tambem mirar `.player-vital-card` e a leitura `.player-vital-readout strong` / `.player-vital-max` (alem do antigo `.stat-editor`/`.bar-label-row`). CSS novo em `css/mesa-inspector.css` (`.player-vital-card.is-inspector`, `.inspector-vital-stepper.is-master` em 5 colunas, `.vital-max-input`). Validado no preview (mestre, token de jogador sintetico): 2 cards compactos, input de atual e de max habilitados, stepper − leva 7->6, leitura/barra refletem o valor (6/10, 60%), console limpo. Cache-bust `mesa-inspector.css`/`mesa-stage.js`/`mesa-inspector.js` -> `2026-06-16-master-vital-card-1` + `MESA_BUNDLE_VERSION`.
+
+## Etapa Concluida (2026-06-16 — Etapa 27: remover faixa preta a direita (gutter reservado do html))
+
+Resumo: a "barra preta lateral" persistente (apontada pelo usuario com a tela cheia, canto superior direito) era um GUTTER DE BARRA DE ROLAGEM RESERVADO E VAZIO no `html`. Causa raiz: `reset.css` define `html { scrollbar-gutter: stable }` (global, evita layout shift nas paginas que rolam). Na Mesa isso combina com `overflow: hidden` (do `body.mesa-page` e do `html`) e faz o html RESERVAR ~10px a direita SEM mostrar barra. Diagnostico no navegador REAL do usuario (console): `innerWidth 1357 === documentElement.clientWidth 1357` (ZERO barra de rolagem) mas `sidebarRight 1347` -> vao de 10px; nada ocupava a faixa (`elementFromPoint` = fora do documento) = o fundo atras do mapa aparecendo. As tentativas anteriores (overflow no html, gutter na sidebar, padding) nao mexiam nesse gutter do root. Fix: `html { scrollbar-gutter: auto; overflow: hidden }` em `css/mesa.css` — `auto` anula o `stable` herdado do reset (so na Mesa, pois mesa.css so carrega ali; index/ficha/regras mantem o `stable`). Validado no preview (viewport 1280 forcado): antes `htmlBcrW 994` com `innerWidth 1004` (vao 10px); depois `htmlBcrW === innerWidth === sidebarRight === 1280`, `vaoDireitaPx 0`, console limpo. Cache-bust `css/mesa.css` -> `2026-06-16-gutter-fix-1` + `MESA_BUNDLE_VERSION`.
+
+## Etapa Concluida (2026-06-16 — Etapa 26: centralizar conteudo da sidebar (reverter full-bleed))
+
+Resumo: o full-bleed da Etapa 24 (`.vtt-sidebar-block { padding: 1rem 0 }`) deixava os cards/botao do jogador GRUDADOS na borda direita da janela (descentralizado). Revertido para padding horizontal simetrico `1rem 0.9rem` (`css/mesa.css`), centralizando o conteudo com margem igual nos dois lados. Validado no preview (role forcada player): `getBoundingClientRect` do card e do botao com gapLeft=15.4px / gapRight=14.4px (diferenca de 1px = `border-left` da `.vtt-sidebar`, imperceptivel). Como o painel do jogador nao rola, `scrollbar-gutter: auto` nao reserva nada e as margens ficam identicas; no mestre, com inspetor aberto e rolagem, sobra so a barra fina a direita. Cache-bust `css/mesa.css` -> `2026-06-16-centered-1` + `MESA_BUNDLE_VERSION`. Console limpo.
+
+## Etapa Concluida (2026-06-16 — Etapa 25: remover inspetor duplicado e botao "Focar meu token" do jogador)
+
+Resumo: na visao do jogador, o bloco lateral "INSPETOR / TOKEN SELECIONADO" duplicava as infos do proprio token (ja presentes no painel "Meu Token"). Removido: `renderInspector()` (`js/mesa-inspector.js`) agora oculta o bloco `#vttInspectorBlock` SEMPRE para nao-mestre (antes mostrava ao selecionar o proprio token). Tambem removido o botao "Focar meu token": `renderPlayerTokenSelector()` (`js/mesa-roster.js`) retorna `""` para token unico (o seletor so aparece quando o jogador tem mais de um personagem). Toda a edicao de Vida/Integridade do jogador fica no painel "Meu Token". Obs.: editar Vida/Integridade de Echo na cena via inspetor deixou de existir para o jogador — reavaliar se necessario. Cache-bust `mesa-roster.js`/`mesa-inspector.js` -> `2026-06-16-no-dup-inspector-1` + `MESA_BUNDLE_VERSION`. Validado no preview (role forcada player): `inspectorBlock.hidden===true`, botao focar ausente, painel "Meu Token" intacto, console limpo. (Mestre inalterado.)
+
+## Etapa Concluida (2026-06-16 — Etapa 24: sidebar full-bleed (faixa preta lateral) — mestre + jogador)
+
+Resumo: mesmo com `scrollbar-gutter: auto` (Etapa 23), a sidebar parecia assimetrica em AMBAS as visoes: as abas `.vtt-sidebar-meta` (PAPEL/FICHAS) vao de ponta a ponta, mas `.vtt-sidebar-block` recuava `0.9rem` dos dois lados. Esse recuo, contra a borda DIREITA da janela, aparecia como faixa preta; do lado esquerdo encostava no palco escuro e sumia (recuo igual nos dois lados, mas so um visivel; no mestre o inspetor longo ainda somava a barra de rolagem). Fix GLOBAL: `.vtt-sidebar-block { padding: 1rem 0 }` (`css/mesa.css`) — conteudo full-bleed alinhado com as abas em mestre e jogador; o respiro vem do padding interno dos proprios itens (input de busca, abas, cards, hero). Removida a regra redundante `#vttRosterBlock.is-player-view .vtt-sidebar-block` de `css/mesa-roster.css`. Cache-bust `css/mesa.css` -> `2026-06-16-fullbleed-2` + `MESA_BUNDLE_VERSION`. Validado no preview (visao mestre, 4 blocos): `getComputedStyle(.vtt-sidebar-block).padding{Left,Right} === "0px"`, console limpo.
+
+## Etapa Concluida (2026-06-16 — Etapa 23: remover faixa preta a direita da sidebar)
+
+Resumo: apos a Etapa 22, o `scrollbar-gutter: stable both-edges` reservava a faixa da barra nos DOIS lados mesmo sem rolagem (caso comum no painel do jogador), deixando uma faixa preta visivel na direita. Fix: `scrollbar-gutter: auto` (sem reserva) em `.vtt-sidebar` (`css/mesa.css`). Como o painel raramente transborda, o conteudo fica centralizado e sem faixa; o leve reflow ao surgir a barra e aceitavel. Cache-bust `css/mesa.css` + `MESA_BUNDLE_VERSION` -> `2026-06-16-sidebar-nogutter-1`. Validado no preview: `getComputedStyle(.vtt-sidebar).scrollbarGutter === "auto"`, console limpo.
+
+## Etapa Concluida (2026-06-16 — Etapa 22: centralizar conteudo da sidebar da Mesa)
+
+Resumo: o conteudo da sidebar direita aparecia levemente deslocado para a esquerda. Causa: `.vtt-sidebar` (`css/mesa.css`) usava `scrollbar-gutter: stable`, que reserva o espaco da barra de rolagem so na borda direita (inline-end), empurrando o conteudo para a esquerda mesmo sem barra visivel. Padding do bloco/lista era simetrico — a assimetria vinha so do gutter. (Substituida pela Etapa 23 — `both-edges` introduzia faixa preta na direita.)
+
+## Etapa Concluida (2026-06-16 — Etapa 21: limpeza do CTA do painel do jogador)
+
+Resumo: removido o texto-dica `.player-vitals-hint` acima do botao vermelho e o rotulo do botao trocado de "Abrir minha ficha completa" para "Ficha Completa" (`js/mesa-roster.js`); regra CSS `.player-vitals-hint` removida (`css/mesa-roster.css`). Icone de link mantido. Cache-bust `mesa-roster.js`/`css/mesa-roster.css` + `MESA_BUNDLE_VERSION` -> `2026-06-16-ficha-btn-1`. Validado no preview: dica ausente, botao "Ficha Completa", console limpo.
+
+## Etapa Concluida (2026-06-16 — Etapa 20: stepper de Vida/Integridade no painel do jogador)
+
+Resumo: no painel "Meu Token", o MAXIMO de Vida/Integridade deixou de ser editavel (vira leitura "atual / max" no cabecalho do card) e o ATUAL passou a ter um stepper `[−] [valor] [+]` (com digitacao manual). So frontend; o maximo continua sendo ajustado na ficha completa.
+
+O que mudou:
+
+- **Markup** (`js/mesa-roster.js`, `renderPlayerResourceEditor`): removidos os dois inputs "Atual/Máx"; agora `.player-vital-stepper` com `[−]` + input `data-player-stat-field` + `[+]`. O maximo so aparece como leitura em `.player-vital-readout` (`<strong>atual</strong> / max`). Removido o uso de `data-player-sheet-field` (max) e o param `options`/`editableMaxField`.
+- **Handler do stepper** (`js/mesa-roster.js`, IIFE): clique em `[data-player-stat-step]` ajusta o input (clamp por min/max do proprio input) e dispara `change`, que o listener do `rosterList` (`handlePlayerPanelResourceInput`) usa para sincronizar com a ficha + broadcast.
+- **Fix de sync ao vivo** (`js/mesa-stage.js`, `syncPlayerStatInputCard`): apontava para `.player-resource-card`/`.bar-label-row` (classes antigas, quebradas desde o redesenho `panel-ux`) — agora atualiza `.player-vital-card` -> `.player-vital-readout strong` + `.bar-preview span`. Leitura e barra atualizam ao vivo ao usar stepper ou digitar.
+- **CSS** (`css/mesa-roster.css`): `.player-vital-inputs/.player-vital-field/.player-vital-static` (layout antigo de 2 inputs) trocados por `.player-vital-stepper` (grid `38px 1fr 38px`, reusa `.stat-step-btn`).
+- **Cache-busting** (`mesa.html`): `mesa-roster.js`, `mesa-stage.js` e `css/mesa-roster.css` -> `?v=2026-06-16-vital-stepper-1`; `MESA_BUNDLE_VERSION` -> `2026-06-16-vital-stepper-1`.
+
+Validacao: `check:js` (41 OK), `audit:static` (OK), `build:pages` (OK). Browser (preview :8000): max nao editavel (leitura "/ 14"), stepper `−`/`+` funciona (14->13->...; clamp no max ao spammar; manual `7` aceito), leitura grande e barra atualizam ao vivo (vermelho em 1/14 -> verde em 14/14). Inspetor do mestre inalterado (ainda edita max). Console limpo.
+
+## Etapa Concluida (2026-06-16 — Etapa 19: limpeza do cabecalho/hero do painel do jogador)
+
+Resumo: cabecalho e hero do painel "Meu Token" reorganizados para reduzir aparencia generica e melhorar legibilidade (skills `03-page-architecture` + `02-dark-mode-design-expert`). Vida/Integridade ficam para depois (envolvem banco). So frontend.
+
+O que mudou:
+
+- **Status como bolinha** (`js/mesa-roster.js`): a badge de texto "Fora da cena"/"Em cena" (`#rosterCountBadge`) na visao do jogador virou so uma bolinha (`.player-stage-dot` — `.is-on` verde no palco, `.is-off` apagada). `renderRoster` alterna `is-status-dot` (jogador) e remove no mestre; o mestre mantem a contagem "X/Y para colocar".
+- **Cabecalho legivel** (`css/mesa-roster.css`): `#vttRosterBlock.is-player-view` usa fonte UI (Cinzel) no titulo, "Ficha rapida" em cima + "Meu personagem" embaixo em UMA linha (verificado: `titleLines: 1`). Espaco liberado pela bolinha.
+- **Hero enxuto**: removida a badge azul "Jogador" do hero (papel ja aparece no chip "Papel" do topo) e a pilula de status (redundante com a bolinha). Foto 80->96px; nome em `--fs-xl` centralizado verticalmente ao lado da foto (`.player-sheet-copy { justify-content:center }`).
+- **Cache-busting** (`mesa.html`): `mesa-roster.js` e `css/mesa-roster.css` -> `?v=2026-06-16-panel-header-1`; `MESA_BUNDLE_VERSION` -> `2026-06-16-panel-header-1`.
+
+Validacao: `check:js` (41 OK), `audit:static` (OK), `build:pages` (OK). Browser (preview :8000): badge so com bolinha verde (token em cena), badge "Jogador" e pilula removidas, avatar 96px, nome 24px Cinzel, titulo em 1 linha; mestre mantem contagem de texto (sem regressao). Console limpo.
+
+## Etapa Concluida (2026-06-16 — Etapa 18: botao de tela cheia compacto no topo do palco)
+
+Resumo: o botao "Tela cheia" saiu do overlay inferior direito e virou um botao compacto so com icone (quadrado com setas) no overlay superior esquerdo, onde antes ficava o badge de visao removido. So frontend.
+
+O que mudou:
+
+- `mesa.html`: `#fullscreenMesaBtn` movido para dentro de `.vtt-overlay-tl` como botao so-icone (`.vtt-fullscreen-btn` + SVG de expandir). Removido do `.vtt-overlay-br`.
+- `js/mesa-roster.js` (`renderControls`): nao escreve mais `textContent` no botao (apagaria o SVG); agora seta `title`/`aria-label` e alterna a classe `is-active`. Handler de clique (`toggleMesaFullscreen`) inalterado.
+- `css/mesa.css`: `.vtt-overlay-tl` ficou "bare" (sem fundo/borda/padding, ja que `#stageHintBadge/#sceneStateTitle/#sceneStateCopy` sao `display:none`) e novo `.vtt-fullscreen-btn` (quadrado 32px estilo HUD, hover/active accent).
+- Follow-up: `renderControls` (`js/mesa-roster.js`) passou a esconder o `.vtt-overlay-br` quando nenhum botao dele esta visivel (Travar movimento / Limpar cena sao so do mestre). Para o jogador o overlay inferior direito sumia o conteudo mas deixava uma "casca" vazia embaixo do mapa — agora o container some.
+- **Cache-busting** (`mesa.html`): `css/mesa.css` -> `?v=2026-06-16-fullscreen-btn-1`; `mesa-roster.js` -> `?v=2026-06-16-overlay-br-1`; `MESA_BUNDLE_VERSION` -> `2026-06-16-overlay-br-1`.
+
+Validacao: `check:js` (41 OK), `audit:static` (OK), `build:pages` (bundle com `.vtt-fullscreen-btn`, sem botao de texto "Tela cheia"). Browser (preview :8000): botao so-icone 30x30 no topo-esquerdo, removido do canto inferior direito, overlay-tl sem fundo/borda, handler presente. Console limpo.
+
+## Etapa Concluida (2026-06-16 — Etapa 17: redesenho do inspetor lateral do jogador)
+
+Resumo: o inspetor "Token selecionado" do JOGADOR foi alinhado ao painel "Meu Token" (mesmo visual de vitais) e enxugado. Inspetor do mestre inalterado. So frontend.
+
+O que mudou (`js/mesa-inspector.js`):
+
+- **Vitais consistentes**: para o jogador, `buildInspectorStatsSection` agora usa `.player-vital-card` (novo helper `buildPlayerInspectorVital`) — leitura grande do atual, barra destacada e stepper `−/valor/+` (`.inspector-vital-stepper`). Mantem `data-stat-field` + `.stat-step-btn`, entao os handlers/sync existentes (`handleInspectorStatInput`) seguem funcionando. O maximo aparece so como leitura (ajuste fica na ficha/painel).
+- **Enxugado**: removida a linha "Pertence a ..." do hero (so mestre ve) e a secao "Acoes" inteira para o jogador (so mostrava o chip "Permissao", puro ruido). Visibilidade/Status/Palco continuam exclusivos do mestre.
+- **CSS** (`css/mesa-inspector.css`): novo `.inspector-vital-stepper` (reusa `.stat-step-btn` e `.player-vital-card` de `css/mesa-roster.css`). Componentes do inspetor do mestre intactos.
+- **Cache-busting** (`mesa.html`): `mesa-inspector.js` e `css/mesa-inspector.css` -> `?v=2026-06-16-inspector-ux-1`; `MESA_BUNDLE_VERSION` -> `2026-06-16-inspector-ux-1`.
+
+Validacao: `check:js` (41 OK), `audit:static` (OK), `build:pages` (bundle com `.inspector-vital-stepper` + `buildPlayerInspectorVital`). Browser (preview :8000): jogador ve vital-cards + stepper (clicar `+` foi 14->15), sem linha de dono, sem secao Acoes; mestre mantem controls + editor antigo + linha de dono (sem regressao). Console limpo.
+
+## Etapa Concluida (2026-06-16 — Etapa 16: remocao do badge "Visao do mestre/jogador" do topo do palco)
+
+Resumo: removido o `#stageViewBadge` (badge no overlay superior esquerdo do palco que mostrava "Visao do mestre"/"Visao do jogador"). Era resquicio da extinta "Previa do jogador" e nao agregava. So frontend.
+
+O que mudou:
+
+- `mesa.html`: removido o `<span id="stageViewBadge">`. O `#stageHintBadge` ("Arraste os tokens...") foi mantido.
+- `js/mesa-core.js`: removido o DOM ref `stageViewBadge`.
+- `js/mesa-roster.js`: removido o bloco de `renderControls` que setava o texto do badge.
+- `css/mesa.css`: corrigido comentario obsoleto de `.panel-badge` (nao referencia mais o stageViewBadge).
+- **Cache-busting** (`mesa.html`): `mesa-core/mesa-roster.js` e `css/mesa.css` -> `?v=2026-06-16-hud-cleanup-1`; `MESA_BUNDLE_VERSION` (`tools/build-pages.cjs`) -> `2026-06-16-hud-cleanup-1`.
+
+Validacao: `check:js` (41 OK), `audit:static` (OK), `build:pages` (sem `stageViewBadge` no bundle). Browser (preview :8000): elemento ausente, `renderControls` sem erro, hint badge preservado, console limpo.
+
+## Etapa Concluida (2026-06-16 — Etapa 15: redesenho visual do painel lateral do jogador)
+
+Resumo: melhoria de hierarquia, organizacao e usabilidade do painel "Meu Token" do jogador na Mesa (skills `03-page-architecture` + `02-dark-mode-design-expert`). So frontend.
+
+O que mudou:
+
+- **Vitais** (`js/mesa-roster.js` `renderPlayerResourceEditor` -> `.player-vital-card`): cards Vida/Integridade agora empilhados (1 coluna, full width), com borda esquerda colorida por tipo, cabecalho `label + leitura grande do atual`, barra `.bar-preview` destacada (7px) e dois campos rotulados "Atual"/"Máx" centrados. Atributos de sync preservados (`data-player-stat-field`, `data-player-sheet-field`, `data-character-key`).
+- **Hero/status** (`renderPlayerSheetPanel`): a frase de status virou pilula `.player-stage-status` com dot (verde no palco, mudo fora); hero em flex-column com gaps consistentes e nome em `--fw-bold`.
+- **Organizacao**: titulos de secao (`.player-side-title`) ganham regua `::after`; dica de uso `.player-vitals-hint`; botao "Abrir minha ficha completa" com icone de link.
+- **CSS** (`css/mesa-roster.css`): novas classes player-scoped; componentes compartilhados do inspetor (`.bar-preview/.bar-label/.token-type-badge`) NAO foram alterados (apenas override de altura da barra dentro de `.player-vital-card`).
+- **Cache-busting** (`mesa.html`): `mesa-roster.js` e `css/mesa-roster.css` -> `?v=2026-06-16-panel-ux-1`; `MESA_BUNDLE_VERSION` (`tools/build-pages.cjs`) -> `2026-06-16-panel-ux-1`.
+
+Validacao: `npm run check:js` (41 OK), `audit:static` (OK), `build:pages` (bundle com `.player-vital-card`). Browser (preview :8000, papel forcado player): markup e computed styles confirmados (vitais 1-col, borda verde Vida 3px, leitura 20px, inputs 2-col centrados, barra 7px, dot verde no palco). Sem erros no console.
+
+## Etapa Concluida (2026-06-16 — Etapa 14: remocao da "Previa do jogador" + fix de papel forcado em localhost)
+
+Resumo: removida por completo a funcionalidade de simular a visao do jogador a partir do mestre (toggle "Previa jogador" + badge dinamico) E corrigido um bug em que QUALQUER conta logada em localhost/127.0.0.1/file: virava mestre na Mesa. O mestre sempre tem a propria visao; o jogador tem a dele. So frontend — sem deploy do Worker.
+
+**Bug do papel forcado (critico):** `resolveInitialRole` (`js/mesa-core.js`) tinha `if (isLocalMesaPreview()) return "master";`, que ignorava o papel real da sessao em ambiente local. Um jogador logado (ex.: conta "A") aparecia como mestre na versao local (Live Server :5500), com escalacao e edicao de todos os tokens. Corrigido: removida essa linha — agora respeita sempre `session.role`. A conveniencia de preview do mestre sem login em localhost segue funcionando porque `resolveMesaSession()` ja devolve uma sessao sintetica `{role:"master"}` quando NAO ha login; e o override explicito de dev `localStorage.mesaRolePreview = "master"|"player"` continua valido. Tambem removida a chip estatica "Modo: Jogador" (hardcoded, sempre dizia "Jogador") e ligada a chip "Papel" (`roleBadge2`) ao papel real em `renderSummary`/`preFillMesaPage`.
+
+O que mudou:
+
+- **UI** (`mesa.html`): removido o `<label id="playerPreviewRow">` com o checkbox `#playerPreviewToggle` (overlay inferior direito). O `#stageViewBadge` continua, agora como rotulo estatico ("Visao do mestre"/"Visao do jogador").
+- **Estado/sync** (`js/mesa-core.js`): removido o campo `state.previewPlayerView`, os DOM refs `previewRow`/`previewToggle`, o listener do toggle, o ajuste em `preFillMesaPage`, e o campo `previewPlayerView` dos payloads de cena (`createMesaScenePayloadFromState`, `normalizeMesaScenePayload`, `broadcastMesaSceneClear`, `applyMesaSceneClearDelta`, `loadScene`).
+- **Render** (`js/mesa-stage.js`): `hiddenForMaster` agora e `isMaster() && !token.visibleToPlayers`; `getRenderedTokens` devolve todos os tokens para o mestre; `isPlayerPerspective()` passou a ser `!isMaster()`; removido o reset de preview em `resetPrototype`.
+- **Painel/controles** (`js/mesa-roster.js`): `renderControls` simplificou o badge para rotulo estatico; `renderRoster` voltou a decidir a visao do jogador so por `!isMaster()` (sem o ramo "mestre em previa").
+- **Inspetor** (`js/mesa-inspector.js`): removida a copy "Na previa do jogador..." (era inalcancavel sem preview); fica so a mensagem do jogador.
+- **CSS** (`css/mesa.css`): removidas as regras orfas de `.toggle-row-inline` (so o toggle de preview as usava).
+- **Backend**: `cloudflare/src/mesa.js` ainda normaliza `previewPlayerView` (default `false`), inofensivo e retrocompativel — o frontend nao envia mais o campo; nao precisa de deploy.
+- **Cache-busting** (`mesa.html`): `mesa-stage/mesa-inspector.js` e `css/mesa.css` -> `?v=2026-06-16-no-preview-1`; `mesa-core/mesa-roster.js` -> `?v=2026-06-16-role-fix-1` (fix do papel). `MESA_BUNDLE_VERSION` (`tools/build-pages.cjs`) -> `2026-06-16-role-fix-1`.
+
+Validacao:
+
+- `npm run check:js` (41 OK), `npm run audit:static` (OK), `npm run build:pages` (bundle sem nenhuma referencia a `previewPlayerView`/`playerPreviewToggle`).
+- Browser (preview :8000): toggle e row removidos do DOM; `state` sem `previewPlayerView`; badge "Visao do mestre"; `getRenderedTokens` devolve todos os tokens para o mestre; jogador continua vendo so "Meu Token" (sem escalacao/tabs/Colocar). Sem erros no console.
+
+## Etapa Concluida (2026-06-16 — Etapa 13: painel lateral do jogador na Mesa — Meu Token + Meus Echos)
 
 Resumo: redesenho do painel lateral do jogador na Mesa em duas secoes ("Meu Token" e "Meus Echos") e nova capacidade de o jogador invocar/retirar o PROPRIO Echo da cena sem depender do mestre. Inclui mudanca no Durable Object (precisa de deploy do Worker).
 
@@ -70,7 +206,8 @@ O que mudou:
 - **Inspetor condicional** (`js/mesa-inspector.js`): para o jogador, o bloco `#vttInspectorBlock` so aparece quando o token selecionado e seu (proprio token ou Echo); caso contrario some. Removido o `renderRestrictedPlayerInspector` (placeholder agora sem uso).
 - **Durable Object** (`cloudflare/src/mesa-realtime.js`): `mesa:token:upsert`/`mesa:token:remove` continuam master-only, com nova excecao `canPlayerRelayEchoToken` — jogador retransmite o proprio Echo (`echo:<id>`, `ownerKey == username`), espelhando `mesa:echo:vitals`. **Exige `wrangler deploy`** para a invocacao funcionar em producao.
 - **CSS** (`css/mesa-roster.css`): `.player-side-panel/.player-side-section/.player-side-title/.player-echo-card/.echo-on-stage-badge` + ajuste responsivo (<=480px: acoes do card em segunda linha).
-- **Cache-busting** (`mesa.html`): `mesa-core/mesa-stage/mesa-roster/mesa-inspector.js` e `mesa-roster.css` -> `?v=2026-06-16-echo-panel-1`.
+- **Correcao (echo-panel-2)**: a escalacao continuava vazando na VISAO DO JOGADOR por dois motivos. (1) As tabs de filtro (Todos/Jogadores/NPCs/Monstros) ficavam fora de `#rosterList`, entao apareciam mesmo com o painel "Meu Token" no lugar da lista. (2) A "Previa do jogador" do mestre so trocava o canvas — o painel lateral ignorava `state.previewPlayerView` e seguia mostrando a escalacao. Agora `renderRoster` (`js/mesa-roster.js`) usa `playerView = !isMaster() || previewPlayerView`: nesse caso oculta `.vtt-roster-tabs` + busca e, para o mestre em previa (que nao tem token proprio), mostra um aviso "Visao do jogador" no lugar do painel; o jogador real continua vendo "Meu Token"/"Meus Echos". O toggle da previa (`js/mesa-core.js`) passou a incluir `roster: true` no `scheduleMesaRender` para a troca refletir na hora. Validado no browser (preview :8000): mestre-normal mostra escalacao; mestre-previa e jogador-real ocultam tudo.
+- **Cache-busting** (`mesa.html`): `mesa-stage/mesa-inspector.js` -> `?v=2026-06-16-echo-panel-1`; `mesa-roster.js` e `mesa-core.js` -> `?v=2026-06-16-echo-panel-2` (fix da escalacao na visao do jogador). `MESA_BUNDLE_VERSION` (`tools/build-pages.cjs`) -> `2026-06-16-echo-panel-2`.
 
 Validacao:
 

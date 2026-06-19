@@ -17,10 +17,10 @@
   <link rel="stylesheet" href="css/tokens.css?v=2026-06-14-echos-1" />
   <link rel="stylesheet" href="css/reset.css?v=2026-06-12-cache-fix-1" />
   <link rel="stylesheet" href="css/components.css?v=2026-06-12-modal-stack-1" />
-  <link rel="stylesheet" href="css/mesa.css?v=2026-06-12-font-weight-1" />
+  <link rel="stylesheet" href="css/mesa.css?v=2026-06-16-gutter-fix-1" />
   <link rel="stylesheet" href="css/mesa-stage.css?v=2026-05-24-token-styles-2" />
-  <link rel="stylesheet" href="css/mesa-roster.css?v=2026-06-16-echo-panel-1" />
-  <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-05-06-player-panel-1" />
+  <link rel="stylesheet" href="css/mesa-roster.css?v=2026-06-16-fullbleed-1" />
+  <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-06-16-master-vital-card-1" />
   <link rel="stylesheet" href="css/mesa-map.css?v=2026-05-24-token-styles-1" />
   <link rel="stylesheet" href="css/mesa-drawing.css?v=2026-06-12-cache-fix-1" />
   <style>
@@ -382,9 +382,13 @@
 
       </div>
 
-      <!-- Overlay: topo esquerdo — estado da cena -->
+      <!-- Overlay: topo esquerdo — botão de tela cheia + estado da cena -->
       <div class="vtt-overlay vtt-overlay-tl" aria-live="polite">
-        <span class="vtt-hud-badge" id="stageViewBadge">Vis&atilde;o do mestre</span>
+        <button type="button" class="vtt-fullscreen-btn" id="fullscreenMesaBtn" aria-pressed="false" aria-label="Tela cheia" title="Tela cheia">
+          <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M2 6V2h4"/><path d="M14 6V2h-4"/><path d="M2 10v4h4"/><path d="M14 10v4h-4"/>
+          </svg>
+        </button>
         <span class="vtt-hud-badge vtt-hud-badge-soft" id="stageHintBadge">Arraste os tokens para organizar a cena.</span>
         <strong id="sceneStateTitle" class="vtt-hud-title">Mesa pronta</strong>
         <p id="sceneStateCopy" class="vtt-hud-copy">A escalacao vem das fichas salvas e a cena sincroniza com jogadores conectados.</p>
@@ -446,18 +450,10 @@
         </div>
       </div>
 
-      <!-- Overlay: baixo direito — ações e toggle -->
+      <!-- Overlay: baixo direito — ações -->
       <div class="vtt-overlay vtt-overlay-br">
-        <label class="toggle-row toggle-row-inline" id="playerPreviewRow">
-          <span class="toggle-copy">
-            <strong>Pr&eacute;via jogador</strong>
-          </span>
-          <input type="checkbox" id="playerPreviewToggle" />
-          <span class="toggle-indicator" aria-hidden="true"></span>
-        </label>
         <button type="button" class="btn btn-ghost btn-small" id="moveLockBtn" hidden aria-pressed="false">Travar movimento</button>
         <button type="button" class="btn btn-ghost btn-small" id="resetMesaBtn" hidden>Limpar cena</button>
-        <button type="button" class="btn btn-ghost btn-small" id="fullscreenMesaBtn" aria-pressed="false">Tela cheia</button>
       </div>
     </div>
 
@@ -466,10 +462,6 @@
 
       <!-- Meta: modo e presença -->
       <div class="vtt-sidebar-meta">
-        <article class="vtt-meta-chip">
-          <span>Modo</span>
-          <strong>Jogador</strong>
-        </article>
         <article class="vtt-meta-chip vtt-meta-chip-accent" id="vttRoleChip">
           <span>Papel</span>
           <strong id="roleBadge2">—</strong>
@@ -611,11 +603,11 @@
   <script src="js/auth.js?v=2026-06-13-login-form-1" defer></script>
   <!-- Ordem importante: dependências antes de mesa-core -->
   <script src="js/mesa-renderer-v2.js?v=2026-05-25-dataurl-fix-1" defer></script>
-  <script src="js/mesa-stage.js?v=2026-06-16-echo-panel-1" defer></script>
-  <script src="js/mesa-roster.js?v=2026-06-16-echo-panel-1" defer></script>
-  <script src="js/mesa-inspector.js?v=2026-06-16-echo-panel-1" defer></script>
+  <script src="js/mesa-stage.js?v=2026-06-16-master-vital-card-1" defer></script>
+  <script src="js/mesa-roster.js?v=2026-06-16-no-dup-inspector-1" defer></script>
+  <script src="js/mesa-inspector.js?v=2026-06-16-master-vital-card-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-04-24-split-1" defer></script>
-  <script src="js/mesa-core.js?v=2026-06-16-echo-panel-1" defer></script>
+  <script src="js/mesa-core.js?v=2026-06-16-hud-cleanup-1" defer></script>
   <script src="js/mesa-init.js?v=2026-04-24-split-1" defer></script>
   <script src="js/mesa-map.js?v=2026-06-10-session-1" defer></script>
   <script src="js/mesa-drawing.js?v=2026-05-27-select-5" defer></script>

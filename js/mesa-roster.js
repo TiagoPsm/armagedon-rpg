@@ -2,12 +2,14 @@ function renderSummary() {
   const renderedTokens = getRenderedTokens();
   const activeTokenCount = getMesaDomRef("activeTokenCount");
   const roleBadge = getMesaDomRef("roleBadge");
+  const roleBadge2 = document.getElementById("roleBadge2");
   const roleSummary = getMesaDomRef("roleSummary");
   const sceneStateTitle = getMesaDomRef("sceneStateTitle");
   const sceneStateCopy = getMesaDomRef("sceneStateCopy");
 
   if (activeTokenCount) activeTokenCount.textContent = String(renderedTokens.length);
   if (roleBadge) roleBadge.textContent = isMaster() ? "Mestre" : "Jogador";
+  if (roleBadge2) roleBadge2.textContent = isMaster() ? "Mestre" : "Jogador";
   if (roleSummary) {
     roleSummary.textContent = isMaster()
       ? "Organiza tokens e transmite a cena para jogadores conectados."
@@ -38,28 +40,9 @@ function renderSummary() {
 }
 
 function renderControls() {
-  const previewRow = getMesaDomRef("previewRow");
-  const previewToggle = getMesaDomRef("previewToggle");
-  const stageViewBadge = getMesaDomRef("stageViewBadge");
   const stageHintBadge = getMesaDomRef("stageHintBadge");
   const resetMesaBtn = getMesaDomRef("resetMesaBtn");
   const fullscreenMesaBtn = getMesaDomRef("fullscreenMesaBtn");
-
-  if (previewRow) {
-    previewRow.classList.toggle("hidden", !isMaster());
-    previewRow.classList.toggle("is-checked", Boolean(state.previewPlayerView));
-  }
-
-  if (previewToggle) {
-    previewToggle.checked = Boolean(state.previewPlayerView);
-    previewToggle.disabled = !isMaster();
-  }
-
-  if (stageViewBadge) {
-    stageViewBadge.textContent = isMaster()
-      ? state.previewPlayerView ? "Previa do jogador" : "Visao do mestre"
-      : "Visao do jogador";
-  }
 
   if (stageHintBadge) {
     if (isMaster()) {
@@ -90,9 +73,24 @@ function renderControls() {
   }
 
   if (fullscreenMesaBtn) {
+    // Botao compacto so com icone — nao escrever texto (apagaria o SVG); usar
+    // title/aria-label e a classe is-active para refletir o estado.
     const isFullscreen = state.fullscreenMode !== "off";
-    fullscreenMesaBtn.textContent = isFullscreen ? "Sair da tela cheia" : "Tela cheia";
+    const label = isFullscreen ? "Sair da tela cheia" : "Tela cheia";
     fullscreenMesaBtn.setAttribute("aria-pressed", isFullscreen ? "true" : "false");
+    fullscreenMesaBtn.setAttribute("aria-label", label);
+    fullscreenMesaBtn.setAttribute("title", label);
+    fullscreenMesaBtn.classList.toggle("is-active", isFullscreen);
+  }
+
+  // Overlay inferior direito: so contem botoes do mestre (Travar movimento /
+  // Limpar cena). Para o jogador ambos ficam ocultos, entao escondemos o
+  // container inteiro — senao sobra uma "casca" vazia embaixo do mapa.
+  const overlayBr = document.querySelector(".vtt-overlay-br");
+  if (overlayBr) {
+    const moveBtn = document.getElementById("moveLockBtn");
+    const anyVisible = (resetMesaBtn && !resetMesaBtn.hidden) || (moveBtn && !moveBtn.hidden);
+    overlayBr.hidden = !anyVisible;
   }
 }
 
@@ -102,11 +100,19 @@ function renderRoster() {
   const rosterSearch = getMesaDomRef("rosterSearchField");
   const rosterKicker = getMesaDomRef("rosterPanelKicker");
   const rosterTitle = getMesaDomRef("rosterPanelTitle");
+  // Tabs de filtro por tipo (Todos/Jogadores/NPCs/Monstros): chrome de escalacao,
+  // nunca deve aparecer na visao do jogador — sem id, busca por classe.
+  const rosterTabs = document.querySelector(".vtt-roster-tabs");
+  const rosterBlock = document.getElementById("vttRosterBlock");
   if (!rosterList || !rosterCountBadge) return;
+
+  // O jogador nunca ve a escalacao (lista + tabs + busca): so o painel pessoal.
   rosterList.classList.toggle("is-player-panel", !isMaster());
+  if (rosterBlock) rosterBlock.classList.toggle("is-player-view", !isMaster());
 
   if (!isMaster()) {
     if (rosterSearch) rosterSearch.hidden = true;
+    if (rosterTabs) rosterTabs.hidden = true;
     if (rosterKicker) rosterKicker.textContent = "Ficha rapida";
     if (rosterTitle) rosterTitle.textContent = "Meu personagem";
     renderPlayerSheetPanel(rosterList, rosterCountBadge);
@@ -114,6 +120,8 @@ function renderRoster() {
   }
 
   if (rosterSearch) rosterSearch.hidden = false;
+  if (rosterTabs) rosterTabs.hidden = false;
+  rosterCountBadge.classList.remove("is-status-dot");
   if (rosterKicker) rosterKicker.textContent = "Escalacao";
   if (rosterTitle) rosterTitle.textContent = "Adicionar a mesa";
 
@@ -207,7 +215,10 @@ function renderPlayerSheetPanel(rosterList, rosterCountBadge) {
   const maxIntegrity = Math.max(0, asPositiveInt(sheet.integMax, source?.maxIntegrity || 0));
   const selectedKey = context.characterKey || normalizeMesaCharacterKey(state.session?.username);
 
-  rosterCountBadge.textContent = context.isOnStage ? "Em cena" : "Fora da cena";
+  // "Fora da cena" virou uma bolinha de status (apagada fora da cena, verde em cena).
+  const stageOn = Boolean(context.isOnStage);
+  rosterCountBadge.classList.add("is-status-dot");
+  rosterCountBadge.innerHTML = `<span class="player-stage-dot ${stageOn ? "is-on" : "is-off"}" role="img" aria-label="${stageOn ? "Token em cena" : "Token fora da cena"}" title="${stageOn ? "Em cena" : "Fora da cena"}"></span>`;
 
   rosterList.innerHTML = `
     <section class="player-side-panel" data-character-key="${escapeAttribute(selectedKey)}">
@@ -217,28 +228,25 @@ function renderPlayerSheetPanel(rosterList, rosterCountBadge) {
         <div class="player-sheet-hero">
           <div class="player-sheet-avatar">
             ${avatar
-              ? `<img src="${escapeAttribute(avatar)}" alt="${escapeAttribute(characterName)}" width="104" height="104" loading="lazy" decoding="async" draggable="false" />`
+              ? `<img src="${escapeAttribute(avatar)}" alt="${escapeAttribute(characterName)}" width="112" height="112" loading="lazy" decoding="async" draggable="false" />`
               : `<span class="mesa-token-avatar-fallback">${escapeHtml(initials)}</span>`}
           </div>
           <div class="player-sheet-copy">
-            <span class="token-type-badge" data-type="player">Jogador</span>
             <h3>${escapeHtml(characterName)}</h3>
-            <p>${context.isOnStage ? "Seu token esta no palco compartilhado." : "O mestre ainda nao colocou seu token na cena."}</p>
           </div>
         </div>
 
         ${renderPlayerTokenSelector(context, selectedKey)}
 
-        <div class="player-resource-grid">
-          ${renderPlayerResourceEditor("Vida", "currentLife", currentLife, maxLife, "vida", selectedKey, {
-            editableMaxField: "vidaMax"
-          })}
-          ${renderPlayerResourceEditor("Integridade", "currentIntegrity", currentIntegrity, maxIntegrity, "integ", selectedKey, {
-            editableMaxField: "integMax"
-          })}
+        <div class="player-vitals">
+          ${renderPlayerResourceEditor("Vida", "currentLife", currentLife, maxLife, "vida", selectedKey)}
+          ${renderPlayerResourceEditor("Integridade", "currentIntegrity", currentIntegrity, maxIntegrity, "integ", selectedKey)}
         </div>
 
-        <a href="ficha.html" class="btn btn-primary btn-block player-open-sheet-btn">Abrir minha ficha completa</a>
+        <a href="ficha.html" class="btn btn-primary btn-block player-open-sheet-btn">
+          <span>Ficha Completa</span>
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h6.5V10"/><path d="M12.5 3.5 4 12"/></svg>
+        </a>
       </div>
 
       ${renderPlayerEchosSection()}
@@ -296,11 +304,9 @@ function renderPlayerEchoCard(echo) {
 
 function renderPlayerTokenSelector(context, selectedKey) {
   const entries = context.entries || [];
-  if (entries.length <= 1) {
-    return context.isOnStage
-      ? `<button type="button" class="mini-btn player-focus-btn" data-player-panel-action="focus-own" data-character-key="${escapeAttribute(selectedKey)}">Focar meu token</button>`
-      : "";
-  }
+  // Token unico: sem botao "Focar meu token" (removido a pedido — redundante).
+  // O seletor abaixo so aparece quando o jogador tem mais de um personagem.
+  if (entries.length <= 1) return "";
 
   return `
     <div class="player-token-selector" aria-label="Selecionar personagem proprio">
@@ -322,15 +328,25 @@ function renderPlayerTokenSelector(context, selectedKey) {
   `;
 }
 
-function renderPlayerResourceEditor(label, field, current, max, type, characterKey, options = {}) {
-  const editableMaxField = String(options.editableMaxField || "");
+// Card de Vida/Integridade do jogador. O MAXIMO nao e editavel aqui — aparece so
+// como leitura no cabecalho ("atual / max"). O atual e ajustado por um stepper
+// [−] [valor] [+] (o valor tambem aceita digitacao manual). O maximo e definido
+// na ficha completa. Sync via data-player-stat-field (handlePlayerPanelResourceInput).
+function renderPlayerResourceEditor(label, field, current, max, type, characterKey) {
+  const variant = type === "vida" ? "life" : "integrity";
+  const lower = label.toLowerCase();
+  const keyAttr = escapeAttribute(characterKey);
   return `
-    <article class="player-resource-card">
-      <div class="bar-label-row">
-        <span class="bar-label">${escapeHtml(label)}</span>
-        <span>${current}/${max}</span>
+    <article class="player-vital-card is-${variant}">
+      <div class="player-vital-head">
+        <span class="player-vital-label">${escapeHtml(label)}</span>
+        <span class="player-vital-readout"><strong>${current}</strong><span class="player-vital-max">/ ${max}</span></span>
       </div>
-      <div class="player-stat-inputs ${editableMaxField ? "has-editable-max" : ""}">
+      <div class="bar-preview is-${variant}">
+        <span style="${getBarFillStyle(type, current, max)}"></span>
+      </div>
+      <div class="player-vital-stepper">
+        <button type="button" class="stat-step-btn" data-player-stat-step="-1" data-player-stat-field="${field}" data-character-key="${keyAttr}" aria-label="Diminuir ${escapeAttribute(lower)}">−</button>
         <input
           type="number"
           min="0"
@@ -338,30 +354,40 @@ function renderPlayerResourceEditor(label, field, current, max, type, characterK
           step="1"
           inputmode="numeric"
           data-player-stat-field="${field}"
-          data-character-key="${escapeAttribute(characterKey)}"
+          data-character-key="${keyAttr}"
           aria-label="${escapeAttribute(`${label} atual`)}"
           value="${current}"
         />
-        ${editableMaxField ? `
-          <label>
-            <span>Max</span>
-            <input
-              type="number"
-              min="1"
-              step="1"
-              inputmode="numeric"
-              data-player-sheet-field="${escapeAttribute(editableMaxField)}"
-              data-character-key="${escapeAttribute(characterKey)}"
-              aria-label="${escapeAttribute(`${label} maxima`)}"
-              value="${max}"
-            />
-          </label>
-        ` : `<span>/ ${max}</span>`}
-      </div>
-      <div class="bar-preview is-${type === "vida" ? "life" : "integrity"}">
-        <span style="${getBarFillStyle(type, current, max)}"></span>
+        <button type="button" class="stat-step-btn" data-player-stat-step="1" data-player-stat-field="${field}" data-character-key="${keyAttr}" aria-label="Aumentar ${escapeAttribute(lower)}">+</button>
       </div>
     </article>
   `;
 }
+
+/* Stepper de Vida/Integridade do painel do jogador: os botoes [−]/[+] ajustam o
+   input de atual (clampando por min/max do proprio input) e disparam "change",
+   que o listener do rosterList (handlePlayerPanelStatInput) usa para sincronizar
+   com a ficha. O jogador tambem pode digitar direto no input. */
+(function () {
+  document.addEventListener("click", function (e) {
+    const btn = e.target.closest("[data-player-stat-step]");
+    if (!btn || btn.disabled) return;
+    const field = btn.dataset.playerStatField;
+    const step = parseInt(btn.dataset.playerStatStep, 10);
+    if (!field || !step) return;
+
+    const card = btn.closest(".player-vital-card");
+    const input = card && card.querySelector(`input[data-player-stat-field="${field}"]`);
+    if (!input || input.disabled) return;
+
+    const min = input.min !== "" ? parseInt(input.min, 10) : 0;
+    const max = input.max !== "" ? parseInt(input.max, 10) : Infinity;
+    const base = parseInt(input.value, 10);
+    const newVal = Math.min(max, Math.max(min, (Number.isFinite(base) ? base : 0) + step));
+    if (String(newVal) === String(input.value)) return;
+
+    input.value = String(newVal);
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+})();
 

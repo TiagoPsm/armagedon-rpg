@@ -13,6 +13,21 @@
   overflow: hidden;
 }
 
+/* FAIXA PRETA LATERAL A DIREITA — causa raiz: `reset.css` define
+   `html { scrollbar-gutter: stable }` (global, evita layout shift nas paginas que
+   rolam). Na Mesa isso COMBINA com `overflow: hidden` e faz o html RESERVAR ~10px
+   de gutter a direita SEM mostrar barra nenhuma. Sintoma medido no navegador real:
+   `innerWidth - documentElement.clientWidth === 0` (sem barra), mas a sidebar
+   parava 10px antes da borda da janela — o fundo atras do mapa aparecia nessa
+   faixa e a mesa parecia deslocada ("nao fecha em cima como do outro lado").
+   Fix: `scrollbar-gutter: auto` anula o `stable` herdado (nao reserva nada) e
+   `overflow: hidden` garante que nao surja barra. Como `mesa.css` so carrega na
+   Mesa, fica escopado a ela (index/ficha/regras seguem com o `stable` do reset). */
+html {
+  overflow: hidden;
+  scrollbar-gutter: auto;
+}
+
 .mesa-page .site-header {
   flex-shrink: 0;
   z-index: 20;
@@ -426,6 +441,46 @@
 .vtt-overlay-tl {
   top:  var(--hud-inset);
   left: var(--hud-inset);
+  /* Conteudo de estado (#stageHintBadge/#sceneStateTitle/#sceneStateCopy) e
+     display:none; o overlay agora so abriga o botao compacto de tela cheia,
+     entao some com o fundo/borda do container e deixa so o botao aparecer. */
+  padding: 0;
+  border: none;
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Botao compacto de tela cheia (so icone) — quadrado no estilo HUD */
+.vtt-fullscreen-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--hud-border);
+  border-radius: var(--radius-sm);
+  background: var(--hud-bg);
+  backdrop-filter: var(--hud-blur);
+  -webkit-backdrop-filter: var(--hud-blur);
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.vtt-fullscreen-btn:hover {
+  border-color: var(--border-accent);
+  background: var(--bg-raised);
+  color: var(--text);
+}
+
+.vtt-fullscreen-btn.is-active {
+  border-color: var(--border-accent);
+  color: var(--accent);
+}
+
+.vtt-fullscreen-btn svg {
+  display: block;
 }
 
 .vtt-overlay-tr {
@@ -503,23 +558,6 @@
   color: var(--text);
 }
 
-/* Toggle row dentro do overlay */
-.vtt-overlay .toggle-row-inline {
-  padding: 0;
-  border: none;
-  background: none;
-}
-
-.vtt-overlay .toggle-row-inline .toggle-copy strong {
-  font-family: var(--font-ui);
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-soft);
-  white-space: nowrap;
-}
-
 /* Esconde overlays de estado que CSS da mesa-map já gerencia */
 #stageHintBadge,
 #sceneStateTitle,
@@ -540,7 +578,7 @@
   border-left: 1px solid rgba(255, 255, 255, 0.055);
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
-  scrollbar-gutter: stable; /* reserva espaço fixo — evita reflow ao expandir */
+  scrollbar-gutter: auto; /* sem reserva de gutter: quando nao ha rolagem (caso comum) o conteudo fica centralizado e nao sobra faixa preta na direita */
   z-index: 10;
 }
 
@@ -607,7 +645,13 @@
   color: var(--accent);
 }
 
-/* Blocos de conteúdo na sidebar */
+/* Blocos de conteúdo na sidebar.
+   Padding horizontal SIMETRICO (mesma margem nos dois lados) para o conteudo
+   ficar centralizado e nao encostar nas bordas. Tentativas anteriores de
+   full-bleed (padding 0) deixavam os cards grudados na borda direita da janela
+   (descentralizado). A barra de rolagem fica fina/auto (ver `.vtt-sidebar`),
+   entao quando NAO ha rolagem (caso do painel do jogador) as margens ficam
+   identicas; com rolagem (inspetor do mestre aberto) sobra so a barra fina. */
 .vtt-sidebar-block {
   display: flex;
   flex-direction: column;
@@ -933,7 +977,7 @@
 
 /* ─── ESTILOS LEGADOS (usados por JS, mantidos por compatibilidade) ── */
 
-/* panel-badge usado pelo JS em stageViewBadge */
+/* panel-badge: classe legada (sem uso atual; mantida por compatibilidade) */
 .panel-badge {
   display: inline-flex;
   align-items: center;
@@ -964,27 +1008,6 @@
   text-transform: uppercase;
   color: var(--accent);
   margin: 0;
-}
-
-/* toggle-row-inline (player preview) */
-.toggle-row-inline {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  padding: 0;
-  border: none;
-  background: none;
-}
-
-.toggle-row-inline .toggle-copy strong {
-  font-family: var(--font-ui);
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-soft);
-  white-space: nowrap;
 }
 
 /* scene-state inline (ocultos por padrão, JS pode mostrar) */

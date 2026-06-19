@@ -122,7 +122,7 @@ function clearDomStageTokenElements() {
 }
 
 function createCanvasTokenSnapshot(token) {
-  const hiddenForMaster = isMaster() && !state.previewPlayerView && !token.visibleToPlayers;
+  const hiddenForMaster = isMaster() && !token.visibleToPlayers;
   const canViewStats = canViewTokenStats(token);
   const statePillLabel = hiddenForMaster
     ? "Oculto"
@@ -181,7 +181,7 @@ function createMesaTokenElement(token) {
 }
 
 function getTokenContentSignature(token) {
-  const hiddenForMaster = isMaster() && !state.previewPlayerView && !token.visibleToPlayers;
+  const hiddenForMaster = isMaster() && !token.visibleToPlayers;
   return JSON.stringify({
     id: token.id,
     type: token.type,
@@ -650,7 +650,9 @@ function getPlayerPanelSheetNumberValue(field, sheet, context) {
 }
 
 function syncInspectorStatInputCard(input, field, token) {
-  const card = input?.closest?.(".stat-editor");
+  // Suporta o card do mestre (.player-vital-card, novo visual) e o antigo
+  // .stat-editor — qualquer um que envolva o input editado.
+  const card = input?.closest?.(".player-vital-card") || input?.closest?.(".stat-editor");
   if (!card || !token) return;
   const isLife = field === "currentLife" || field === "maxLife";
   const currentField = isLife ? "currentLife" : "currentIntegrity";
@@ -671,6 +673,11 @@ function syncInspectorStatInputCard(input, field, token) {
     maxInput.value = String(max);
   }
 
+  // Leitura "atual/max": markup novo (.player-vital-readout) ou antigo (.bar-label-row).
+  const readoutCurrent = card.querySelector(".player-vital-readout strong");
+  if (readoutCurrent) readoutCurrent.textContent = String(current);
+  const readoutMax = card.querySelector(".player-vital-max");
+  if (readoutMax) readoutMax.textContent = `/ ${max}`;
   const valueLabel = card.querySelector(".bar-label-row span:last-child");
   if (valueLabel) valueLabel.textContent = `${current}/${max}`;
 
@@ -936,7 +943,6 @@ function resetPrototype() {
   localStorage.removeItem(MESA_STORAGE_KEY);
   state.tokens = [];
   state.selectedTokenId = "";
-  state.previewPlayerView = false;
   bumpMesaSceneVersion();
   broadcastMesaSceneClear();
   scheduleMesaRender({ summary: true, controls: true, roster: true, stage: true, inspector: true });
@@ -1210,14 +1216,15 @@ function applySheetPatchFromMesa(characterKey, patch, options = {}) {
 }
 
 function syncPlayerStatInputCard(input, field) {
-  const card = input?.closest?.(".player-resource-card");
+  const card = input?.closest?.(".player-vital-card");
   if (!card) return;
   const max = asPositiveInt(input.max, 0);
   const current = clamp(asPositiveInt(input.value, 0), 0, max);
   if (String(input.value) !== String(current)) input.value = String(current);
 
-  const valueLabel = card.querySelector(".bar-label-row span:last-child");
-  if (valueLabel) valueLabel.textContent = `${current}/${max}`;
+  // Leitura grande do atual no cabecalho do card ("<atual> / <max>")
+  const readoutCurrent = card.querySelector(".player-vital-readout strong");
+  if (readoutCurrent) readoutCurrent.textContent = String(current);
 
   const bar = card.querySelector(".bar-preview span");
   if (bar) {
@@ -1485,7 +1492,7 @@ function getFilteredRoster() {
 }
 
 function getRenderedTokens() {
-  if (isMaster() && !state.previewPlayerView) return state.tokens;
+  if (isMaster()) return state.tokens;
   return state.tokens.filter(token => token.visibleToPlayers !== false);
 }
 
@@ -1611,7 +1618,7 @@ function canConfigureStatsVisibility(token) {
 }
 
 function isPlayerPerspective() {
-  return !isMaster() || state.previewPlayerView;
+  return !isMaster();
 }
 
 function isMaster() {
@@ -1834,7 +1841,7 @@ function renderToken(token) {
 }
 
 function renderTokenCard(token) {
-  const hiddenForMaster = isMaster() && !state.previewPlayerView && !token.visibleToPlayers;
+  const hiddenForMaster = isMaster() && !token.visibleToPlayers;
   const selectedClass = token.id === state.selectedTokenId ? "is-selected" : "";
   const hiddenClass = hiddenForMaster ? "is-hidden-master" : "";
   const canViewStats = canViewTokenStats(token);
@@ -1886,7 +1893,7 @@ function renderTokenCard(token) {
 }
 
 function renderTokenMinimal(token) {
-  const hiddenForMaster = isMaster() && !state.previewPlayerView && !token.visibleToPlayers;
+  const hiddenForMaster = isMaster() && !token.visibleToPlayers;
   const selectedClass = token.id === state.selectedTokenId ? "is-selected" : "";
   const hiddenClass = hiddenForMaster ? "is-hidden-master" : "";
   const scale = token.tokenScale || 1;

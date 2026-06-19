@@ -227,6 +227,101 @@
   font-size: 0.75rem;
 }
 
+/* Stepper de Atual no inspetor do jogador (dentro de .player-vital-card,
+   estilo definido em css/mesa-roster.css). Layout: [−] [valor] [+] */
+.inspector-vital-stepper {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.inspector-vital-stepper .stat-step-btn {
+  width: 100%;
+  height: 36px;
+}
+
+.inspector-vital-stepper input {
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0.35rem 0.4rem;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--text);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.inspector-vital-stepper input::-webkit-outer-spin-button,
+.inspector-vital-stepper input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.inspector-vital-stepper input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+/* ── Inspetor do MESTRE: card do jogador, porem compacto ─────────
+   Mesmo visual de .player-vital-card, com paddings/leitura menores e o
+   stepper de Atual ganhando um campo de MAXIMO ao lado ([−][atual][+] / [max]). */
+.player-vitals.is-inspector {
+  gap: 0.4rem;
+}
+
+.player-vital-card.is-inspector {
+  padding: 0.45rem 0.55rem;
+  gap: 0.35rem;
+}
+
+.player-vital-card.is-inspector .player-vital-readout strong {
+  font-size: var(--fs-md);
+}
+
+.player-vital-card.is-inspector .bar-preview {
+  height: 5px;
+}
+
+/* Stepper do mestre: [−] [atual] [+] / [max] */
+.inspector-vital-stepper.is-master {
+  grid-template-columns: 30px minmax(0, 1fr) 30px auto 46px;
+  gap: 0.3rem;
+}
+
+.inspector-vital-stepper.is-master .stat-step-btn {
+  height: 30px;
+}
+
+.inspector-vital-stepper.is-master input {
+  min-height: 30px;
+  padding: 0.25rem 0.3rem;
+}
+
+.inspector-vital-stepper.is-master .stat-divider {
+  font-size: 0.7rem;
+}
+
+/* Campo de maximo: visualmente secundario (so o mestre edita) */
+.inspector-vital-stepper .vital-max-input {
+  color: var(--text-soft);
+}
+
+.inspector-vital-stepper .vital-max-input:focus {
+  color: var(--text);
+}
+
+.inspector-vital-stepper input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Barra de vida/integridade */
 .bar-preview {
   position: relative;

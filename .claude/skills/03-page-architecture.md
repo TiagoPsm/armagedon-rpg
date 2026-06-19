@@ -376,6 +376,86 @@ CORRETO:
 </div>
 ```
 
+### ❌ Estado binário como badge de texto (em vez de indicador compacto)
+
+Quando um estado só tem 2 valores (em cena / fora, online / offline, ativo / inativo),
+uma badge de texto pesa demais e polui o cabeçalho. Prefira uma bolinha colorida.
+
+```
+ERRADO:
+<span class="count-badge">FORA DA CENA</span>   <!-- texto longo, rouba largura do título -->
+
+CORRETO:
+<span class="status-dot is-off" title="Fora da cena" aria-label="Fora da cena"></span>
+/* dim quando off, verde quando on; mantém title/aria-label para acessibilidade */
+```
+
+Bônus: liberar essa largura geralmente resolve a quebra feia do título ao lado.
+
+### ❌ Mesma informação repetida em vários lugares
+
+Se o papel/status já aparece num chip do topo, NÃO repita num badge dentro do card logo abaixo.
+Informação duplicada parece "gerada por template/IA" e aumenta a carga visual sem agregar.
+
+```
+ERRADO:
+<chip>Papel: Jogador</chip>          <!-- topo -->
+...
+<div class="hero"><badge>Jogador</badge> <h3>Nome</h3></div>   <!-- repete "Jogador" -->
+
+CORRETO:
+<chip>Papel: Jogador</chip>
+<div class="hero"><h3>Nome</h3></div>   <!-- hero foca no que é único: a identidade -->
+```
+
+### ❌ Fonte display decorativa em título pequeno de container estreito
+
+Fontes decorativas (ex.: Cinzel Decorative) viram um borrão difícil de ler em ~0.9rem numa
+sidebar estreita, e quebram em 2 linhas tortas. Para títulos pequenos use a fonte de UI mais
+limpa; reserve a display para títulos grandes (hero, capa).
+
+```
+ERRADO:
+.sidebar-title h2 { font-family: var(--font-display); font-size: 0.95rem; } /* quebra "MEU"/"PERSONAGEM" */
+
+CORRETO:
+.sidebar-title h2 { font-family: var(--font-ui); font-size: 1rem; letter-spacing: 0.05em; } /* 1 linha, legível */
+```
+
+Verifique a contagem de linhas no browser: `Math.round(el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight))` deve ser 1 para títulos curtos.
+
+---
+
+### ❌ Faixa preta lateral em página full-screen (gutter de scrollbar reservado)
+
+Página tipo app (`overflow: hidden`, altura `100vh`, ex.: a Mesa) com uma FAIXA PRETA na borda
+direita: o conteúdo (sidebar) para ~10px antes da borda da janela e o fundo aparece. **NÃO é
+padding, nem centralização, nem barra de rolagem visível** — é um gutter de scrollbar RESERVADO
+e VAZIO no `html`, herdado de `reset.css` (`html { scrollbar-gutter: stable }`, ótimo nas páginas
+que rolam). Em página `overflow: hidden`, `stable` reserva o espaço da barra sem mostrar barra
+nenhuma → faixa morta.
+
+**Assinatura no DevTools (cola no Console):**
+```js
+const de = document.documentElement, sb = document.querySelector('.vtt-sidebar');
+({ semBarra: window.innerWidth - de.clientWidth, /* ~0 = NÃO há scrollbar */
+   vaoDireita: Math.round(window.innerWidth - sb.getBoundingClientRect().right) /* >0 = faixa */ })
+```
+`semBarra ≈ 0` (sem scrollbar) MAS `vaoDireita > 0` (conteúdo para antes da borda) = gutter fantasma.
+
+```
+ERRADO (herda o stable global numa página overflow:hidden):
+html { overflow: hidden; }                 /* + reset.css: scrollbar-gutter: stable → reserva 10px */
+
+CORRETO (anula só na página full-screen; o arquivo de CSS dela só carrega ali):
+html { overflow: hidden; scrollbar-gutter: auto; }
+```
+
+Diagnóstico-chave: meça `documentElement.getBoundingClientRect().width` vs `window.innerWidth`. Se
+o documento for ~1 barra mais estreito que a janela SEM scrollbar visível, procure `scrollbar-gutter`
+herdado. (Cuidado: viewport de preview headless pode reportar `innerWidth` falso — confirme no
+navegador real.)
+
 ---
 
 ## Checklist de Verificação Rápida
@@ -419,6 +499,10 @@ GERAL:
 [ ] Página parece profissional e equilibrada?
 [ ] Nenhum elemento "solto" ou desconectado?
 [ ] Espaçamento é respirado, não apertado?
+[ ] Estado binário usa bolinha/indicador compacto, não badge de texto?
+[ ] Nenhuma informação repetida em 2+ lugares (papel, status, nome)?
+[ ] Títulos pequenos usam fonte UI (não display decorativa) e cabem em 1 linha?
+[ ] Página full-screen (overflow:hidden): conteúdo encosta nas DUAS bordas? (sem faixa preta de gutter reservado — checar `html { scrollbar-gutter }`)
 ```
 
 ---
