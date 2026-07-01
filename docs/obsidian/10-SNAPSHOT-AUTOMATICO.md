@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-30 23:12:19 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-30 23:13:23 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,29 +13,12 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `aee08e0 2026-06-19 feat(mesa): inspetor do mestre estilo card + correcoes de layout e painel do jogador`
+- Ultimo commit: `d5bebca 2026-06-30 feat(mesa): camada secreta do Mestre (DM) estilo Roll20 + correcoes de bugs da auditoria`
 
 ### Alteracoes Locais
 
 ```text
-M  .claude/settings.local.json
-M  DEV_STATUS.md
-M  SYSTEM_RULES.md
-M  VISUAL_RULES.md
-M  cloudflare/src/index.js
-M  cloudflare/src/mesa.js
-M  css/mesa.css
-A  docs/ROTEIRO_TESTE_MESA.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-core.js
-M  js/mesa-drawing.js
-M  js/mesa-inspector.js
-M  js/mesa-map.js
-M  js/mesa-stage.js
-M  js/mesa-storage.js
-M  mesa.html
-M  tests/mesa.spec.cjs
-M  tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -47,24 +30,7 @@ M  tools/build-pages.cjs
 ### Arquivos Em Stage
 
 ```text
-.claude/settings.local.json
-DEV_STATUS.md
-SYSTEM_RULES.md
-VISUAL_RULES.md
-cloudflare/src/index.js
-cloudflare/src/mesa.js
-css/mesa.css
-docs/ROTEIRO_TESTE_MESA.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/mesa-core.js
-js/mesa-drawing.js
-js/mesa-inspector.js
-js/mesa-map.js
-js/mesa-stage.js
-js/mesa-storage.js
-mesa.html
-tests/mesa.spec.cjs
-tools/build-pages.cjs
 ```
 
 ## Paginas Principais
