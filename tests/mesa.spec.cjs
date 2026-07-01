@@ -6,23 +6,20 @@ test.afterAll(async () => {
 });
 
 test.describe("Mesa virtual", () => {
-  async function readFirstCanvasTokenLayout(page) {
-    return page.evaluate(() => new Promise(resolve => {
-      requestAnimationFrame(() => {
-        const stage = document.getElementById("mesaStage");
-        const renderer = window.MesaRendererV2?.get?.(stage);
-        const first = renderer?.layouts ? [...renderer.layouts.values()][0] : null;
-        resolve(first ? {
-          x: first.x,
-          y: first.y,
-          width: first.width,
-          height: first.height
-        } : null);
-      });
-    }));
+  // Token da Mesa e sempre o estilo redondo (minimal), renderizado via DOM.
+  // Le o layout do primeiro token DOM relativo ao palco.
+  async function readFirstTokenLayout(page) {
+    return page.evaluate(() => {
+      const stage = document.getElementById("mesaStage");
+      const el = stage?.querySelector(".mesa-token");
+      if (!stage || !el) return null;
+      const s = stage.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      return { x: r.x - s.x, y: r.y - s.y, width: r.width, height: r.height };
+    });
   }
 
-  test("renderiza palco Canvas e permite mover token local sem erro de console", async ({ page }) => {
+  test("renderiza tokens redondos no palco e permite mover token local sem erro de console", async ({ page }) => {
     const baseUrl = await getMesaBaseUrl();
     const consoleErrors = [];
     page.on("console", message => {
@@ -34,22 +31,16 @@ test.describe("Mesa virtual", () => {
 
     await page.goto(`${baseUrl}/mesa.html`);
     await expect(page.locator("#mesaStageWrap")).toBeVisible();
-    await expect(page.locator("#mesaStage canvas.mesa-stage-canvas")).toHaveCount(1);
+    await expect(page.locator("#mesaStage .mesa-token.is-minimal").first()).toBeVisible();
     await expect(page.locator("#resetMesaBtn")).toBeVisible();
     await expect(page.locator("#resetMesaBtn")).toBeEnabled();
 
     await page.locator("#mesaStage").scrollIntoViewIfNeeded();
-    const stageBox = await page.locator("#mesaStage").boundingBox();
-    expect(stageBox).toBeTruthy();
+    const tokenBox = await page.locator("#mesaStage .mesa-token").first().boundingBox();
+    expect(tokenBox).toBeTruthy();
 
-    const start = {
-      x: stageBox.x + stageBox.width * 0.055 + 70,
-      y: stageBox.y + stageBox.height * 0.075 + 70
-    };
-    const end = {
-      x: start.x + 120,
-      y: start.y + 80
-    };
+    const start = { x: tokenBox.x + tokenBox.width / 2, y: tokenBox.y + tokenBox.height / 2 };
+    const end = { x: start.x + 120, y: start.y + 80 };
 
     await page.mouse.move(start.x, start.y);
     await page.mouse.down();
@@ -76,40 +67,40 @@ test.describe("Mesa virtual", () => {
     expect(consoleErrors).toEqual([]);
   });
 
-  test("mantem cards do palco no mesmo tamanho ao selecionar e alternar tela cheia", async ({ page }) => {
+  test("mantem tokens do palco no mesmo tamanho ao selecionar e alternar tela cheia", async ({ page }) => {
     const baseUrl = await getMesaBaseUrl();
     await page.goto(`${baseUrl}/mesa.html`);
-    await expect(page.locator("#mesaStage canvas.mesa-stage-canvas")).toHaveCount(1);
+    await expect(page.locator("#mesaStage .mesa-token").first()).toBeVisible();
 
     await page.locator("#mesaStage").scrollIntoViewIfNeeded();
-    const normalLayout = await readFirstCanvasTokenLayout(page);
+    const normalLayout = await readFirstTokenLayout(page);
     expect(normalLayout).toBeTruthy();
-    expect(normalLayout.width).toBeGreaterThanOrEqual(184);
+    expect(normalLayout.width).toBeGreaterThan(40);
 
     const stageBox = await page.locator("#mesaStage").boundingBox();
     expect(stageBox).toBeTruthy();
     await page.mouse.click(stageBox.x + normalLayout.x + 18, stageBox.y + normalLayout.y + 18);
 
-    const selectedNormalLayout = await readFirstCanvasTokenLayout(page);
+    const selectedNormalLayout = await readFirstTokenLayout(page);
     expect(Math.abs(selectedNormalLayout.width - normalLayout.width)).toBeLessThanOrEqual(1);
     expect(Math.abs(selectedNormalLayout.height - normalLayout.height)).toBeLessThanOrEqual(1);
 
     await page.locator("#fullscreenMesaBtn").click();
     await expect(page.locator("#mesaPanelStage")).toHaveClass(/is-pseudo-fullscreen/);
-    const fullscreenLayout = await readFirstCanvasTokenLayout(page);
+    const fullscreenLayout = await readFirstTokenLayout(page);
     expect(Math.abs(fullscreenLayout.width - normalLayout.width)).toBeLessThanOrEqual(1);
     expect(Math.abs(fullscreenLayout.height - normalLayout.height)).toBeLessThanOrEqual(1);
 
     const fullscreenStageBox = await page.locator("#mesaStage").boundingBox();
     expect(fullscreenStageBox).toBeTruthy();
     await page.mouse.click(fullscreenStageBox.x + fullscreenLayout.x + 18, fullscreenStageBox.y + fullscreenLayout.y + 18);
-    const selectedFullscreenLayout = await readFirstCanvasTokenLayout(page);
+    const selectedFullscreenLayout = await readFirstTokenLayout(page);
     expect(Math.abs(selectedFullscreenLayout.width - normalLayout.width)).toBeLessThanOrEqual(1);
     expect(Math.abs(selectedFullscreenLayout.height - normalLayout.height)).toBeLessThanOrEqual(1);
 
     await page.locator("#fullscreenMesaBtn").click();
     await expect(page.locator("#mesaPanelStage")).not.toHaveClass(/is-pseudo-fullscreen/);
-    const backToNormalLayout = await readFirstCanvasTokenLayout(page);
+    const backToNormalLayout = await readFirstTokenLayout(page);
     expect(Math.abs(backToNormalLayout.width - normalLayout.width)).toBeLessThanOrEqual(1);
     expect(Math.abs(backToNormalLayout.height - normalLayout.height)).toBeLessThanOrEqual(1);
   });

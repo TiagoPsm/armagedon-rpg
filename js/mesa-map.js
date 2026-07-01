@@ -1344,12 +1344,6 @@ function toggleMapSettings() {
     btn.classList.toggle("is-active", !isOpen);
   }
   if (!isOpen && typeof isMaster === "function" && isMaster()) {
-    // Estilo de tokens — sempre visível para o mestre
-    const group = document.getElementById("mesaTokenStyleGroup");
-    if (group) {
-      group.hidden = false;
-      _syncTokenStyleButtons();
-    }
     // Controles de mapa — visíveis apenas quando há mapa ativo
     const hasMap = Boolean(mesaMapState.activeMapUrl);
     const scaleGroup = document.getElementById("mesaMapScaleGroup");
@@ -1359,13 +1353,6 @@ function toggleMapSettings() {
   }
 }
 
-function _syncTokenStyleButtons() {
-  const currentStyle = (typeof state !== "undefined" && state.tokenStyle) || "card";
-  const btnCard    = document.getElementById("tokenStyleBtnCard");
-  const btnMinimal = document.getElementById("tokenStyleBtnMinimal");
-  if (btnCard)    btnCard.classList.toggle("is-active", currentStyle === "card");
-  if (btnMinimal) btnMinimal.classList.toggle("is-active", currentStyle === "minimal");
-}
 
 
 

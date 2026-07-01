@@ -5,7 +5,7 @@ test.afterAll(async () => {
   await closeMesaTestServer();
 });
 
-test("Mesa mantem drag leve em Canvas", async ({ page }) => {
+test("Mesa mantem drag de token leve (DOM)", async ({ page }) => {
   const baseUrl = await getMesaBaseUrl();
   await page.addInitScript(() => {
     window.__mesaLongTasks = [];
@@ -23,36 +23,14 @@ test("Mesa mantem drag leve em Canvas", async ({ page }) => {
   });
 
   await page.goto(`${baseUrl}/mesa.html`);
-  await expect(page.locator("#mesaStage canvas.mesa-stage-canvas")).toHaveCount(1);
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => {
-    window.__mesaLongTasks = [];
-    const renderer = window.MesaRendererV2?.get?.(document.getElementById("mesaStage"));
-    window.__mesaRenderCalls = 0;
-    window.__mesaMovePatchCalls = 0;
-    if (renderer && !renderer.__perfWrapped) {
-      const originalRender = renderer.render.bind(renderer);
-      const originalUpdateTokenPosition = renderer.updateTokenPosition?.bind(renderer);
-      renderer.render = (...args) => {
-        window.__mesaRenderCalls += 1;
-        return originalRender(...args);
-      };
-      renderer.updateTokenPosition = (...args) => {
-        window.__mesaMovePatchCalls += 1;
-        return originalUpdateTokenPosition(...args);
-      };
-      renderer.__perfWrapped = true;
-    }
-    resolve();
-  })));
+  await expect(page.locator("#mesaStage .mesa-token.is-minimal").first()).toBeVisible();
+  await page.evaluate(() => { window.__mesaLongTasks = []; });
 
   await page.locator("#mesaStage").scrollIntoViewIfNeeded();
-  const stageBox = await page.locator("#mesaStage").boundingBox();
-  expect(stageBox).toBeTruthy();
+  const tokenBox = await page.locator("#mesaStage .mesa-token").first().boundingBox();
+  expect(tokenBox).toBeTruthy();
 
-  const start = {
-    x: stageBox.x + stageBox.width * 0.055 + 70,
-    y: stageBox.y + stageBox.height * 0.075 + 70
-  };
+  const start = { x: tokenBox.x + tokenBox.width / 2, y: tokenBox.y + tokenBox.height / 2 };
 
   await page.mouse.move(start.x, start.y);
   await page.mouse.down();
@@ -64,10 +42,4 @@ test("Mesa mantem drag leve em Canvas", async ({ page }) => {
   const longTasks = await page.evaluate(() => window.__mesaLongTasks || []);
   const worst = longTasks.reduce((max, task) => Math.max(max, task.duration || 0), 0);
   expect(worst).toBeLessThan(120);
-  const counters = await page.evaluate(() => ({
-    renderCalls: window.__mesaRenderCalls || 0,
-    movePatchCalls: window.__mesaMovePatchCalls || 0
-  }));
-  expect(counters.movePatchCalls).toBeGreaterThan(0);
-  expect(counters.renderCalls).toBeLessThanOrEqual(2);
 });

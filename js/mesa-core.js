@@ -55,7 +55,7 @@ const state = {
   tokens: [],
   selectedTokenId: "",
   sceneVersion: 0,
-  tokenStyle: "card",
+  tokenStyle: "minimal",
   search: "",
   drag: null,
   playerPanelCharacterKey: "",
@@ -1538,11 +1538,9 @@ function applyMesaSceneSnapshot(saved) {
     applyInitiativeState(saved.initiative);
   }
 
-  // Restaura estilo dos tokens — apenas o mestre pode ter alterado esta config
-  const savedStyle = saved?.tokenStyle;
-  if (isMaster() && (savedStyle === "card" || savedStyle === "minimal")) {
-    state.tokenStyle = savedStyle;
-  }
+  // Token da Mesa e sempre o estilo redondo (minimal). O estilo "card" grande
+  // foi removido; qualquer valor salvo antigo e ignorado.
+  state.tokenStyle = "minimal";
 
   return { seeded, savedTokenCount: savedTokens.length };
 }
@@ -1887,7 +1885,7 @@ function hasPendingMesaScenePersist() {
 function createMesaScenePayloadFromState() {
   return {
     sceneVersion: asPositiveInt(state.sceneVersion, 0),
-    tokenStyle: state.tokenStyle || "card",
+    tokenStyle: "minimal",
     selectedTokenId: state.selectedTokenId,
     tokens: state.tokens.map(token => ({
       id: token.id,
@@ -1919,7 +1917,7 @@ function normalizeMesaScenePayload(payload = {}) {
   const tokens = Array.isArray(payload?.tokens) ? payload.tokens : [];
   return {
     sceneVersion: asPositiveInt(payload?.sceneVersion, 0),
-    tokenStyle: (payload?.tokenStyle === "minimal") ? "minimal" : "card",
+    tokenStyle: "minimal",
     selectedTokenId: String(payload?.selectedTokenId || ""),
     tokens: tokens
       .map(token => ({

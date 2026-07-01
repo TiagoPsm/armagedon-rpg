@@ -6,7 +6,7 @@ const outDir = path.join(repoRoot, "_site");
 
 // Bump aqui quando mudar arquivos dos bundles
 const FICHA_BUNDLE_VERSION = "2026-06-13-revisao-2";
-const MESA_BUNDLE_VERSION  = "2026-06-30-bugfix-1";
+const MESA_BUNDLE_VERSION  = "2026-06-30-cleanup-1";
 
 const files = [
   "index.html", "ficha.html", "mesa.html", "regras.html", "sugestoes.html",
@@ -36,13 +36,10 @@ const mesaCssFiles  = [
   "css/mesa-stage.css","css/mesa-roster.css","css/mesa-inspector.css","css/mesa-map.css",
   "css/mesa-drawing.css"
 ];
-// mesa-renderer-worker.js NAO entra no bundle: ele e carregado em runtime via
-// new Worker("js/mesa-renderer-worker.js") (thread separada), nao como <script>.
-// Inclui-lo aqui inflava o bundle e colidia `function clamp` com mesa-storage.js
-// (quebrava a minificacao). O arquivo segue copiado standalone em _site/js/.
+// O Canvas renderer (mesa-renderer-v2.js + mesa-renderer-worker.js) foi removido
+// em 2026-06-30: o token da Mesa e sempre o estilo redondo (DOM), sem Canvas.
 const mesaJsFiles = [
   "js/runtime-config.js","js/api.js","js/ui.js","js/auth.js",
-  "js/mesa-renderer-v2.js",
   "js/mesa-stage.js","js/mesa-roster.js","js/mesa-inspector.js",
   "js/mesa-storage.js","js/mesa-core.js","js/mesa-init.js","js/mesa-map.js",
   "js/mesa-drawing.js","js/mesa-select.js"

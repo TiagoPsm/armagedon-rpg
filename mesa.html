@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="css/reset.css?v=2026-06-12-cache-fix-1" />
   <link rel="stylesheet" href="css/components.css?v=2026-06-12-modal-stack-1" />
   <link rel="stylesheet" href="css/mesa.css?v=2026-06-19-dm-layer-1" />
-  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-05-24-token-styles-2" />
+  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-06-30-cleanup-1" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-06-16-fullbleed-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-06-16-master-vital-card-1" />
   <link rel="stylesheet" href="css/mesa-map.css?v=2026-05-24-token-styles-1" />
@@ -261,7 +261,6 @@
           <div id="mesaMapLayer" class="mesa-map-layer" aria-hidden="true" hidden></div>
           <div class="mesa-stage-grid" aria-hidden="true"></div>
           <div class="mesa-stage-glow" aria-hidden="true"></div>
-          <canvas class="mesa-stage-canvas" id="mesaStageCanvas" aria-hidden="true"></canvas>
           <!-- Canvas de desenho — acima do grid, abaixo dos tokens DOM -->
           <canvas id="mesaDrawCanvas" aria-hidden="true"></canvas>
           <div id="mesaStage" class="mesa-stage" aria-live="polite"></div>
@@ -430,32 +429,6 @@
         </div>
         <p class="mesa-map-settings-hint" id="mesaMapHint" hidden>Arraste o mapa para reposicionar.<br>Scroll para zoom.</p>
 
-        <!-- Token style — only visible to master (hidden for players via JS) -->
-        <div class="mesa-map-transform-group mesa-token-style-group" id="mesaTokenStyleGroup" hidden>
-          <span class="mesa-map-transform-label">Estilo dos tokens</span>
-          <div class="mesa-token-style-btns">
-            <button
-              type="button"
-              class="mesa-token-style-btn is-active"
-              id="tokenStyleBtnCard"
-              onclick="changeTokenStyle('card')"
-              title="Token com ficha completa"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-              <span>Grande</span>
-            </button>
-            <button
-              type="button"
-              class="mesa-token-style-btn"
-              id="tokenStyleBtnMinimal"
-              onclick="changeTokenStyle('minimal')"
-              title="Token circular estilo RPG"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.17 18a6 6 0 0 1 11.66 0"/></svg>
-              <span>Minimalista</span>
-            </button>
-          </div>
-        </div>
       </div>
 
       <!-- Overlay: baixo direito — ações -->
@@ -610,14 +583,13 @@
   <script src="js/ui.js?v=2026-06-11-soul-notify-1" defer></script>
   <script src="js/auth.js?v=2026-06-13-login-form-1" defer></script>
   <!-- Ordem importante: dependências antes de mesa-core -->
-  <script src="js/mesa-renderer-v2.js?v=2026-05-25-dataurl-fix-1" defer></script>
-  <script src="js/mesa-stage.js?v=2026-06-30-bugfix-1" defer></script>
+  <script src="js/mesa-stage.js?v=2026-06-30-cleanup-1" defer></script>
   <script src="js/mesa-roster.js?v=2026-06-16-no-dup-inspector-1" defer></script>
   <script src="js/mesa-inspector.js?v=2026-06-19-dm-layer-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
-  <script src="js/mesa-core.js?v=2026-06-30-bugfix-1" defer></script>
+  <script src="js/mesa-core.js?v=2026-06-30-round-only-1" defer></script>
   <script src="js/mesa-init.js?v=2026-04-24-split-1" defer></script>
-  <script src="js/mesa-map.js?v=2026-06-30-bugfix-1" defer></script>
+  <script src="js/mesa-map.js?v=2026-06-30-cleanup-1" defer></script>
   <script src="js/mesa-drawing.js?v=2026-06-30-bugfix-1" defer></script>
   <script src="js/mesa-select.js?v=2026-05-27-select-5" defer></script>
   <script src="js/mesa-initiative.js?v=2026-06-05-initiative-1" defer></script>

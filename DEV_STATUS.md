@@ -30,6 +30,31 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - **Divida conhecida**: `js/mesa-map.js` (linhas ~1208 e ~1254) da `fetch` direto no endpoint de mapa, furando a fachada `APP`. Unico ponto a centralizar na futura fase de integracao.
 
+## Ultima Etapa Concluida (2026-06-30 — Etapa 33: Limpeza — remocao do Canvas renderer morto)
+
+Removido de vez o subsistema de Canvas renderer (que ja estava fora do fluxo desde a Etapa 32):
+
+- **Arquivos deletados**: `js/mesa-renderer-v2.js` e `js/mesa-renderer-worker.js` (OffscreenCanvas via Worker). check:js caiu de 41 para 39 arquivos.
+- **js/mesa-stage.js**: removidas as funcoes `getMesaStageRenderer`, `renderCanvasStage`, `createCanvasTokenSnapshot`, `refreshCanvasStageToken`, `updateCanvasStageTokenPosition`, `renderTokenCard`, `changeTokenStyle`, `_applyTokenStyleDOM`, `_ensureCanvasClearedForDOMMode`, `clearDomStageTokenElements` e as vars `mesaStageRenderer`/`lastCanvasStageSnapshot`. `renderStage`/`renderToken`/drag/selecao/hit-test agora sao DOM-only.
+- **js/mesa-map.js**: removido `_syncTokenStyleButtons` (orfao).
+- **css/mesa-stage.css**: removidas as regras `.mesa-stage-canvas` e `.is-canvas-renderer`.
+- **mesa.html**: removidos o `<canvas id="mesaStageCanvas">` e o `<script src="mesa-renderer-v2.js">`.
+- **tools/build-pages.cjs**: `mesa-renderer-v2.js` saiu do bundle; comentario sobre o worker atualizado.
+- **tests**: `mesa.performance.spec.cjs` reescrito para medir o drag no DOM (sem o renderer). test:mesa 5/5 e perf:mesa 1/1 verdes.
+- Cache-bust: `mesa-stage.js`, `mesa-map.js`, `css/mesa-stage.css` -> `2026-06-30-cleanup-1`; `MESA_BUNDLE_VERSION` -> `2026-06-30-cleanup-1`.
+- Verificado no preview: 3 tokens redondos, nenhum canvas no palco, `window.MesaRendererV2` inexistente, console limpo.
+
+## Ultima Etapa Concluida (2026-06-30 — Etapa 32: Token da Mesa so no estilo redondo)
+
+Removido o estilo de token "card" grande (que usava o Canvas renderer); a Mesa agora tem UM unico estilo de token: o redondo (minimal), renderizado via DOM.
+
+- `state.tokenStyle` fica fixo em `"minimal"` (default, restore e normalize forcam esse valor em js/mesa-core.js).
+- `renderStage` e `renderToken` (js/mesa-stage.js) sempre usam o caminho DOM/minimal; `renderTokenCard` e o Canvas renderer (`mesa-renderer-v2.js`) viraram codigo morto (nao removidos ainda — limpeza mais profunda fica para depois).
+- Removido o seletor "Estilo dos tokens" (botoes Grande/Minimalista) do painel de config do mapa: bloco `#mesaTokenStyleGroup` saiu do `mesa.html`, e o codigo que o exibia/sincronizava em `mesa-map.js` foi neutralizado (`_syncTokenStyleButtons` virou no-op).
+- Testes: `tests/mesa.spec.cjs` reescrito para ler o token DOM (`.mesa-token.is-minimal`) em vez do layout do Canvas renderer (que so existia no modo card). Suite 5/5 verde.
+- Cache-bust: `mesa-stage.js`, `mesa-core.js`, `mesa-map.js` -> `?v=2026-06-30-round-only-1`; `MESA_BUNDLE_VERSION` -> `2026-06-30-round-only-1`.
+- Validacao: check:js OK, audit:static OK, build:pages OK, test:mesa 5/5. Verificado no preview: tokens redondos (avatar 88px, border-radius 50%, borda por tipo), seletor de estilo ausente, console limpo.
+
 ## Ultima Etapa Concluida (2026-06-30 — Etapa 31: Correcao de bugs da auditoria da Mesa)
 
 Apos auditoria completa da Mesa (5 frentes via agentes), corrigidos os bugs criticos/altos encontrados:

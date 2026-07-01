@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-30 23:13:23 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-30 23:44:26 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,12 +13,24 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `d5bebca 2026-06-30 feat(mesa): camada secreta do Mestre (DM) estilo Roll20 + correcoes de bugs da auditoria`
+- Ultimo commit: `37e5903 2026-06-30 chore(docs): atualiza snapshot automatico do Obsidian pos-commit`
 
 ### Alteracoes Locais
 
 ```text
+M  DEV_STATUS.md
+M  VISUAL_RULES.md
+M  css/mesa-stage.css
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  js/mesa-core.js
+M  js/mesa-map.js
+D  js/mesa-renderer-v2.js
+D  js/mesa-renderer-worker.js
+M  js/mesa-stage.js
+M  mesa.html
+M  tests/mesa.performance.spec.cjs
+M  tests/mesa.spec.cjs
+M  tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -30,7 +42,19 @@ M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ### Arquivos Em Stage
 
 ```text
+DEV_STATUS.md
+VISUAL_RULES.md
+css/mesa-stage.css
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+js/mesa-core.js
+js/mesa-map.js
+js/mesa-renderer-v2.js
+js/mesa-renderer-worker.js
+js/mesa-stage.js
+mesa.html
+tests/mesa.performance.spec.cjs
+tests/mesa.spec.cjs
+tools/build-pages.cjs
 ```
 
 ## Paginas Principais
@@ -44,7 +68,7 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 
 ## Contagem Rapida
 
-- JavaScript em `js/`: 33 arquivo(s)
+- JavaScript em `js/`: 31 arquivo(s)
 - CSS em `css/`: 13 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 

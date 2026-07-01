@@ -188,7 +188,8 @@ Comportamento visual consolidado:
 - Tracos de desenho da camada secreta aparecem com opacidade menor (0.5 vs 0.88) para o mestre os distinguir dos tracos publicos
 - Deve priorizar leitura rapida de tokens, status e selecao
 - O palco deve ficar claro, responsivo e sem sobreposicao incoerente
-- Tokens/cards do palco devem manter o mesmo tamanho ao selecionar, entrar em tela cheia e voltar ao modo normal
+- O token do palco tem UM unico estilo: redondo (minimal) — avatar circular de 88px com borda colorida por tipo (jogador azul, NPC dourado, monstro vermelho) e nome centralizado embaixo. O antigo estilo "card" grande (ficha completa via Canvas renderer) e o seletor "Estilo dos tokens" foram removidos em 2026-06-30. `state.tokenStyle` fica fixo em `"minimal"`
+- Tokens do palco devem manter o mesmo tamanho ao selecionar, entrar em tela cheia e voltar ao modo normal
 - Nomes, donos, badges, botoes e textos de status devem quebrar linha ou truncar de forma controlada; nunca devem comprimir ou sobrepor outros elementos
 - Durante arrasto de token, efeitos globais que competem por pintura, como o brilho do cursor, podem pausar temporariamente para preservar fluidez
 - Inspetor lateral deve ser compacto e funcional
