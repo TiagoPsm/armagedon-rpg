@@ -180,6 +180,10 @@ Regras importantes:
 - Jogador pode mover o proprio token em tempo real quando a trava global esta aberta; o mestre alterna a trava pelo botao "Travar/Liberar movimento" (estado persistido no Durable Object e anunciado a todos via `mesa:move:lock`)
 - Clientes descartam movimentos vindos de jogador que nao sejam do proprio token (validacao de posse no consumidor, ja que o DO nao conhece a cena)
 - Jogador continua sem poder limpar a cena ou salvar a cena oficial; so pode criar/remover tokens da cena no caso especifico dos PROPRIOS Echos (invocar/retirar pelo painel "Meus Echos")
+- A Mesa tem 3 camadas no seletor: TOKENS (padrao), MESTRE (secreta) e MAPA. A camada ativa fica em `data-active-layer` no `#mesaStageWrap` e e persistida em `localStorage.mesaActiveLayer`
+- **Camada do Mestre (DM) e exclusiva do mestre**: o botao "MESTRE" so aparece para o mestre; o jogador nunca entra nela (cai em TOKENS). Tokens com `layer: "dm"` e tracos de desenho com `layer: "dm"` sao INVISIVEIS para os jogadores
+- Tokens secretos: filtrados no render do jogador (`getRenderedTokens`); o mestre os ve esmaecidos com a marca "Mestre". O mestre move um token entre Token<->Mestre pelo botao "Camada" do inspetor
+- Desenhos secretos: os tracos da camada DM NUNCA sao transmitidos pela rede (`_broadcastDrawings` filtra `layer: "dm"`), entao o cliente do jogador nao os recebe; o mestre preserva os proprios tracos secretos ao receber atualizacoes remotas de desenho
 
 ## Rolagem de Dados
 

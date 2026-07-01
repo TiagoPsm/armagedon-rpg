@@ -64,6 +64,15 @@ function renderInspector() {
           </div>
         </div>
 
+        <div class="inspector-action-row">
+          <span class="inspector-action-label">Camada</span>
+          <div class="inspector-action-btns">
+            <button type="button" class="mini-btn ${token.layer === "dm" ? "is-primary" : ""}" data-inspector-action="toggle-layer" title="Mover para a camada secreta do mestre (só você vê) ou de volta para a camada de tokens">
+              ${token.layer === "dm" ? "Mestre" : "Token"}
+            </button>
+          </div>
+        </div>
+
         ${canConfigureStatsVisibility(token) ? `
           <div class="inspector-action-row">
             <span class="inspector-action-label">Status dos jogadores</span>
@@ -105,20 +114,8 @@ function buildInspectorStatsSection(token, canEditCurrent, canEditAll, canViewSt
     `;
   }
 
-  // Jogador: vitais no mesmo estilo do painel "Meu Token" (card por tipo, leitura
-  // grande, barra destacada e stepper de Atual). O maximo e ajustado na ficha/painel,
-  // entao aqui aparece so como leitura — mantem o inspetor enxuto.
-  if (!isMaster()) {
-    return `
-      <section class="token-inspector-stats is-player">
-        <div class="player-vitals">
-          ${buildPlayerInspectorVital("Vida", "life", "currentLife", token.currentLife, token.maxLife, "vida", canEditCurrent)}
-          ${buildPlayerInspectorVital("Integridade", "integrity", "currentIntegrity", token.currentIntegrity, token.maxIntegrity, "integ", canEditCurrent)}
-        </div>
-      </section>
-    `;
-  }
-
+  // O inspetor lateral e exclusivo do mestre (renderInspector ja oculta o bloco
+  // inteiro para o jogador), entao aqui so tratamos o caso do mestre.
   // Mestre: mesmo card visual do painel "Meu Token" do jogador (label + leitura
   // grande "atual/max" + barra + stepper), porem COMPACTO (.is-inspector) e com o
   // MAXIMO tambem editavel (so o mestre pode). Edita Vida/Integridade de qualquer
@@ -154,27 +151,6 @@ function buildMasterInspectorVital(label, variant, currentField, maxField, curre
         <button type="button" class="stat-step-btn" data-stat-step="1" data-stat-field="${currentField}" ${canEditCurrent ? "" : "disabled"} aria-label="Aumentar ${escapeAttribute(lower)}">+</button>
         <span class="stat-divider">/</span>
         <input type="number" min="${minMax}" step="1" inputmode="numeric" class="vital-max-input" data-stat-field="${maxField}" value="${max}" ${canEditAll ? "" : "disabled"} aria-label="${escapeAttribute(`${label} maxima`)}" />
-      </div>
-    </article>
-  `;
-}
-
-// Card de vital do jogador no inspetor — mesmo visual do painel "Meu Token",
-// com stepper de Atual (−/valor/+). Reusa `data-stat-field` + `.stat-step-btn`,
-// entao o sync e os handlers existentes continuam funcionando sem alteracao.
-function buildPlayerInspectorVital(label, variant, field, current, max, type, canEdit) {
-  const lower = label.toLowerCase();
-  return `
-    <article class="player-vital-card is-${variant}">
-      <div class="player-vital-head">
-        <span class="player-vital-label">${escapeHtml(label)}</span>
-        <span class="player-vital-readout"><strong>${current}</strong><span class="player-vital-max">/ ${max}</span></span>
-      </div>
-      <div class="bar-preview is-${variant}"><span style="${getBarFillStyle(type, current, max)}"></span></div>
-      <div class="inspector-vital-stepper">
-        <button type="button" class="stat-step-btn" data-stat-step="-1" data-stat-field="${field}" ${canEdit ? "" : "disabled"} aria-label="Diminuir ${escapeAttribute(lower)}">−</button>
-        <input type="number" min="0" step="1" inputmode="numeric" data-stat-field="${field}" value="${current}" ${canEdit ? "" : "disabled"} aria-label="${escapeAttribute(`${label} atual`)}" />
-        <button type="button" class="stat-step-btn" data-stat-step="1" data-stat-field="${field}" ${canEdit ? "" : "disabled"} aria-label="Aumentar ${escapeAttribute(lower)}">+</button>
       </div>
     </article>
   `;

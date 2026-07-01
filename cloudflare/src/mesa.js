@@ -55,6 +55,7 @@ function normalizeSceneToken(token) {
     y: Math.round(clamp(token?.y, 0, 100) * 100) / 100,
     visibleToPlayers: token?.visibleToPlayers !== false,
     statsVisibleToPlayers: token?.statsVisibleToPlayers === true,
+    layer: token?.layer === "dm" ? "dm" : "tokens",
     order: normalizeOrder(token?.order),
     tokenScale: Math.round(clamp(token?.tokenScale, 0.25, 4) * 100) / 100 || 1
   };
@@ -87,7 +88,6 @@ function normalizeMesaScene(payload) {
 
   return {
     sceneVersion: normalizeSceneVersion(source?.sceneVersion),
-    previewPlayerView: Boolean(source?.previewPlayerView),
     selectedTokenId: normalizeText(source?.selectedTokenId).toLowerCase(),
     tokens,
     initiative
@@ -105,7 +105,7 @@ function mapSceneRow(row) {
   };
 }
 
-async function getMesaScene(env) {
+async function getMesaScene(env, actor) {
   const row = await env.DB.prepare(
     `
       select id, data_json, created_at, updated_at, updated_by_user_id
@@ -117,7 +117,11 @@ async function getMesaScene(env) {
     .bind(DEFAULT_SCENE_ID)
     .first();
 
-  return mapSceneRow(row);
+  const scene = mapSceneRow(row);
+  if (actor?.role !== "master") {
+    scene.data.tokens = scene.data.tokens.filter(token => token.layer !== "dm");
+  }
+  return scene;
 }
 
 async function saveMesaScene(env, actor, payload) {
@@ -143,7 +147,7 @@ async function saveMesaScene(env, actor, payload) {
     .bind(DEFAULT_SCENE_ID, JSON.stringify(data), actor.sub, actor.sub, now, now)
     .run();
 
-  return getMesaScene(env);
+  return getMesaScene(env, actor);
 }
 
 export { getMesaScene, normalizeMesaScene, saveMesaScene };

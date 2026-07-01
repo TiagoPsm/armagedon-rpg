@@ -1515,7 +1515,21 @@ function applyMesaSceneSnapshot(saved) {
     .filter(Boolean);
 
   const seeded = !mergedTokens.length && shouldSeedMesaTokens(savedTokens.length, hasExplicitSave);
-  state.tokens = seeded ? seedInitialTokens() : mergedTokens;
+  const nextTokens = seeded ? seedInitialTokens() : mergedTokens;
+  // Tokens da camada secreta do mestre nunca trafegam pela rede (ver
+  // broadcastMesaTokenUpsert/Move e runRemoteMesaPersist), entao um snapshot
+  // remoto recebido em tempo real (evento "mesa:scene") nunca os contem. Sem
+  // isso, aplicar esse snapshot substituiria state.tokens e apagaria os
+  // tokens secretos que o mestre ja tinha na sessao (mesmo problema que
+  // setDrawingsFromRemote resolve para os tracos da camada "dm").
+  if (isMaster() && !seeded) {
+    const ownSecretTokens = state.tokens.filter(token =>
+      token.layer === "dm" && !nextTokens.some(next => next.id === token.id)
+    );
+    state.tokens = [...nextTokens, ...ownSecretTokens];
+  } else {
+    state.tokens = nextTokens;
+  }
   state.sceneVersion = asPositiveInt(saved?.sceneVersion, state.sceneVersion);
   state.selectedTokenId = pickInitialSelectedToken(saved?.selectedTokenId);
 
@@ -1554,6 +1568,7 @@ function seedInitialTokens() {
     return {
       ...entry,
       visibleToPlayers: true,
+      layer: "tokens",
       statsVisibleToPlayers: normalizeStatsVisibility(entry.type, entry.statsVisibleToPlayers),
       x: slot.x,
       y: slot.y,
@@ -1568,6 +1583,7 @@ function mergeTokenWithRoster(savedToken, rosterEntry) {
   return {
     ...rosterEntry,
     visibleToPlayers: savedToken?.visibleToPlayers !== false,
+    layer: normalizeTokenLayer(savedToken?.layer),
     statsVisibleToPlayers: normalizeStatsVisibility(
       rosterEntry.type,
       savedToken?.statsVisibleToPlayers ?? rosterEntry.statsVisibleToPlayers
@@ -1778,10 +1794,12 @@ function serializeMesaRealtimeToken(token) {
     currentIntegrity: token.currentIntegrity,
     maxIntegrity: token.maxIntegrity,
     visibleToPlayers: token.visibleToPlayers !== false,
+    layer: normalizeTokenLayer(token.layer),
     statsVisibleToPlayers: normalizeStatsVisibility(token.type, token.statsVisibleToPlayers),
     x: roundTo(token.x, 2),
     y: roundTo(token.y, 2),
-    order: token.order || 1
+    order: token.order || 1,
+    tokenScale: Math.max(0.25, Math.min(4, Number(token.tokenScale) || 1))
   };
 }
 
@@ -1796,6 +1814,9 @@ function canPlayerMoveOwnToken(token) {
 function broadcastMesaTokenMove(token) {
   if (!token) return false;
   if (!isMaster() && !canPlayerMoveOwnToken(token)) return false;
+  // Token da camada secreta do mestre NUNCA trafega pela rede (mesmo padrao
+  // usado para os tracos de desenho da camada "dm" em mesa-drawing.js).
+  if (token.layer === "dm") return false;
   return sendMesaRealtimeDelta("mesa:token:move", {
     tokenId: token.id,
     characterKey: token.characterKey || token.id,
@@ -1815,6 +1836,9 @@ function toggleMesaMoveLock() {
 
 function broadcastMesaTokenUpsert(token) {
   if (!token || !isMaster()) return false;
+  // Token da camada secreta do mestre NUNCA trafega pela rede (mesmo padrao
+  // usado para os tracos de desenho da camada "dm" em mesa-drawing.js).
+  if (token.layer === "dm") return false;
   return sendMesaRealtimeDelta("mesa:token:upsert", {
     token: serializeMesaRealtimeToken(token)
   });
@@ -1871,6 +1895,7 @@ function createMesaScenePayloadFromState() {
       x: roundTo(token.x, 2),
       y: roundTo(token.y, 2),
       visibleToPlayers: token.visibleToPlayers !== false,
+      layer: normalizeTokenLayer(token.layer),
       statsVisibleToPlayers: normalizeStatsVisibility(token.type, token.statsVisibleToPlayers),
       order: token.order || 1,
       tokenScale: roundTo(token.tokenScale || 1, 2)
@@ -1903,6 +1928,7 @@ function normalizeMesaScenePayload(payload = {}) {
         x: roundTo(clamp(Number(token?.x), 0, 100), 2),
         y: roundTo(clamp(Number(token?.y), 0, 100), 2),
         visibleToPlayers: token?.visibleToPlayers !== false,
+        layer: normalizeTokenLayer(token?.layer),
         statsVisibleToPlayers: token?.statsVisibleToPlayers === true,
         order: asPositiveInt(token?.order, 1),
         tokenScale: roundTo(Math.max(0.25, Math.min(4, Number(token?.tokenScale) || 1)), 2)

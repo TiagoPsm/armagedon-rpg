@@ -22,6 +22,28 @@ Registro minimo esperado:
 - Banco publicado: Cloudflare D1
 - Backend legado Express/PostgreSQL: removido do repositorio em 2026-06-12 (historico preservado no git)
 
+## Fase Atual: Frontend-First (backend congelado)
+
+- A partir de 2026-06-19 o desenvolvimento foca **interface e regras da Mesa**, sem mexer no backend.
+- Backend congelado no commit `aee08e0` (worker + D1 + schema). NAO rodar `wrangler deploy` nesta fase.
+- Toda funcionalidade nova da Mesa deve funcionar 100% so com `state` + `persistState()` (localStorage). Onde houver sync com servidor, embrulhar em `if (window.AUTH?.isBackendEnabled?.())` — local funciona sem; quando o backend voltar, sincroniza sozinho.
+- A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
+- **Divida conhecida**: `js/mesa-map.js` (linhas ~1208 e ~1254) da `fetch` direto no endpoint de mapa, furando a fachada `APP`. Unico ponto a centralizar na futura fase de integracao.
+
+## Ultima Etapa Concluida (2026-06-30 — Etapa 31: Correcao de bugs da auditoria da Mesa)
+
+Apos auditoria completa da Mesa (5 frentes via agentes), corrigidos os bugs criticos/altos encontrados:
+
+- **Vazamento da camada secreta via backend** (critico): `cloudflare/src/mesa.js` `normalizeSceneToken` estava descartando o campo `layer` ao salvar no D1, e `getMesaScene` nao filtrava tokens `layer:"dm"` para nao-mestres. Corrigido: `layer` agora e preservado na normalizacao, e `getMesaScene(env, actor)` filtra tokens secretos quando `actor.role !== "master"`. **Isso e uma mudanca de backend e ainda NAO foi deployada** (fase frontend-first segue com backend congelado em `aee08e0` at'e confirmacao explicita do Tiago para rodar `wrangler deploy`).
+- **Undo (Ctrl+Z) podia apagar traco secreto por acidente**: `js/mesa-drawing.js` agora desfaz so o ultimo traco **da camada ativa** (nunca cruza tokens <-> dm).
+- **`seedInitialTokens` nao inicializava `layer`**: agora sempre nasce com `layer:"tokens"` (js/mesa-core.js).
+- **`serializeMesaRealtimeToken` nao propagava `tokenScale`**: redimensionar um token agora sincroniza em tempo real entre abas, nao so ao salvar a cena.
+- **Camada MAPA exposta para jogador** (gap de especificacao, nao bug do relatorio): botao `#mesaLayerMapBtn` agora comeca `hidden` no HTML e so e revelado para o mestre em `initMesaMap` (mesa-map.js), igual ao botao MESTRE. `setMesaActiveLayer`/`restoreMesaActiveLayer` tambem bloqueiam jogador de entrar na camada `map`.
+- Cache-bust: `mesa-stage.js`, `mesa-core.js`, `mesa-map.js`, `mesa-drawing.js` -> `?v=2026-06-30-bugfix-1`; `MESA_BUNDLE_VERSION` -> `2026-06-30-bugfix-1` em `tools/build-pages.cjs`.
+- Validacao: `check:js` (41 arquivos OK), `audit:static` OK, `build:pages` OK, `test:mesa` 5/5 verde. Verificado manualmente no preview: mestre ve os 3 botoes de camada, jogador so ve TOKENS (MESTRE e MAPA ficam `hidden`), console limpo nos dois papeis.
+- Criado `docs/ROTEIRO_TESTE_MESA.md` com checklist manual cobrindo todas as funcionalidades da Mesa para teste humano.
+- **Pendente**: bugs de severidade media/baixa do relatorio (drift de zoom em drag, handles de resize podem inverter caixa, payload PUT sem limite de tamanho) ficam para uma proxima rodada se o Tiago priorizar.
+
 ## Arquitetura Atual
 
 - Site estatico publicado separadamente da API
@@ -58,7 +80,29 @@ Registro minimo esperado:
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 
 
-## Ultima Etapa Concluida (2026-06-16 — Etapa 28: inspetor do mestre no estilo card do jogador (compacto) com Vida/Integridade editaveis)
+## Ultima Etapa Concluida (2026-06-19 — Etapa 30: Camada do Mestre (DM) secreta estilo Roll20)
+
+Fase frontend-first (backend congelado em `aee08e0`). Adicionada uma 3a camada "MESTRE" ao seletor de camadas da Mesa (antes so TOKENS/MAPA), inspirada na camada do GM do Roll20: tokens e desenhos colocados nela ficam INVISIVEIS para os jogadores; so o mestre ve. Tudo client-side/localStorage — nenhuma mudanca no worker/D1.
+
+Mudancas principais:
+- **Modelo**: token e stroke de desenho ganharam o campo `layer` (`"tokens"` | `"dm"`). Helper `normalizeTokenLayer` em `js/mesa-storage.js`; campo serializado nos 4 pontos de token em `js/mesa-core.js` (mergeTokenWithRoster, serializeMesaRealtimeToken, createMesaScenePayloadFromState, normalizeMesaScenePayload).
+- **Tokens secretos** (`js/mesa-stage.js`): `getRenderedTokens` exclui `layer==="dm"` para jogador; token nasce na camada ativa em `addTokenToStage`; novos helpers `isTokenHiddenForMaster`/`getTokenSecretLabel` (DM aparece esmaecido + pill "Mestre" + classe `.is-layer-dm` so para o mestre). Handler `toggle-layer` move o token entre Token<->Mestre.
+- **Inspetor** (`js/mesa-inspector.js`): nova linha "Camada" com botao Token/Mestre.
+- **Botao + persistencia** (`mesa.html` + `js/mesa-map.js`): 3o `.vtt-layer-btn` `data-layer="dm"` (oculto no HTML, revelado so p/ mestre em `initMesaMap`); `setMesaActiveLayer` agora persiste em `localStorage.mesaActiveLayer` e bloqueia `dm` p/ jogador; `restoreMesaActiveLayer` restaura na init respeitando o papel.
+- **Desenhos secretos** (`js/mesa-drawing.js`): stroke marcado com a camada ativa; `renderDrawings` pula `dm` p/ jogador; `_broadcastDrawings` filtra `dm` (NUNCA trafega pela rede); `setDrawingsFromRemote` preserva os tracos `dm` do mestre ao aplicar update remoto (evita que um update apague os secretos); mestre ve traco `dm` com alpha menor.
+- **CSS** (`css/mesa.css`): botao DM roxo, tinta roxa no stage na camada DM, contorno tracejado no token secreto.
+
+Validacao: `check:js` 41 OK, `audit:static` OK, `build:pages` OK. Cache-bust dos 7 arquivos alterados -> `2026-06-19-dm-layer-1` + `MESA_BUNDLE_VERSION`. Pendente: verificacao no preview (mestre/jogador) e `test:mesa`.
+
+## Etapa Concluida (2026-06-16 — Etapa 29: limpeza de dead code + auditoria visual dos cards)
+
+Resumo (limpeza): removido codigo morto deixado pela remocao do inspetor do jogador (Etapa 25) e da previa do jogador. Em `js/mesa-inspector.js`: removido o ramo `if (!isMaster())` de `buildInspectorStatsSection` (inalcancavel — `renderInspector` ja oculta o inspetor inteiro p/ nao-mestre) e a funcao `buildPlayerInspectorVital`. Em `cloudflare/src/mesa.js`: removido o campo `previewPlayerView` da normalizacao da cena (feature ja extinta). Varredura confirmou ZERO referencias restantes a `previewPlayerView`/`stageViewBadge`/`buildPlayerInspectorVital` em js/html/css. `check:js` 41 OK, `audit:static` OK, sem regressao no preview (inspetor do mestre segue com 2 cards, atual+max editaveis; `buildPlayerInspectorVital` agora undefined). ATENCAO: a mudanca no worker (`cloudflare/src/mesa.js`) so vale apos `npx wrangler deploy` — e inofensiva ate la (o campo era so um default preservado).
+
+Resumo (validacao completa + manutencao de testes): `check:js` 41 OK, `audit:static` OK, `build:pages` OK. Suite Playwright da Mesa: 3 testes estavam VERMELHOS por assertar o comportamento ANTIGO do painel do jogador (classe `.player-sheet-panel`, `vidaMax/integMax` editaveis, badge de texto "Em cena") — a redesign do painel (etapas 10-25) nunca atualizou os testes. Atualizados para o comportamento atual: `.player-side-panel`, maximo SOMENTE LEITURA (`[data-player-sheet-field]` toHaveCount 0 + leitura `.player-vital-max`), badge virou bolinha (`#rosterCountBadge.is-status-dot` + `.player-stage-dot.is-on`), e seletores de input desambiguados (`input[data-player-stat-field=...]` — os botoes +/- do stepper tambem carregam o atributo). Mesa agora 5/5 verde. Ficha: 27/28; a unica falha (`UX avancada › lore ... recolhidas`, largura 60 vs 70) e PRE-EXISTENTE e alheia a esta sessao (nenhum arquivo de ficha tocado; ultima mudanca em ficha foi commit `4c6db6d`).
+
+Resumo (auditoria dark-mode + layout-integrity dos cards novos — inspetor do mestre): contraste WCAG AA OK em tudo (label 5.26, leitura atual 14.27, "/max" 5.26, divisor 5.26, input atual 13.66, input max 5.04; barra fill-vs-track 8.48 >= 3:1). Foco nos inputs com `border: accent` + glow; input disabled opacity 0.5; botao -/+ disabled opacity 0.3 + not-allowed. Layout integro: max de 3 digitos ("100") cabe sem overflow, stepper nao estoura o card. Unica nota (nao-bug): botoes 30x30px sao ok no desktop mas < 44px ideal p/ toque (so relevante se usar no mobile). Nenhum defeito a corrigir — os cards herdam tokens/padroes do sistema. Cache-bust `mesa-inspector.js` -> `2026-06-16-deadcode-cleanup-1` + `MESA_BUNDLE_VERSION`.
+
+## Etapa Concluida (2026-06-16 — Etapa 28: inspetor do mestre no estilo card do jogador (compacto) com Vida/Integridade editaveis)
 
 Resumo: o inspetor do mestre (`buildInspectorStatsSection` em `js/mesa-inspector.js`) trocou o layout `.stat-editor` (linha `[−][atual][+] / [max]` + label) por CARDS no mesmo visual do painel "Meu Token" do jogador (`.player-vital-card`: label + leitura grande "atual/max" + barra destacada + stepper), porem COMPACTO via `.is-inspector` (paddings/leitura menores) e com o MAXIMO tambem editavel ao lado do stepper (`[−][atual][+] / [max]`, classe `.inspector-vital-stepper.is-master`). Nova funcao `buildMasterInspectorVital`. O mestre edita Vida/Integridade (atual e max) de QUALQUER token, inclusive dos jogadores — `canEditCurrentStats`/`canEditAllStats` ja retornavam true p/ mestre; os `data-stat-field` (currentLife/maxLife/...) foram preservados, entao handlers/clamp/broadcast nao mudaram. `syncInspectorStatInputCard` (`js/mesa-stage.js`) atualizado p/ tambem mirar `.player-vital-card` e a leitura `.player-vital-readout strong` / `.player-vital-max` (alem do antigo `.stat-editor`/`.bar-label-row`). CSS novo em `css/mesa-inspector.css` (`.player-vital-card.is-inspector`, `.inspector-vital-stepper.is-master` em 5 colunas, `.vital-max-input`). Validado no preview (mestre, token de jogador sintetico): 2 cards compactos, input de atual e de max habilitados, stepper − leva 7->6, leitura/barra refletem o valor (6/10, 60%), console limpo. Cache-bust `mesa-inspector.css`/`mesa-stage.js`/`mesa-inspector.js` -> `2026-06-16-master-vital-card-1` + `MESA_BUNDLE_VERSION`.
 

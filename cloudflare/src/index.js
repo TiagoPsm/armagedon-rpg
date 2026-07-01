@@ -586,8 +586,8 @@ export default {
       }
 
       if (path === "/api/mesa/scene" && request.method === "GET") {
-        await requireAuth(request, env);
-        return withCors(json(await getMesaScene(env)), origin);
+        const session = await requireAuth(request, env);
+        return withCors(json(await getMesaScene(env, session)), origin);
       }
 
       if (path === "/api/mesa/scene" && request.method === "PUT") {

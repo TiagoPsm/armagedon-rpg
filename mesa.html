@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="css/tokens.css?v=2026-06-14-echos-1" />
   <link rel="stylesheet" href="css/reset.css?v=2026-06-12-cache-fix-1" />
   <link rel="stylesheet" href="css/components.css?v=2026-06-12-modal-stack-1" />
-  <link rel="stylesheet" href="css/mesa.css?v=2026-06-16-gutter-fix-1" />
+  <link rel="stylesheet" href="css/mesa.css?v=2026-06-19-dm-layer-1" />
   <link rel="stylesheet" href="css/mesa-stage.css?v=2026-05-24-token-styles-2" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-06-16-fullbleed-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-06-16-master-vital-card-1" />
@@ -191,7 +191,15 @@
           <span>TOKENS</span>
         </button>
 
-        <button class="vtt-layer-btn" data-layer="map" data-panel="map" title="Camada de Mapa — mover e redimensionar o fundo" aria-pressed="false">
+        <button class="vtt-layer-btn" id="mesaLayerDmBtn" data-layer="dm" data-panel="scene" title="Camada do Mestre — tokens e desenhos secretos (só o mestre vê)" aria-pressed="false" hidden>
+          <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M3 7l3.5 2.5L10 4l3.5 5.5L17 7l-1.2 8.5H4.2L3 7z" stroke-linejoin="round"/>
+            <circle cx="10" cy="12.5" r="1"/>
+          </svg>
+          <span>MESTRE</span>
+        </button>
+
+        <button class="vtt-layer-btn" id="mesaLayerMapBtn" data-layer="map" data-panel="map" title="Camada de Mapa — mover e redimensionar o fundo (só o mestre)" aria-pressed="false" hidden>
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
             <polygon points="2,4 8,2 12,5 18,3 18,16 12,18 8,15 2,17" stroke-linejoin="round"/>
             <line x1="8" y1="2" x2="8" y2="15"/>
@@ -603,14 +611,14 @@
   <script src="js/auth.js?v=2026-06-13-login-form-1" defer></script>
   <!-- Ordem importante: dependências antes de mesa-core -->
   <script src="js/mesa-renderer-v2.js?v=2026-05-25-dataurl-fix-1" defer></script>
-  <script src="js/mesa-stage.js?v=2026-06-16-master-vital-card-1" defer></script>
+  <script src="js/mesa-stage.js?v=2026-06-30-bugfix-1" defer></script>
   <script src="js/mesa-roster.js?v=2026-06-16-no-dup-inspector-1" defer></script>
-  <script src="js/mesa-inspector.js?v=2026-06-16-master-vital-card-1" defer></script>
-  <script src="js/mesa-storage.js?v=2026-04-24-split-1" defer></script>
-  <script src="js/mesa-core.js?v=2026-06-16-hud-cleanup-1" defer></script>
+  <script src="js/mesa-inspector.js?v=2026-06-19-dm-layer-1" defer></script>
+  <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
+  <script src="js/mesa-core.js?v=2026-06-30-bugfix-1" defer></script>
   <script src="js/mesa-init.js?v=2026-04-24-split-1" defer></script>
-  <script src="js/mesa-map.js?v=2026-06-10-session-1" defer></script>
-  <script src="js/mesa-drawing.js?v=2026-05-27-select-5" defer></script>
+  <script src="js/mesa-map.js?v=2026-06-30-bugfix-1" defer></script>
+  <script src="js/mesa-drawing.js?v=2026-06-30-bugfix-1" defer></script>
   <script src="js/mesa-select.js?v=2026-05-27-select-5" defer></script>
   <script src="js/mesa-initiative.js?v=2026-06-05-initiative-1" defer></script>
   <script>

@@ -182,6 +182,10 @@ Comportamento visual consolidado:
 
 ## Mesa Virtual
 
+- Seletor de camadas tem cores distintas por camada: TOKENS = verde, MESTRE (DM) = roxo (`rgba(150,90,200,...)`), MAPA = dourado. O roxo sinaliza a camada secreta exclusiva do mestre, diferenciando-a das demais sem fugir do dark fantasy
+- Quando a camada MESTRE esta ativa, o stage ganha uma borda interna roxa sutil (`box-shadow: inset 0 0 0 2px`) lembrando que o mestre esta na camada secreta; tokens continuam interativos (diferente do modo MAPA, que bloqueia tokens)
+- Token na camada secreta aparece SO para o mestre: esmaecido (herda `.is-hidden-master`) + contorno roxo tracejado (`.is-layer-dm`) + pill de estado "Mestre" (em vez de "Oculto"), para distinguir de um token apenas marcado como oculto
+- Tracos de desenho da camada secreta aparecem com opacidade menor (0.5 vs 0.88) para o mestre os distinguir dos tracos publicos
 - Deve priorizar leitura rapida de tokens, status e selecao
 - O palco deve ficar claro, responsivo e sem sobreposicao incoerente
 - Tokens/cards do palco devem manter o mesmo tamanho ao selecionar, entrar em tela cheia e voltar ao modo normal

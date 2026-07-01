@@ -195,8 +195,10 @@ function bindZoomControl() {
 
 /* ── CAMADA ATIVA ───────────────────────────────────────────── */
 
+const MESA_ACTIVE_LAYER_KEY = "mesaActiveLayer";
+
 /**
- * Retorna a camada atualmente ativa ("tokens" | "map").
+ * Retorna a camada atualmente ativa ("tokens" | "dm" | "map").
  * Lê diretamente do atributo data-active-layer do wrapper do palco.
  */
 function getMesaActiveLayer() {
@@ -205,16 +207,33 @@ function getMesaActiveLayer() {
 }
 
 /**
- * Define a camada ativa e atualiza o estado visual dos botões.
- * @param {"tokens"|"map"} layer
+ * Define a camada ativa, persiste no localStorage e atualiza os botões.
+ * A camada "dm" (secreta) é exclusiva do mestre — jogador cai em "tokens".
+ * @param {"tokens"|"dm"|"map"} layer
  */
 function setMesaActiveLayer(layer) {
   const wrap = document.getElementById("mesaStageWrap");
   if (!wrap) return;
+  if ((layer === "dm" || layer === "map") && !mesaMapState.isMaster) layer = "tokens";
   wrap.dataset.activeLayer = layer;
   document.querySelectorAll(".vtt-layer-btn[data-layer]").forEach(function(btn) {
-    btn.classList.toggle("is-active", btn.dataset.layer === layer);
+    const active = btn.dataset.layer === layer;
+    btn.classList.toggle("is-active", active);
+    btn.setAttribute("aria-pressed", active ? "true" : "false");
   });
+  try { localStorage.setItem(MESA_ACTIVE_LAYER_KEY, layer); } catch (e) {}
+}
+
+/**
+ * Restaura a camada ativa salva no localStorage (chamado na init).
+ * Respeita o papel: jogador nunca entra na camada secreta do mestre.
+ */
+function restoreMesaActiveLayer() {
+  let saved = "tokens";
+  try { saved = localStorage.getItem(MESA_ACTIVE_LAYER_KEY) || "tokens"; } catch (e) {}
+  if (!["tokens", "dm", "map"].includes(saved)) saved = "tokens";
+  if ((saved === "dm" || saved === "map") && !mesaMapState.isMaster) saved = "tokens";
+  setMesaActiveLayer(saved);
 }
 
 /* ── INICIALIZAÇÃO ──────────────────────────────────────────── */
@@ -243,10 +262,18 @@ async function initMesaMap() {
       // Mestre: botão de configurações sempre visível (token style disponível sem mapa)
       const settingsBtn = document.getElementById("mesaMapSettingsBtn");
       if (settingsBtn) settingsBtn.hidden = false;
+      // Mestre: revela a camada secreta e a camada de mapa (ocultas para jogadores no HTML).
+      const dmLayerBtn = document.getElementById("mesaLayerDmBtn");
+      if (dmLayerBtn) dmLayerBtn.hidden = false;
+      const mapLayerBtn = document.getElementById("mesaLayerMapBtn");
+      if (mapLayerBtn) mapLayerBtn.hidden = false;
       bindMasterMapListeners();
     } else {
       bindPlayerMapListeners();
     }
+
+    // Restaura a camada ativa salva (respeitando o papel).
+    restoreMesaActiveLayer();
   } catch (err) {
     console.warn("[mesa-map] Falha ao iniciar módulo de mapa:", err);
   }

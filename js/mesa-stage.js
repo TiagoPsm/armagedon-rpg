@@ -121,11 +121,22 @@ function clearDomStageTokenElements() {
   mesaStageTokenElements.clear();
 }
 
+// Token na camada secreta do mestre ("dm") ou marcado oculto aparece esmaecido
+// SO para o mestre. Jogadores nem recebem esses tokens no render (getRenderedTokens).
+function isTokenHiddenForMaster(token) {
+  return isMaster() && (token.visibleToPlayers === false || token.layer === "dm");
+}
+
+// Rotulo da pill de estado secreto: "Mestre" para a camada DM, senao "Oculto".
+function getTokenSecretLabel(token) {
+  return token.layer === "dm" ? "Mestre" : "Oculto";
+}
+
 function createCanvasTokenSnapshot(token) {
-  const hiddenForMaster = isMaster() && !token.visibleToPlayers;
+  const hiddenForMaster = isTokenHiddenForMaster(token);
   const canViewStats = canViewTokenStats(token);
   const statePillLabel = hiddenForMaster
-    ? "Oculto"
+    ? getTokenSecretLabel(token)
     : !canViewStats
       ? "Status restrito"
       : "";
@@ -181,11 +192,12 @@ function createMesaTokenElement(token) {
 }
 
 function getTokenContentSignature(token) {
-  const hiddenForMaster = isMaster() && !token.visibleToPlayers;
+  const hiddenForMaster = isTokenHiddenForMaster(token);
   return JSON.stringify({
     id: token.id,
     type: token.type,
     hiddenForMaster,
+    layer: token.layer === "dm" ? "dm" : "tokens",
     canViewStats: canViewTokenStats(token),
     visibleToPlayers: token.visibleToPlayers !== false,
     statsVisibleToPlayers: token.statsVisibleToPlayers === true,
@@ -344,6 +356,11 @@ function handleInspectorAction(event) {
 
   if (action === "toggle-visibility") {
     token.visibleToPlayers = !token.visibleToPlayers;
+  }
+
+  if (action === "toggle-layer") {
+    // Move o token entre a camada de tokens e a camada secreta do mestre.
+    token.layer = token.layer === "dm" ? "tokens" : "dm";
   }
 
   if (action === "toggle-stats-visibility" && canConfigureStatsVisibility(token)) {
@@ -1016,7 +1033,13 @@ async function runRemoteMesaPersist() {
     activeRemotePersistSignature = payloadSignature;
 
     try {
-      await window.APP.saveMesaScene(payload, {
+      // Tokens da camada secreta do mestre ("dm") NUNCA saem para o backend —
+      // so existem no cliente do mestre (mesmo padrao dos tracos de desenho).
+      const remotePayload = {
+        ...payload,
+        tokens: payload.tokens.filter(token => token.layer !== "dm")
+      };
+      await window.APP.saveMesaScene(remotePayload, {
         keepalive: document.visibilityState === "hidden"
       });
       state.scenePersistence = "remote";
@@ -1493,7 +1516,8 @@ function getFilteredRoster() {
 
 function getRenderedTokens() {
   if (isMaster()) return state.tokens;
-  return state.tokens.filter(token => token.visibleToPlayers !== false);
+  // Jogador nao ve tokens ocultos NEM os da camada secreta do mestre ("dm").
+  return state.tokens.filter(token => token.visibleToPlayers !== false && token.layer !== "dm");
 }
 
 function syncSelectedToken() {
@@ -1841,12 +1865,13 @@ function renderToken(token) {
 }
 
 function renderTokenCard(token) {
-  const hiddenForMaster = isMaster() && !token.visibleToPlayers;
+  const hiddenForMaster = isTokenHiddenForMaster(token);
   const selectedClass = token.id === state.selectedTokenId ? "is-selected" : "";
   const hiddenClass = hiddenForMaster ? "is-hidden-master" : "";
+  const layerClass = token.layer === "dm" ? "is-layer-dm" : "";
   const canViewStats = canViewTokenStats(token);
   const statePillLabel = hiddenForMaster
-    ? "Oculto"
+    ? getTokenSecretLabel(token)
     : !canViewStats
       ? "Status restrito"
       : "";
@@ -1857,7 +1882,7 @@ function renderTokenCard(token) {
 
   return `
     <article
-      class="mesa-token ${selectedClass} ${hiddenClass}"
+      class="mesa-token ${selectedClass} ${hiddenClass} ${layerClass}"
       data-token-id="${token.id}"
       data-type="${token.type}"
       style="left:${token.x}%; top:${token.y}%; z-index:${token.order || 1}; --token-scale:${scale};"
@@ -1893,20 +1918,21 @@ function renderTokenCard(token) {
 }
 
 function renderTokenMinimal(token) {
-  const hiddenForMaster = isMaster() && !token.visibleToPlayers;
+  const hiddenForMaster = isTokenHiddenForMaster(token);
   const selectedClass = token.id === state.selectedTokenId ? "is-selected" : "";
   const hiddenClass = hiddenForMaster ? "is-hidden-master" : "";
+  const layerClass = token.layer === "dm" ? "is-layer-dm" : "";
   const scale = token.tokenScale || 1;
   const resizeHandle = canResizeToken(token)
     ? `<div class="mesa-token-resize-handle" data-token-id="${token.id}" title="Redimensionar token"></div>`
     : "";
   const hiddenBadge = hiddenForMaster
-    ? `<span class="mesa-token-minimal-badge is-hidden-badge">Oculto</span>`
+    ? `<span class="mesa-token-minimal-badge is-hidden-badge">${getTokenSecretLabel(token)}</span>`
     : "";
 
   return `
     <article
-      class="mesa-token is-minimal ${selectedClass} ${hiddenClass}"
+      class="mesa-token is-minimal ${selectedClass} ${hiddenClass} ${layerClass}"
       data-token-id="${token.id}"
       data-type="${token.type}"
       style="left:${token.x}%; top:${token.y}%; z-index:${token.order || 1}; --token-scale:${scale};"
@@ -1931,9 +1957,12 @@ function addTokenToStage(entry) {
 
   const nextOrder = getNextOrder();
   const nextSlot = resolveNextStageSlot(state.tokens);
+  // Token nasce na camada ativa: se o mestre estiver na camada "dm", entra secreto.
+  const activeLayer = (typeof getMesaActiveLayer === "function" && getMesaActiveLayer() === "dm") ? "dm" : "tokens";
   const nextToken = {
     ...entry,
     visibleToPlayers: true,
+    layer: activeLayer,
     statsVisibleToPlayers: normalizeStatsVisibility(entry.type, entry.statsVisibleToPlayers),
     x: nextSlot.x,
     y: nextSlot.y,

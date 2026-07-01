@@ -144,12 +144,18 @@ function _bindDrawEvents() {
       }
       _closeFlyout();
     }
-    // Ctrl+Z: desfaz último traço
+    // Ctrl+Z: desfaz o último traço DA CAMADA ATIVA (nunca cruza tokens <-> dm,
+    // pra nao apagar um traço secreto do mestre por acidente ao desfazer na camada normal).
     if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
-      if (_strokes.length > 0) {
-        _strokes.pop();
-        renderDrawings();
-        _broadcastDrawings();
+      const activeLayer = (typeof getMesaActiveLayer === "function" && getMesaActiveLayer() === "dm") ? "dm" : "tokens";
+      for (let i = _strokes.length - 1; i >= 0; i--) {
+        const strokeLayer = _strokes[i].layer === "dm" ? "dm" : "tokens";
+        if (strokeLayer === activeLayer) {
+          _strokes.splice(i, 1);
+          renderDrawings();
+          _broadcastDrawings();
+          break;
+        }
       }
     }
   });
@@ -174,6 +180,8 @@ function _onDrawStart(e) {
     tool:   _activeTool,
     color:  _drawColor,
     width:  _drawWidth,
+    // Camada do traço: "dm" (secreto, só o mestre) quando a camada ativa é a do mestre.
+    layer:  (typeof getMesaActiveLayer === "function" && getMesaActiveLayer() === "dm") ? "dm" : "tokens",
     x1: px, y1: py,
     x2: px, y2: py,
     points: _activeTool === "pencil" ? [[px, py]] : null
@@ -255,7 +263,9 @@ function renderDrawings() {
   const h = _drawCanvasEl.offsetHeight;
   _drawCtx.clearRect(0, 0, w, h);
 
-  const all = _activeStroke ? [..._strokes, _activeStroke] : _strokes;
+  const isMasterView = typeof isMaster !== "function" || isMaster();
+  const base = isMasterView ? _strokes : _strokes.filter(s => s.layer !== "dm");
+  const all = _activeStroke ? [...base, _activeStroke] : base;
   all.forEach(_renderStroke);
 }
 
@@ -270,7 +280,8 @@ function _renderStroke(s) {
   ctx.lineWidth   = s.width;
   ctx.lineCap     = "round";
   ctx.lineJoin    = "round";
-  ctx.globalAlpha = 0.88;
+  // Traço da camada secreta aparece mais translúcido para o mestre se distinguir.
+  ctx.globalAlpha = s.layer === "dm" ? 0.5 : 0.88;
 
   switch (s.tool) {
 
@@ -347,7 +358,15 @@ function deleteDrawingsById(ids) {
 
 // ── Sync externo ───────────────────────────────────────────────────
 function setDrawingsFromRemote(strokes) {
-  _strokes = Array.isArray(strokes) ? strokes : [];
+  const incoming = Array.isArray(strokes) ? strokes : [];
+  // O mestre preserva os PRÓPRIOS traços secretos (camada "dm"), que nunca
+  // trafegam pela rede — só o restante é substituído pelo estado remoto.
+  if (typeof isMaster === "function" && isMaster()) {
+    const secret = _strokes.filter(s => s.layer === "dm");
+    _strokes = [...incoming.filter(s => s.layer !== "dm"), ...secret];
+  } else {
+    _strokes = incoming;
+  }
   renderDrawings();
 }
 
@@ -357,7 +376,8 @@ function getDrawingsSnapshot() {
 
 function _broadcastDrawings() {
   if (typeof sendMesaRealtimeDelta === "function") {
-    sendMesaRealtimeDelta("mesa:drawings:update", { drawings: _strokes });
+    // Traços da camada secreta ("dm") NUNCA saem do cliente do mestre.
+    sendMesaRealtimeDelta("mesa:drawings:update", { drawings: _strokes.filter(s => s.layer !== "dm") });
   }
 }
 

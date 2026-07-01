@@ -177,11 +177,14 @@ test.describe("Mesa virtual", () => {
     await page.goto(`${baseUrl}/mesa.html`);
     await expect(page.locator("#rosterPanelTitle")).toHaveText("Meu personagem");
     await expect(page.locator("#rosterSearchField")).toBeHidden();
-    await expect(page.locator("#rosterCountBadge")).toHaveText("Em cena");
+    // "Em cena"/"Fora da cena" virou uma bolinha de status (sem texto): verde
+    // quando o token do jogador esta na cena. O token "ana" esta na cena no mock.
+    await expect(page.locator("#rosterCountBadge")).toHaveClass(/is-status-dot/);
+    await expect(page.locator("#rosterCountBadge .player-stage-dot.is-on")).toBeVisible();
     await expect(page.locator("#resetMesaBtn")).toBeHidden();
     await expect(page.locator("#resetMesaBtn")).toBeDisabled();
 
-    const playerPanel = page.locator(".player-sheet-panel");
+    const playerPanel = page.locator(".player-side-panel");
     await expect(playerPanel).toBeVisible();
     await expect(playerPanel).toContainText("Ana Rubra");
     await expect(playerPanel).not.toContainText("Bruno Cinza");
@@ -189,31 +192,27 @@ test.describe("Mesa virtual", () => {
     await expect(page.locator("#tokenInspector")).not.toContainText("Bruno Cinza");
 
     await expect(page.locator('[data-player-panel-action="select-player-tab"]')).toHaveCount(0);
-    await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("8");
-    await page.locator('[data-player-sheet-field="vidaMax"]').fill("");
-    await expect(page.locator('[data-player-sheet-field="vidaMax"]')).toHaveValue("");
-    await page.locator('[data-player-sheet-field="vidaMax"]').type("30");
-    await expect(page.locator('[data-player-sheet-field="vidaMax"]')).toHaveValue("30");
-    await page.locator('[data-player-stat-field="currentLife"]').fill("");
-    await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("");
-    await page.locator('[data-player-stat-field="currentLife"]').type("10");
-    await page.locator('[data-player-sheet-field="vidaMax"]').fill("6");
-    await page.locator('[data-player-sheet-field="integMax"]').focus();
-    await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("6");
-    await page.locator('[data-player-sheet-field="vidaMax"]').fill("30");
-    await page.locator('[data-player-stat-field="currentLife"]').fill("10");
-    await page.locator('[data-player-sheet-field="integMax"]').fill("");
-    await expect(page.locator('[data-player-sheet-field="integMax"]')).toHaveValue("");
-    await page.locator('[data-player-sheet-field="integMax"]').type("30");
-    await expect(page.locator('[data-player-sheet-field="integMax"]')).toHaveValue("30");
-    await page.locator('[data-player-stat-field="currentIntegrity"]').fill("");
-    await expect(page.locator('[data-player-stat-field="currentIntegrity"]')).toHaveValue("");
-    await page.locator('[data-player-stat-field="currentIntegrity"]').type("10");
-    await page.locator('[data-player-sheet-field="integMax"]').fill("6");
-    await page.locator('[data-player-stat-field="currentLife"]').focus();
-    await expect(page.locator('[data-player-stat-field="currentIntegrity"]')).toHaveValue("6");
-    await page.locator('[data-player-sheet-field="integMax"]').fill("30");
-    await page.locator('[data-player-stat-field="currentIntegrity"]').fill("10");
+    await expect(page.locator('input[data-player-stat-field="currentLife"]')).toHaveValue("8");
+    await expect(page.locator('input[data-player-stat-field="currentIntegrity"]')).toHaveValue("4");
+
+    // Maximo virou SOMENTE LEITURA no painel do jogador (2026-06): nao ha mais
+    // input editavel de vidaMax/integMax — eles aparecem so na leitura "atual / max".
+    await expect(page.locator('[data-player-sheet-field="vidaMax"]')).toHaveCount(0);
+    await expect(page.locator('[data-player-sheet-field="integMax"]')).toHaveCount(0);
+    await expect(page.locator('.player-vital-card.is-life .player-vital-max')).toContainText("12");
+    await expect(page.locator('.player-vital-card.is-integrity .player-vital-max')).toContainText("6");
+
+    // Jogador edita apenas Vida/Integridade ATUAIS.
+    await page.locator('input[data-player-stat-field="currentLife"]').fill("");
+    await expect(page.locator('input[data-player-stat-field="currentLife"]')).toHaveValue("");
+    await page.locator('input[data-player-stat-field="currentLife"]').type("10");
+    await page.locator('input[data-player-stat-field="currentIntegrity"]').focus();
+    await expect(page.locator('input[data-player-stat-field="currentLife"]')).toHaveValue("10");
+    await page.locator('input[data-player-stat-field="currentIntegrity"]').fill("");
+    await expect(page.locator('input[data-player-stat-field="currentIntegrity"]')).toHaveValue("");
+    await page.locator('input[data-player-stat-field="currentIntegrity"]').type("5");
+    await page.locator('input[data-player-stat-field="currentLife"]').focus();
+    await expect(page.locator('input[data-player-stat-field="currentIntegrity"]')).toHaveValue("5");
 
     // Painel simplificado (2026-06-06): atributos, classe, inventario e
     // memorias sairam do painel da Mesa — a edicao completa fica na ficha.
@@ -227,9 +226,9 @@ test.describe("Mesa virtual", () => {
       return sheets.ana || {};
     });
     expect(savedSheet.vidaAtual).toBe("10");
-    expect(savedSheet.vidaMax).toBe("30");
-    expect(savedSheet.integAtual).toBe("10");
-    expect(savedSheet.integMax).toBe("30");
+    expect(savedSheet.vidaMax).toBe("12");      // inalterado: maximo nao e editavel pelo painel
+    expect(savedSheet.integAtual).toBe("5");
+    expect(savedSheet.integMax).toBe("6");       // inalterado
     // O painel nao pode sobrescrever o que ele nao edita.
     expect(savedSheet.attrForca).toBe("2");
     expect(savedSheet.attrAlma).toBe("18");
@@ -289,15 +288,15 @@ test.describe("Mesa virtual", () => {
     });
 
     await page.goto(`${baseUrl}/mesa.html`);
-    const playerPanel = page.locator(".player-sheet-panel");
+    const playerPanel = page.locator(".player-side-panel");
     await expect(playerPanel).toBeVisible();
     await expect(page.locator("#resetMesaBtn")).toBeHidden();
     await expect(page.locator("#resetMesaBtn")).toBeDisabled();
     await expect(playerPanel).toContainText("Ana Local");
     await expect(playerPanel).not.toContainText("Ana Remota");
-    await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("6");
+    await expect(page.locator('input[data-player-stat-field="currentLife"]')).toHaveValue("6");
 
-    await page.locator('[data-player-stat-field="currentLife"]').fill("8");
+    await page.locator('input[data-player-stat-field="currentLife"]').fill("8");
 
     const savedSheets = await page.evaluate(() => JSON.parse(localStorage.getItem("tc_sheets") || "{}"));
     expect(savedSheets.ana.vidaAtual).toBe("8");
@@ -446,16 +445,17 @@ test.describe("Mesa virtual", () => {
     }, apiBaseUrl);
 
     await page.goto(`${baseUrl}/mesa.html`);
-    const playerPanel = page.locator(".player-sheet-panel");
+    const playerPanel = page.locator(".player-side-panel");
     await expect(playerPanel).toBeVisible();
     await expect(page.locator('[data-player-panel-action="select-player-tab"]')).toHaveCount(0);
-    await expect(page.locator('[data-player-stat-field="currentLife"]')).toHaveValue("9");
-    await expect(page.locator('[data-player-stat-field="currentIntegrity"]')).toHaveValue("5");
+    await expect(page.locator('input[data-player-stat-field="currentLife"]')).toHaveValue("9");
+    await expect(page.locator('input[data-player-stat-field="currentIntegrity"]')).toHaveValue("5");
 
-    await page.locator('[data-player-stat-field="currentLife"]').fill("7");
-    await page.locator('[data-player-stat-field="currentIntegrity"]').fill("2");
-    await page.locator('[data-player-sheet-field="vidaMax"]').fill("22");
-    await page.locator('[data-player-sheet-field="integMax"]').fill("11");
+    // Maximo e somente leitura no painel do jogador — o jogador edita apenas os ATUAIS.
+    await expect(page.locator('[data-player-sheet-field="vidaMax"]')).toHaveCount(0);
+    await expect(page.locator('[data-player-sheet-field="integMax"]')).toHaveCount(0);
+    await page.locator('input[data-player-stat-field="currentLife"]').fill("7");
+    await page.locator('input[data-player-stat-field="currentIntegrity"]').fill("2");
 
     forceStaleCharacterGet = true;
     await page.evaluate(async () => {
@@ -471,9 +471,9 @@ test.describe("Mesa virtual", () => {
       return sheets.ana || {};
     });
     expect(cachedAfterStaleRefresh.vidaAtual).toBe("7");
-    expect(cachedAfterStaleRefresh.vidaMax).toBe("22");
+    expect(cachedAfterStaleRefresh.vidaMax).toBe("20");   // inalterado: maximo nao e editavel pelo painel
     expect(cachedAfterStaleRefresh.integAtual).toBe("2");
-    expect(cachedAfterStaleRefresh.integMax).toBe("11");
+    expect(cachedAfterStaleRefresh.integMax).toBe("8");    // inalterado
 
     // Painel simplificado (2026-06-06): itens, memorias e atributos nao sao
     // editaveis pela Mesa — somente Vida/Integridade (atual e maxima).
@@ -484,9 +484,9 @@ test.describe("Mesa virtual", () => {
     await expect.poll(() => putRequests.length, { timeout: 4000 }).toBeGreaterThan(0);
     await expect.poll(() => (
       characterData.vidaAtual === "7"
-      && characterData.vidaMax === "22"
+      && characterData.vidaMax === "20"
       && characterData.integAtual === "2"
-      && characterData.integMax === "11"
+      && characterData.integMax === "8"
     ), { timeout: 4000 }).toBe(true);
 
     // O PUT da Mesa nao pode sobrescrever campos que o painel nao edita.
@@ -500,9 +500,9 @@ test.describe("Mesa virtual", () => {
       return sheets.ana || {};
     });
     expect(cachedRemoteSheet.vidaAtual).toBe("7");
-    expect(cachedRemoteSheet.vidaMax).toBe("22");
+    expect(cachedRemoteSheet.vidaMax).toBe("20");   // inalterado: maximo nao e editavel pelo painel
     expect(cachedRemoteSheet.integAtual).toBe("2");
-    expect(cachedRemoteSheet.integMax).toBe("11");
+    expect(cachedRemoteSheet.integMax).toBe("8");    // inalterado
     expect(cachedRemoteSheet.attrAgilidade).toBe("3");
     expect(cachedRemoteSheet.inv[0].name).toBe("Rosa de Ferro");
   });

@@ -174,6 +174,13 @@ html {
   color: #b0f0cc;
 }
 
+/* MESTRE — roxo (camada secreta, só o mestre vê) */
+.vtt-layer-btn[data-layer="dm"].is-active {
+  background: rgba(150, 90, 200, 0.22);
+  border-color: rgba(170, 110, 220, 0.5);
+  color: #e0c4f5;
+}
+
 /* MAPA — dourado */
 .vtt-layer-btn[data-layer="map"].is-active {
   background: rgba(176, 143, 50, 0.22);
@@ -213,6 +220,19 @@ html {
 
 .mesa-stage-wrap[data-active-layer="map"]:active {
   cursor: grabbing;
+}
+
+/* Stage na camada MESTRE — leve borda roxa lembrando que está na camada secreta.
+   Diferente do MAPA: tokens continuam interativos (a camada DM é editável). */
+.mesa-stage-wrap[data-active-layer="dm"] {
+  box-shadow: inset 0 0 0 2px rgba(150, 90, 200, 0.35);
+}
+
+/* Token na camada secreta — contorno roxo tracejado (além do esmaecido herdado
+   de .is-hidden-master), para o mestre distinguir do token apenas "oculto". */
+.mesa-token.is-layer-dm {
+  outline: 2px dashed rgba(170, 110, 220, 0.7);
+  outline-offset: 2px;
 }
 
 /* ── FIM CAMADAS ─────────────────────────────────────────────── */

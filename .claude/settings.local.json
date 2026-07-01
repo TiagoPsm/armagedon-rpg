@@ -60,7 +60,32 @@
       "Bash(git commit -m 'feat\\(echos\\): sistema de Echos \\(drop de monstro, pagina, transferencia, Mesa\\)' -m 'Echos sao manifestacoes residuais de monstros derrotados, colecionaveis pelos jogadores, com rank e XP proprios. *)",
       "Bash(git commit -m 'feat\\(echos\\): controlar Vida/Integridade dos tokens na Mesa \\(mestre + dono\\)' -m 'O inspetor da Mesa passa a editar Vida e Integridade atuais dos tokens: o mestre em qualquer token; o jogador no proprio token e nos proprios Echos. *)",
       "WebSearch",
-      "PowerShell(head -50)"
+      "PowerShell(head -50)",
+      "Bash(npx playwright *)",
+      "Bash(git --no-pager diff -- js/mesa-core.js js/mesa-stage.js)",
+      "Read(//c/Users/tiago/.claude/**)",
+      "Read(//c/Users/tiago/.claude/skills/**)",
+      "Bash(mkdir -p ~/.claude/agents ~/.claude/skills/qa-performance ~/.claude/skills/qa-acessibilidade ~/.claude/skills/qa-funcional ~/.claude/skills/qa-compatibilidade ~/.claude/skills/qa-visual ~/.claude/skills/qa-coordenador && echo \"dirs ok\" && ls ~/.claude/skills | grep qa-)",
+      "Bash(node \"C:/Users/tiago/AppData/Local/Temp/qa-build.js\")",
+      "Bash(node -e \"const fs=require\\('fs'\\);const s=fs.readFileSync\\('C:/Users/tiago/AppData/Local/Temp/claude/C--Users-tiago-OneDrive-Desktop-Pr-xima-Campanha-FichaApp-rpg-campaign-git-sync/ffe4a435-e79c-4bee-830b-a76ad300326b/tasks/wacxn7s6z.output','utf8'\\);console.log\\('len',s.length\\);console.log\\('first200:',JSON.stringify\\(s.slice\\(0,200\\)\\)\\);const d=JSON.parse\\(s\\);console.log\\('type',typeof d,'isArray',Array.isArray\\(d\\),'keys',d&&typeof d==='object'?Object.keys\\(d\\).slice\\(0,10\\):'-'\\);\")",
+      "Bash(npx --yes serve . -l 8000)",
+      "mcp__Claude_in_Chrome__list_connected_browsers",
+      "mcp__Claude_in_Chrome__navigate",
+      "Bash(curl -s -L -o /dev/null -w \"final=%{http_code} url=%{url_effective}\" http://localhost:8000/mesa.html)",
+      "Bash(curl -s -L -o /dev/null -w \"final=%{http_code} url=%{url_effective}\\\\n\" http://localhost:8000/)",
+      "Bash(curl -s -I http://localhost:8000/index.html)",
+      "Bash(xargs ls -la)",
+      "Bash(sort -k5 -rn)",
+      "mcp__Claude_in_Chrome__computer",
+      "Bash(ls -la _site/mesa.html)",
+      "Bash(grep -c \"dm-layer\" _site/mesa.html)",
+      "Bash(grep -c \"is-layer-dm\" _site/css/mesa.css)",
+      "WebFetch(domain:localhost)",
+      "mcp__Claude_in_Chrome__javascript_tool",
+      "Bash(curl -sL http://localhost:8000/mesa.html)",
+      "mcp__Claude_in_Chrome__read_console_messages",
+      "mcp__Claude_in_Chrome__browser_batch",
+      "Bash(tasklist)"
     ]
   }
 }

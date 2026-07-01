@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-19 09:03:38 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-30 23:12:19 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,25 +13,28 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `299f903 2026-06-16 build(mesa): bump MESA_BUNDLE_VERSION para o painel de Echos do jogador`
+- Ultimo commit: `aee08e0 2026-06-19 feat(mesa): inspetor do mestre estilo card + correcoes de layout e painel do jogador`
 
 ### Alteracoes Locais
 
 ```text
-M  .claude/SKILL_IMPROVEMENTS.md
-M  .claude/skills/03-page-architecture.md
+M  .claude/settings.local.json
 M  DEV_STATUS.md
 M  SYSTEM_RULES.md
 M  VISUAL_RULES.md
-M  css/mesa-inspector.css
-M  css/mesa-roster.css
+M  cloudflare/src/index.js
+M  cloudflare/src/mesa.js
 M  css/mesa.css
+A  docs/ROTEIRO_TESTE_MESA.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  js/mesa-core.js
+M  js/mesa-drawing.js
 M  js/mesa-inspector.js
-M  js/mesa-roster.js
+M  js/mesa-map.js
 M  js/mesa-stage.js
+M  js/mesa-storage.js
 M  mesa.html
+M  tests/mesa.spec.cjs
 M  tools/build-pages.cjs
 ```
 
@@ -44,20 +47,23 @@ M  tools/build-pages.cjs
 ### Arquivos Em Stage
 
 ```text
-.claude/SKILL_IMPROVEMENTS.md
-.claude/skills/03-page-architecture.md
+.claude/settings.local.json
 DEV_STATUS.md
 SYSTEM_RULES.md
 VISUAL_RULES.md
-css/mesa-inspector.css
-css/mesa-roster.css
+cloudflare/src/index.js
+cloudflare/src/mesa.js
 css/mesa.css
+docs/ROTEIRO_TESTE_MESA.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 js/mesa-core.js
+js/mesa-drawing.js
 js/mesa-inspector.js
-js/mesa-roster.js
+js/mesa-map.js
 js/mesa-stage.js
+js/mesa-storage.js
 mesa.html
+tests/mesa.spec.cjs
 tools/build-pages.cjs
 ```
 

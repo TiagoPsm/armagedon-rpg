@@ -32,6 +32,11 @@ function normalizeStatsVisibility(type, value) {
   return value === true;
 }
 
+// Camada do token na Mesa: "tokens" (padrao, visivel) ou "dm" (secreta, so o mestre ve).
+function normalizeTokenLayer(value) {
+  return value === "dm" ? "dm" : "tokens";
+}
+
 function getPercent(current, max) {
   if (!max || max <= 0) return 0;
   return clamp((current / max) * 100, 0, 100);
