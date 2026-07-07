@@ -306,6 +306,7 @@ function bindMesaRealtime() {
     state.realtimeStatus = "online";
     state.playersMoveLocked = Boolean(payload?.playersMoveLocked);
     updateMesaPresence(payload);
+    void resyncMesaSceneAfterReconnect();
     scheduleMesaRender({ summary: true, controls: true });
   });
 
@@ -381,6 +382,36 @@ function updateMesaPresence(payload) {
       connections: asPositiveInt(user?.connections, 1)
     }))
     .filter(user => user.username);
+}
+
+// Deltas perdidos durante uma queda de WebSocket nao sao reenviados pelo
+// Durable Object; sem resync, o cliente fica dessincronizado em silencio
+// ate alguem salvar a cena de novo ou recarregar a pagina.
+let mesaHadRealtimeReady = false;
+
+async function resyncMesaSceneAfterReconnect() {
+  if (!mesaHadRealtimeReady) {
+    // Primeira conexao da sessao: a cena acabou de ser hidratada no boot.
+    mesaHadRealtimeReady = true;
+    return;
+  }
+  if (!window.AUTH?.isBackendEnabled?.()) return;
+
+  if (isMaster()) {
+    // O mestre e autoritativo: em vez de puxar a cena (que poderia reverter
+    // mudancas locais feitas offline), re-persiste o estado atual — isso
+    // tambem recupera um PUT que falhou durante a queda.
+    if (typeof persistState === "function") persistState({ immediate: true });
+    return;
+  }
+
+  if (!window.APP?.getMesaScene) return;
+  try {
+    const remoteScene = await window.APP.getMesaScene();
+    applyRemoteMesaSceneMessage(remoteScene);
+  } catch (error) {
+    console.warn("Falha ao ressincronizar cena apos reconexao.", error);
+  }
 }
 
 function applyRemoteMesaSceneMessage(payload) {
@@ -1489,6 +1520,24 @@ async function loadMesaSceneSnapshot(prefetchedResult) {
         : await window.APP.getMesaScene();
       const remoteData = remoteScene?.data && typeof remoteScene.data === "object" ? remoteScene.data : {};
       state.sceneRemoteExists = Boolean(remoteScene?.createdAt || remoteScene?.updatedAt);
+      // Tokens da camada secreta (dm) nunca vem do backend — vivem apenas no
+      // snapshot local do mestre. Sem este merge, o boot sobrescreveria o
+      // localStorage com a cena remota e os tokens secretos sumiriam no F5
+      // (a protecao de applyMesaSceneSnapshot usa state.tokens, vazio no boot).
+      if (isMaster()) {
+        const previousLocal = readJsonStorage(MESA_STORAGE_KEY, {});
+        const localSecretTokens = Array.isArray(previousLocal?.tokens)
+          ? previousLocal.tokens.filter(token => token?.layer === "dm")
+          : [];
+        if (localSecretTokens.length) {
+          const remoteTokens = Array.isArray(remoteData.tokens) ? remoteData.tokens : [];
+          const remoteIds = new Set(remoteTokens.map(token => String(token?.id)));
+          remoteData.tokens = [
+            ...remoteTokens,
+            ...localSecretTokens.filter(token => !remoteIds.has(String(token?.id)))
+          ];
+        }
+      }
       localStorage.setItem(MESA_STORAGE_KEY, JSON.stringify(remoteData));
       state.scenePersistence = "remote";
       rememberMesaSceneSignature(remoteData, { persisted: true, remote: true });
@@ -1542,6 +1591,13 @@ function applyMesaSceneSnapshot(saved) {
   // foi removido; qualquer valor salvo antigo e ignorado.
   state.tokenStyle = "minimal";
 
+  // Mapa oficial embutido na cena (URL R2 + transform): aplicado tanto no
+  // boot quanto em snapshots remotos. O mesa-map.js decide se carrega a
+  // imagem ou so ajusta o transform (dedupe por mapId).
+  if (typeof window.applyMesaSceneMapFromSnapshot === "function") {
+    window.applyMesaSceneMapFromSnapshot(saved?.map || null);
+  }
+
   return { seeded, savedTokenCount: savedTokens.length };
 }
 
@@ -1575,16 +1631,43 @@ function seedInitialTokens() {
   });
 }
 
+// Reconstrói uma entrada de roster a partir dos dados de exibição embutidos
+// no token salvo/broadcast. É o caminho dos jogadores para tokens de
+// NPC/monstro/echo alheio: o /api/directory não devolve esses personagens
+// para eles, então sem este fallback o token era descartado e a cena do
+// jogador ficava vazia (bug crítico da mesa desigual).
+function createRosterEntryFromSavedToken(savedToken) {
+  const characterKey = normalizeMesaCharacterKey(savedToken?.characterKey || savedToken?.id);
+  const type = String(savedToken?.type || "").trim().toLowerCase();
+  const name = String(savedToken?.name || "").trim();
+  if (!characterKey || !name || !TYPE_LABELS[type]) return null;
+  return createRosterEntry({
+    id: normalizeMesaCharacterKey(savedToken?.id) || characterKey,
+    characterKey,
+    type,
+    ownerUsername: savedToken?.ownerUsername,
+    createdBy: "mestre",
+    name,
+    imageUrl: savedToken?.imageUrl,
+    currentLife: savedToken?.currentLife,
+    maxLife: savedToken?.maxLife,
+    currentIntegrity: savedToken?.currentIntegrity,
+    maxIntegrity: savedToken?.maxIntegrity,
+    statsVisibleToPlayers: savedToken?.statsVisibleToPlayers
+  });
+}
+
 function mergeTokenWithRoster(savedToken, rosterEntry) {
-  if (!rosterEntry) return null;
+  const entry = rosterEntry || createRosterEntryFromSavedToken(savedToken);
+  if (!entry) return null;
 
   return {
-    ...rosterEntry,
+    ...entry,
     visibleToPlayers: savedToken?.visibleToPlayers !== false,
     layer: normalizeTokenLayer(savedToken?.layer),
     statsVisibleToPlayers: normalizeStatsVisibility(
-      rosterEntry.type,
-      savedToken?.statsVisibleToPlayers ?? rosterEntry.statsVisibleToPlayers
+      entry.type,
+      savedToken?.statsVisibleToPlayers ?? entry.statsVisibleToPlayers
     ),
     x: clamp(Number(savedToken?.x), 3, 82),
     y: clamp(Number(savedToken?.y), 3, 78),
@@ -1896,8 +1979,22 @@ function createMesaScenePayloadFromState() {
       layer: normalizeTokenLayer(token.layer),
       statsVisibleToPlayers: normalizeStatsVisibility(token.type, token.statsVisibleToPlayers),
       order: token.order || 1,
-      tokenScale: roundTo(token.tokenScale || 1, 2)
+      tokenScale: roundTo(token.tokenScale || 1, 2),
+      // Dados de exibição embutidos na cena oficial: jogadores não recebem
+      // NPCs/monstros no /api/directory, então o token precisa ser
+      // auto-suficiente para renderizar no boot (ver mergeTokenWithRoster).
+      type: token.type,
+      name: token.name,
+      ownerUsername: token.ownerUsername,
+      imageUrl: String(token.imageUrl || "").startsWith("data:") ? "" : token.imageUrl,
+      currentLife: token.currentLife,
+      maxLife: token.maxLife,
+      currentIntegrity: token.currentIntegrity,
+      maxIntegrity: token.maxIntegrity
     })),
+    // Mapa oficial (URL R2 + transform) — mantido pelo mesa-map.js. Permite
+    // que jogadores carreguem o mapa no boot sem o mestre online.
+    map: typeof window.getMesaSceneMapPayload === "function" ? window.getMesaSceneMapPayload() : null,
     initiative: (() => {
       const s = typeof getInitiativeState === 'function' ? getInitiativeState() : null;
       if (!s || !s.active) return { active: false, round: 1, currentIndex: -1, order: [] };
@@ -1932,7 +2029,19 @@ function normalizeMesaScenePayload(payload = {}) {
         tokenScale: roundTo(Math.max(0.25, Math.min(4, Number(token?.tokenScale) || 1)), 2)
       }))
       .filter(token => token.id && token.characterKey)
-      .sort((a, b) => a.id.localeCompare(b.id))
+      .sort((a, b) => a.id.localeCompare(b.id)),
+    // Só a referência do mapa entra na assinatura (mudou mapa/transform →
+    // persistir). Vitais/nome ficam fora: mudam via patch de ficha e não
+    // devem forçar re-persist da cena inteira.
+    map: payload?.map && payload.map.url ? {
+      id: String(payload.map.id || ""),
+      url: String(payload.map.url || ""),
+      transform: {
+        xFrac: roundTo(Number(payload.map.transform?.xFrac) || 0, 4),
+        yFrac: roundTo(Number(payload.map.transform?.yFrac) || 0, 4),
+        scale: roundTo(Number(payload.map.transform?.scale) || 1, 4)
+      }
+    } : null
   };
 }
 

@@ -44,6 +44,29 @@ function parseSceneData(value) {
   }
 }
 
+const TOKEN_TYPES = new Set(["player", "npc", "monster", "echo"]);
+const MAX_URL_LENGTH = 600;
+
+function normalizeTokenType(value) {
+  const type = String(value || "").trim().toLowerCase();
+  return TOKEN_TYPES.has(type) ? type : "";
+}
+
+// Avatares chegam como URL (R2/HTTP). Base64/data-URIs são rejeitados para a
+// cena não inflar o D1 — o cliente cai no fallback de iniciais.
+function normalizeTokenImageUrl(value) {
+  const url = String(value || "").trim();
+  if (!url || url.length > MAX_URL_LENGTH) return "";
+  if (!/^https?:\/\//i.test(url)) return "";
+  return url;
+}
+
+function normalizeVital(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  return Math.max(0, Math.min(999999, Math.round(numeric)));
+}
+
 function normalizeSceneToken(token) {
   const characterKey = normalizeText(token?.characterKey || token?.id).toLowerCase();
   if (!characterKey) return null;
@@ -57,7 +80,36 @@ function normalizeSceneToken(token) {
     statsVisibleToPlayers: token?.statsVisibleToPlayers === true,
     layer: token?.layer === "dm" ? "dm" : "tokens",
     order: normalizeOrder(token?.order),
-    tokenScale: Math.round(clamp(token?.tokenScale, 0.25, 4) * 100) / 100 || 1
+    tokenScale: Math.round(clamp(token?.tokenScale, 0.25, 4) * 100) / 100 || 1,
+    // Dados de exibição embutidos: permitem que jogadores (que não recebem
+    // NPCs/monstros no /api/directory) renderizem qualquer token da cena.
+    type: normalizeTokenType(token?.type),
+    name: normalizeText(token?.name),
+    ownerUsername: normalizeText(token?.ownerUsername).toLowerCase(),
+    imageUrl: normalizeTokenImageUrl(token?.imageUrl),
+    currentLife: normalizeVital(token?.currentLife),
+    maxLife: normalizeVital(token?.maxLife),
+    currentIntegrity: normalizeVital(token?.currentIntegrity),
+    maxIntegrity: normalizeVital(token?.maxIntegrity)
+  };
+}
+
+// Mapa oficial da cena: referência ao arquivo no R2 + transform normalizado.
+// Permite que jogadores carreguem o mapa no boot sem o mestre online.
+function normalizeSceneMap(map) {
+  if (!map || typeof map !== "object") return null;
+  const url = normalizeTokenImageUrl(map.url);
+  if (!url) return null;
+
+  const rawTransform = map.transform && typeof map.transform === "object" ? map.transform : {};
+  return {
+    id: normalizeText(map.id).slice(0, 80),
+    url,
+    transform: {
+      xFrac: Math.round(clamp(rawTransform.xFrac ?? 0, -8, 8) * 10000) / 10000,
+      yFrac: Math.round(clamp(rawTransform.yFrac ?? 0, -8, 8) * 10000) / 10000,
+      scale: Math.round(clamp(rawTransform.scale ?? 1, 0.05, 20) * 10000) / 10000 || 1
+    }
   };
 }
 
@@ -90,7 +142,8 @@ function normalizeMesaScene(payload) {
     sceneVersion: normalizeSceneVersion(source?.sceneVersion),
     selectedTokenId: normalizeText(source?.selectedTokenId).toLowerCase(),
     tokens,
-    initiative
+    initiative,
+    map: normalizeSceneMap(source?.map)
   };
 }
 
@@ -119,7 +172,19 @@ async function getMesaScene(env, actor) {
 
   const scene = mapSceneRow(row);
   if (actor?.role !== "master") {
-    scene.data.tokens = scene.data.tokens.filter(token => token.layer !== "dm");
+    scene.data.tokens = scene.data.tokens
+      .filter(token => token.layer !== "dm")
+      .map(token => {
+        if (token.statsVisibleToPlayers) return token;
+        // Vitais de tokens com status oculto não vazam para jogadores.
+        return {
+          ...token,
+          currentLife: null,
+          maxLife: null,
+          currentIntegrity: null,
+          maxIntegrity: null
+        };
+      });
   }
   return scene;
 }

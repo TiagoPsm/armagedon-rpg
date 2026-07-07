@@ -184,6 +184,9 @@ Regras importantes:
 - **Camada do Mestre (DM) e exclusiva do mestre**: o botao "MESTRE" so aparece para o mestre; o jogador nunca entra nela (cai em TOKENS). Tokens com `layer: "dm"` e tracos de desenho com `layer: "dm"` sao INVISIVEIS para os jogadores
 - Tokens secretos: filtrados no render do jogador (`getRenderedTokens`); o mestre os ve esmaecidos com a marca "Mestre". O mestre move um token entre Token<->Mestre pelo botao "Camada" do inspetor
 - Desenhos secretos: os tracos da camada DM NUNCA sao transmitidos pela rede (`_broadcastDrawings` filtra `layer: "dm"`), entao o cliente do jogador nao os recebe; o mestre preserva os proprios tracos secretos ao receber atualizacoes remotas de desenho
+- **Cena auto-suficiente (2026-07-07)**: cada token salvo na cena oficial embute os dados de exibicao (`type`, `name`, `ownerUsername`, `imageUrl` http, vitais). Motivo: o `/api/directory` NAO devolve NPCs/monstros para jogadores, entao o cliente do jogador hidrata esses tokens pelos dados embutidos (`createRosterEntryFromSavedToken`), com o roster como fonte preferida quando existe. Avatar em `data:` (base64) nunca entra na cena
+- **Vitais de token com status oculto nao vazam**: quando `statsVisibleToPlayers` e falso, o GET `/api/mesa/scene` anula `currentLife/maxLife/currentIntegrity/maxIntegrity` para nao-mestres (o jogador ve o token, mas nem o JSON carrega os numeros)
+- **Mapa persistente**: todo mapa ativado pelo mestre sobe para o R2 e a referencia `map: { id, url, transform }` e salva na cena oficial; jogadores carregam o mapa no boot pela cena, sem o mestre online. O realtime (P2P/WS chunked) continua como entrega rapida em sessao. "Limpar mapa" remove o objeto do R2 e a referencia da cena; o R2 NAO e mais apagado quando os jogadores saem. O pan/zoom do mestre persiste na cena (debounce 1.2s) alem do broadcast realtime
 
 ## Rolagem de Dados
 

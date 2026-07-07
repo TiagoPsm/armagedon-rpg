@@ -274,6 +274,8 @@ function _applyMoveDelta(dxPct, dyPct) {
   if (typeof state !== "undefined" && Array.isArray(state.tokens)) {
     state.tokens.forEach(token => {
       if (!_selectedTokenIds.has(String(token.id))) return;
+      // Jogador nao pode mover token alheio nem pela selecao multipla
+      if (typeof canMoveTokens === "function" && !canMoveTokens(token)) return;
       token.x = Math.max(0, Math.min(100, token.x + dxPct));
       token.y = Math.max(0, Math.min(100, token.y + dyPct));
       const el = document.querySelector(`[data-token-id="${token.id}"]`);
@@ -318,6 +320,7 @@ function _applyResizeDelta(handle, newBounds, oldBounds) {
   if (typeof state !== "undefined" && Array.isArray(state.tokens)) {
     state.tokens.forEach(token => {
       if (!_selectedTokenIds.has(String(token.id))) return;
+      if (typeof canMoveTokens === "function" && !canMoveTokens(token)) return;
       token.x = Math.max(0, Math.min(100, anchorX + (token.x - anchorX) * scaleX));
       token.y = Math.max(0, Math.min(100, anchorY + (token.y - anchorY) * scaleY));
       const el = document.querySelector(`[data-token-id="${token.id}"]`);
@@ -368,6 +371,17 @@ function _broadcastAndRender() {
       if (!_selectedTokenIds.has(String(token.id))) return;
       if (typeof broadcastMesaTokenMove === "function") broadcastMesaTokenMove(token);
     });
+  }
+  // Sem persistir, o movimento em grupo sincroniza na hora mas volta ao
+  // estado antigo no proximo reload (a cena salva nunca mudou).
+  if (_selectedTokenIds.size) {
+    if (typeof bumpMesaSceneVersion === "function") bumpMesaSceneVersion();
+    if (typeof persistState === "function") persistState({ immediate: true });
+  }
+  // Tracos movidos/redimensionados pela selecao tambem precisam chegar
+  // aos outros clientes (mesmo canal do desenho livre).
+  if (_selectedStrokeIds.size && typeof _broadcastDrawings === "function") {
+    _broadcastDrawings();
   }
   if (typeof scheduleMesaRender === "function") scheduleMesaRender({ stage: true });
 }

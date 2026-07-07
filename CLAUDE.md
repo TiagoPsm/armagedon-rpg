@@ -24,6 +24,7 @@ npm run build:pages
 
 # Run Playwright test suites
 npm run test:mesa          # mesa unit/integration
+npm run test:mesa:audit    # regressao dos 11 bugs da auditoria (permissoes, camada dm, sync)
 npm run test:ficha         # ficha unit/integration
 npm run test:mesa:online   # smoke test against published site (needs env vars)
 npm run perf:mesa          # performance regression

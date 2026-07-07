@@ -580,8 +580,9 @@ function syncInspectorStatInputCard(input, field, token) {
 
 function handleTokenPointerDown(event) {
   if (state.drag) return;
-  // Bloqueia interação com tokens quando a camada mapa está ativa
-  if (typeof getMesaActiveLayer === "function" && getMesaActiveLayer() !== "tokens") return;
+  // Bloqueia interação com tokens apenas quando a camada MAPA está ativa;
+  // na camada MESTRE (dm) o mestre precisa arrastar/selecionar tokens secretos.
+  if (typeof getMesaActiveLayer === "function" && getMesaActiveLayer() === "map") return;
   if (event.target.classList?.contains("mesa-token-resize-handle")) {
     handleResizePointerDown(event);
     return;
@@ -611,8 +612,9 @@ function handleTokenPointerDown(event) {
 
 function handleTokenMouseDown(event) {
   if (state.drag) return;
-  // Bloqueia interação com tokens quando a camada mapa está ativa
-  if (typeof getMesaActiveLayer === "function" && getMesaActiveLayer() !== "tokens") return;
+  // Bloqueia interação com tokens apenas quando a camada MAPA está ativa;
+  // na camada MESTRE (dm) o mestre precisa arrastar/selecionar tokens secretos.
+  if (typeof getMesaActiveLayer === "function" && getMesaActiveLayer() === "map") return;
   if (event.target.classList?.contains("mesa-token-resize-handle")) return; // handled by pointer
   const target = resolveStagePointerTarget(event);
   if (!target) {
@@ -780,7 +782,11 @@ function flushPendingDragPosition() {
 }
 
 function queueRealtimeDragMove(token) {
-  if (!token || !isMaster()) return;
+  if (!token) return;
+  // Mestre transmite qualquer token; jogador transmite o próprio em tempo
+  // real também (sem isto o token dele "teleporta" na tela dos outros).
+  // broadcastMesaTokenMove revalida permissão e bloqueia a camada "dm".
+  if (!isMaster() && !(typeof canPlayerMoveOwnToken === "function" && canPlayerMoveOwnToken(token))) return;
   pendingRealtimeDragMove = token;
   const elapsed = Date.now() - lastRealtimeDragMoveAt;
 
@@ -801,7 +807,10 @@ function flushRealtimeDragMove() {
 
   const token = pendingRealtimeDragMove;
   pendingRealtimeDragMove = null;
-  if (!token || !isMaster()) return;
+  if (!token) return;
+  // Mesma regra do queueRealtimeDragMove: mestre transmite qualquer token,
+  // jogador transmite o proprio (broadcastMesaTokenMove revalida).
+  if (!isMaster() && !(typeof canPlayerMoveOwnToken === "function" && canPlayerMoveOwnToken(token))) return;
   lastRealtimeDragMoveAt = Date.now();
   broadcastMesaTokenMove(token);
 }

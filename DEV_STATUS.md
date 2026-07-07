@@ -22,13 +22,56 @@ Registro minimo esperado:
 - Banco publicado: Cloudflare D1
 - Backend legado Express/PostgreSQL: removido do repositorio em 2026-06-12 (historico preservado no git)
 
-## Fase Atual: Frontend-First (backend congelado)
+## Fase Atual: Integracao (backend ativo)
 
-- A partir de 2026-06-19 o desenvolvimento foca **interface e regras da Mesa**, sem mexer no backend.
-- Backend congelado no commit `aee08e0` (worker + D1 + schema). NAO rodar `wrangler deploy` nesta fase.
+- A fase "backend congelado" (2026-06-19 a 2026-07-05) foi ENCERRADA na Etapa 34: o Worker voltou a receber deploys (2026-07-05 e 2026-07-07, ver cloudflare/README.md) para os filtros server-side da camada dm e a cena auto-suficiente.
+- Regra atual: `wrangler deploy` sempre com `--dry-run` antes e registro do version ID em cloudflare/README.md.
 - Toda funcionalidade nova da Mesa deve funcionar 100% so com `state` + `persistState()` (localStorage). Onde houver sync com servidor, embrulhar em `if (window.AUTH?.isBackendEnabled?.())` — local funciona sem; quando o backend voltar, sincroniza sozinho.
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - **Divida conhecida**: `js/mesa-map.js` (linhas ~1208 e ~1254) da `fetch` direto no endpoint de mapa, furando a fachada `APP`. Unico ponto a centralizar na futura fase de integracao.
+
+## Ultima Etapa Concluida (2026-07-07 — Etapa 36: Mesa igual para todos — cena auto-suficiente + mapa persistente)
+
+Bug critico reportado com prints do site publicado: jogador via "SEM MAPA" e "0 em cena" enquanto o mestre via mapa + 5 tokens. Diagnostico confirmado ao vivo (GET /mesa/scene pela sessao do mestre): duas causas estruturais, alem de o frontend publicado ainda nao ter as correcoes das Etapas 34/35 (nada havia sido commitado).
+
+- **Jogador nunca renderizava token de NPC/monstro**: o `/api/directory` so devolve NPCs/monstros ao mestre (cloudflare/src/characters.js:362) e a cena salva so tinha `id/posicao/camada` — `mergeTokenWithRoster` retornava `null` e o token era descartado no boot e no realtime. Correcao: a cena oficial agora embute dados de exibicao por token (`type`, `name`, `ownerUsername`, `imageUrl`, vitais) — `createMesaScenePayloadFromState` (js/mesa-core.js) envia, `normalizeSceneToken` (cloudflare/src/mesa.js) preserva (avatar so URL http; `data:` rejeitado) e `createRosterEntryFromSavedToken` (js/mesa-core.js) hidrata sem entrada no roster. Vitais de token com `statsVisibleToPlayers:false` sao anulados server-side no GET para nao-mestres (nao vazam nem no JSON).
+- **Mapa nao existia no backend**: entrega era 100% realtime (P2P/WS/R2 efemero) e o R2 era apagado quando todos saiam; pior, `setMapFromConnectedFolder` NUNCA anunciava (mapa da pasta conectada = invisivel para jogadores mesmo online). Correcao: mapa persistente — todo set de mapa do mestre sobe ao R2 (`_ensureActiveMapPersisted`) e grava `map: { id, url, transform }` na cena oficial (`getMesaSceneMapPayload` no cliente, `normalizeSceneMap` no Worker); jogadores carregam no boot via `applyMesaSceneMapFromSnapshot` -> `_renderSceneMapFromUrl` (js/mesa-map.js), sem depender do mestre online. R2 nao e mais apagado quando todos saem; "Limpar mapa" remove R2 + referencia na cena e persiste mesmo sem jogadores online. Pan/zoom do mestre persiste na cena (debounce 1.2s) alem do broadcast realtime de 200ms.
+- **Transform nunca chegava a jogador com mapa via P2P/cache** (bug pre-existente descoberto agora): o id local do jogador e `cached-<hash>`, diferente do id do mestre nos broadcasts `transformOnly` — o transform ficava pendente para sempre. Corrigido com `mesaMapState.remoteMapId` (id do mestre, vindo do announce/set/cena).
+- Jogador em modo backend nao restaura mais mapa local no boot (a cena oficial e a fonte de verdade); mestre com mapa ativo local e cena sem mapa migra automaticamente no boot (upload + PUT). Mapas da pasta conectada agora tem entry completo (`cf-<hash>`) inclusive no restore pos-F5 (announce a jogadores novos volta a funcionar e o transform nao zera mais no F5).
+- Suite `test:mesa:audit` ampliada para 20 testes (describe "Mesa igual para todos"): contrato do Worker (dados de exibicao, campo `map`, filtro de vitais por papel com mock de D1), payload com dados embutidos + assinatura sensivel ao transform do mapa, hidratacao de NPC sem roster no jogador (E2E no palco), mapa da cena no boot do jogador + limpeza quando a cena zera.
+- Cache-bust: mesa-core.js e mesa-map.js -> `?v=2026-07-07-cena-espelho-1` (mesa.html).
+- Nota: `MAP_R2_TTL` (wrangler.toml) nao e aplicado por codigo algum — mapas persistem no R2 ate serem trocados/limpos (desejado agora que a cena referencia a URL).
+- Validacao: test:mesa:audit 20/20 (2 execucoes), test:mesa OK, test:ficha OK, perf:mesa OK, check:js OK (39), audit:static OK. Worker deployado (ver cloudflare/README.md).
+
+## Etapa Concluida (2026-07-05 — Etapa 35: Suite de regressao da auditoria)
+
+Nova suite `tests/mesa-audit.spec.cjs` (14 testes, `npm run test:mesa:audit`) cobrindo os 11 bugs da Etapa 34 e casos de permissao que nenhuma suite exercitava:
+
+- **Contrato do Worker** (dynamic import de `cloudflare/src/mesa.js`): `normalizeMesaScene` preserva `layer:"dm"`, default `"tokens"`, clamps de posicao/escala, teto de 120 tokens e descarte de campos desconhecidos.
+- **Mestre**: merge dos tokens dm no boot com backend (bug 2); payload com `layer` + token dm nunca vai a rede (bugs 1/2); reconexao re-persiste em vez de puxar cena (bug 3); selecao multipla persiste cena/retransmite desenhos (bug 5); drag E2E de token secreto na camada MESTRE + bloqueio na camada MAPA (bug 6); desenhos sobrevivem a reload e sao reenviados a jogador novo sem vazar camada dm (bug 4); announce de mapa por jogador NOVO com dedupe e re-announce no F5 (bug 9); round-trip do transform normalizado + mestre ignora transform remoto + transform de outro mapa fica pendente (bug 10).
+- **Jogador**: reconexao rebusca cena sem persistir (bug 3); selecao multipla nao move/redimensiona token alheio (bug 7); drag transmite so o proprio token (bug 8); token dm invisivel e controles de mestre ocultos (permissoes).
+- **A suite pegou um fix incompleto de verdade**: `flushRealtimeDragMove` (js/mesa-stage.js:810) ainda bloqueava o streaming do jogador com `!isMaster()` — corrigido com a mesma regra do `queueRealtimeDragMove` (`canPlayerMoveOwnToken`). Cache-bust: mesa-stage.js -> `?v=2026-07-05-auditfix-2`.
+- Tecnica de teste: hook `window.APP.__testEmit` (addInitScript intercepta `window.APP` e captura handlers de `APP.on`) para emitir presenca/ready sem WebSocket; funcoes globais chamadas direto via `page.evaluate` com spies; seeds de localStorage idempotentes (addInitScript roda de novo no reload); `waitForMesaSettled` (450ms) evita que o persist debounced do boot contamine spies.
+- Validacao: test:mesa:audit 14/14 (2 execucoes), test:mesa 5/5, test:ficha 28/28, perf:mesa 1/1, check:js OK, audit:static OK.
+
+## Etapa Concluida (2026-07-05 — Etapa 34: Correcao dos 11 bugs da auditoria completa)
+
+Auditoria de bugs em 4 rodadas (sync/realtime, tokens/movimento, mapa, ficha) encontrou 11 bugs; os 10 de frontend foram corrigidos nesta etapa (o 11o e o deploy do Worker, ver Pendencias):
+
+- **Mestre perdia tokens secretos (dm) no F5**: `loadMesaSceneSnapshot` (js/mesa-core.js) agora mescla os tokens `layer:"dm"` do snapshot local ANTES de sobrescrever o localStorage com a cena remota (a protecao antiga usava `state.tokens`, vazio no boot).
+- **Sem resync ao reconectar WebSocket**: novo `resyncMesaSceneAfterReconnect()` no handler `mesa:ready` (js/mesa-core.js) — jogador rebusca `GET /api/mesa/scene`; mestre (autoritativo) re-persiste o estado atual, o que tambem recupera um PUT que falhou durante a queda.
+- **Desenhos nao persistiam**: `_persistDrawings`/`_restoreDrawings` em js/mesa-drawing.js (localStorage `mesa_drawings_v1`) + mestre reenvia snapshot de desenhos quando jogador novo aparece na presenca (`_bindDrawingsPresence`).
+- **Selecao multipla nao salvava**: `_broadcastAndRender` (js/mesa-select.js) agora chama `bumpMesaSceneVersion` + `persistState({immediate:true})` e retransmite `mesa:drawings:update` quando strokes foram movidos/redimensionados.
+- **Camada MESTRE bloqueava arrastar tokens secretos**: `handleTokenPointerDown`/`handleTokenMouseDown` (js/mesa-stage.js) so bloqueiam interacao na camada `map` (antes bloqueavam tudo que nao fosse `tokens`).
+- **Jogador movia token alheio localmente**: `_applyMoveDelta`/`_applyResizeDelta` (js/mesa-select.js) agora respeitam `canMoveTokens` por token.
+- **Drag do jogador teleportava**: `queueRealtimeDragMove` (js/mesa-stage.js) transmite em tempo real tambem o token do proprio jogador (`canPlayerMoveOwnToken`); antes so o mestre streamava.
+- **Jogador que entrava depois nao recebia o mapa**: `bindMesaMapPresence` (js/mesa-map.js) anuncia por JOGADOR NOVO na presenca (diff de usernames), nao apenas na transicao 0->1 jogadores.
+- **Pan/zoom do mapa nao sincronizava**: novo sync de transform normalizado (fracoes do tamanho exibido) via carona no tipo `mesa:map:set` com `transformOnly:true` (js/mesa-map.js: `broadcastMapTransform`, `_applyRemoteMapTransform`, `_flushPendingRemoteTransform`) — jogadores agora veem o mapa alinhado ao do mestre; sem mudanca no Durable Object.
+- **Card de lore encolhia ao recolher**: `.notes-collapse-summary` com `min-width: 7em` (css/ficha.css), zerado em <=700px para nao estourar no mobile. `tests/ficha.spec.cjs` agora esta 28/28 (a falha conhecida de UX foi corrigida).
+- Cache-bust: mesa-core/stage/select/map/drawing.js -> `?v=2026-07-05-auditfix-1` (mesa.html); ficha.css -> `?v=2026-07-05-auditfix-1` (ficha.html).
+- Validacao: check:js OK (39), audit:static OK, test:mesa 5/5, test:ficha 28/28.
+
+**Bug 1 RESOLVIDO na mesma etapa**: `wrangler deploy` executado em 2026-07-05 (dry-run limpo antes; version ID `42b27e84-5547-4d23-b8e7-81fb240b1cfa`, health 200). O Worker publicado agora persiste o campo `layer` dos tokens e filtra tokens `dm` no GET /api/mesa/scene para nao-mestres. Descoberto tambem que a pendencia antiga do relay de Echo no DO estava OBSOLETA (mesa-realtime.js identico ao ja deployado). **A fase "backend congelado" (secao acima) esta ENCERRADA** — o Worker volta a poder ser deployado normalmente.
 
 ## Ultima Etapa Concluida (2026-06-30 — Etapa 33: Limpeza — remocao do Canvas renderer morto)
 

@@ -401,11 +401,22 @@
   display: none;
 }
 
+/* Largura minima fixa que acomoda "Sem conteudo" e "Com conteudo" — sem
+   isso o resumo muda de largura ao recolher e o cabecalho pula (mesmo
+   racional do .notes-toggle-btn abaixo). */
 .notes-collapse-summary {
+  display: inline-block;
+  min-width: 7em;
   font-family: var(--font-body);
   font-size: var(--fs-xs);
   color: var(--text-faint);
   font-style: italic;
+}
+
+/* Em telas estreitas a largura reservada estoura o cabecalho — la o pulo
+   de largura nao incomoda e o overflow horizontal incomoda muito. */
+@media (max-width: 700px) {
+  .notes-collapse-summary { min-width: 0; }
 }
 
 /* Largura fixa que acomoda "Minimizar" e "Expandir" — sem isso o botao

@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-06-30 23:44:26 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-07 01:23:25 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,48 +13,56 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `37e5903 2026-06-30 chore(docs): atualiza snapshot automatico do Obsidian pos-commit`
+- Ultimo commit: `84da127 2026-06-30 refactor(mesa): token so no estilo redondo + remocao do Canvas renderer morto`
 
 ### Alteracoes Locais
 
 ```text
+ M .claude/settings.local.json
+M  CLAUDE.md
 M  DEV_STATUS.md
-M  VISUAL_RULES.md
-M  css/mesa-stage.css
+M  SYSTEM_RULES.md
+M  cloudflare/README.md
+M  cloudflare/src/mesa.js
+M  css/ficha.css
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  ficha.html
 M  js/mesa-core.js
+M  js/mesa-drawing.js
 M  js/mesa-map.js
-D  js/mesa-renderer-v2.js
-D  js/mesa-renderer-worker.js
+M  js/mesa-select.js
 M  js/mesa-stage.js
 M  mesa.html
-M  tests/mesa.performance.spec.cjs
-M  tests/mesa.spec.cjs
-M  tools/build-pages.cjs
+M  package.json
+A  tests/mesa-audit.spec.cjs
+?? docs/COMPARATIVO-ROLL20.md
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
-(nenhum)
+.claude/settings.local.json
 ```
 
 ### Arquivos Em Stage
 
 ```text
+CLAUDE.md
 DEV_STATUS.md
-VISUAL_RULES.md
-css/mesa-stage.css
+SYSTEM_RULES.md
+cloudflare/README.md
+cloudflare/src/mesa.js
+css/ficha.css
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+ficha.html
 js/mesa-core.js
+js/mesa-drawing.js
 js/mesa-map.js
-js/mesa-renderer-v2.js
-js/mesa-renderer-worker.js
+js/mesa-select.js
 js/mesa-stage.js
 mesa.html
-tests/mesa.performance.spec.cjs
-tests/mesa.spec.cjs
-tools/build-pages.cjs
+package.json
+tests/mesa-audit.spec.cjs
 ```
 
 ## Paginas Principais
@@ -145,6 +153,7 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
    13,08 MB  assets\sheet-fire-background.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     1,03 MB  node_modules\terser\dist\bundle.min.js
+    0,99 MB  .claude\worktrees\amazing-roentgen-549fdf\assets\logo-rpg-armagedon.png
     0,99 MB  assets\logo-rpg-armagedon.png
     0,92 MB  node_modules\playwright-core\types\types.d.ts
     0,78 MB  node_modules\playwright-core\types\protocol.d.ts
@@ -152,7 +161,6 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js
     0,61 MB  node_modules\playwright-core\lib\vite\traceViewer\assets\defaultSettingsView-GTWI-W_B.js
     0,45 MB  node_modules\playwright-core\lib\utilsBundleImpl\index.js
-    0,41 MB  node_modules\@img\sharp-win32-x64\lib\sharp-win32-x64.node
 ```
 
 ## Comando De Atualizacao

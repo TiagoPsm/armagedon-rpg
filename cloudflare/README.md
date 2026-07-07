@@ -162,7 +162,9 @@ Proximos passos tecnicos:
 
 - `wrangler d1 execute armagedon --remote --file d1/schema.sql`: aplicado com sucesso no D1 remoto.
 - Tabela confirmada: `mesa_scenes`.
-- `wrangler deploy`: Worker `armagedon-api` publicado com version ID `44ddb8ef-776e-4bdc-841b-9dd171af1690`.
+- `wrangler deploy` (2026-07-07): Worker `armagedon-api` publicado com version ID `5c01e5e4-67f0-420b-9dc6-581c3e10ba32` — cena auto-suficiente: `normalizeSceneToken` preserva dados de exibicao (`type` whitelist, `name`, `ownerUsername`, `imageUrl` http-only com 600 chars max, vitais clampados 0-999999); novo campo `map: { id, url, transform }` normalizado por `normalizeSceneMap` (URL http obrigatoria, fracs -8..8, scale 0.05..20); GET /api/mesa/scene anula os vitais de tokens com `statsVisibleToPlayers:false` para nao-mestres. Health 200 pos-deploy. Nota: `MAP_R2_TTL` continua sem enforcement em codigo — mapas persistem no R2 (comportamento desejado: a cena agora referencia a URL).
+- Deploy anterior (2026-07-05): `42b27e84-5547-4d23-b8e7-81fb240b1cfa` — persistencia do campo `layer` dos tokens e filtro server-side da camada `dm` no GET /api/mesa/scene para nao-mestres (bug 1 da auditoria).
+- Deploy anterior: `44ddb8ef-776e-4bdc-841b-9dd171af1690`.
 - Validacao publica:
   - `GET /api/health`: HTTP 200
   - `GET /api/mesa/scene` sem sessao: HTTP 401, confirmando rota ativa e protegida

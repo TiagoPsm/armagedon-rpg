@@ -85,6 +85,19 @@ const mesaMapState = {
   myUserId:       "",     // ID do usuário atual
   activeEntry:    null,   // { id, name, blob, hash }
   mapTransform:   { x: 0, y: 0, scale: 1 }, // posição e escala do mapa
+  // Mapa oficial persistido na cena (D1): { id, url, transform } ou null.
+  // É o que permite jogadores carregarem o mapa no boot sem o mestre online.
+  sceneMapRef:        null,
+  activeMapPublicUrl: "",        // URL pública R2 do mapa ativo (mestre)
+  _uploadedMapId:     "",        // dedupe: último mapa já enviado ao R2
+  _lastSceneMapUrl:   "",        // dedupe: última URL de cena renderizada
+  _pendingSceneMap:   undefined, // snapshot que chegou antes do initMesaMap
+  _initDone:          false,
+  // Jogador: id do mapa como o MESTRE o conhece (vem no announce/set). O id
+  // local do cache é "cached-<hash>", diferente do id do mestre — sem este
+  // campo, os broadcasts de transform (que carregam o id do mestre) ficavam
+  // pendentes para sempre e o pan/zoom nunca chegava ao jogador.
+  remoteMapId:        "",
 };
 
 /* Estado da pasta conectada (monitoramento em tempo real, sem IDB) */
@@ -251,7 +264,12 @@ async function initMesaMap() {
     mesaMapState.myUserId   = session?.username || session?.userId || `user-${Date.now()}`;
 
     mesaMapState.db = await openMesaMapDB();
-    await restoreActiveMap();
+    // Jogador em modo backend não restaura mapa local: a cena oficial
+    // (e o realtime) são a fonte de verdade — evita mapa antigo no F5
+    // depois que o mestre trocou ou limpou o mapa.
+    if (mesaMapState.isMaster || !window.AUTH?.isBackendEnabled?.()) {
+      await restoreActiveMap();
+    }
     await _restoreConnectedFolder();
     bindMesaMapPresence();
     bindMapInteractions();
@@ -274,6 +292,17 @@ async function initMesaMap() {
 
     // Restaura a camada ativa salva (respeitando o papel).
     restoreMesaActiveLayer();
+
+    mesaMapState._initDone = true;
+    // Aplica o mapa da cena oficial que chegou durante o hydrate (o boot do
+    // mesa-core roda antes deste init — ver applyMesaSceneMapFromSnapshot).
+    _applyPendingSceneMap();
+
+    // Migração suave: mestre com mapa ativo local mas cena oficial sem mapa
+    // persiste o mapa atual (upload R2 + PUT da cena) para os jogadores.
+    if (mesaMapState.isMaster && mesaMapState.activeEntry && !mesaMapState.sceneMapRef) {
+      _ensureActiveMapPersisted();
+    }
   } catch (err) {
     console.warn("[mesa-map] Falha ao iniciar módulo de mapa:", err);
   }
@@ -481,6 +510,9 @@ async function openAndSetLocalMap() {
       announceMapToPlayers(mapEntry);
     }
 
+    // R2 + cena oficial (jogadores offline/futuros recebem no boot)
+    _ensureActiveMapPersisted();
+
   } catch (err) {
     console.error("[mesa-map] Falha ao abrir mapa:", err);
   } finally {
@@ -513,6 +545,10 @@ async function applyActiveMap(mapEntry) {
     mesaMapState._imgW = probe.naturalWidth;
     mesaMapState._imgH = probe.naturalHeight;
     applyMapTransform(); // re-aplica com dimensões corretas
+    // Jogador: aplica transform do mestre que chegou antes das dimensões.
+    if (typeof _flushPendingRemoteTransform === "function") _flushPendingRemoteTransform();
+    // Mestre: alinha os jogadores ao transform atual deste mapa.
+    if (typeof broadcastMapTransform === "function") broadcastMapTransform();
   };
   probe.src = blobUrl;
 
@@ -537,8 +573,17 @@ function clearActiveMap() {
 
   renderMesaMapLayer("", "");
 
+  // Remove a referência oficial da cena (D1) e o objeto do R2. O persist
+  // roda mesmo sem jogadores online — quem entrar depois não pode receber
+  // um mapa que o mestre já limpou.
+  mesaMapState.sceneMapRef        = null;
+  mesaMapState.activeMapPublicUrl = "";
+  mesaMapState._uploadedMapId     = "";
+  mesaMapState._lastSceneMapUrl   = "";
+  deleteActiveMapFromR2();
+  _persistMesaSceneMap();
+
   if (mesaMapState.playersOnline) {
-    deleteActiveMapFromR2();
     _sendRealtime({ type: EV_MAP_CLEAR });
   }
 }
@@ -572,10 +617,13 @@ async function _restoreCFActiveMap() {
 
     var saved = record.value; // { blob, name, cfPath }
     var blobUrl = URL.createObjectURL(saved.blob);
+    var hash = await computeBlobHash(saved.blob);
 
     if (mesaMapState.activeMapUrl) URL.revokeObjectURL(mesaMapState.activeMapUrl);
-    mesaMapState.activeMapId  = "";
-    mesaMapState.activeEntry  = null;
+    // Entry completo mesmo no restore: permite anunciar a jogadores novos e
+    // persistir na cena oficial (mesmo id derivado do hash usado no set).
+    mesaMapState.activeMapId  = "cf-" + hash.slice(0, 12);
+    mesaMapState.activeEntry  = { id: "cf-" + hash.slice(0, 12), name: saved.name || "", blob: saved.blob, hash: hash };
     mesaMapState.activeMapUrl = blobUrl;
     try { localStorage.removeItem(MESA_MAP_ACTIVE_KEY); } catch {}
 
@@ -583,7 +631,27 @@ async function _restoreCFActiveMap() {
     connectedFolder._activePath = saved.cfPath || "";
 
     renderMesaMapLayer(blobUrl, saved.name || "");
-    resetMapTransform();
+
+    // Restaura o transform salvo por mapa (antes o F5 sempre zerava o
+    // pan/zoom do mestre em mapas da pasta conectada).
+    try {
+      var savedTr = localStorage.getItem("mesa_map_tr_" + mesaMapState.activeMapId);
+      mesaMapState.mapTransform = savedTr ? JSON.parse(savedTr) : { x: 0, y: 0, scale: 1 };
+    } catch { mesaMapState.mapTransform = { x: 0, y: 0, scale: 1 }; }
+
+    // Probe de dimensões (necessário para o cálculo cover e para o
+    // broadcast/persist do transform normalizado).
+    mesaMapState._imgW = 0;
+    mesaMapState._imgH = 0;
+    var probe = new Image();
+    probe.onload = function() {
+      mesaMapState._imgW = probe.naturalWidth;
+      mesaMapState._imgH = probe.naturalHeight;
+      applyMapTransform();
+      broadcastMapTransform();
+    };
+    probe.src = blobUrl;
+    applyMapTransform();
   } catch (e) {
     console.warn("[mesa-map] _restoreCFActiveMap:", e);
   }
@@ -696,6 +764,7 @@ function adjustMapScale(delta) {
   mesaMapState.mapTransform.scale = Math.max(0.1, Math.min(8,
     mesaMapState.mapTransform.scale + delta));
   applyMapTransform();
+  broadcastMapTransform();
 }
 
 function panMap(dx, dy) {
@@ -703,11 +772,258 @@ function panMap(dx, dy) {
   mesaMapState.mapTransform.x += dx;
   mesaMapState.mapTransform.y += dy;
   applyMapTransform();
+  broadcastMapTransform();
 }
 
 function resetMapTransform() {
   mesaMapState.mapTransform = { x: 0, y: 0, scale: 1 };
   applyMapTransform();
+  broadcastMapTransform();
+}
+
+/* ── SYNC DO TRANSFORM (mestre → jogadores) ─────────────────── */
+// O pan é armazenado em PIXELS do container local, que muda por resolução.
+// Para sincronizar, o transform viaja normalizado como frações do tamanho
+// exibido da imagem (cover × scale), e cada cliente converte de volta para
+// os próprios pixels. Pega carona no tipo "mesa:map:set" (master-only e
+// retransmitido a todos pelo Durable Object já deployado); clientes antigos
+// ignoram o payload sem "url".
+
+function _getMapCoverDims() {
+  const layer = document.getElementById("mesaMapLayer");
+  if (!layer || !mesaMapState._imgW || !mesaMapState._imgH) return null;
+  const cw = layer.offsetWidth  || 1;
+  const ch = layer.offsetHeight || 1;
+  const s  = Math.max(0.1, Math.min(8, mesaMapState.mapTransform.scale));
+  const coverScale = Math.max(cw / mesaMapState._imgW, ch / mesaMapState._imgH);
+  return {
+    w: Math.max(1, mesaMapState._imgW * coverScale * s),
+    h: Math.max(1, mesaMapState._imgH * coverScale * s)
+  };
+}
+
+let _mapTransformBroadcastTimer = 0;
+
+function broadcastMapTransform() {
+  if (!mesaMapState.isMaster || !mesaMapState.activeMapId) return;
+  if (_mapTransformBroadcastTimer) clearTimeout(_mapTransformBroadcastTimer);
+  _mapTransformBroadcastTimer = setTimeout(() => {
+    _mapTransformBroadcastTimer = 0;
+    const dims = _getMapCoverDims();
+    if (!dims) return;
+    const { x, y, scale } = mesaMapState.mapTransform;
+    _sendRealtime({
+      type:          EV_MAP_SET,
+      transformOnly: true,
+      mapId:         mesaMapState.activeMapId,
+      from:          mesaMapState.myUserId,
+      transform: {
+        xFrac: x / dims.w,
+        yFrac: y / dims.h,
+        scale: Math.max(0.1, Math.min(8, scale))
+      }
+    });
+    // Pan/zoom também vai para a cena oficial (sobrevive a F5 sem mestre).
+    _scheduleMapScenePersist();
+  }, 200);
+}
+
+function _applyRemoteMapTransform(t, mapId) {
+  if (mesaMapState.isMaster) return;
+  const scale = Math.max(0.1, Math.min(8, Number(t?.scale) || 1));
+  mesaMapState._pendingRemoteTransform = {
+    xFrac: Number(t?.xFrac) || 0,
+    yFrac: Number(t?.yFrac) || 0,
+    scale,
+    mapId: String(mapId || "")
+  };
+  _flushPendingRemoteTransform();
+}
+
+function _flushPendingRemoteTransform() {
+  const p = mesaMapState._pendingRemoteTransform;
+  if (!p) return;
+  // Transform de outro mapa que ainda não chegou: guarda até o mapa ativar.
+  // Compara contra o id remoto (do mestre) quando conhecido — o id local de
+  // mapas recebidos via P2P/cache é "cached-<hash>" e nunca bateria.
+  const knownMapId = mesaMapState.remoteMapId || mesaMapState.activeMapId;
+  if (p.mapId && knownMapId && p.mapId !== knownMapId) return;
+  mesaMapState.mapTransform.scale = p.scale; // escala primeiro: dims dependem dela
+  const dims = _getMapCoverDims();
+  if (!dims) {
+    // Dimensões da imagem ainda não conhecidas: aplica ao menos a escala e
+    // mantém pendente — probe.onload chama este flush de novo.
+    mesaMapState.mapTransform = { x: 0, y: 0, scale: p.scale };
+    applyMapTransform();
+    return;
+  }
+  mesaMapState.mapTransform = { x: p.xFrac * dims.w, y: p.yFrac * dims.h, scale: p.scale };
+  mesaMapState._pendingRemoteTransform = null;
+  applyMapTransform();
+}
+
+/* ── MAPA PERSISTIDO NA CENA OFICIAL (D1 + R2) ──────────────── */
+// O mapa deixa de ser efêmero: quando o mestre ativa um mapa, ele sobe para
+// o R2 e a referência { id, url, transform } é salva na cena oficial
+// (PUT /mesa/scene). Jogadores carregam o mapa no boot direto do backend,
+// sem depender do mestre online — o realtime (P2P/WS) vira otimização.
+
+function _isMasterRole() {
+  if (typeof isMaster === "function") return isMaster();
+  return mesaMapState.isMaster;
+}
+
+// Transform atual normalizado (frações do tamanho exibido da imagem).
+function _normalizedMapTransform() {
+  const fallback = mesaMapState.sceneMapRef?.transform
+    || { xFrac: 0, yFrac: 0, scale: Math.max(0.1, Math.min(8, mesaMapState.mapTransform.scale || 1)) };
+  const dims = _getMapCoverDims();
+  if (!dims) return fallback;
+  const { x, y, scale } = mesaMapState.mapTransform;
+  return {
+    xFrac: Math.round((x / dims.w) * 10000) / 10000,
+    yFrac: Math.round((y / dims.h) * 10000) / 10000,
+    scale: Math.round(Math.max(0.1, Math.min(8, scale)) * 10000) / 10000
+  };
+}
+
+// Consumido por createMesaScenePayloadFromState (mesa-core.js) em todo persist.
+window.getMesaSceneMapPayload = function () {
+  if (mesaMapState.activeMapPublicUrl && mesaMapState.activeMapId) {
+    return {
+      id:        mesaMapState.activeMapId,
+      url:       mesaMapState.activeMapPublicUrl,
+      transform: _normalizedMapTransform()
+    };
+  }
+  // Sem mapa local persistido: preserva a referência que veio da cena
+  // (evita que um persist do mestre apague o mapa oficial sem intenção).
+  return mesaMapState.sceneMapRef || null;
+};
+
+// Chamado por applyMesaSceneSnapshot (mesa-core.js) no boot e em snapshots
+// remotos. Antes do initMesaMap terminar, apenas guarda como pendente.
+window.applyMesaSceneMapFromSnapshot = function (map) {
+  const ref = map && map.url ? map : null;
+  mesaMapState.sceneMapRef = ref;
+  if (!mesaMapState._initDone) {
+    mesaMapState._pendingSceneMap = ref;
+    return;
+  }
+  _applySceneMapRef(ref);
+};
+
+function _applyPendingSceneMap() {
+  if (mesaMapState._pendingSceneMap === undefined) return;
+  const ref = mesaMapState._pendingSceneMap;
+  mesaMapState._pendingSceneMap = undefined;
+  _applySceneMapRef(ref);
+}
+
+function _applySceneMapRef(ref) {
+  if (!ref) {
+    // Cena oficial sem mapa: o jogador só limpa se o que exibe veio da cena
+    // (um mapa entregue via P2P/WS pelo mestre online permanece).
+    if (!_isMasterRole() && mesaMapState._lastSceneMapUrl) {
+      mesaMapState._lastSceneMapUrl = "";
+      mesaMapState.activeMapId = "";
+      mesaMapState._imgW = 0;
+      mesaMapState._imgH = 0;
+      renderMesaMapLayer("", "");
+    }
+    return;
+  }
+
+  if (_isMasterRole()) {
+    // Mestre já exibe este mapa localmente: só reconecta a URL persistida
+    // (pós-F5) para os próximos persists não perderem a referência.
+    if (mesaMapState.activeMapId && mesaMapState.activeMapId === ref.id) {
+      mesaMapState.activeMapPublicUrl = ref.url;
+      mesaMapState._uploadedMapId = ref.id;
+      return;
+    }
+    // Mestre com outro mapa local ativo: o local manda (a cena converge no
+    // próximo persist do próprio mestre).
+    if (mesaMapState.activeMapUrl) return;
+    // Mestre sem mapa local (cache perdido): carrega da cena.
+    mesaMapState.activeMapPublicUrl = ref.url;
+    mesaMapState._uploadedMapId = ref.id;
+    _renderSceneMapFromUrl(ref);
+    return;
+  }
+
+  // Jogador: renderiza a URL da cena (dedupe por URL + id; se for o mesmo
+  // mapa, só realinha o transform).
+  if (mesaMapState._lastSceneMapUrl === ref.url && mesaMapState.activeMapId === ref.id) {
+    if (ref.transform) _applyRemoteMapTransform(ref.transform, ref.id);
+    return;
+  }
+  _renderSceneMapFromUrl(ref);
+}
+
+function _renderSceneMapFromUrl(ref) {
+  if (mesaMapState.activeMapUrl && mesaMapState.activeMapUrl.startsWith("blob:")) {
+    URL.revokeObjectURL(mesaMapState.activeMapUrl);
+  }
+  // Mantém a URL ativa (não-blob): controles de pan/zoom do mestre exigem
+  // activeMapUrl truthy mesmo quando o mapa veio da cena oficial.
+  mesaMapState.activeMapUrl = String(ref.url);
+  mesaMapState.activeMapId = String(ref.id || "scene-map");
+  mesaMapState.remoteMapId = String(ref.id || "");
+  mesaMapState._lastSceneMapUrl = ref.url;
+  mesaMapState._imgW = 0;
+  mesaMapState._imgH = 0;
+
+  const probe = new Image();
+  probe.onload = function () {
+    mesaMapState._imgW = probe.naturalWidth;
+    mesaMapState._imgH = probe.naturalHeight;
+    const t = ref.transform || { xFrac: 0, yFrac: 0, scale: 1 };
+    mesaMapState.mapTransform.scale = Math.max(0.1, Math.min(8, Number(t.scale) || 1));
+    const dims = _getMapCoverDims();
+    mesaMapState.mapTransform = dims
+      ? { x: (Number(t.xFrac) || 0) * dims.w, y: (Number(t.yFrac) || 0) * dims.h, scale: mesaMapState.mapTransform.scale }
+      : { x: 0, y: 0, scale: mesaMapState.mapTransform.scale };
+    applyMapTransform();
+    // Transform realtime que chegou antes da imagem (jogador).
+    _flushPendingRemoteTransform();
+  };
+  probe.src = ref.url;
+  renderMesaMapLayer(ref.url, ref.id || "Mapa");
+}
+
+// Persiste a cena oficial com a referência atual do mapa (master-only).
+function _persistMesaSceneMap() {
+  if (!_isMasterRole()) return;
+  if (!window.AUTH?.isBackendEnabled?.()) return;
+  if (typeof bumpMesaSceneVersion === "function") bumpMesaSceneVersion();
+  if (typeof persistState === "function") persistState({ immediate: true });
+}
+
+// Garante que o mapa ativo do mestre está no R2 e referenciado na cena.
+function _ensureActiveMapPersisted() {
+  if (!_isMasterRole() || !window.AUTH?.isBackendEnabled?.()) return;
+  if (!mesaMapState.activeEntry) return;
+  if (
+    mesaMapState._uploadedMapId === mesaMapState.activeEntry.id
+    && mesaMapState.activeMapPublicUrl
+  ) {
+    _persistMesaSceneMap();
+    return;
+  }
+  uploadActiveMapToR2();
+}
+
+// Pan/zoom do mestre também persiste (debounced, mais lento que o broadcast
+// realtime de 200ms para não fazer PUT em cada passo do arrasto).
+let _mapScenePersistTimer = 0;
+function _scheduleMapScenePersist() {
+  if (!_isMasterRole()) return;
+  if (_mapScenePersistTimer) clearTimeout(_mapScenePersistTimer);
+  _mapScenePersistTimer = setTimeout(() => {
+    _mapScenePersistTimer = 0;
+    _persistMesaSceneMap();
+  }, 1200);
 }
 
 function bindMapInteractions() {
@@ -800,6 +1116,11 @@ function bindMapInteractions() {
 function bindMesaMapPresence() {
   if (!window.APP?.on) return;
 
+  // Usernames de jogadores ja vistos na presenca. O announce precisa disparar
+  // para CADA jogador novo (ou que voltou apos F5) — nao apenas na transicao
+  // 0->1 jogadores, senao quem entra depois nunca recebe o mapa.
+  let knownPlayerNames = new Set();
+
   const handle = (payload) => {
     const users   = Array.isArray(payload?.online?.users) ? payload.online.users : [];
     const players = users.filter(u => u.role !== "master");
@@ -807,16 +1128,24 @@ function bindMesaMapPresence() {
     const hadPlayers          = mesaMapState.playersOnline;
     mesaMapState.playersOnline = players.length > 0;
 
-    if (!hadPlayers && mesaMapState.playersOnline && mesaMapState.isMaster) {
-      // Primeiro jogador entrou — anunciar mapa ativo se houver
+    const currentNames = new Set(
+      players.map(u => String(u.username || "").toLowerCase()).filter(Boolean)
+    );
+    const hasNewcomer = [...currentNames].some(name => !knownPlayerNames.has(name));
+    knownPlayerNames  = currentNames;
+
+    if (hasNewcomer && mesaMapState.playersOnline && mesaMapState.isMaster) {
+      // Jogador novo (ou recem-reconectado) — anunciar mapa ativo se houver.
+      // Quem ja tem o mapa em cache apenas responde EV_MAP_HAVE (barato).
       if (mesaMapState.activeEntry) {
         announceMapToPlayers(mesaMapState.activeEntry);
       }
     } else if (hadPlayers && !mesaMapState.playersOnline && mesaMapState.isMaster) {
-      // Último jogador saiu — limpar todas as conexões P2P e R2
+      // Último jogador saiu — limpar conexões P2P. O mapa NÃO sai do R2:
+      // ele agora é persistente (referenciado pela cena oficial) para que
+      // jogadores futuros o carreguem no boot sem o mestre online.
       mesaPeerConnections.forEach(pc => pc.close());
       mesaPeerConnections.clear();
-      deleteActiveMapFromR2();
     }
   };
 
@@ -902,6 +1231,10 @@ function announceMapToPlayers(entry) {
       uploadActiveMapToR2();
     }
   }, MAP_R2_FALLBACK_MS);
+
+  // Alinha quem acabou de entrar ao pan/zoom atual do mestre (quem ainda
+  // não tem a imagem guarda como pendente e aplica quando ela chegar).
+  broadcastMapTransform();
 }
 
 /**
@@ -1053,6 +1386,7 @@ function bindPlayerMapListeners() {
   window.APP.on(EV_MAP_ANNOUNCE, async (msg) => {
     if (!isFromMaster(msg)) return;
     const { mapId, hash, name, size, from } = msg;
+    mesaMapState.remoteMapId = String(mapId || "");
     const cached = await findCachedMapByHash(hash);
     if (cached) {
       console.info(`[mesa-map] Cache hit: ${name} (hash ${hash.slice(0, 8)})`);
@@ -1109,9 +1443,16 @@ function bindPlayerMapListeners() {
   // 7. Compatibilidade Fase 3 (R2 URL direta)
   window.APP.on(EV_MAP_SET, (msg) => {
     if (!isFromMaster(msg)) return;
+    if (msg.transformOnly && msg.transform) {
+      _applyRemoteMapTransform(msg.transform, msg.mapId);
+      return;
+    }
     const { url, mapId } = msg;
     if (!url) return;
-    renderMesaMapLayer(url, mapId || "Mapa");
+    // Caminho completo (probe de dimensões + transform pendente), igual ao
+    // boot pela cena oficial — antes só trocava o background e o transform
+    // do mestre nunca era aplicado neste fallback.
+    _renderSceneMapFromUrl({ id: mapId || "scene-map", url, transform: null });
   });
 
   // 8. Mestre limpou o mapa
@@ -1245,6 +1586,8 @@ async function uploadActiveMapToR2() {
 
     const { url, r2Key } = await res.json();
     mesaMapState.activeMapR2Key = r2Key;
+    mesaMapState.activeMapPublicUrl = url;
+    mesaMapState._uploadedMapId = mesaMapState.activeEntry.id;
 
     // Broadcast da URL pública R2 para jogadores que ainda não têm o mapa
     _sendRealtime({
@@ -1254,6 +1597,10 @@ async function uploadActiveMapToR2() {
       hash:  mesaMapState.activeEntry.hash,
       name:  mesaMapState.activeEntry.name,
     });
+
+    // Salva a referência { id, url, transform } na cena oficial — jogadores
+    // passam a carregar o mapa no boot mesmo com o mestre offline.
+    _persistMesaSceneMap();
 
     console.info("[mesa-map] Upload R2 concluído:", r2Key);
   } catch (err) {
@@ -1464,6 +1811,8 @@ async function setActiveMapFromLibrary(mapId) {
     if (mesaMapState.playersOnline) {
       announceMapToPlayers(mapEntry);
     }
+    // R2 + cena oficial (jogadores offline/futuros recebem no boot)
+    _ensureActiveMapPersisted();
     await renderMapLibrary();
   } finally {
     setMesaMapLoading(false);
@@ -2108,18 +2457,34 @@ async function setMapFromConnectedFolder(path) {
     var file = await entry.handle.getFile();
     var compressed = await compressToWebP(file);
     var blobUrl    = URL.createObjectURL(compressed);
+    var hash       = await computeBlobHash(compressed);
 
     // Limpar mapa IDB ativo (se havia)
     if (mesaMapState.activeMapUrl) {
       URL.revokeObjectURL(mesaMapState.activeMapUrl);
     }
-    mesaMapState.activeMapId  = "";
-    mesaMapState.activeEntry  = null;
+    // Mapas da pasta conectada agora têm entry completo ({id, name, blob,
+    // hash}) — sem isso eles nunca eram anunciados nem persistidos, e os
+    // jogadores ficavam em "SEM MAPA" mesmo online (bug crítico).
+    var cfEntry = {
+      id:   "cf-" + hash.slice(0, 12),
+      name: entry.fullName,
+      blob: compressed,
+      hash: hash,
+    };
+    mesaMapState.activeMapId  = cfEntry.id;
+    mesaMapState.activeEntry  = cfEntry;
     mesaMapState.activeMapUrl = blobUrl;
     try { localStorage.removeItem(MESA_MAP_ACTIVE_KEY); } catch {}
 
     renderMesaMapLayer(blobUrl, entry.fullName);
     resetMapTransform();
+
+    if (mesaMapState.playersOnline) {
+      announceMapToPlayers(cfEntry);
+    }
+    // R2 + cena oficial (jogadores offline/futuros recebem no boot)
+    _ensureActiveMapPersisted();
 
     // Persistir mapa ativo no IDB para sobreviver ao reload
     _saveCFActiveMapToIDB(compressed, entry.fullName, path).catch(function() {});

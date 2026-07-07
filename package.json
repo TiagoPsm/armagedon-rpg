@@ -8,6 +8,7 @@
     "audit:static": "node tools/audit-static.cjs",
     "build:pages": "node tools/build-pages.cjs",
     "test:mesa": "playwright test tests/mesa.spec.cjs",
+    "test:mesa:audit": "playwright test tests/mesa-audit.spec.cjs",
     "test:mesa:online": "playwright test tests/mesa-online.spec.cjs",
     "test:ficha": "playwright test tests/ficha.spec.cjs",
     "perf:mesa": "playwright test tests/mesa.performance.spec.cjs",

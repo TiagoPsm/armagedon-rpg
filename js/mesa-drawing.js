@@ -37,6 +37,51 @@ function initMesaDrawing() {
   _bindDrawEvents();
   _bindToolbarButtons();
   _buildColorPicker();
+  _restoreDrawings();
+  _bindDrawingsPresence();
+}
+
+// ── Persistência local dos traços ──────────────────────────────────
+// Sem isto, os desenhos vivem só em memória: qualquer reload perde tudo e
+// quem entra depois nunca vê o que já foi desenhado.
+const MESA_DRAWINGS_STORAGE_KEY = "mesa_drawings_v1";
+
+function _persistDrawings() {
+  try {
+    localStorage.setItem(MESA_DRAWINGS_STORAGE_KEY, JSON.stringify(_strokes));
+  } catch {}
+}
+
+function _restoreDrawings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(MESA_DRAWINGS_STORAGE_KEY) || "[]");
+    if (Array.isArray(saved) && saved.length) {
+      _strokes = saved;
+      renderDrawings();
+    }
+  } catch {}
+}
+
+// Mestre reenvia o snapshot de desenhos quando um jogador novo aparece na
+// presença (jogador que entra depois não recebe nada retroativo do DO).
+function _bindDrawingsPresence() {
+  if (!window.APP?.on) return;
+  let knownNames = new Set();
+  const handle = payload => {
+    const users = Array.isArray(payload?.online?.users) ? payload.online.users : [];
+    const names = new Set(
+      users.filter(u => u.role !== "master")
+        .map(u => String(u.username || "").toLowerCase())
+        .filter(Boolean)
+    );
+    const hasNewcomer = [...names].some(name => !knownNames.has(name));
+    knownNames = names;
+    if (hasNewcomer && typeof isMaster === "function" && isMaster() && _strokes.length) {
+      _broadcastDrawings();
+    }
+  };
+  window.APP.on("mesa:ready", handle);
+  window.APP.on("mesa:presence", handle);
 }
 
 // ── Resize canvas para cobrir o stageInner ─────────────────────────
@@ -367,6 +412,7 @@ function setDrawingsFromRemote(strokes) {
   } else {
     _strokes = incoming;
   }
+  _persistDrawings();
   renderDrawings();
 }
 
@@ -375,6 +421,7 @@ function getDrawingsSnapshot() {
 }
 
 function _broadcastDrawings() {
+  _persistDrawings();
   if (typeof sendMesaRealtimeDelta === "function") {
     // Traços da camada secreta ("dm") NUNCA saem do cliente do mestre.
     sendMesaRealtimeDelta("mesa:drawings:update", { drawings: _strokes.filter(s => s.layer !== "dm") });
