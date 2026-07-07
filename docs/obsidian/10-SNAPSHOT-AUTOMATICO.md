@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-07 01:23:38 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-07 01:30:57 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,13 +13,13 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `eddc134 2026-07-07 fix(mesa): mesa igual para todos ÔÇö auditoria (E34), suite de regressao (E35) e cena auto-suficiente + mapa persistente (E36)`
+- Ultimo commit: `3499deb 2026-07-07 docs: comparativo tecnico Armagedom (Mesa Virtual) x Roll20`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-A  docs/COMPARATIVO-ROLL20.md
+M  tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -31,7 +31,7 @@ A  docs/COMPARATIVO-ROLL20.md
 ### Arquivos Em Stage
 
 ```text
-docs/COMPARATIVO-ROLL20.md
+tools/build-pages.cjs
 ```
 
 ## Paginas Principais
@@ -122,8 +122,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
    13,08 MB  assets\sheet-fire-background.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     1,03 MB  node_modules\terser\dist\bundle.min.js
-    0,99 MB  .claude\worktrees\amazing-roentgen-549fdf\assets\logo-rpg-armagedon.png
     0,99 MB  assets\logo-rpg-armagedon.png
+    0,99 MB  .claude\worktrees\amazing-roentgen-549fdf\assets\logo-rpg-armagedon.png
     0,92 MB  node_modules\playwright-core\types\types.d.ts
     0,78 MB  node_modules\playwright-core\types\protocol.d.ts
     0,73 MB  debug.log
