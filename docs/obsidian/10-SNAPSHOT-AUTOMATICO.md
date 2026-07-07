@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-07 01:23:25 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-07 01:23:38 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,29 +13,13 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `84da127 2026-06-30 refactor(mesa): token so no estilo redondo + remocao do Canvas renderer morto`
+- Ultimo commit: `eddc134 2026-07-07 fix(mesa): mesa igual para todos ÔÇö auditoria (E34), suite de regressao (E35) e cena auto-suficiente + mapa persistente (E36)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-M  CLAUDE.md
-M  DEV_STATUS.md
-M  SYSTEM_RULES.md
-M  cloudflare/README.md
-M  cloudflare/src/mesa.js
-M  css/ficha.css
-M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  ficha.html
-M  js/mesa-core.js
-M  js/mesa-drawing.js
-M  js/mesa-map.js
-M  js/mesa-select.js
-M  js/mesa-stage.js
-M  mesa.html
-M  package.json
-A  tests/mesa-audit.spec.cjs
-?? docs/COMPARATIVO-ROLL20.md
+A  docs/COMPARATIVO-ROLL20.md
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -47,22 +31,7 @@ A  tests/mesa-audit.spec.cjs
 ### Arquivos Em Stage
 
 ```text
-CLAUDE.md
-DEV_STATUS.md
-SYSTEM_RULES.md
-cloudflare/README.md
-cloudflare/src/mesa.js
-css/ficha.css
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-ficha.html
-js/mesa-core.js
-js/mesa-drawing.js
-js/mesa-map.js
-js/mesa-select.js
-js/mesa-stage.js
-mesa.html
-package.json
-tests/mesa-audit.spec.cjs
+docs/COMPARATIVO-ROLL20.md
 ```
 
 ## Paginas Principais
