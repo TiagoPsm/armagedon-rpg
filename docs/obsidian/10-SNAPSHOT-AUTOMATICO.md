@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-11 16:54:05 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-11 17:07:03 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,16 +13,15 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `89f77b8 2026-07-11 feat(mesa): grade funcional + snap-to-grid + helper palco<->mapa (Etapa 42)`
+- Ultimo commit: `77ecc63 2026-07-11 feat(mesa): token encaixa no grid — caixa so do circulo, nome em hover/selecao (Etapa 42b)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
 M  DEV_STATUS.md
-M  VISUAL_RULES.md
-M  css/mesa-stage.css
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  js/mesa-grid.js
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
 M  tools/build-pages.cjs
@@ -39,8 +38,7 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 
 ```text
 DEV_STATUS.md
-VISUAL_RULES.md
-css/mesa-stage.css
+js/mesa-grid.js
 mesa.html
 tests/mesa-audit.spec.cjs
 tools/build-pages.cjs

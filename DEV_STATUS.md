@@ -30,7 +30,16 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-11 — Etapa 42b: token encaixa no grid — caixa = circulo, nome em hover/selecao)
+## Ultima Etapa Concluida (2026-07-11 — Correcao pos-42: grupo "Grade" nao aparecia para o mestre)
+
+Bug reportado pelo Tiago (local e online): o grupo "Grade" do painel de configuracoes nunca aparecia — sem ele nao ha como ligar a grade (que nasce desligada). Causa raiz: corrida de boot — `initMesaGrid` roda no DOMContentLoaded e decidia a visibilidade com `isMaster()` ANTES do boot assincrono da Mesa assentar `state.role` (o resultado variava por timing de fetch, por isso o teste original passou).
+
+- **js/mesa-grid.js**: a visibilidade do grupo saiu do `_bindGridSettingsUI` (momento errado) e passou para `_syncGridSettingsUI` (`group.hidden = !_isGridMaster()` a cada sync); `applyMesaSceneGridFromSnapshot` agora SEMPRE sincroniza a UI (mesmo com `grid === undefined`) — ele roda depois do papel assentar no boot, o momento certo de revelar o grupo.
+- **Testes** (suite 47 -> 49, describe "Grupo Grade no painel (correcao pos-42)"): mestre ve o grupo apos o boot (waitForFunction, pega a corrida), jogador nunca ve.
+- Cache-bust: mesa-grid.js -> `?v=2026-07-11-grid-2`; `MESA_BUNDLE_VERSION` -> `2026-07-11-grid-2`. Sem mudanca de Worker.
+- Validacao: test:mesa:audit 49/49, check:js OK. Preview local: grupo visivel para o mestre com o script `grid-2` carregado.
+
+## Etapa Concluida (2026-07-11 — Etapa 42b: token encaixa no grid — caixa = circulo, nome em hover/selecao)
 
 Ajuste pedido pelo Tiago apos a Etapa 42: o elemento do token era circulo (88px) + nome embaixo (~88x106), entao o retangulo que o snap centralizava era maior que o circulo e ele nunca assentava certinho na celula.
 

@@ -78,10 +78,14 @@ function getMesaGridScenePayload() {
 
 // Boot + snapshots remotos (applyMesaSceneSnapshot). `undefined` = cena
 // antiga sem o campo → mantém o estado atual; null = grade desligada.
+// SEMPRE sincroniza a UI: este apply roda depois do papel (state.role)
+// assentar no boot — é o momento certo de revelar o grupo pro mestre
+// (no DOMContentLoaded do initMesaGrid o isMaster() ainda é falso).
 function applyMesaSceneGridFromSnapshot(grid) {
-  if (grid === undefined) return;
-  _gridState = normalizeMesaGridState(grid);
-  renderMesaGrid();
+  if (grid !== undefined) {
+    _gridState = normalizeMesaGridState(grid);
+    renderMesaGrid();
+  }
   _syncGridSettingsUI();
 }
 
@@ -265,6 +269,10 @@ function _syncGridSettingsUI() {
   const toggle  = document.getElementById("mesaGridToggle");
   const snap    = document.getElementById("mesaGridSnapToggle");
   const sizeLbl = document.getElementById("mesaGridSizeLabel");
+  // Visibilidade do grupo acompanha o papel a cada sync (o papel só é
+  // conhecido depois do boot assíncrono — nunca decidir isso uma vez só).
+  const group = document.getElementById("mesaGridGroup");
+  if (group) group.hidden = !_isGridMaster();
   if (toggle) {
     toggle.checked = _gridState.enabled;
   }
@@ -291,10 +299,8 @@ function _bindGridSettingsUI() {
   const snap   = document.getElementById("mesaGridSnapToggle");
   if (toggle) toggle.addEventListener("change", () => updateMesaGrid({ enabled: toggle.checked }));
   if (snap)   snap.addEventListener("change", () => updateMesaGrid({ snap: snap.checked }));
-
-  // Grupo visível só para o mestre (jogador vê a grade, não a controla).
-  const group = document.getElementById("mesaGridGroup");
-  if (group && _isGridMaster()) group.hidden = false;
+  // A visibilidade do grupo (master-only) é decidida em _syncGridSettingsUI,
+  // chamado quando o papel já é conhecido — aqui no init ainda não é.
 }
 
 /* ── INIT ───────────────────────────────────────────────────── */

@@ -1610,3 +1610,29 @@ test.describe("Encaixe do token no grid (Etapa 42b)", () => {
     expect(Math.abs(snap.remainder - 0.5)).toBeLessThan(0.02);
   });
 });
+
+test.describe("Grupo Grade no painel (correcao pos-42)", () => {
+  test("mestre ve o grupo Grade apos o boot; jogador nao", async ({ page }) => {
+    // Regressao da corrida de boot: initMesaGrid roda no DOMContentLoaded,
+    // ANTES do papel assentar — decidir a visibilidade ali deixava o grupo
+    // escondido para o mestre para sempre (bug reportado em 2026-07-11).
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+    await page.waitForFunction(() => {
+      const group = document.getElementById("mesaGridGroup");
+      return group && group.hidden === false;
+    });
+  });
+
+  test("jogador nunca ve o grupo Grade", async ({ page }) => {
+    await seedPlayerWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await page.waitForFunction(() => typeof state !== "undefined" && state.session != null);
+    await waitForMesaSettled(page);
+    const hidden = await page.evaluate(() => document.getElementById("mesaGridGroup").hidden);
+    expect(hidden).toBe(true);
+  });
+});
