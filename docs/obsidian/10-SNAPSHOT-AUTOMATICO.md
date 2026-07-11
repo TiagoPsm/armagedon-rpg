@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-11 16:16:22 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-11 16:54:05 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,25 +13,16 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `dc15aa6 2026-07-11 feat(worker): hardening — caps de body/upload, rate limit no DO e regras puras testaveis (Etapa 41)`
+- Ultimo commit: `89f77b8 2026-07-11 feat(mesa): grade funcional + snap-to-grid + helper palco<->mapa (Etapa 42)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-M  CLAUDE.md
 M  DEV_STATUS.md
-M  SYSTEM_RULES.md
-M  cloudflare/README.md
-M  cloudflare/src/mesa-realtime-rules.js
-M  cloudflare/src/mesa.js
-M  css/mesa-map.css
-M  docs/obsidian/07-MESA.md
-M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-core.js
-A  js/mesa-grid.js
-M  js/mesa-map.js
-M  js/mesa-stage.js
+M  VISUAL_RULES.md
+M  css/mesa-stage.css
+ M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
 M  tools/build-pages.cjs
@@ -41,24 +32,15 @@ M  tools/build-pages.cjs
 
 ```text
 .claude/settings.local.json
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ```
 
 ### Arquivos Em Stage
 
 ```text
-CLAUDE.md
 DEV_STATUS.md
-SYSTEM_RULES.md
-cloudflare/README.md
-cloudflare/src/mesa-realtime-rules.js
-cloudflare/src/mesa.js
-css/mesa-map.css
-docs/obsidian/07-MESA.md
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/mesa-core.js
-js/mesa-grid.js
-js/mesa-map.js
-js/mesa-stage.js
+VISUAL_RULES.md
+css/mesa-stage.css
 mesa.html
 tests/mesa-audit.spec.cjs
 tools/build-pages.cjs

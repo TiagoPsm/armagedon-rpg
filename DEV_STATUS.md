@@ -30,7 +30,18 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-11 — Etapa 42: Grade funcional + snap-to-grid + helper palco<->mapa)
+## Ultima Etapa Concluida (2026-07-11 — Etapa 42b: token encaixa no grid — caixa = circulo, nome em hover/selecao)
+
+Ajuste pedido pelo Tiago apos a Etapa 42: o elemento do token era circulo (88px) + nome embaixo (~88x106), entao o retangulo que o snap centralizava era maior que o circulo e ele nunca assentava certinho na celula.
+
+- **css/mesa-stage.css**: `.mesa-token.is-minimal` agora e 88x88 (so o circulo). O `.mesa-token-name` ficou `position: absolute` abaixo do circulo (fora da caixa de layout) e invisivel por padrao (`opacity: 0`, `pointer-events: none`); aparece com fade de 150ms em hover, `.is-selected` e `.is-dragging`. Nome segue no DOM (leitores de tela). Alca de resize reposicionada para a borda do circulo (antes ficava "acima do nome").
+- **Efeito em cascata gratis**: snap-to-grid, arrasto, clamp e caixa de selecao usam o rect do elemento — todos passam a operar exatamente sobre o circulo, sem mudanca de JS.
+- **Teste** (tests/mesa-audit.spec.cjs, describe "Encaixe do token no grid (Etapa 42b)", suite 46 -> 47): caixa 88x88, nome oculto por padrao, visivel na selecao E no hover (espera a transicao real), e centro do CIRCULO cai no centro da celula apos snap.
+- Cache-bust: css/mesa-stage.css -> `?v=2026-07-11-token-fit-1`; `MESA_BUNDLE_VERSION` -> `2026-07-11-token-fit-1`. Sem mudanca de Worker (sem deploy).
+- Nota de ambiente: no painel de preview embutido o fade pode parecer "travado em 0" porque o renderer fica suspenso sem pintura (transicoes CSS nao avancam); em navegador real e no Playwright funciona — verificado pelo teste.
+- Validacao: test:mesa:audit 47/47, test:mesa 5/5 (os "10" de antes eram 5 + 5 duplicados do worktree orfao removido na 42), check:js OK, audit:static OK, build:pages OK. VISUAL_RULES.md atualizado.
+
+## Etapa Concluida (2026-07-11 — Etapa 42: Grade funcional + snap-to-grid + helper palco<->mapa)
 
 Sexta etapa do plano "Mesa Virtual -> VTT completo" (Etapas 37-51). Frontend + Worker (contrato da cena) — deployado.
 

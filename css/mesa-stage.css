@@ -332,8 +332,12 @@
 }
 
 /* ── MINIMAL TOKEN STYLE ─────────────────────────────────────── */
+/* A caixa do token e SO o circulo (88x88): o nome fica absoluto, fora do
+   layout. Assim o snap-to-grid, o arrasto e a selecao (que usam o rect do
+   elemento) centralizam o circulo na celula, sem o nome esticar a caixa. */
 .mesa-token.is-minimal {
   width: 88px;
+  height: 88px;
   padding: 0;
   background: transparent;
   border: none;
@@ -341,7 +345,6 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
 }
 
 .mesa-token.is-minimal:hover {
@@ -406,16 +409,32 @@
   border-radius: 50%;
 }
 
+/* Nome fora da caixa de layout, oculto por padrao: aparece no hover, na
+   selecao e durante o arrasto (o token continua identificavel sem inflar
+   a area de encaixe no grid). Segue no DOM para leitores de tela. */
 .mesa-token.is-minimal .mesa-token-name {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 0.78rem;
   font-weight: 600;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 96px;
+  max-width: 120px;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
   margin: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition);
+}
+
+.mesa-token.is-minimal:hover .mesa-token-name,
+.mesa-token.is-minimal.is-selected .mesa-token-name,
+.mesa-token.is-minimal.is-dragging .mesa-token-name {
+  opacity: 1;
 }
 
 /* Hidden badge for oculto tokens in minimal mode */
@@ -461,8 +480,9 @@
 }
 
 .mesa-token.is-minimal .mesa-token-resize-handle {
-  bottom: 28px; /* above the name */
-  right: -2px;
+  /* Caixa do token agora e so o circulo: alca na borda inferior direita dele */
+  bottom: 2px;
+  right: 2px;
   background-color: rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.15);
 }

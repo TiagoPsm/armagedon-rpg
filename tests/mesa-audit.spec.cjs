@@ -1553,3 +1553,60 @@ test.describe("Grade funcional (Etapa 42)", () => {
     expect(result.painted).toBeGreaterThan(100);
   });
 });
+
+test.describe("Encaixe do token no grid (Etapa 42b)", () => {
+  test("caixa do token e so o circulo; nome aparece apenas em hover/selecao", async ({ page }) => {
+    await seedMasterWithScene(page, [ANA_TOKEN, BASE_TOKENS[1]]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    // Caixa quadrada (88x88): o nome absoluto nao infla o rect usado por
+    // snap/arrasto/selecao.
+    const box = await page.evaluate(() => {
+      const el = document.querySelector('#mesaStage [data-token-id="ana"]');
+      const r = el.getBoundingClientRect();
+      return { w: Math.round(r.width), h: Math.round(r.height) };
+    });
+    expect(box.w).toBe(88);
+    expect(box.h).toBe(88);
+
+    // Nome invisivel por padrao (bruno nao esta selecionado nem em hover)
+    const nameHidden = await page.evaluate(() =>
+      getComputedStyle(document.querySelector('#mesaStage [data-token-id="bruno"] .mesa-token-name')).opacity
+    );
+    expect(Number(nameHidden)).toBe(0);
+
+    // Selecionar mostra o nome (espera a transicao de 150ms terminar)
+    await page.evaluate(() => selectToken("ana"));
+    await page.waitForFunction(() => {
+      const name = document.querySelector('#mesaStage [data-token-id="ana"] .mesa-token-name');
+      return name && getComputedStyle(name).opacity === "1";
+    });
+
+    // Hover tambem mostra (no token NAO selecionado)
+    await page.hover('#mesaStage [data-token-id="bruno"]');
+    await page.waitForFunction(() => {
+      const name = document.querySelector('#mesaStage [data-token-id="bruno"] .mesa-token-name');
+      return name && getComputedStyle(name).opacity === "1";
+    });
+
+    // Com grade+snap: apos snap o CENTRO DO CIRCULO cai no centro da celula
+    const snap = await page.evaluate(() => {
+      window.updateMesaGrid({ enabled: true, snap: true, cellFrac: 0.1, offsetXFrac: 0, offsetYFrac: 0 });
+      const token = state.tokens.find(t => t.id === "ana");
+      token.x = 41.3;
+      token.y = 27.9;
+      const el = document.querySelector('#mesaStage [data-token-id="ana"]');
+      const moved = window.mesaSnapTokenToGrid(token, el);
+      const stage = document.getElementById("mesaStageInner").getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      const centerFx = (r.left + r.width / 2 - stage.left) / stage.width;
+      const remainder = ((centerFx / 0.1) % 1 + 1) % 1;
+      return { moved, remainder };
+    });
+    expect(snap.moved).toBe(true);
+    expect(Math.abs(snap.remainder - 0.5)).toBeLessThan(0.02);
+  });
+});
