@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-11 01:37:08 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-11 01:45:02 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,17 +13,23 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `9da7391 2026-07-11 feat(mesa): iniciativa e desenhos fim-a-fim ÔÇö relay no DO + contrato da cena (Etapas 37-38)`
+- Ultimo commit: `485d5a7 2026-07-11 fix(mesa): drag sem drift com zoom + clamp continuo da selecao multipla (Etapa 39)`
 
 ### Alteracoes Locais
 
 ```text
-M  .claude/settings.local.json
+M  CLAUDE.md
 M  DEV_STATUS.md
-M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-select.js
-M  js/mesa-stage.js
+M  docs/obsidian/07-MESA.md
+M  echos.html
+M  ficha.html
+M  index.html
+M  js/api.js
+D  js/mesa-init.js
+M  js/mesa-map.js
 M  mesa.html
+M  regras.html
+M  sugestoes.html
 M  tests/mesa-audit.spec.cjs
 M  tools/build-pages.cjs
 ```
@@ -37,12 +43,18 @@ M  tools/build-pages.cjs
 ### Arquivos Em Stage
 
 ```text
-.claude/settings.local.json
+CLAUDE.md
 DEV_STATUS.md
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/mesa-select.js
-js/mesa-stage.js
+docs/obsidian/07-MESA.md
+echos.html
+ficha.html
+index.html
+js/api.js
+js/mesa-init.js
+js/mesa-map.js
 mesa.html
+regras.html
+sugestoes.html
 tests/mesa-audit.spec.cjs
 tools/build-pages.cjs
 ```
@@ -58,7 +70,7 @@ tools/build-pages.cjs
 
 ## Contagem Rapida
 
-- JavaScript em `js/`: 31 arquivo(s)
+- JavaScript em `js/`: 30 arquivo(s)
 - CSS em `css/`: 13 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
@@ -135,8 +147,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
    13,08 MB  assets\sheet-fire-background.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     1,03 MB  node_modules\terser\dist\bundle.min.js
-    0,99 MB  .claude\worktrees\amazing-roentgen-549fdf\assets\logo-rpg-armagedon.png
     0,99 MB  assets\logo-rpg-armagedon.png
+    0,99 MB  .claude\worktrees\amazing-roentgen-549fdf\assets\logo-rpg-armagedon.png
     0,92 MB  node_modules\playwright-core\types\types.d.ts
     0,78 MB  node_modules\playwright-core\types\protocol.d.ts
     0,73 MB  debug.log

@@ -1560,31 +1560,15 @@ async function uploadActiveMapToR2() {
   setMesaMapUploading(true);
 
   try {
-    const session  = _getSession();
-    const apiBase  = window.ARMAGEDON_CONFIG?.apiBaseUrl || "";
-    const token    = session?.token || "";
-
-    if (!apiBase || !token) {
-      console.warn("[mesa-map] Upload R2: API base ou token ausente.");
+    if (!window.APP?.uploadMesaMap) {
+      console.warn("[mesa-map] Upload R2: fachada APP indisponivel.");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("file",  mesaMapState.activeEntry.blob);
-    formData.append("mapId", mesaMapState.activeEntry.id);
-
-    const res = await fetch(`${apiBase}/mesa/map`, {
-      method:  "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body:    formData,
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err?.error || `HTTP ${res.status}`);
-    }
-
-    const { url, r2Key } = await res.json();
+    const { url, r2Key } = await window.APP.uploadMesaMap(
+      mesaMapState.activeEntry.blob,
+      mesaMapState.activeEntry.id
+    );
     mesaMapState.activeMapR2Key = r2Key;
     mesaMapState.activeMapPublicUrl = url;
     mesaMapState._uploadedMapId = mesaMapState.activeEntry.id;
@@ -1619,16 +1603,9 @@ async function deleteActiveMapFromR2() {
   mesaMapState.activeMapR2Key = "";
 
   try {
-    const session = _getSession();
-    const apiBase = window.ARMAGEDON_CONFIG?.apiBaseUrl || "";
-    const token   = session?.token || "";
+    if (!window.APP?.deleteMesaMap) return;
 
-    if (!apiBase || !token) return;
-
-    await fetch(`${apiBase}/mesa/map/${encodeURIComponent(r2Key)}`, {
-      method:  "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    await window.APP.deleteMesaMap(r2Key);
 
     console.info("[mesa-map] Mapa removido do R2:", r2Key);
   } catch (err) {

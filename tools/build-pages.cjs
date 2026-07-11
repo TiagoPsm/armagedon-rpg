@@ -5,8 +5,8 @@ const repoRoot = path.resolve(__dirname, "..");
 const outDir = path.join(repoRoot, "_site");
 
 // Bump aqui quando mudar arquivos dos bundles
-const FICHA_BUNDLE_VERSION = "2026-07-07-cena-espelho-1";
-const MESA_BUNDLE_VERSION  = "2026-07-11-interaction-fix-1";
+const FICHA_BUNDLE_VERSION = "2026-07-11-map-facade-1";
+const MESA_BUNDLE_VERSION  = "2026-07-11-map-facade-1";
 
 const files = [
   "index.html", "ficha.html", "mesa.html", "regras.html", "sugestoes.html",
@@ -41,7 +41,7 @@ const mesaCssFiles  = [
 const mesaJsFiles = [
   "js/runtime-config.js","js/api.js","js/ui.js","js/auth.js",
   "js/mesa-stage.js","js/mesa-roster.js","js/mesa-inspector.js",
-  "js/mesa-storage.js","js/mesa-core.js","js/mesa-init.js","js/mesa-map.js",
+  "js/mesa-storage.js","js/mesa-core.js","js/mesa-map.js",
   "js/mesa-drawing.js","js/mesa-select.js"
 ];
 

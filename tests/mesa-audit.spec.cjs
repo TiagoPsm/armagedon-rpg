@@ -1241,3 +1241,53 @@ test.describe("Correcoes de interacao (Etapa 39)", () => {
     expect(result.y1).toBeGreaterThanOrEqual(-0.001);
   });
 });
+
+test.describe("Fachada do mapa (Etapa 40)", () => {
+  test("upload e delete de mapa passam pela fachada window.APP, sem fetch direto", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(async () => {
+      const facadeCalls = [];
+      let directFetches = 0;
+      const originalFetch = window.fetch;
+      window.fetch = (...args) => { directFetches += 1; return originalFetch(...args); };
+
+      window.AUTH.isBackendEnabled = () => true;
+      window.APP.uploadMesaMap = async (blob, mapId) => {
+        facadeCalls.push({ fn: "upload", mapId, blobSize: blob?.size ?? null });
+        return { url: "https://api.dev/api/mesa/map/maps/mestre/m1.webp", r2Key: "maps/mestre/m1.webp" };
+      };
+      window.APP.deleteMesaMap = async r2Key => {
+        facadeCalls.push({ fn: "delete", r2Key });
+        return { ok: true };
+      };
+      // Broadcast/persist reais nao interessam aqui
+      window._persistMesaSceneMapOriginal = _persistMesaSceneMap;
+      _persistMesaSceneMap = () => {};
+      _sendRealtime = () => {};
+
+      mesaMapState.activeEntry = { id: "m1", name: "Mapa", hash: "abc", blob: new Blob(["x"]) };
+      await uploadActiveMapToR2();
+      const stateAfterUpload = {
+        r2Key: mesaMapState.activeMapR2Key,
+        publicUrl: mesaMapState.activeMapPublicUrl
+      };
+
+      await deleteActiveMapFromR2();
+
+      window.fetch = originalFetch;
+      return { facadeCalls, directFetches, stateAfterUpload };
+    });
+
+    expect(result.facadeCalls).toEqual([
+      { fn: "upload", mapId: "m1", blobSize: 1 },
+      { fn: "delete", r2Key: "maps/mestre/m1.webp" }
+    ]);
+    expect(result.directFetches).toBe(0); // nenhum fetch fora da fachada
+    expect(result.stateAfterUpload.r2Key).toBe("maps/mestre/m1.webp");
+    expect(result.stateAfterUpload.publicUrl).toContain("/api/mesa/map/");
+  });
+});

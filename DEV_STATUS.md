@@ -28,9 +28,20 @@ Registro minimo esperado:
 - Regra atual: `wrangler deploy` sempre com `--dry-run` antes e registro do version ID em cloudflare/README.md.
 - Toda funcionalidade nova da Mesa deve funcionar 100% so com `state` + `persistState()` (localStorage). Onde houver sync com servidor, embrulhar em `if (window.AUTH?.isBackendEnabled?.())` — local funciona sem; quando o backend voltar, sincroniza sozinho.
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
-- **Divida conhecida**: `js/mesa-map.js` (linhas ~1208 e ~1254) da `fetch` direto no endpoint de mapa, furando a fachada `APP`. Unico ponto a centralizar na futura fase de integracao.
+- ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-11 — Etapa 39: Correcoes de interacao — drift de drag + clamp da selecao)
+## Ultima Etapa Concluida (2026-07-11 — Etapa 40: Fachada do mapa + remocao do stub mesa-init.js)
+
+Quarta etapa do plano "Mesa Virtual -> VTT completo" (Etapas 37-51). So frontend — sem deploy de Worker.
+
+- **Fachada do mapa** (js/api.js + js/mesa-map.js): novos metodos `window.APP.uploadMesaMap(blob, mapId)` (FormData — nao passa pelo `request()` JSON; o browser define o multipart sozinho) e `window.APP.deleteMesaMap(r2Key)`. `uploadActiveMapToR2`/`deleteActiveMapFromR2` (js/mesa-map.js) nao dao mais `fetch` direto — a divida registrada na fase de integracao foi quitada; toda chamada de backend dos modulos `mesa-*.js` passa pela fachada `APP`.
+- **Stub removido**: `js/mesa-init.js` (arquivo vazio reservado desde o split) deletado — saiu do `mesa.html`, do bundle (tools/build-pages.cjs) e das docs (CLAUDE.md, docs/obsidian/07-MESA.md). check:js caiu de 39 para 38 arquivos.
+- **Docs corrigidas de tabela**: CLAUDE.md e 07-MESA.md ainda citavam `mesa-renderer-v2.js`/renderer Canvas removidos na Etapa 33 (discrepancia apontada no COMPARATIVO-ROLL20 §10) — atualizados para o renderer DOM atual.
+- **Teste** (tests/mesa-audit.spec.cjs, describe "Fachada do mapa (Etapa 40)", suite 35 -> 36): upload/delete via fachada com spy + contagem de `window.fetch` direto (deve ser 0) + estado do mesa-map preenchido pela resposta.
+- Cache-bust: api.js -> `?v=2026-07-11-map-facade-1` em TODAS as paginas (echos, ficha, index, mesa, regras, sugestoes); mesa-map.js -> `?v=2026-07-11-map-facade-1`; `FICHA_BUNDLE_VERSION` e `MESA_BUNDLE_VERSION` -> `2026-07-11-map-facade-1` (api.js esta nos dois bundles).
+- Validacao: check:js OK (38), audit:static OK, build:pages OK, test:mesa:audit 36/36 (flake conhecido do "bug 2" reapareceu sob carga na 1a rodada e passou isolado — investigar na Etapa 50), test:mesa 5/5, test:ficha 28/28. Preview: mesa carrega sem mesa-init.js, fachada presente, 3 tokens no palco, console limpo.
+
+## Etapa Concluida (2026-07-11 — Etapa 39: Correcoes de interacao — drift de drag + clamp da selecao)
 
 Terceira etapa do plano "Mesa Virtual -> VTT completo" (Etapas 37-51). So frontend — sem deploy de Worker.
 

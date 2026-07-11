@@ -57,7 +57,7 @@ Scripts load via `<script src="...">` tags in order. **Script order in `ficha.ht
 |---|---|
 | `index.html` | `js/auth.js`, `js/api.js`, `js/ui.js` |
 | `ficha.html` | `js/ficha-core.js`, `js/ficha-sheet.js`, `js/ficha-master.js`, `js/ficha-inventory.js`, `js/ficha-memories.js`, `js/ficha-soul.js`, `js/ficha-dice.js`, `js/ficha-habs.js`, `js/ficha-passives.js`, `js/ficha-init.js` |
-| `mesa.html` | `js/mesa-core.js`, `js/mesa-stage.js`, `js/mesa-roster.js`, `js/mesa-inspector.js`, `js/mesa-storage.js`, `js/mesa-renderer-v2.js`, `js/mesa-drawing.js`, `js/mesa-select.js`, `js/mesa-map.js`, `js/mesa-initiative.js`, `js/mesa-init.js` |
+| `mesa.html` | `js/mesa-core.js`, `js/mesa-stage.js`, `js/mesa-roster.js`, `js/mesa-inspector.js`, `js/mesa-storage.js`, `js/mesa-drawing.js`, `js/mesa-select.js`, `js/mesa-map.js`, `js/mesa-initiative.js` |
 | `regras.html` | `js/regras.js` |
 | `sugestoes.html` | `js/sugestoes.js` |
 
@@ -87,7 +87,7 @@ Scripts load via `<script src="...">` tags in order. **Script order in `ficha.ht
 
 ### Mesa Virtual specifics
 
-- **Renderer**: Canvas + OffscreenCanvas Worker by default (`mesa-renderer-v2.js` / `mesa-renderer-worker.js`). DOM fallback activated by `localStorage.mesaRenderer = "dom"`.
+- **Renderer**: tokens are rendered 100% in DOM (the Canvas/OffscreenCanvas renderer was removed in 2026-06-30, Etapa 33). Canvas is used only for drawings (`#mesaDrawCanvas`).
 - **Interaction modes** (`mesa-select.js`): `select` (rubber-band, click-select, selection box with 8 resize handles) and `move` (drag tokens, pan camera).
 - **Drawing tools** (`mesa-drawing.js`): pencil, line, rect, ellipse, eraser. Coordinates stored as fractions (0–1) so they scale with zoom.
 - **Layers**: tokens layer (default) and map layer — controlled via `data-active-layer` on `#mesaStageWrap`.

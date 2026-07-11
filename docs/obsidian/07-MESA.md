@@ -34,12 +34,13 @@ JS:
 
 - `js/mesa-core.js`
 - `js/mesa-stage.js`
-- `js/mesa-renderer-v2.js`
-- `js/mesa-renderer-worker.js`
 - `js/mesa-roster.js`
 - `js/mesa-inspector.js`
 - `js/mesa-storage.js`
-- `js/mesa-init.js`
+- `js/mesa-map.js`
+- `js/mesa-drawing.js`
+- `js/mesa-select.js`
+- `js/mesa-initiative.js`
 
 Worker/D1:
 
