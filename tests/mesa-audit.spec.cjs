@@ -326,14 +326,17 @@ test.describe("Regressao da auditoria — mestre", () => {
     await page.goto(`${baseUrl}/mesa.html`);
     await waitForMesaSettled(page);
 
-    // Persiste um traco e recarrega
+    // Persiste um traco pelo fluxo real (_broadcastDrawings) e recarrega.
+    // Desde a Etapa 38 a cena e a fonte de verdade dos desenhos: o snapshot
+    // da cena (persistState) precisa carrega-los para o F5 restaurar.
     await page.evaluate(() => {
       _strokes = [
         { id: "s1", tool: "line", color: "#e84040", width: 3, x1: 0.1, y1: 0.1, x2: 0.5, y2: 0.5, points: null, layer: "tokens" },
         { id: "s2", tool: "line", color: "#e84040", width: 3, x1: 0.2, y1: 0.2, x2: 0.6, y2: 0.6, points: null, layer: "dm" }
       ];
-      _persistDrawings();
+      _broadcastDrawings();
     });
+    await page.waitForTimeout(320); // persistState debounced (160ms)
     await page.reload();
     await expect(page.locator("#mesaStageWrap")).toBeVisible();
     // O restore dos desenhos acontece no fim do boot (initMesaDrawing) —
@@ -772,5 +775,355 @@ test.describe("Regressao da auditoria — jogador", () => {
     expect(controls.dmVisible).toBe(false);
     expect(controls.mapVisible).toBe(false);
     expect(controls.resetVisible).toBe(false);
+  });
+});
+
+/* ============================================================
+ * Etapa 37 — Iniciativa fim-a-fim
+ * Antes desta etapa os deltas mesa:initiative:* eram descartados
+ * pelo roteador do cliente e pelo DO; o estado sumia no F5.
+ * ============================================================ */
+test.describe("Iniciativa fim-a-fim (Etapa 37)", () => {
+  test("Worker: normalizeMesaScene preserva iniciativa ativa e limita a 50 entradas", async () => {
+    const { normalizeMesaScene } = await import("../cloudflare/src/mesa.js");
+    const manyEntries = Array.from({ length: 60 }, (_, i) => ({
+      id: `p${i}`, characterKey: `p${i}`, name: `P${i}`, roll: 10, modifier: 1, total: 11, rolled: true
+    }));
+    const active = normalizeMesaScene({
+      tokens: [],
+      initiative: { active: true, round: 3, currentIndex: 1, order: manyEntries }
+    });
+    expect(active.initiative.active).toBe(true);
+    expect(active.initiative.round).toBe(3);
+    expect(active.initiative.currentIndex).toBe(1);
+    expect(active.initiative.order.length).toBe(50);
+    expect(active.initiative.order[0]).toEqual({
+      id: "p0", characterKey: "p0", name: "P0", roll: 10, modifier: 1, total: 11, rolled: true
+    });
+
+    const inactive = normalizeMesaScene({ tokens: [] });
+    expect(inactive.initiative).toEqual({ active: false, round: 1, currentIndex: -1, order: [] });
+  });
+
+  test("jogador recebe mesa:initiative:update: painel + banner; banner some apos rolar", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedPlayerWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    // Mestre ativa combate (ana ainda nao rolou) — vindo de OUTRO cliente.
+    await page.evaluate(async () => {
+      window.APP.__testEmit("mesa:initiative:update", {
+        type: "mesa:initiative:update",
+        clientId: "cliente-do-mestre",
+        initiative: {
+          active: true, round: 2, currentIndex: 0,
+          order: [{ id: "bruno", characterKey: "bruno", name: "Bruno Cinza", roll: 15, modifier: 2, total: 17, rolled: true }]
+        }
+      });
+      await new Promise(resolve => setTimeout(resolve, 80));
+    });
+
+    await expect(page.locator("#vttInitiativeBlock")).toBeVisible();
+    await expect(page.locator("#vttInitiativeBlock .init-round-num")).toHaveText("2");
+    await expect(page.locator("#vttInitiativeBlock .init-entry")).toHaveCount(1);
+    await expect(page.locator("#initiativeBanner")).toBeVisible();
+    // Controles de mestre nunca aparecem para o jogador
+    await expect(page.locator("#vttInitiativeBlock .init-master-controls")).toBeHidden();
+
+    // Update seguinte inclui a rolagem da propria ana → banner some.
+    await page.evaluate(async () => {
+      window.APP.__testEmit("mesa:initiative:update", {
+        type: "mesa:initiative:update",
+        clientId: "cliente-do-mestre",
+        initiative: {
+          active: true, round: 2, currentIndex: 0,
+          order: [
+            { id: "bruno", characterKey: "bruno", name: "Bruno Cinza", roll: 15, modifier: 2, total: 17, rolled: true },
+            { id: "ana", characterKey: "ana", name: "Ana Rubra", roll: 12, modifier: 1, total: 13, rolled: true }
+          ]
+        }
+      });
+      await new Promise(resolve => setTimeout(resolve, 80));
+    });
+    await expect(page.locator("#initiativeBanner")).toBeHidden();
+    await expect(page.locator("#vttInitiativeBlock .init-entry")).toHaveCount(2);
+  });
+
+  test("mestre consome mesa:initiative:roll, reordena, re-broadcasta e persiste; rolagem forjada e descartada", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(async () => {
+      const sent = [];
+      let persisted = 0;
+      sendMesaRealtimeDelta = (type, payload) => { sent.push({ type, payload }); return true; };
+      persistState = () => { persisted += 1; };
+
+      activateInitiative();
+      const afterActivate = {
+        broadcastTypes: sent.map(call => call.type),
+        persisted
+      };
+
+      // Rolagem legitima: ator ana rolando pelo proprio personagem.
+      window.APP.__testEmit("mesa:initiative:roll", {
+        type: "mesa:initiative:roll",
+        clientId: "cliente-da-ana",
+        characterKey: "ana", name: "Ana Rubra", roll: 15, modifier: 2, total: 17,
+        actor: { username: "ana", role: "player" }
+      });
+      await new Promise(resolve => setTimeout(resolve, 80));
+      const afterRoll = {
+        order: getInitiativeState().order.map(entry => entry.characterKey),
+        anaTotal: getInitiativeState().order.find(entry => entry.characterKey === "ana")?.total,
+        broadcasts: sent.filter(call => call.type === "mesa:initiative:update").length,
+        persisted
+      };
+
+      // Rolagem forjada: ator ana declarando o personagem do bruno.
+      window.APP.__testEmit("mesa:initiative:roll", {
+        type: "mesa:initiative:roll",
+        clientId: "cliente-da-ana",
+        characterKey: "bruno", name: "Bruno Cinza", roll: 20, modifier: 5, total: 25,
+        actor: { username: "ana", role: "player" }
+      });
+      await new Promise(resolve => setTimeout(resolve, 80));
+
+      return {
+        afterActivate,
+        afterRoll,
+        finalOrder: getInitiativeState().order.map(entry => entry.characterKey)
+      };
+    });
+
+    // Ativar combate ja broadcasta o estado E persiste a cena
+    expect(result.afterActivate.broadcastTypes).toContain("mesa:initiative:update");
+    expect(result.afterActivate.persisted).toBe(1);
+    // Rolagem legitima entrou na ordem, re-broadcastou e re-persistiu
+    expect(result.afterRoll.order).toEqual(["ana"]);
+    expect(result.afterRoll.anaTotal).toBe(17);
+    expect(result.afterRoll.broadcasts).toBe(2);
+    expect(result.afterRoll.persisted).toBe(2);
+    // Rolagem forjada (ator != characterKey) nao entrou
+    expect(result.finalOrder).toEqual(["ana"]);
+  });
+
+  test("iniciativa ativa sobrevive ao F5 do mestre (persistState + snapshot da cena)", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.evaluate(() => activateInitiative());
+    // Espera o persist debounced (160ms) gravar o snapshot local.
+    await page.waitForTimeout(400);
+    const savedInitiative = await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("tc_virtual_mesa_mock_v1"))?.initiative
+    );
+    expect(savedInitiative?.active).toBe(true);
+
+    await page.reload();
+    await waitForMesaSettled(page);
+    await expect(page.locator("#vttInitiativeBlock")).toBeVisible();
+    const restored = await page.evaluate(() => getInitiativeState().active);
+    expect(restored).toBe(true);
+  });
+
+  test("assinatura de dedupe da cena muda quando a iniciativa muda", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(() => {
+      // Neutraliza efeitos colaterais do activate (broadcast/persist reais).
+      sendMesaRealtimeDelta = () => true;
+      persistState = () => {};
+      const before = getMesaSceneSignature(createMesaScenePayloadFromState());
+      activateInitiative();
+      const after = getMesaSceneSignature(createMesaScenePayloadFromState());
+      return { changed: before !== after };
+    });
+    expect(result.changed).toBe(true);
+  });
+});
+
+test.describe("Desenhos fim-a-fim (Etapa 38)", () => {
+  const makeEnv = row => ({
+    DB: { prepare: () => ({ bind: () => ({ first: async () => row }) }) }
+  });
+
+  test("Worker: normalizeMesaScene normaliza desenhos (caps, whitelist de ferramenta, lapis)", async () => {
+    const { normalizeMesaScene } = await import("../cloudflare/src/mesa.js");
+    const many = Array.from({ length: 350 }, (_, i) => ({
+      id: `d${i}`, tool: "line", color: "#40c860", width: 3,
+      x1: 0.1, y1: 0.1, x2: 0.9, y2: 0.9, layer: "tokens"
+    }));
+    const scene = normalizeMesaScene({
+      tokens: [],
+      drawings: [
+        { id: "ok1", tool: "line", color: "#e84040", width: 3, x1: 0.1, y1: 0.2, x2: 1.7, y2: -0.4, layer: "dm" },
+        { id: "ok2", tool: "pencil", color: "lixo", width: 99,
+          points: Array.from({ length: 260 }, (_, i) => [i / 260, i / 260]), x1: 0, y1: 0, x2: 1, y2: 1 },
+        { id: "ruim1", tool: "spray", x1: 0, y1: 0, x2: 1, y2: 1 },          // ferramenta invalida
+        { id: "ruim2", tool: "pencil", points: [[0.5, 0.5]], x1: 0, y1: 0, x2: 1, y2: 1 }, // lapis com 1 ponto
+        { tool: "line", x1: 0, y1: 0, x2: 1, y2: 1 },                        // sem id
+        ...many
+      ]
+    });
+
+    expect(scene.drawings.length).toBe(300);                       // cap de 300 tracos
+    const ok1 = scene.drawings.find(d => d.id === "ok1");
+    const ok2 = scene.drawings.find(d => d.id === "ok2");
+    expect(ok1.layer).toBe("dm");                                  // camada dm preservada no armazenamento
+    expect(ok1.x2).toBe(1);                                        // clamp em fracao 0-1
+    expect(ok1.y2).toBe(0);
+    expect(ok2.color).toBe("#e84040");                             // cor invalida cai no default
+    expect(ok2.width).toBe(12);                                    // clamp 1-12
+    expect(ok2.points.length).toBe(200);                           // cap de pontos do lapis
+    expect(scene.drawings.some(d => d.id === "ruim1")).toBe(false);
+    expect(scene.drawings.some(d => d.id === "ruim2")).toBe(false);
+  });
+
+  test("Worker: GET da cena filtra tracos dm para jogador e preserva para o mestre", async () => {
+    const { getMesaScene } = await import("../cloudflare/src/mesa.js");
+    const row = {
+      id: "default",
+      created_at: "2026-07-10T00:00:00Z",
+      updated_at: "2026-07-10T00:00:00Z",
+      data_json: JSON.stringify({
+        sceneVersion: 4,
+        tokens: [],
+        drawings: [
+          { id: "pub", tool: "line", color: "#e84040", width: 3, x1: 0.1, y1: 0.1, x2: 0.5, y2: 0.5, layer: "tokens" },
+          { id: "sec", tool: "rect", color: "#40b8e8", width: 3, x1: 0.2, y1: 0.2, x2: 0.7, y2: 0.7, layer: "dm" }
+        ]
+      })
+    };
+
+    const playerScene = await getMesaScene(makeEnv(row), { role: "player" });
+    expect(playerScene.data.drawings.map(d => d.id)).toEqual(["pub"]);
+
+    const masterScene = await getMesaScene(makeEnv(row), { role: "master" });
+    expect(masterScene.data.drawings.map(d => d.id).sort()).toEqual(["pub", "sec"]);
+  });
+
+  test("DO retransmite mesa:drawings:update e remove tracos dm no relay (guarda de fonte)", async () => {
+    // O modulo do DO importa "cloudflare:workers" e nao roda em Node puro —
+    // testes unitarios reais do DO chegam na Etapa 41. Ate la, esta guarda
+    // garante que o tipo nao saia de RELAY_TYPES nem perca o filtro dm.
+    const fs = require("node:fs");
+    const path = require("node:path");
+    const source = fs.readFileSync(
+      path.join(__dirname, "..", "cloudflare", "src", "mesa-realtime.js"),
+      "utf8"
+    );
+    expect(source).toMatch(/DRAWINGS_UPDATE_TYPE = "mesa:drawings:update"/);
+    const relayBlock = source.match(/const RELAY_TYPES = new Set\(\[[^\]]+\]\)/)[0];
+    expect(relayBlock).toContain("DRAWINGS_UPDATE_TYPE");
+    // Tipo NAO pode ser master-only (jogador tambem desenha)
+    const masterOnlyBlock = source.match(/const MASTER_ONLY_TYPES = new Set\(\[[^\]]+\]\)/)[0];
+    expect(masterOnlyBlock).not.toContain("DRAWINGS_UPDATE_TYPE");
+    // Relay filtra camada dm antes de retransmitir
+    expect(source).toMatch(/stroke\.layer !== "dm"/);
+  });
+
+  test("payload da cena inclui desenhos e a assinatura de dedupe muda com traco novo", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(() => {
+      _strokes = [
+        { id: "s1", tool: "line", color: "#e84040", width: 3, x1: 0.1, y1: 0.1, x2: 0.5, y2: 0.5, points: null, layer: "tokens" },
+        { id: "sec", tool: "rect", color: "#40b8e8", width: 3, x1: 0.2, y1: 0.2, x2: 0.7, y2: 0.7, points: null, layer: "dm" }
+      ];
+      const payload = createMesaScenePayloadFromState();
+      const before = getMesaSceneSignature(payload);
+      _strokes.push({ id: "s2", tool: "circle", color: "#40c860", width: 5, x1: 0.3, y1: 0.3, x2: 0.8, y2: 0.8, points: null, layer: "tokens" });
+      const after = getMesaSceneSignature(createMesaScenePayloadFromState());
+      return {
+        payloadIds: payload.drawings.map(d => d.id).sort(),
+        keepsSecretInPayload: payload.drawings.some(d => d.layer === "dm"),
+        signatureChanges: before !== after
+      };
+    });
+
+    expect(result.payloadIds).toEqual(["s1", "sec"]);
+    expect(result.keepsSecretInPayload).toBe(true); // PUT e master-only; GET filtra p/ jogador
+    expect(result.signatureChanges).toBe(true);
+  });
+
+  test("jogador aplica desenhos da cena no boot (sem mestre online) e nunca ve camada dm", async ({ page }) => {
+    await seedPlayerWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(() => {
+      applyMesaSceneSnapshot({
+        sceneVersion: 9,
+        selectedTokenId: "",
+        tokens: [],
+        drawings: [
+          { id: "pub", tool: "line", color: "#e84040", width: 3, x1: 0.1, y1: 0.1, x2: 0.5, y2: 0.5, points: null, layer: "tokens" },
+          // Um traco dm forjado que tivesse passado nao pode aparecer no jogador
+          { id: "sec", tool: "rect", color: "#40b8e8", width: 3, x1: 0.2, y1: 0.2, x2: 0.7, y2: 0.7, points: null, layer: "dm" }
+        ]
+      });
+      return { ids: getDrawingsSnapshot().map(d => d.id) };
+    });
+    expect(result.ids).toEqual(["pub"]);
+
+    // Cena SEM o campo drawings (legado) nao apaga o que ja esta na tela
+    const legacy = await page.evaluate(() => {
+      applyMesaSceneSnapshot({ sceneVersion: 10, selectedTokenId: "", tokens: [] });
+      return { ids: getDrawingsSnapshot().map(d => d.id) };
+    });
+    expect(legacy.ids).toEqual(["pub"]);
+  });
+
+  test("mestre recebe desenho de jogador via delta, persiste a cena e preserva traco dm local", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(async () => {
+      let persistCalls = 0;
+      persistState = () => { persistCalls += 1; };
+      _strokes = [
+        { id: "sec", tool: "rect", color: "#40b8e8", width: 3, x1: 0.2, y1: 0.2, x2: 0.7, y2: 0.7, points: null, layer: "dm" }
+      ];
+
+      await applyMesaRealtimeDelta({
+        type: "mesa:drawings:update",
+        clientId: "cliente-remoto",
+        sceneVersion: 0,
+        actor: { username: "ana", role: "player" },
+        drawings: [
+          { id: "ana1", tool: "pencil", color: "#40c860", width: 3,
+            x1: 0.1, y1: 0.1, x2: 0.4, y2: 0.4, points: [[0.1, 0.1], [0.4, 0.4]], layer: "tokens" }
+        ]
+      });
+
+      const ids = getDrawingsSnapshot().map(d => d.id).sort();
+      const local = JSON.parse(localStorage.getItem("tc_virtual_mesa_mock_v1") || "{}");
+      return {
+        ids,
+        persistCalls,
+        snapshotHasDrawing: (local.drawings || []).some(d => d.id === "ana1")
+      };
+    });
+
+    expect(result.ids).toEqual(["ana1", "sec"]); // traco do jogador entra; dm local sobrevive
+    expect(result.persistCalls).toBe(1);         // mestre torna o desenho oficial
+    expect(result.snapshotHasDrawing).toBe(true); // F5 preserva via snapshot local
   });
 });

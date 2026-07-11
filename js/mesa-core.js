@@ -194,6 +194,13 @@ async function initMesaPage() {
   if (typeof initMesaSelect === "function") {
     initMesaSelect();
   }
+
+  // Sincroniza a UI de iniciativa com o estado restaurado da cena (painel,
+  // banner e botão da toolbar). Os deltas mesa:initiative:* chegam pelo
+  // roteador padrão (applyMesaRealtimeDelta), não por listeners próprios.
+  if (typeof initInitiativeModule === "function") {
+    initInitiativeModule();
+  }
 }
 
 function bindEvents() {
@@ -497,8 +504,40 @@ async function applyMesaRealtimeDelta(payload) {
   if (type === "mesa:drawings:update") {
     if (typeof setDrawingsFromRemote === "function") {
       setDrawingsFromRemote(payload.drawings);
+      // Snapshot local ganha os traços novos (F5 preserva) e o mestre persiste
+      // a cena oficial — desenho de jogador vira estado autoritativo, já que
+      // só o mestre pode dar PUT /mesa/scene.
+      cacheMesaSceneSnapshotLocally();
+      if (isMaster() && typeof persistState === "function") {
+        persistState();
+      }
     }
     return; // não precisa scheduleMesaRender
+  }
+
+  if (type === "mesa:initiative:update") {
+    // Estado completo de iniciativa (mestre → todos). O módulo de iniciativa
+    // renderiza painel/banner; o cache local preserva o estado no F5.
+    if (typeof applyInitiativeState === "function") {
+      applyInitiativeState(payload?.initiative || null);
+      cacheMesaSceneSnapshotLocally();
+    }
+    return;
+  }
+
+  if (type === "mesa:initiative:roll") {
+    // Rolagem de jogador — só o mestre consome. Rolagem vinda de jogador só
+    // vale para o personagem DELE (mesma regra anti-forja do token:move; o
+    // DO valida também, mas o cliente não confia só nisso).
+    if (!isMaster() || typeof receiveInitiativeRoll !== "function") return;
+    const rollActorRole = String(payload?.actor?.role || "");
+    if (rollActorRole && rollActorRole !== "master") {
+      const rollActorName = normalizeMesaUsername(payload?.actor?.username);
+      const declaredKey = normalizeMesaUsername(payload?.characterKey);
+      if (!rollActorName || rollActorName !== declaredKey) return;
+    }
+    receiveInitiativeRoll(payload);
+    return;
   }
 
   if (!changed && !needsRosterRefresh) return;
@@ -1598,6 +1637,13 @@ function applyMesaSceneSnapshot(saved) {
     window.applyMesaSceneMapFromSnapshot(saved?.map || null);
   }
 
+  // Desenhos oficiais embutidos na cena: aplicados no boot e em snapshots
+  // remotos. Cenas antigas (sem o campo) caem no restore local do
+  // mesa-drawing.js. O mestre preserva traços "dm" locais que a cena não tem.
+  if (typeof window.applyMesaSceneDrawingsFromSnapshot === "function") {
+    window.applyMesaSceneDrawingsFromSnapshot(saved?.drawings);
+  }
+
   return { seeded, savedTokenCount: savedTokens.length };
 }
 
@@ -1995,6 +2041,12 @@ function createMesaScenePayloadFromState() {
     // Mapa oficial (URL R2 + transform) — mantido pelo mesa-map.js. Permite
     // que jogadores carreguem o mapa no boot sem o mestre online.
     map: typeof window.getMesaSceneMapPayload === "function" ? window.getMesaSceneMapPayload() : null,
+    // Desenhos oficiais da cena (inclui camada "dm" do mestre — o PUT é
+    // master-only e o Worker filtra "dm" no GET para jogadores). Jogador que
+    // entra depois recebe os traços no boot sem depender do mestre online.
+    drawings: normalizeMesaSceneDrawings(
+      typeof getDrawingsSnapshot === "function" ? getDrawingsSnapshot() : []
+    ),
     initiative: (() => {
       const s = typeof getInitiativeState === 'function' ? getInitiativeState() : null;
       if (!s || !s.active) return { active: false, round: 1, currentIndex: -1, order: [] };
@@ -2008,6 +2060,48 @@ function rememberMesaSceneSignature(payload, options = {}) {
   if (options.persisted) lastPersistedMesaSceneSignature = signature;
   if (options.remote) lastRemoteMesaSceneSignature = signature;
   return signature;
+}
+
+// Normalização dos traços de desenho para o contrato da cena (mesmos caps do
+// Worker: 300 traços, 200 pontos por traço de lápis, frações com 4 casas).
+const MESA_MAX_SCENE_DRAWINGS = 300;
+const MESA_MAX_DRAWING_POINTS = 200;
+const MESA_DRAW_TOOLS = new Set(["pencil", "line", "rect", "circle"]);
+
+function normalizeMesaSceneDrawings(list) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .map(stroke => {
+      if (!stroke || typeof stroke !== "object") return null;
+      const tool = String(stroke.tool || "").trim().toLowerCase();
+      if (!MESA_DRAW_TOOLS.has(tool)) return null;
+      const id = String(stroke.id || "").slice(0, 40);
+      if (!id) return null;
+      const frac = value => roundTo(clamp(Number(value) || 0, 0, 1), 4);
+      const normalized = {
+        id,
+        tool,
+        color: /^#[0-9a-f]{3,8}$/i.test(String(stroke.color || "")) ? String(stroke.color) : "#e84040",
+        width: Math.max(1, Math.min(12, Number(stroke.width) || 3)),
+        layer: stroke.layer === "dm" ? "dm" : "tokens",
+        x1: frac(stroke.x1),
+        y1: frac(stroke.y1),
+        x2: frac(stroke.x2),
+        y2: frac(stroke.y2),
+        points: null
+      };
+      if (tool === "pencil") {
+        const points = Array.isArray(stroke.points) ? stroke.points : [];
+        normalized.points = points
+          .slice(0, MESA_MAX_DRAWING_POINTS)
+          .filter(point => Array.isArray(point) && point.length >= 2)
+          .map(point => [frac(point[0]), frac(point[1])]);
+        if (normalized.points.length < 2) return null;
+      }
+      return normalized;
+    })
+    .filter(Boolean)
+    .slice(0, MESA_MAX_SCENE_DRAWINGS);
 }
 
 function normalizeMesaScenePayload(payload = {}) {
@@ -2041,7 +2135,35 @@ function normalizeMesaScenePayload(payload = {}) {
         yFrac: roundTo(Number(payload.map.transform?.yFrac) || 0, 4),
         scale: roundTo(Number(payload.map.transform?.scale) || 1, 4)
       }
-    } : null
+    } : null,
+    // Iniciativa entra na assinatura: sem isso, um persist disparado só por
+    // ação de iniciativa teria assinatura idêntica à anterior e seria
+    // descartado pelo dedupe (flushPersistState/queueRemoteMesaPersist).
+    initiative: (() => {
+      const init = payload?.initiative;
+      if (!init || init.active !== true) {
+        return { active: false, round: 1, currentIndex: -1, order: [] };
+      }
+      const rawOrder = Array.isArray(init.order) ? init.order : [];
+      return {
+        active: true,
+        round: asPositiveInt(init.round, 1),
+        currentIndex: Number.isFinite(Number(init.currentIndex)) ? Math.trunc(Number(init.currentIndex)) : -1,
+        order: rawOrder.slice(0, 50).map(entry => ({
+          id: String(entry?.id || ""),
+          characterKey: String(entry?.characterKey || ""),
+          name: String(entry?.name || ""),
+          roll: Number(entry?.roll) || 0,
+          modifier: Number(entry?.modifier) || 0,
+          total: Number(entry?.total) || 0,
+          rolled: entry?.rolled === true
+        }))
+      };
+    })(),
+    // Desenhos entram na assinatura: sem isso, um persist disparado só por um
+    // traço novo teria assinatura idêntica e seria descartado pelo dedupe
+    // (mesmo bug corrigido para `initiative` na Etapa 37).
+    drawings: normalizeMesaSceneDrawings(payload?.drawings)
   };
 }
 

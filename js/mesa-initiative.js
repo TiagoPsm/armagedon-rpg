@@ -7,8 +7,13 @@
  *   Resultado enviado via WS → mestre ordena (maior → menor) → broadcast para todos
  *   Mestre controla próximo turno / encerrar combate
  *
+ * Roteamento: os deltas mesa:initiative:update/roll chegam pelo roteador
+ * padrão da Mesa (applyMesaRealtimeDelta em mesa-core.js), que valida
+ * clientId/ator e chama applyInitiativeState/receiveInitiativeRoll daqui.
+ * O estado persiste como campo `initiative` da cena oficial (persistState).
+ *
  * Dependências globais esperadas (carregadas antes):
- *   isMaster(), state, sendMesaRealtimeDelta(), readMergedSheets()
+ *   isMaster(), state, sendMesaRealtimeDelta(), persistState(), readMergedSheets()
  */
 
 /* ── CONSTANTES ──────────────────────────────────────────────── */
@@ -151,6 +156,10 @@ function _receivePlayerRoll(payload) {
 function _broadcastInitiative() {
   const s = getInitiativeState();
   sendMesaRealtimeDelta(EV_INITIATIVE_UPDATE, { initiative: s });
+  // A iniciativa faz parte da cena oficial: persistir aqui garante que o
+  // estado sobrevive ao F5 do mestre e chega a jogador que entrar depois
+  // (GET /mesa/scene), sem depender de outro persist acontecer por acidente.
+  if (typeof persistState === "function") persistState();
 }
 
 /* ── AÇÃO DO JOGADOR ─────────────────────────────────────────── */
@@ -220,21 +229,17 @@ function executeInitiativeRoll() {
   setTimeout(hideInitiativeRollPopup, 1800);
 }
 
-/* ── HANDLERS DE EVENTOS WS ──────────────────────────────────── */
+/* ── BOOT ────────────────────────────────────────────────────── */
 
-/** Registra os listeners. Chamado uma vez no boot (mesa-init.js ou inline). */
+/**
+ * Sincroniza a UI de iniciativa no boot da Mesa (chamado por initMesaPage
+ * em mesa-core.js, depois de hydrateState restaurar state/iniciativa).
+ * Os deltas mesa:initiative:* NÃO são registrados aqui: eles chegam pelo
+ * roteador padrão (applyMesaRealtimeDelta), que já deduplica por clientId,
+ * valida o ator e então chama applyInitiativeState/receiveInitiativeRoll.
+ */
 function initInitiativeModule() {
-  if (!window.APP?.on) return;
-
-  // Recebe estado completo de iniciativa (mestre → todos)
-  window.APP.on(EV_INITIATIVE_UPDATE, payload => {
-    applyInitiativeState(payload?.initiative || payload);
-  });
-
-  // Mestre recebe rolagem de jogador
-  window.APP.on(EV_INITIATIVE_ROLL, payload => {
-    _receivePlayerRoll(payload);
-  });
+  renderInitiative();
 }
 
 /* ── RENDERIZAÇÃO ────────────────────────────────────────────── */
@@ -371,3 +376,6 @@ window.applyInitiativeState  = applyInitiativeState;
 window.getInitiativeState    = getInitiativeState;
 window.initInitiativeModule  = initInitiativeModule;
 window.renderInitiative      = renderInitiative;
+// Consumido pelo roteador de deltas (applyMesaRealtimeDelta em mesa-core.js)
+// quando o mestre recebe mesa:initiative:roll de um jogador.
+window.receiveInitiativeRoll = _receivePlayerRoll;

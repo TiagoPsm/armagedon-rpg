@@ -1,11 +1,22 @@
 import { DurableObject } from "cloudflare:workers";
 
 const ROOM_NAME = "default";
+// Iniciativa: o estado completo (update) e autoritativo do mestre; a rolagem
+// (roll) e o unico delta de iniciativa que jogador emite, validado abaixo
+// (characterKey precisa ser o proprio username do socket).
+const INITIATIVE_UPDATE_TYPE = "mesa:initiative:update";
+const INITIATIVE_ROLL_TYPE = "mesa:initiative:roll";
+// Desenhos: qualquer participante pode desenhar na camada normal; o payload é
+// o estado completo dos traços visíveis. Traços da camada secreta ("dm") nunca
+// deveriam sair do cliente do mestre — o DO remove qualquer um que chegue.
+const DRAWINGS_UPDATE_TYPE = "mesa:drawings:update";
+const MAX_RELAY_DRAWINGS = 300;
 const MASTER_ONLY_TYPES = new Set([
   "mesa:token:move",
   "mesa:token:upsert",
   "mesa:token:remove",
-  "mesa:scene:clear"
+  "mesa:scene:clear",
+  INITIATIVE_UPDATE_TYPE
 ]);
 const SHEET_PATCH_TYPE = "mesa:sheet:patch";
 const ECHO_VITALS_TYPE = "mesa:echo:vitals";
@@ -31,6 +42,8 @@ const RELAY_TYPES = new Set([
   ...MASTER_ONLY_TYPES,
   SHEET_PATCH_TYPE,
   ECHO_VITALS_TYPE,
+  INITIATIVE_ROLL_TYPE,
+  DRAWINGS_UPDATE_TYPE,
   "mesa:batch"
 ]);
 
@@ -424,6 +437,46 @@ class MesaRealtimeRoom extends DurableObject {
     if (type === ECHO_VITALS_TYPE) {
       this.handleEchoVitalsRelay(ws, payload, attachment);
       return;
+    }
+
+    // Desenhos: payload precisa ser o estado completo (array). Traços "dm"
+    // são removidos no relay — nunca deveriam sair do cliente do mestre, e um
+    // jogador malicioso não pode injetá-los na tela dos outros.
+    if (type === DRAWINGS_UPDATE_TYPE) {
+      if (!Array.isArray(payload?.drawings)) {
+        sendJson(ws, {
+          type: "mesa:scene:ack",
+          ok: false,
+          reason: "Payload de desenhos invalido.",
+          messageId: payload?.messageId || "",
+          sentAt: new Date().toISOString()
+        });
+        return;
+      }
+      payload = {
+        ...payload,
+        drawings: payload.drawings
+          .filter(stroke => isPlainObject(stroke) && stroke.layer !== "dm")
+          .slice(0, MAX_RELAY_DRAWINGS)
+      };
+    }
+
+    // Rolagem de iniciativa: jogador so pode rolar pelo proprio personagem
+    // (mesmo padrao do mesa:sheet:patch — a identidade vem do socket
+    // autenticado, nao do payload). Mestre pode rolar por qualquer entrada.
+    if (type === INITIATIVE_ROLL_TYPE && attachment.role !== "master") {
+      const declaredKey = normalizeCharacterKey(payload?.characterKey);
+      const username = normalizeCharacterKey(attachment.username);
+      if (!declaredKey || !username || declaredKey !== username) {
+        sendJson(ws, {
+          type: "mesa:scene:ack",
+          ok: false,
+          reason: "Rolagem de iniciativa so vale para o proprio personagem.",
+          messageId: payload?.messageId || "",
+          sentAt: new Date().toISOString()
+        });
+        return;
+      }
     }
 
     const messages = type === "mesa:batch" && Array.isArray(payload.messages)

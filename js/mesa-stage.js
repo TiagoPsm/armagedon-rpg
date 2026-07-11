@@ -894,7 +894,9 @@ async function runRemoteMesaPersist() {
 
     try {
       // Tokens da camada secreta do mestre ("dm") NUNCA saem para o backend —
-      // so existem no cliente do mestre (mesmo padrao dos tracos de desenho).
+      // so existem no cliente do mestre. (Tracos de desenho "dm" sao diferentes:
+      // desde a Etapa 38 persistem na cena oficial via PUT master-only e o
+      // Worker os filtra no GET para jogadores.)
       const remotePayload = {
         ...payload,
         tokens: payload.tokens.filter(token => token.layer !== "dm")

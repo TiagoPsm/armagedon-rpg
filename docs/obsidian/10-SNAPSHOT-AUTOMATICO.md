@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-07 01:30:57 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-11 01:20:37 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,24 +13,49 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `3499deb 2026-07-07 docs: comparativo tecnico Armagedom (Mesa Virtual) x Roll20`
+- Ultimo commit: `2b4f8e0 2026-07-07 build(mesa): bump FICHA/MESA_BUNDLE_VERSION para as correcoes da Etapa 36`
 
 ### Alteracoes Locais
 
 ```text
- M .claude/settings.local.json
+M  .claude/settings.local.json
+M  DEV_STATUS.md
+M  SYSTEM_RULES.md
+M  cloudflare/README.md
+M  cloudflare/src/mesa-realtime.js
+M  cloudflare/src/mesa.js
+M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  js/mesa-core.js
+M  js/mesa-drawing.js
+M  js/mesa-initiative.js
+M  js/mesa-stage.js
+M  mesa.html
+M  tests/mesa-audit.spec.cjs
 M  tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
-.claude/settings.local.json
+(nenhum)
 ```
 
 ### Arquivos Em Stage
 
 ```text
+.claude/settings.local.json
+DEV_STATUS.md
+SYSTEM_RULES.md
+cloudflare/README.md
+cloudflare/src/mesa-realtime.js
+cloudflare/src/mesa.js
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+js/mesa-core.js
+js/mesa-drawing.js
+js/mesa-initiative.js
+js/mesa-stage.js
+mesa.html
+tests/mesa-audit.spec.cjs
 tools/build-pages.cjs
 ```
 

@@ -46,21 +46,60 @@ function initMesaDrawing() {
 // quem entra depois nunca vê o que já foi desenhado.
 const MESA_DRAWINGS_STORAGE_KEY = "mesa_drawings_v1";
 
+// true quando a cena oficial (GET /mesa/scene ou snapshot local dela) já
+// forneceu o campo `drawings` — nesse caso a cena é a fonte de verdade e o
+// restore do localStorage antigo não deve sobrescrevê-la.
+let _sceneDrawingsApplied = false;
+
 function _persistDrawings() {
   try {
     localStorage.setItem(MESA_DRAWINGS_STORAGE_KEY, JSON.stringify(_strokes));
   } catch {}
 }
 
-function _restoreDrawings() {
+function _readLocalDrawings() {
   try {
     const saved = JSON.parse(localStorage.getItem(MESA_DRAWINGS_STORAGE_KEY) || "[]");
-    if (Array.isArray(saved) && saved.length) {
-      _strokes = saved;
-      renderDrawings();
-    }
-  } catch {}
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
 }
+
+function _restoreDrawings() {
+  if (_sceneDrawingsApplied) return; // cena oficial já mandou os traços
+  const saved = _readLocalDrawings();
+  if (saved.length) {
+    _strokes = saved;
+    renderDrawings();
+  }
+}
+
+// Desenhos embutidos na cena oficial (Etapa 38). Chamado por
+// applyMesaSceneSnapshot no boot e em snapshots remotos — pode rodar ANTES de
+// initMesaDrawing (renderDrawings é no-op sem canvas; o init renderiza depois).
+// Cenas antigas sem o campo (undefined) mantêm o restore local como fallback.
+function applyMesaSceneDrawingsFromSnapshot(drawings) {
+  if (!Array.isArray(drawings)) return;
+  _sceneDrawingsApplied = true;
+
+  let next = drawings.filter(s => s && typeof s === "object");
+  if (typeof isMaster === "function" && isMaster()) {
+    // Mestre preserva traços secretos locais que a cena ainda não tem (ex.:
+    // desenhados offline antes do PUT) — mesmo merge dos tokens "dm" no boot.
+    const existing = _strokes.length ? _strokes : _readLocalDrawings();
+    const sceneIds = new Set(next.map(s => String(s.id)));
+    const localSecret = existing.filter(s => s.layer === "dm" && !sceneIds.has(String(s.id)));
+    next = [...next, ...localSecret];
+  } else {
+    next = next.filter(s => s.layer !== "dm");
+  }
+
+  _strokes = next;
+  _persistDrawings();
+  renderDrawings();
+}
+window.applyMesaSceneDrawingsFromSnapshot = applyMesaSceneDrawingsFromSnapshot;
 
 // Mestre reenvia o snapshot de desenhos quando um jogador novo aparece na
 // presença (jogador que entra depois não recebe nada retroativo do DO).
@@ -423,8 +462,16 @@ function getDrawingsSnapshot() {
 function _broadcastDrawings() {
   _persistDrawings();
   if (typeof sendMesaRealtimeDelta === "function") {
-    // Traços da camada secreta ("dm") NUNCA saem do cliente do mestre.
+    // Traços da camada secreta ("dm") NUNCA saem pelo canal realtime — eles só
+    // chegam ao backend pelo PUT /mesa/scene do mestre (o Worker filtra "dm"
+    // no GET para jogadores).
     sendMesaRealtimeDelta("mesa:drawings:update", { drawings: _strokes.filter(s => s.layer !== "dm") });
+  }
+  // Cena oficial ganha os traços: mestre persiste no backend; jogador atualiza
+  // o snapshot local (o traço dele vira oficial quando o mestre receber o
+  // delta acima e persistir).
+  if (typeof persistState === "function") {
+    persistState();
   }
 }
 

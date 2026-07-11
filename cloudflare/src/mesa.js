@@ -94,6 +94,50 @@ function normalizeSceneToken(token) {
   };
 }
 
+// Desenhos oficiais da cena: traços em frações 0–1 do palco, mesmos campos do
+// mesa-drawing.js. Caps evitam inflar o D1; a camada "dm" é filtrada no GET
+// para não-mestres (mesmo contrato dos tokens secretos).
+const DRAW_TOOLS = new Set(["pencil", "line", "rect", "circle"]);
+const MAX_DRAWINGS = 300;
+const MAX_DRAW_POINTS = 200;
+
+function normalizeDrawFraction(value) {
+  return Math.round(clamp(value, 0, 1) * 10000) / 10000;
+}
+
+function normalizeSceneDrawing(stroke) {
+  if (!stroke || typeof stroke !== "object") return null;
+  const tool = String(stroke.tool || "").trim().toLowerCase();
+  if (!DRAW_TOOLS.has(tool)) return null;
+
+  const color = /^#[0-9a-f]{3,8}$/i.test(String(stroke.color || "")) ? String(stroke.color) : "#e84040";
+  const width = clamp(stroke.width, 1, 12) || 3;
+  const normalized = {
+    id: normalizeText(stroke.id).slice(0, 40),
+    tool,
+    color,
+    width,
+    layer: stroke.layer === "dm" ? "dm" : "tokens",
+    x1: normalizeDrawFraction(stroke.x1),
+    y1: normalizeDrawFraction(stroke.y1),
+    x2: normalizeDrawFraction(stroke.x2),
+    y2: normalizeDrawFraction(stroke.y2),
+    points: null
+  };
+  if (!normalized.id) return null;
+
+  if (tool === "pencil") {
+    const points = Array.isArray(stroke.points) ? stroke.points : [];
+    normalized.points = points
+      .slice(0, MAX_DRAW_POINTS)
+      .filter(point => Array.isArray(point) && point.length >= 2)
+      .map(point => [normalizeDrawFraction(point[0]), normalizeDrawFraction(point[1])]);
+    if (normalized.points.length < 2) return null;
+  }
+
+  return normalized;
+}
+
 // Mapa oficial da cena: referência ao arquivo no R2 + transform normalizado.
 // Permite que jogadores carreguem o mapa no boot sem o mestre online.
 function normalizeSceneMap(map) {
@@ -138,12 +182,17 @@ function normalizeMesaScene(payload) {
     })) : []
   } : { active: false, round: 1, currentIndex: -1, order: [] };
 
+  const drawings = Array.isArray(source?.drawings)
+    ? source.drawings.map(normalizeSceneDrawing).filter(Boolean).slice(0, MAX_DRAWINGS)
+    : [];
+
   return {
     sceneVersion: normalizeSceneVersion(source?.sceneVersion),
     selectedTokenId: normalizeText(source?.selectedTokenId).toLowerCase(),
     tokens,
     initiative,
-    map: normalizeSceneMap(source?.map)
+    map: normalizeSceneMap(source?.map),
+    drawings
   };
 }
 
@@ -172,6 +221,8 @@ async function getMesaScene(env, actor) {
 
   const scene = mapSceneRow(row);
   if (actor?.role !== "master") {
+    // Traços da camada secreta do mestre não vazam para jogadores.
+    scene.data.drawings = scene.data.drawings.filter(stroke => stroke.layer !== "dm");
     scene.data.tokens = scene.data.tokens
       .filter(token => token.layer !== "dm")
       .map(token => {
