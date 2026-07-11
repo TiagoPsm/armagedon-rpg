@@ -92,7 +92,10 @@
       "Bash(python -c ' *)",
       "Bash(rm tests/debug-bug2.spec.cjs)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:8787/api/health)",
-      "Bash(node \"C:/Users/tiago/AppData/Local/Temp/claude/C--Users-tiago-OneDrive-Desktop-Pr-xima-Campanha-FichaApp-rpg-campaign-git-sync/3196d398-752a-4cce-87e5-2dd6b98d7dca/scratchpad/e2e-do.mjs\")"
+      "Bash(node \"C:/Users/tiago/AppData/Local/Temp/claude/C--Users-tiago-OneDrive-Desktop-Pr-xima-Campanha-FichaApp-rpg-campaign-git-sync/3196d398-752a-4cce-87e5-2dd6b98d7dca/scratchpad/e2e-do.mjs\")",
+      "Bash(curl -s \"https://tiagopsm.github.io/armagedon-rpg/mesa.html\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code} %{url_effective}\\\\n\" \"https://tiagopsm.github.io/armagedon-rpg/mesa.html\")",
+      "Bash(curl -s \"https://tiagopsm.github.io/armagedon-rpg/\" -o /dev/null -w \"%{http_code}\\\\n\")"
     ]
   }
 }

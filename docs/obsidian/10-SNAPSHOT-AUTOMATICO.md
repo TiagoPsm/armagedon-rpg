@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-11 01:20:37 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-11 01:37:08 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,21 +13,15 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `2b4f8e0 2026-07-07 build(mesa): bump FICHA/MESA_BUNDLE_VERSION para as correcoes da Etapa 36`
+- Ultimo commit: `9da7391 2026-07-11 feat(mesa): iniciativa e desenhos fim-a-fim ÔÇö relay no DO + contrato da cena (Etapas 37-38)`
 
 ### Alteracoes Locais
 
 ```text
 M  .claude/settings.local.json
 M  DEV_STATUS.md
-M  SYSTEM_RULES.md
-M  cloudflare/README.md
-M  cloudflare/src/mesa-realtime.js
-M  cloudflare/src/mesa.js
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-core.js
-M  js/mesa-drawing.js
-M  js/mesa-initiative.js
+M  js/mesa-select.js
 M  js/mesa-stage.js
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
@@ -45,14 +39,8 @@ M  tools/build-pages.cjs
 ```text
 .claude/settings.local.json
 DEV_STATUS.md
-SYSTEM_RULES.md
-cloudflare/README.md
-cloudflare/src/mesa-realtime.js
-cloudflare/src/mesa.js
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/mesa-core.js
-js/mesa-drawing.js
-js/mesa-initiative.js
+js/mesa-select.js
 js/mesa-stage.js
 mesa.html
 tests/mesa-audit.spec.cjs
@@ -147,8 +135,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
    13,08 MB  assets\sheet-fire-background.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     1,03 MB  node_modules\terser\dist\bundle.min.js
-    0,99 MB  assets\logo-rpg-armagedon.png
     0,99 MB  .claude\worktrees\amazing-roentgen-549fdf\assets\logo-rpg-armagedon.png
+    0,99 MB  assets\logo-rpg-armagedon.png
     0,92 MB  node_modules\playwright-core\types\types.d.ts
     0,78 MB  node_modules\playwright-core\types\protocol.d.ts
     0,73 MB  debug.log

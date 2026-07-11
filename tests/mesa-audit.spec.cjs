@@ -1127,3 +1127,117 @@ test.describe("Desenhos fim-a-fim (Etapa 38)", () => {
     expect(result.snapshotHasDrawing).toBe(true); // F5 preserva via snapshot local
   });
 });
+
+test.describe("Correcoes de interacao (Etapa 39)", () => {
+  test("drag com zoom nao deriva: token termina sob o cursor mesmo com zoom aplicado ANTES do drag", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.evaluate(() => setStageZoom(1.5));
+    const token = page.locator('.mesa-token[data-token-id="ana"]');
+    const box = await token.boundingBox();
+    const grabX = box.x + box.width / 2;
+    const grabY = box.y + box.height / 2;
+    await page.mouse.move(grabX, grabY);
+    await page.mouse.down();
+    await page.mouse.move(grabX + 80, grabY + 50, { steps: 8 });
+    await page.mouse.up();
+
+    // O centro do token deve terminar (aprox.) sob o ponto de soltura —
+    // com o rect congelado do bug antigo, o zoom de 1.5x fazia o token
+    // andar mais que o cursor.
+    const finalBox = await token.boundingBox();
+    const finalCx = finalBox.x + finalBox.width / 2;
+    const finalCy = finalBox.y + finalBox.height / 2;
+    expect(Math.abs(finalCx - (grabX + 80))).toBeLessThan(6);
+    expect(Math.abs(finalCy - (grabY + 50))).toBeLessThan(6);
+  });
+
+  test("zoom alterado NO MEIO do drag nao teleporta o token (stageRect e recapturado)", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const token = page.locator('.mesa-token[data-token-id="ana"]');
+    const box = await token.boundingBox();
+    const grabX = box.x + box.width / 2;
+    const grabY = box.y + box.height / 2;
+    await page.mouse.move(grabX, grabY);
+    await page.mouse.down();
+    await page.mouse.move(grabX + 40, grabY + 20, { steps: 4 });
+
+    // Zoom muda durante o drag (wheel/slider) — o rect antigo fica invalido
+    await page.evaluate(() => setStageZoom(2.0));
+    await page.mouse.move(grabX + 60, grabY + 40, { steps: 4 });
+    await page.mouse.up();
+
+    // Com o rect fresco, o token continua (aprox.) sob o cursor na nova escala
+    const finalBox = await token.boundingBox();
+    const finalCx = finalBox.x + finalBox.width / 2;
+    const finalCy = finalBox.y + finalBox.height / 2;
+    expect(Math.abs(finalCx - (grabX + 60))).toBeLessThan(8);
+    expect(Math.abs(finalCy - (grabY + 40))).toBeLessThan(8);
+  });
+
+  test("selecao multipla para na borda como unidade (sem esmagar o arranjo)", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(() => {
+      sendMesaRealtimeDelta = () => true;
+      persistState = () => {};
+
+      _selectedTokenIds.add("ana");   // x=20
+      _selectedTokenIds.add("bruno"); // x=60
+      const gapBefore = Math.abs(
+        state.tokens.find(t => t.id === "bruno").x - state.tokens.find(t => t.id === "ana").x
+      );
+
+      // Delta gigante para a direita: o grupo deve PARAR na borda mantendo
+      // a distancia relativa (antes, cada token era clampado em 100 e o
+      // arranjo era destruido de forma irreversivel).
+      _applyMoveDelta(500, 0);
+      const ana = state.tokens.find(t => t.id === "ana");
+      const bruno = state.tokens.find(t => t.id === "bruno");
+      const gapAfter = Math.abs(bruno.x - ana.x);
+
+      return { gapBefore, gapAfter, anaX: ana.x, brunoX: bruno.x };
+    });
+
+    expect(result.gapAfter).toBeCloseTo(result.gapBefore, 1); // arranjo preservado
+    expect(result.brunoX).toBeLessThanOrEqual(100);
+    expect(result.anaX).toBeGreaterThan(result.brunoX - 100); // moveu de fato
+  });
+
+  test("stroke selecionado nao e empurrado para fora do palco pelo move em grupo", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(() => {
+      sendMesaRealtimeDelta = () => true;
+      persistState = () => {};
+      _strokes = [
+        { id: "s1", tool: "line", color: "#e84040", width: 3, x1: 0.7, y1: 0.7, x2: 0.9, y2: 0.9, points: null, layer: "tokens" }
+      ];
+      _selectedStrokeIds.add("s1");
+
+      _applyMoveDelta(500, 500); // tenta jogar o stroke para fora
+      const s = getDrawingsSnapshot().find(x => x.id === "s1");
+      return { x2: s.x2, y2: s.y2, x1: s.x1, y1: s.y1 };
+    });
+
+    // Desde a Etapa 38 o Worker clampa fracoes 0-1 no persist: um stroke fora
+    // do palco seria DEFORMADO no save. O clamp de grupo impede a saida.
+    expect(result.x2).toBeLessThanOrEqual(1.001);
+    expect(result.y2).toBeLessThanOrEqual(1.001);
+    expect(result.x1).toBeGreaterThanOrEqual(-0.001);
+    expect(result.y1).toBeGreaterThanOrEqual(-0.001);
+  });
+});

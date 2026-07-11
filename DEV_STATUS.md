@@ -30,7 +30,17 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - **Divida conhecida**: `js/mesa-map.js` (linhas ~1208 e ~1254) da `fetch` direto no endpoint de mapa, furando a fachada `APP`. Unico ponto a centralizar na futura fase de integracao.
 
-## Ultima Etapa Concluida (2026-07-10 — Etapa 38: Desenhos — relay no DO + contrato da cena)
+## Ultima Etapa Concluida (2026-07-11 — Etapa 39: Correcoes de interacao — drift de drag + clamp da selecao)
+
+Terceira etapa do plano "Mesa Virtual -> VTT completo" (Etapas 37-51). So frontend — sem deploy de Worker.
+
+- **Drift do drag com zoom** (js/mesa-stage.js): `updateDragPosition` usava o `stageRect` congelado no inicio do drag — zoom (wheel/slider), pan ou scroll NO MEIO do drag invalidavam o rect e o token derivava do cursor. Agora o rect e recapturado a cada frame (rAF ja limita a cadencia) e o offset do agarre e armazenado como FRACAO do token (`pointerOffsetFracX/Y`), entao mudar a escala no meio do drag nao desloca o ponto de agarre. Campos antigos mantidos como fallback.
+- **Clamp continuo da selecao multipla** (js/mesa-select.js): `_applyMoveDelta` clampava cada item individualmente em 0-100 — na borda, a selecao "esmagava" e o arranjo relativo se perdia de forma irreversivel. Agora o DELTA do grupo e clampado pela caixa dos itens moviveis (`_computeMovableBounds`: tokens com permissao + strokes selecionados) e o grupo para na borda como unidade. Importante pos-Etapa 38: stroke empurrado para fora seria DEFORMADO no save (o Worker clampa fracoes 0-1). No resize, a borda arrastada agora para em 0/100 (clamp do `nb` no mousemove) em vez de crescer para fora do palco.
+- **Testes** (tests/mesa-audit.spec.cjs, describe "Correcoes de interacao (Etapa 39)", suite 31 -> 35): drag E2E com zoom 1.5x previo (token termina sob o cursor), zoom 2x alterado NO MEIO do drag (verificado que FALHA sem o fix — regressao real), selecao multipla para na borda preservando o arranjo, stroke nao sai do palco pelo move em grupo.
+- Cache-bust: mesa-stage.js e mesa-select.js -> `?v=2026-07-11-interaction-fix-1` (mesa.html); `MESA_BUNDLE_VERSION` -> `2026-07-11-interaction-fix-1`.
+- Validacao: check:js OK (39), audit:static OK, test:mesa:audit 35/35 (incluindo o flake "bug 2", verde nesta rodada), test:mesa 5/5, perf:mesa OK (sem regressao no drag DOM). Preview manual: drag simulado com zoom 2x termina com erro 0.0px nos dois eixos, console limpo.
+
+## Etapa Concluida (2026-07-10 — Etapa 38: Desenhos — relay no DO + contrato da cena)
 
 Segunda etapa do plano "Mesa Virtual -> VTT completo" (Etapas 37-51). Os desenhos tinham dois furos estruturais: o Durable Object descartava `mesa:drawings:update` (fora de `RELAY_TYPES` — os testes antigos mascaravam com spies) e os tracos nao faziam parte da cena oficial (jogador tardio dependia do mestre online reenviar por presenca; F5 dependia so do localStorage).
 

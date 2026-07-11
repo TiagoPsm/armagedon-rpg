@@ -674,7 +674,12 @@ function beginTokenDrag(target, token, clientX, clientY, pointerId) {
     tokenWidth: tokenRect.width,
     tokenHeight: tokenRect.height,
     pointerOffsetX: clientX - tokenLeft,
-    pointerOffsetY: clientY - tokenTop
+    pointerOffsetY: clientY - tokenTop,
+    // Offset do agarre como fração do tamanho do token: se o zoom mudar no
+    // meio do drag, o offset em px é recalculado a partir da fração (o valor
+    // em px capturado no início ficaria errado na nova escala).
+    pointerOffsetFracX: tokenRect.width > 0 ? (clientX - tokenLeft) / tokenRect.width : 0.5,
+    pointerOffsetFracY: tokenRect.height > 0 ? (clientY - tokenTop) / tokenRect.height : 0.5
   };
 
   token.order = getNextOrder();
@@ -730,22 +735,33 @@ function updateDragPosition(clientX, clientY) {
   const token = findToken(state.drag.tokenId);
   if (!token) return;
 
-  const usableWidth = Math.max(1, state.drag.stageRect.width - state.drag.tokenWidth);
-  const usableHeight = Math.max(1, state.drag.stageRect.height - state.drag.tokenHeight);
+  // O rect do palco é recapturado a cada frame (rAF já limita a cadência):
+  // zoom (wheel/slider), pan ou scroll no MEIO do drag mudam o rect visual e
+  // o valor congelado no início do drag fazia o token derivar do cursor.
+  const stage = getMesaDomRef("stage");
+  const stageRect = stage?.isConnected ? stage.getBoundingClientRect() : state.drag.stageRect;
+  if (stageRect.width > 0) state.drag.stageRect = stageRect;
 
-  const leftPx = clamp(
-    clientX - state.drag.stageRect.left - state.drag.pointerOffsetX,
-    0,
-    usableWidth
-  );
-  const topPx = clamp(
-    clientY - state.drag.stageRect.top - state.drag.pointerOffsetY,
-    0,
-    usableHeight
-  );
+  const tokenRect = state.drag.tokenElement?.isConnected
+    ? state.drag.tokenElement.getBoundingClientRect()
+    : null;
+  const tokenWidth = tokenRect?.width || state.drag.tokenWidth;
+  const tokenHeight = tokenRect?.height || state.drag.tokenHeight;
+  const pointerOffsetX = state.drag.pointerOffsetFracX !== undefined
+    ? state.drag.pointerOffsetFracX * tokenWidth
+    : state.drag.pointerOffsetX;
+  const pointerOffsetY = state.drag.pointerOffsetFracY !== undefined
+    ? state.drag.pointerOffsetFracY * tokenHeight
+    : state.drag.pointerOffsetY;
 
-  token.x = clamp((leftPx / state.drag.stageRect.width) * 100, 0, 100);
-  token.y = clamp((topPx / state.drag.stageRect.height) * 100, 0, 100);
+  const usableWidth = Math.max(1, stageRect.width - tokenWidth);
+  const usableHeight = Math.max(1, stageRect.height - tokenHeight);
+
+  const leftPx = clamp(clientX - stageRect.left - pointerOffsetX, 0, usableWidth);
+  const topPx = clamp(clientY - stageRect.top - pointerOffsetY, 0, usableHeight);
+
+  token.x = clamp((leftPx / stageRect.width) * 100, 0, 100);
+  token.y = clamp((topPx / stageRect.height) * 100, 0, 100);
 
   if (state.drag.tokenElement?.isConnected) {
     state.drag.tokenElement.style.left = `${token.x}%`;

@@ -269,7 +269,49 @@ function _tryClickSelectStroke(clientX, clientY) {
 
 // ── Move ─────────────────────────────────────────────────────
 
+// Bounding box (0–100%) só do que VAI se mover: tokens selecionados que o
+// usuário pode mover + strokes selecionados. Usado para clampar o delta do
+// grupo — sem isso, cada item era clampado individualmente na borda e a
+// seleção "esmagava" (as posições relativas se perdiam de forma irreversível).
+function _computeMovableBounds() {
+  let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+  const expand = b => {
+    if (!b) return;
+    if (b.x1 < x1) x1 = b.x1;  if (b.y1 < y1) y1 = b.y1;
+    if (b.x2 > x2) x2 = b.x2;  if (b.y2 > y2) y2 = b.y2;
+  };
+
+  if (typeof state !== "undefined" && Array.isArray(state.tokens)) {
+    state.tokens.forEach(token => {
+      if (!_selectedTokenIds.has(String(token.id))) return;
+      if (typeof canMoveTokens === "function" && !canMoveTokens(token)) return;
+      expand(_tokenBoundsPct(token.id));
+    });
+  }
+
+  if (_selectedStrokeIds.size > 0 && typeof getDrawingsSnapshot === "function") {
+    const strokes = getDrawingsSnapshot();
+    _selectedStrokeIds.forEach(id => {
+      const s = strokes.find(s => String(s.id) === String(id));
+      if (s) expand(_strokeBounds(s));
+    });
+  }
+
+  return isFinite(x1) ? { x1, y1, x2, y2 } : null;
+}
+
 function _applyMoveDelta(dxPct, dyPct) {
+  // Clamp contínuo e suave: limita o delta para que a CAIXA do grupo pare na
+  // borda do palco como uma unidade, em vez de clampar item a item (o que
+  // distorcia o arranjo). Strokes também precisam disto: desde a Etapa 38 o
+  // Worker clampa frações 0–1 ao persistir — um stroke empurrado para fora
+  // seria deformado no save.
+  const movableBounds = _computeMovableBounds();
+  if (movableBounds) {
+    dxPct = Math.max(-movableBounds.x1, Math.min(100 - movableBounds.x2, dxPct));
+    dyPct = Math.max(-movableBounds.y1, Math.min(100 - movableBounds.y2, dyPct));
+  }
+
   // Tokens (0–100%)
   if (typeof state !== "undefined" && Array.isArray(state.tokens)) {
     state.tokens.forEach(token => {
@@ -511,10 +553,13 @@ function initMesaSelect() {
     } else if (_dragMode === "resize" && _dragHandle) {
       const nb = { ..._dragBounds };
       const h  = _dragHandle;
-      if (h.includes("e")) nb.x2 = Math.max(nb.x1 + 2, nb.x2 + dxPct);
-      if (h.includes("w")) nb.x1 = Math.min(nb.x2 - 2, nb.x1 + dxPct);
-      if (h.includes("s")) nb.y2 = Math.max(nb.y1 + 2, nb.y2 + dyPct);
-      if (h.includes("n")) nb.y1 = Math.min(nb.y2 - 2, nb.y1 + dyPct);
+      // Clamp contínuo: a borda arrastada para no limite do palco (0–100)
+      // em vez de deixar a caixa crescer para fora e os itens serem
+      // clampados individualmente (o que distorcia o arranjo da seleção).
+      if (h.includes("e")) nb.x2 = Math.min(100, Math.max(nb.x1 + 2, nb.x2 + dxPct));
+      if (h.includes("w")) nb.x1 = Math.max(0, Math.min(nb.x2 - 2, nb.x1 + dxPct));
+      if (h.includes("s")) nb.y2 = Math.min(100, Math.max(nb.y1 + 2, nb.y2 + dyPct));
+      if (h.includes("n")) nb.y1 = Math.max(0, Math.min(nb.y2 - 2, nb.y1 + dyPct));
 
       _applyResizeDelta(h, nb, _dragBounds);
       _dragBounds = nb;
