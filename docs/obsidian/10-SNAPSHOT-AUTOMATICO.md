@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-11 01:59:31 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-11 16:16:22 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,42 +13,55 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `4fff0fb 2026-07-11 refactor(mesa): upload/delete de mapa pela fachada APP + remove stub mesa-init.js (Etapa 40)`
+- Ultimo commit: `dc15aa6 2026-07-11 feat(worker): hardening — caps de body/upload, rate limit no DO e regras puras testaveis (Etapa 41)`
 
 ### Alteracoes Locais
 
 ```text
-M  .claude/settings.local.json
+ M .claude/settings.local.json
+M  CLAUDE.md
 M  DEV_STATUS.md
 M  SYSTEM_RULES.md
 M  cloudflare/README.md
-M  cloudflare/src/auth.js
-M  cloudflare/src/index.js
-A  cloudflare/src/mesa-realtime-rules.js
-M  cloudflare/src/mesa-realtime.js
+M  cloudflare/src/mesa-realtime-rules.js
+M  cloudflare/src/mesa.js
+M  css/mesa-map.css
+M  docs/obsidian/07-MESA.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  js/mesa-core.js
+A  js/mesa-grid.js
+M  js/mesa-map.js
+M  js/mesa-stage.js
+M  mesa.html
 M  tests/mesa-audit.spec.cjs
+M  tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
-(nenhum)
+.claude/settings.local.json
 ```
 
 ### Arquivos Em Stage
 
 ```text
-.claude/settings.local.json
+CLAUDE.md
 DEV_STATUS.md
 SYSTEM_RULES.md
 cloudflare/README.md
-cloudflare/src/auth.js
-cloudflare/src/index.js
 cloudflare/src/mesa-realtime-rules.js
-cloudflare/src/mesa-realtime.js
+cloudflare/src/mesa.js
+css/mesa-map.css
+docs/obsidian/07-MESA.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+js/mesa-core.js
+js/mesa-grid.js
+js/mesa-map.js
+js/mesa-stage.js
+mesa.html
 tests/mesa-audit.spec.cjs
+tools/build-pages.cjs
 ```
 
 ## Paginas Principais
@@ -62,7 +75,7 @@ tests/mesa-audit.spec.cjs
 
 ## Contagem Rapida
 
-- JavaScript em `js/`: 30 arquivo(s)
+- JavaScript em `js/`: 31 arquivo(s)
 - CSS em `css/`: 13 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
@@ -139,7 +152,6 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
    13,08 MB  assets\sheet-fire-background.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     1,03 MB  node_modules\terser\dist\bundle.min.js
-    0,99 MB  .claude\worktrees\amazing-roentgen-549fdf\assets\logo-rpg-armagedon.png
     0,99 MB  assets\logo-rpg-armagedon.png
     0,92 MB  node_modules\playwright-core\types\types.d.ts
     0,78 MB  node_modules\playwright-core\types\protocol.d.ts
@@ -147,6 +159,7 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js
     0,61 MB  node_modules\playwright-core\lib\vite\traceViewer\assets\defaultSettingsView-GTWI-W_B.js
     0,45 MB  node_modules\playwright-core\lib\utilsBundleImpl\index.js
+    0,41 MB  node_modules\@img\sharp-win32-x64\lib\sharp-win32-x64.node
 ```
 
 ## Comando De Atualizacao

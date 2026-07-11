@@ -1427,3 +1427,129 @@ test.describe("Hardening do backend (Etapa 41)", () => {
     expect(filtered.ownedMemories).toBeUndefined();
   });
 });
+
+test.describe("Grade funcional (Etapa 42)", () => {
+  test("Worker: normalizeMesaScene normaliza a grade (clamps + null quando desligada)", async () => {
+    const { normalizeMesaScene } = await import("../cloudflare/src/mesa.js");
+
+    const on = normalizeMesaScene({
+      tokens: [],
+      grid: { enabled: true, snap: true, cellFrac: 0.9, offsetXFrac: 3, color: "javascript:x", opacity: 99 }
+    });
+    expect(on.grid.enabled).toBe(true);
+    expect(on.grid.snap).toBe(true);
+    expect(on.grid.cellFrac).toBe(0.25);      // clamp 0.01-0.25
+    expect(on.grid.offsetXFrac).toBe(1);      // clamp 0-1
+    expect(on.grid.color).toBe("#ffffff");    // cor invalida cai no default
+    expect(on.grid.opacity).toBe(0.8);        // clamp 0.05-0.8
+
+    const off = normalizeMesaScene({ tokens: [], grid: { enabled: false, snap: false, cellFrac: 0.05 } });
+    expect(off.grid).toBeNull();              // grade toda desligada nao ocupa a cena
+
+    const legacy = normalizeMesaScene({ tokens: [] });
+    expect(legacy.grid).toBeNull();           // cena antiga sem o campo
+  });
+
+  test("DO rules: mesa:grid:update e master-only e retransmitido", async () => {
+    const { GRID_UPDATE_TYPE, MASTER_ONLY_TYPES, RELAY_TYPES } =
+      await import("../cloudflare/src/mesa-realtime-rules.js");
+    expect(GRID_UPDATE_TYPE).toBe("mesa:grid:update");
+    expect(MASTER_ONLY_TYPES.has(GRID_UPDATE_TYPE)).toBe(true);
+    expect(RELAY_TYPES.has(GRID_UPDATE_TYPE)).toBe(true);
+  });
+
+  test("mestre: ligar a grade desenha no canvas e entra no payload da cena", async ({ page }) => {
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    // Sob carga o boot pode passar dos 450ms — updateMesaGrid e master-only,
+    // entao espera o papel assentar antes de mexer na grade.
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    const result = await page.evaluate(() => {
+      window.updateMesaGrid({ enabled: true, cellFrac: 0.1, opacity: 0.5 });
+      const canvas = document.getElementById("mesaGridCanvas");
+      const ctx = canvas.getContext("2d");
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      let painted = 0;
+      for (let i = 3; i < data.length; i += 4) { if (data[i] > 0) painted++; }
+      const payload = createMesaScenePayloadFromState();
+      const normalized = normalizeMesaScenePayload(payload);
+      return { painted, payloadGrid: payload.grid, signatureGrid: normalized.grid };
+    });
+
+    expect(result.painted).toBeGreaterThan(100);          // linhas visiveis
+    expect(result.payloadGrid?.enabled).toBe(true);
+    expect(result.payloadGrid?.cellFrac).toBe(0.1);
+    // Grade na assinatura: persist so-de-grade nao pode cair no dedupe.
+    expect(result.signatureGrid?.enabled).toBe(true);
+  });
+
+  test("mestre: snap-to-grid centraliza o token na celula ao soltar", async ({ page }) => {
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+    const result = await page.evaluate(() => {
+      window.updateMesaGrid({ enabled: true, snap: true, cellFrac: 0.1, offsetXFrac: 0, offsetYFrac: 0 });
+      const token = state.tokens.find(t => t.id === "ana");
+      token.x = 23.7;  // posicao "solta", fora de qualquer centro de celula
+      token.y = 31.2;
+      const el = document.querySelector('[data-token-id="ana"]');
+      const moved = window.mesaSnapTokenToGrid(token, el);
+
+      // Centro do token em fracao do palco apos o snap
+      const stage = document.getElementById("mesaStageInner");
+      const rect = el.getBoundingClientRect();
+      const tokenWFrac = rect.width / stage.getBoundingClientRect().width;
+      const centerFx = token.x / 100 + tokenWFrac / 2;
+      // Sem mapa ativo a superficie e o palco: centro deve cair em (n + 0.5) * 0.1
+      const remainder = ((centerFx / 0.1) % 1 + 1) % 1;
+      return { moved, remainder, x: token.x, y: token.y };
+    });
+
+    expect(result.moved).toBe(true);
+    expect(Math.abs(result.remainder - 0.5)).toBeLessThan(0.02);
+  });
+
+  test("jogador: recebe mesa:grid:update mas nao consegue alterar a grade", async ({ page }) => {
+    await seedPlayerWithScene(page, [ANA_TOKEN]);
+    await installAppEmitHook(page);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    // `state` e const lexical global (nao vive em window.*): acessa direto.
+    await page.waitForFunction(() => typeof state !== "undefined" && state.session != null);
+    const result = await page.evaluate(async () => {
+      // Tentativa direta do jogador: no-op (updateMesaGrid e master-only).
+      window.updateMesaGrid({ enabled: true });
+      const blocked = window.getMesaGridState();
+
+      // Delta autoritativo vindo do mestre via DO
+      await applyMesaRealtimeDelta({
+        type: "mesa:grid:update",
+        clientId: "cliente-do-mestre",
+        sceneVersion: 99,
+        grid: { enabled: true, snap: true, cellFrac: 0.08, opacity: 0.3 }
+      });
+      const applied = window.getMesaGridState();
+
+      const canvas = document.getElementById("mesaGridCanvas");
+      const ctx = canvas.getContext("2d");
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      let painted = 0;
+      for (let i = 3; i < data.length; i += 4) { if (data[i] > 0) painted++; }
+      return { blocked, applied, painted };
+    });
+
+    expect(result.blocked.enabled).toBe(false);
+    expect(result.applied.enabled).toBe(true);
+    expect(result.applied.snap).toBe(true);
+    expect(result.applied.cellFrac).toBe(0.08);
+    expect(result.painted).toBeGreaterThan(100);
+  });
+});

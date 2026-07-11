@@ -154,6 +154,31 @@
   text-align: center;
 }
 
+/* ─── Grade funcional (Etapa 42) ─────────────────────────────── */
+/* Canvas dedicado: acima do mapa/grade decorativa, abaixo dos desenhos
+   (#mesaDrawCanvas usa z-index 8) e dos tokens DOM. */
+#mesaGridCanvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 7;
+}
+
+.mesa-grid-check {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  color: var(--text-soft);
+  cursor: pointer;
+  user-select: none;
+}
+
+.mesa-grid-check input {
+  accent-color: var(--accent, #8c1d2f);
+}
+
 /* Hint de instrução no painel */
 .mesa-map-settings-hint {
   font-family: var(--font-body, serif);

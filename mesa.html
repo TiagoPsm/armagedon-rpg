@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="css/mesa-stage.css?v=2026-06-30-cleanup-1" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-06-16-fullbleed-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-06-16-master-vital-card-1" />
-  <link rel="stylesheet" href="css/mesa-map.css?v=2026-05-24-token-styles-1" />
+  <link rel="stylesheet" href="css/mesa-map.css?v=2026-07-11-grid-1" />
   <link rel="stylesheet" href="css/mesa-drawing.css?v=2026-06-12-cache-fix-1" />
   <style>
     /* ── TOKEN SCALE ── */
@@ -261,6 +261,8 @@
           <div id="mesaMapLayer" class="mesa-map-layer" aria-hidden="true" hidden></div>
           <div class="mesa-stage-grid" aria-hidden="true"></div>
           <div class="mesa-stage-glow" aria-hidden="true"></div>
+          <!-- Grade funcional amarrada ao mapa (Etapa 42) — abaixo dos desenhos -->
+          <canvas id="mesaGridCanvas" aria-hidden="true"></canvas>
           <!-- Canvas de desenho — acima do grid, abaixo dos tokens DOM -->
           <canvas id="mesaDrawCanvas" aria-hidden="true"></canvas>
           <div id="mesaStage" class="mesa-stage" aria-live="polite"></div>
@@ -429,6 +431,22 @@
         </div>
         <p class="mesa-map-settings-hint" id="mesaMapHint" hidden>Arraste o mapa para reposicionar.<br>Scroll para zoom.</p>
 
+        <!-- Grade funcional (Etapa 42) — controles do mestre -->
+        <div class="mesa-map-transform-group" id="mesaGridGroup" hidden>
+          <span class="mesa-map-transform-label">Grade</span>
+          <label class="mesa-grid-check">
+            <input type="checkbox" id="mesaGridToggle"> Exibir grade
+          </label>
+          <label class="mesa-grid-check">
+            <input type="checkbox" id="mesaGridSnapToggle"> Encaixar tokens
+          </label>
+          <div class="mesa-map-transform-row">
+            <button type="button" class="mesa-transform-btn" onclick="adjustMesaGridCell(-1)" title="C&eacute;lulas maiores">&#8722;</button>
+            <span id="mesaGridSizeLabel" class="mesa-map-scale-val" title="Colunas na largura do mapa">20</span>
+            <button type="button" class="mesa-transform-btn" onclick="adjustMesaGridCell(1)" title="C&eacute;lulas menores">+</button>
+          </div>
+        </div>
+
       </div>
 
       <!-- Overlay: baixo direito — ações -->
@@ -583,12 +601,13 @@
   <script src="js/ui.js?v=2026-06-11-soul-notify-1" defer></script>
   <script src="js/auth.js?v=2026-06-13-login-form-1" defer></script>
   <!-- Ordem importante: dependências antes de mesa-core -->
-  <script src="js/mesa-stage.js?v=2026-07-11-interaction-fix-1" defer></script>
+  <script src="js/mesa-stage.js?v=2026-07-11-grid-1" defer></script>
   <script src="js/mesa-roster.js?v=2026-06-16-no-dup-inspector-1" defer></script>
   <script src="js/mesa-inspector.js?v=2026-06-19-dm-layer-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
-  <script src="js/mesa-core.js?v=2026-07-10-drawings-sync-1" defer></script>
-  <script src="js/mesa-map.js?v=2026-07-11-map-facade-1" defer></script>
+  <script src="js/mesa-core.js?v=2026-07-11-grid-1" defer></script>
+  <script src="js/mesa-map.js?v=2026-07-11-grid-1" defer></script>
+  <script src="js/mesa-grid.js?v=2026-07-11-grid-1" defer></script>
   <script src="js/mesa-drawing.js?v=2026-07-10-drawings-sync-1" defer></script>
   <script src="js/mesa-select.js?v=2026-07-11-interaction-fix-1" defer></script>
   <script src="js/mesa-initiative.js?v=2026-07-10-initiative-sync-1" defer></script>

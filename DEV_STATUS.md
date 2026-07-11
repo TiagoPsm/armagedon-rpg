@@ -30,7 +30,23 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-11 — Etapa 41: Hardening do backend — caps, rate limit e testes do DO)
+## Ultima Etapa Concluida (2026-07-11 — Etapa 42: Grade funcional + snap-to-grid + helper palco<->mapa)
+
+Sexta etapa do plano "Mesa Virtual -> VTT completo" (Etapas 37-51). Frontend + Worker (contrato da cena) — deployado.
+
+- **Modelo (decisao D1)**: grade amarrada ao MAPA — celula em fracao da largura exibida da imagem (`grid.cellFrac`, clamp 0.01-0.25), com `enabled`, `snap`, `offsetXFrac/offsetYFrac` (0-1 dentro da celula), `color` (#hex) e `opacity` (0.05-0.8). Pan/zoom do mapa movem a grade junto sem re-sync (so re-render). Sem mapa ativo, a superficie de referencia e o proprio palco. Grade e visivel a todos (sem camada dm).
+- **Helper unico palco<->mapa** (js/mesa-map.js): `getMesaMapSurfaceFrac()` (retangulo da imagem exibida em fracoes do palco, derivado do cover+transform), `mesaStageFracToMapFrac(fx,fy)` e `mesaMapFracToStageFrac(u,v)`. Regua (Etapa 44) e fog (Etapa 47) DEVEM reusar estas funcoes — unica fonte da matematica de cover. `applyMapTransform` e `renderMesaMapLayer` (branch de limpeza) chamam `window.renderMesaGrid()`.
+- **Modulo novo** (js/mesa-grid.js): estado + normalizacao espelhada do Worker, render em canvas dedicado `#mesaGridCanvas` (mesmo padrao DPR/ResizeObserver do mesaDrawCanvas; z-index 7, abaixo dos desenhos), recorte na intersecao superficie∩palco (mapa em cover pode transbordar), UI do mestre (grupo "Grade" no painel de configuracoes: Exibir grade, Encaixar tokens, contador de colunas -/+), `updateMesaGrid` (master-only: aplica -> re-render -> `mesa:grid:update` -> bump+persist) e `mesaSnapTokenToGrid`.
+- **Snap no soltar** (js/mesa-stage.js `handleDragEnd`): snap ANTES do flush realtime/persist — a posicao final transmitida ja e o centro da celula. Centro do token -> fracao do mapa -> celula mais proxima -> volta pra % do palco (clamp 0-100). Celula quadrada em px (fracao vertical = cellFrac x proporcao da superficie).
+- **Sync**: `mesa:grid:update` adicionado a MASTER_ONLY_TYPES/RELAY_TYPES (cloudflare/src/mesa-realtime-rules.js) — DO ja bloqueia jogador e retransmite pelo caminho generico, sem codigo novo no DO. Cliente: tipo no MESA_REALTIME_DELTA_TYPES + branch em applyMesaRealtimeDelta (aplica estado completo + cache local). Cena: `grid` no createMesaScenePayloadFromState, na assinatura do normalizeMesaScenePayload (persist so-de-grade nao cai no dedupe — mesma licao da iniciativa/desenhos) e no applyMesaSceneSnapshot (`undefined` = cena antiga preserva estado; `null` = desligada).
+- **Worker** (cloudflare/src/mesa.js): `normalizeSceneGrid` (clamps identicos ao cliente; grade toda desligada vira `null`) + campo `grid` no normalizeMesaScene.
+- **Testes** (tests/mesa-audit.spec.cjs, describe "Grade funcional (Etapa 42)", suite 41 -> 46): normalizacao no Worker (clamps/null/cena antiga), tipo master-only+relay nas regras do DO, mestre liga grade -> pixels no canvas + grid no payload e na assinatura, snap centraliza na celula ((n+0.5)x0.1 de fracao do palco), jogador recebe delta mas updateMesaGrid dele e no-op. Testes com `waitForFunction` no papel (o waitForMesaSettled de 450ms nao basta sob carga — causa raiz do mesmo padrao de flake do "bug 2").
+- **Limpeza**: worktree orfao `.claude/worktrees/amazing-roentgen-549fdf` (2026-07-05, limpo, commit ja em main) removido — o glob do Playwright rodava os specs antigos dele junto e poluia o test:ficha.
+- Cache-bust: mesa-core/mesa-map/mesa-stage/mesa-grid(novo) -> `?v=2026-07-11-grid-1`; css/mesa-map.css -> `?v=2026-07-11-grid-1`; `MESA_BUNDLE_VERSION` -> `2026-07-11-grid-1`; mesa-grid.js adicionado ao bundle (tools/build-pages.cjs).
+- Worker deployado: dry-run limpo -> version ID `806fc991-c699-4ebd-840a-a2c2bbb4a5c2`, health 200 (ver cloudflare/README.md).
+- Validacao: check:js OK (40), audit:static OK, test:mesa:audit 46/46, test:mesa 10/10, test:ficha 28/28. Preview visual: grade renderizada no palco do mestre, painel "Grade" com toggles e contador (13 colunas com cellFrac 0.08), snap verificado por teste.
+
+## Etapa Concluida (2026-07-11 — Etapa 41: Hardening do backend — caps, rate limit e testes do DO)
 
 Quinta etapa do plano "Mesa Virtual -> VTT completo" (Etapas 37-51). Toca Worker + DO — deployado.
 

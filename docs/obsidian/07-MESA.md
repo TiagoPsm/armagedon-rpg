@@ -38,6 +38,7 @@ JS:
 - `js/mesa-inspector.js`
 - `js/mesa-storage.js`
 - `js/mesa-map.js`
+- `js/mesa-grid.js`
 - `js/mesa-drawing.js`
 - `js/mesa-select.js`
 - `js/mesa-initiative.js`

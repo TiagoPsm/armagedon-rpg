@@ -14,6 +14,8 @@ const INITIATIVE_ROLL_TYPE = "mesa:initiative:roll";
 // o estado completo dos tracos visiveis. Tracos da camada secreta ("dm") nunca
 // deveriam sair do cliente do mestre — o DO remove qualquer um que chegue.
 const DRAWINGS_UPDATE_TYPE = "mesa:drawings:update";
+// Grade (Etapa 42): estado completo da grade da cena, autoritativo do mestre.
+const GRID_UPDATE_TYPE = "mesa:grid:update";
 const SHEET_PATCH_TYPE = "mesa:sheet:patch";
 const ECHO_VITALS_TYPE = "mesa:echo:vitals";
 const SHEET_CHANGED_TYPE = "sheet:changed";
@@ -25,7 +27,8 @@ const MASTER_ONLY_TYPES = new Set([
   "mesa:token:upsert",
   "mesa:token:remove",
   "mesa:scene:clear",
-  INITIATIVE_UPDATE_TYPE
+  INITIATIVE_UPDATE_TYPE,
+  GRID_UPDATE_TYPE
 ]);
 
 const RELAY_TYPES = new Set([
@@ -321,6 +324,7 @@ export {
   ATTRIBUTES,
   DRAWINGS_UPDATE_TYPE,
   ECHO_VITALS_TYPE,
+  GRID_UPDATE_TYPE,
   INITIATIVE_ROLL_TYPE,
   INITIATIVE_UPDATE_TYPE,
   MAP_SIGNAL_TYPES,

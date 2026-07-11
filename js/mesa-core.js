@@ -77,7 +77,8 @@ const MESA_REALTIME_DELTA_TYPES = new Set([
   "mesa:scene:clear",
   "mesa:drawings:update",
   "mesa:initiative:update",
-  "mesa:initiative:roll"
+  "mesa:initiative:roll",
+  "mesa:grid:update"
 ]);
 const MESA_SHEET_PATCH_TYPE = "mesa:sheet:patch";
 const MESA_ECHO_VITALS_TYPE = "mesa:echo:vitals";
@@ -513,6 +514,17 @@ async function applyMesaRealtimeDelta(payload) {
       }
     }
     return; // não precisa scheduleMesaRender
+  }
+
+  if (type === "mesa:grid:update") {
+    // Estado completo da grade (mestre → todos; o DO bloqueia jogador).
+    // O snapshot local ganha a grade nova para o F5 preservar; quem persiste
+    // a cena oficial é o próprio mestre emissor (updateMesaGrid).
+    if (typeof setMesaGridFromRemote === "function") {
+      setMesaGridFromRemote(payload?.grid || null);
+      cacheMesaSceneSnapshotLocally();
+    }
+    return;
   }
 
   if (type === "mesa:initiative:update") {
@@ -1644,6 +1656,14 @@ function applyMesaSceneSnapshot(saved) {
     window.applyMesaSceneDrawingsFromSnapshot(saved?.drawings);
   }
 
+  // Grade oficial (Etapa 42): aplicada no boot e em snapshots remotos.
+  // `undefined` (cena antiga sem o campo) preserva o estado atual.
+  if (typeof window.applyMesaSceneGridFromSnapshot === "function") {
+    window.applyMesaSceneGridFromSnapshot(
+      saved && Object.prototype.hasOwnProperty.call(saved, "grid") ? saved.grid : undefined
+    );
+  }
+
   return { seeded, savedTokenCount: savedTokens.length };
 }
 
@@ -2041,6 +2061,8 @@ function createMesaScenePayloadFromState() {
     // Mapa oficial (URL R2 + transform) — mantido pelo mesa-map.js. Permite
     // que jogadores carreguem o mapa no boot sem o mestre online.
     map: typeof window.getMesaSceneMapPayload === "function" ? window.getMesaSceneMapPayload() : null,
+    // Grade oficial (Etapa 42) — mantida pelo mesa-grid.js; null = desligada.
+    grid: typeof window.getMesaGridScenePayload === "function" ? window.getMesaGridScenePayload() : null,
     // Desenhos oficiais da cena (inclui camada "dm" do mestre — o PUT é
     // master-only e o Worker filtra "dm" no GET para jogadores). Jogador que
     // entra depois recebe os traços no boot sem depender do mestre online.
@@ -2163,7 +2185,15 @@ function normalizeMesaScenePayload(payload = {}) {
     // Desenhos entram na assinatura: sem isso, um persist disparado só por um
     // traço novo teria assinatura idêntica e seria descartado pelo dedupe
     // (mesmo bug corrigido para `initiative` na Etapa 37).
-    drawings: normalizeMesaSceneDrawings(payload?.drawings)
+    drawings: normalizeMesaSceneDrawings(payload?.drawings),
+    // Grade entra na assinatura pelo mesmo motivo (persist só-de-grade não
+    // pode ser descartado pelo dedupe). Normalização espelha o Worker.
+    grid: typeof window.normalizeMesaGridState === "function" && payload?.grid
+      ? (() => {
+          const grid = window.normalizeMesaGridState(payload.grid);
+          return grid.enabled || grid.snap ? grid : null;
+        })()
+      : null
   };
 }
 

@@ -708,6 +708,8 @@ function renderMesaMapLayer(blobUrl, mapName) {
     if (emptyState && mesaStage && !mesaStage.children.length) {
       emptyState.hidden = false;
     }
+    // Mapa limpo: a grade volta a ancorar no palco inteiro (Etapa 42).
+    if (typeof window.renderMesaGrid === "function") window.renderMesaGrid();
   }
 
   if (label) {
@@ -757,6 +759,9 @@ function applyMapTransform() {
       );
     } catch {}
   }
+
+  // A grade acompanha o mapa: qualquer pan/zoom/troca redesenha (Etapa 42).
+  if (typeof window.renderMesaGrid === "function") window.renderMesaGrid();
 }
 
 function adjustMapScale(delta) {
@@ -801,6 +806,64 @@ function _getMapCoverDims() {
     h: Math.max(1, mesaMapState._imgH * coverScale * s)
   };
 }
+
+/* ── HELPER ÚNICO PALCO ↔ MAPA (Etapa 42) ───────────────────── */
+// Toda feature ancorada ao mapa (grade, régua, fog) converte coordenadas por
+// aqui — uma única fonte da matemática de cover + transform. Coordenadas:
+//   • fração do palco: 0–1 relativo ao container do palco (mesmo espaço dos
+//     tokens, que usam % — dividir por 100)
+//   • fração do mapa: 0–1 relativo à IMAGEM exibida (cover × scale + pan)
+// Sem mapa ativo, a superfície de referência é o próprio palco (retângulo
+// 0,0–1,1), para a grade continuar utilizável em cenas sem mapa.
+
+/**
+ * Retângulo da imagem exibida em frações do palco.
+ * @returns {{ left:number, top:number, width:number, height:number, hasMap:boolean }}
+ */
+function getMesaMapSurfaceFrac() {
+  const layer = document.getElementById("mesaMapLayer");
+  const dims  = _getMapCoverDims();
+  if (!layer || !dims || layer.hidden) {
+    return { left: 0, top: 0, width: 1, height: 1, hasMap: false };
+  }
+  const cw = layer.offsetWidth  || 1;
+  const ch = layer.offsetHeight || 1;
+  const { x, y } = mesaMapState.mapTransform;
+  // background-position: calc(50% + Xpx) → canto da imagem em px do container
+  const leftPx = (cw - dims.w) / 2 + x;
+  const topPx  = (ch - dims.h) / 2 + y;
+  return {
+    left:   leftPx / cw,
+    top:    topPx  / ch,
+    width:  dims.w / cw,
+    height: dims.h / ch,
+    hasMap: true
+  };
+}
+
+/** Converte fração do palco → fração do mapa exibido. */
+function mesaStageFracToMapFrac(fx, fy) {
+  const s = getMesaMapSurfaceFrac();
+  return {
+    u: (Number(fx) - s.left) / (s.width  || 1),
+    v: (Number(fy) - s.top)  / (s.height || 1),
+    hasMap: s.hasMap
+  };
+}
+
+/** Converte fração do mapa exibido → fração do palco. */
+function mesaMapFracToStageFrac(u, v) {
+  const s = getMesaMapSurfaceFrac();
+  return {
+    fx: s.left + Number(u) * s.width,
+    fy: s.top  + Number(v) * s.height,
+    hasMap: s.hasMap
+  };
+}
+
+window.getMesaMapSurfaceFrac  = getMesaMapSurfaceFrac;
+window.mesaStageFracToMapFrac = mesaStageFracToMapFrac;
+window.mesaMapFracToStageFrac = mesaMapFracToStageFrac;
 
 let _mapTransformBroadcastTimer = 0;
 

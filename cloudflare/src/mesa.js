@@ -157,6 +157,24 @@ function normalizeSceneMap(map) {
   };
 }
 
+// Grade oficial da cena (Etapa 42): amarrada ao MAPA — a célula é uma fração
+// da largura exibida da imagem (cellFrac), então pan/zoom do mapa movem a
+// grade junto sem re-sincronizar nada. Visível a todos (sem camada "dm").
+function normalizeSceneGrid(grid) {
+  if (!grid || typeof grid !== "object") return null;
+  if (grid.enabled !== true && grid.snap !== true) return null;
+  const color = /^#[0-9a-f]{3,8}$/i.test(String(grid.color || "")) ? String(grid.color) : "#ffffff";
+  return {
+    enabled: grid.enabled === true,
+    snap: grid.snap === true,
+    cellFrac: Math.round(clamp(grid.cellFrac ?? 0.05, 0.01, 0.25) * 10000) / 10000,
+    offsetXFrac: Math.round(clamp(grid.offsetXFrac ?? 0, 0, 1) * 10000) / 10000,
+    offsetYFrac: Math.round(clamp(grid.offsetYFrac ?? 0, 0, 1) * 10000) / 10000,
+    color,
+    opacity: Math.round(clamp(grid.opacity ?? 0.18, 0.05, 0.8) * 100) / 100
+  };
+}
+
 function normalizeMesaScene(payload) {
   const source =
     payload && typeof payload === "object" && payload.data && typeof payload.data === "object"
@@ -192,6 +210,7 @@ function normalizeMesaScene(payload) {
     tokens,
     initiative,
     map: normalizeSceneMap(source?.map),
+    grid: normalizeSceneGrid(source?.grid),
     drawings
   };
 }

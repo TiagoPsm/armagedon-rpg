@@ -702,8 +702,13 @@ function handleDragEnd() {
   if (_tokenResizeDrag) { handleResizePointerUp(); return; }
   if (!state.drag) return;
   flushPendingDragPosition();
-  flushRealtimeDragMove();
   const token = findToken(state.drag.tokenId);
+  // Snap-to-grid (Etapa 42): ajusta ANTES do flush realtime/persist para a
+  // posição final transmitida e salva já ser a célula, não o ponto do soltar.
+  if (token && typeof window.mesaSnapTokenToGrid === "function") {
+    window.mesaSnapTokenToGrid(token, state.drag.tokenElement);
+  }
+  flushRealtimeDragMove();
   state.drag.tokenElement?.classList.remove("is-dragging");
   const stage = getMesaDomRef("stage");
   if (stage?.dataset) delete stage.dataset.dragging;
