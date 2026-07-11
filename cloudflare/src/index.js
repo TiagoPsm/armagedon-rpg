@@ -552,7 +552,8 @@ export default {
         if (!character) return errorJson("Ficha não encontrada.", 404, origin);
 
         assertCharacterAccess(session, character, "write");
-        const body = await readJson(request);
+        // Ficha completa (inventario, memorias, habilidades): cap de 256KB
+        const body = await readJson(request, 256 * 1024);
         const saved = await saveCharacterBundle(env, character, body, session);
         await broadcastSheetChanged(env, key, session);
         return withCors(json(saved), origin);
@@ -592,7 +593,8 @@ export default {
 
       if (path === "/api/mesa/scene" && request.method === "PUT") {
         const session = await requireAuth(request, env);
-        const body = await readJson(request);
+        // Cena carrega tokens + desenhos + iniciativa: cap proprio de 256KB
+        const body = await readJson(request, 256 * 1024);
         const saved = await saveMesaScene(env, session, body);
         await broadcastMesaScene(env, saved, session);
         return withCors(json(saved), origin);
@@ -799,6 +801,11 @@ export default {
 
         if (!file || !(file instanceof File)) return errorJson("Campo 'file' obrigatorio.", 400, origin);
         if (!mapId) return errorJson("Campo 'mapId' obrigatorio.", 400, origin);
+        // Cap de upload de mapa (Etapa 41): 8MB — acima disso o cliente ja
+        // deveria ter comprimido (o mesa-map converte para webp antes).
+        if (file.size > 8 * 1024 * 1024) {
+          return errorJson("Mapa excede o limite de 8 MB.", 413, origin);
+        }
 
         // Chave no R2: maps/<username>/<mapId>.webp
         const safeUser  = String(session.username || "unknown").replace(/[^a-z0-9_-]/gi, "_").toLowerCase().slice(0, 32);

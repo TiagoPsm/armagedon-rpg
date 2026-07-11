@@ -149,9 +149,33 @@ async function verifyToken(token, secret) {
   return payload;
 }
 
-async function readJson(request) {
+// Cap de body (Etapa 41): 16KB por padrao; rotas com payload grande (cena da
+// Mesa, ficha completa) passam um limite maior explicitamente. Corpo acima do
+// limite responde 413 — devolver {} silenciosamente seria pior (um PUT de
+// cena com {} normalizado APAGARIA a cena salva).
+const READ_JSON_DEFAULT_MAX_BYTES = 16 * 1024;
+
+function payloadTooLarge() {
+  return json({ error: "Corpo da requisicao excede o limite permitido." }, { status: 413 });
+}
+
+async function readJson(request, maxBytes = READ_JSON_DEFAULT_MAX_BYTES) {
+  const declared = Number.parseInt(request.headers.get("content-length") || "", 10);
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    throw payloadTooLarge();
+  }
+
+  let text = "";
   try {
-    return await request.json();
+    text = await request.text();
+  } catch {
+    return {};
+  }
+  if (text.length > maxBytes) {
+    throw payloadTooLarge();
+  }
+  try {
+    return text ? JSON.parse(text) : {};
   } catch {
     return {};
   }

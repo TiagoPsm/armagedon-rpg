@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-11 01:45:02 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-11 01:59:31 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,25 +13,21 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `485d5a7 2026-07-11 fix(mesa): drag sem drift com zoom + clamp continuo da selecao multipla (Etapa 39)`
+- Ultimo commit: `4fff0fb 2026-07-11 refactor(mesa): upload/delete de mapa pela fachada APP + remove stub mesa-init.js (Etapa 40)`
 
 ### Alteracoes Locais
 
 ```text
-M  CLAUDE.md
+M  .claude/settings.local.json
 M  DEV_STATUS.md
-M  docs/obsidian/07-MESA.md
-M  echos.html
-M  ficha.html
-M  index.html
-M  js/api.js
-D  js/mesa-init.js
-M  js/mesa-map.js
-M  mesa.html
-M  regras.html
-M  sugestoes.html
+M  SYSTEM_RULES.md
+M  cloudflare/README.md
+M  cloudflare/src/auth.js
+M  cloudflare/src/index.js
+A  cloudflare/src/mesa-realtime-rules.js
+M  cloudflare/src/mesa-realtime.js
+M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  tests/mesa-audit.spec.cjs
-M  tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -43,20 +39,16 @@ M  tools/build-pages.cjs
 ### Arquivos Em Stage
 
 ```text
-CLAUDE.md
+.claude/settings.local.json
 DEV_STATUS.md
-docs/obsidian/07-MESA.md
-echos.html
-ficha.html
-index.html
-js/api.js
-js/mesa-init.js
-js/mesa-map.js
-mesa.html
-regras.html
-sugestoes.html
+SYSTEM_RULES.md
+cloudflare/README.md
+cloudflare/src/auth.js
+cloudflare/src/index.js
+cloudflare/src/mesa-realtime-rules.js
+cloudflare/src/mesa-realtime.js
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 tests/mesa-audit.spec.cjs
-tools/build-pages.cjs
 ```
 
 ## Paginas Principais
@@ -147,8 +139,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
    13,08 MB  assets\sheet-fire-background.mp4
     1,33 MB  node_modules\playwright\lib\transform\babelBundleImpl.js
     1,03 MB  node_modules\terser\dist\bundle.min.js
-    0,99 MB  assets\logo-rpg-armagedon.png
     0,99 MB  .claude\worktrees\amazing-roentgen-549fdf\assets\logo-rpg-armagedon.png
+    0,99 MB  assets\logo-rpg-armagedon.png
     0,92 MB  node_modules\playwright-core\types\types.d.ts
     0,78 MB  node_modules\playwright-core\types\protocol.d.ts
     0,73 MB  debug.log

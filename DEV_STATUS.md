@@ -30,7 +30,20 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-11 — Etapa 40: Fachada do mapa + remocao do stub mesa-init.js)
+## Ultima Etapa Concluida (2026-07-11 — Etapa 41: Hardening do backend — caps, rate limit e testes do DO)
+
+Quinta etapa do plano "Mesa Virtual -> VTT completo" (Etapas 37-51). Toca Worker + DO — deployado.
+
+- **Cap de body** (cloudflare/src/auth.js `readJson`): 16KB por padrao, 413 acima do cap (checa Content-Length declarado E o tamanho real; devolver `{}` silenciosamente seria pior — um PUT de cena com `{}` normalizado apagaria a cena salva). PUT /mesa/scene e PUT /characters usam cap explicito de 256KB. JSON invalido continua caindo em `{}` (comportamento antigo preservado).
+- **Upload de mapa** (cloudflare/src/index.js): limitado a 8MB (413) antes do `arrayBuffer()`.
+- **DO — cap de mensagem + rate limit** (cloudflare/src/mesa-realtime.js): mensagens WS limitadas a 32KB, com excecao do `mesa:map:ws:chunk` (64KB binario ≈ 87KB base64 → teto proprio de 128KB) e teto absoluto de 256KB; verificacao ANTES do parse (`checkRealtimeMessageSize`, deteccao de tipo por substring barata). Rate limit por socket via token bucket em memoria (`createRateBucket`/`takeRateToken`): geral 30 msg/s burst 60; chunk de mapa em bucket proprio 120/s burst 240 (o push de mapa legitimo manda 4 chunks/15ms); `ping` isento. Mensagem bloqueada recebe ack de erro (conexao preservada); bucket removido no close/error do socket.
+- **Regras puras extraidas** (novo cloudflare/src/mesa-realtime-rules.js): RELAY_TYPES/MASTER_ONLY_TYPES/MAP_SIGNAL_TYPES, sanitizacao de desenhos, limites, token bucket e toda a normalizacao de patch de ficha/vitais de Echo sairam do mesa-realtime.js para um modulo SEM `cloudflare:workers` — os testes unitarios importam exatamente o codigo que o DO usa (paga a pendencia das Etapas 37/38; o teste "guarda de fonte" por regex virou teste real de import).
+- **Testes** (tests/mesa-audit.spec.cjs, describe "Hardening do backend (Etapa 41)", suite 36 -> 41): readJson (ok/413 declarado/413 real/cap de cena/JSON invalido), saveMesaScene de jogador -> 403, cap de mensagem (32KB/128KB chunk/256KB hard), token bucket (burst 60, recarga 30/s, bucket proprio de chunk), paridade das regras de patch de ficha no modulo extraido.
+- **E2E real** (wrangler dev local, 2 WebSockets autenticados): 22/22 — os 19 checks das Etapas 37/38 continuam verdes no DO refatorado + mensagem >32KB recebe nack, burst de 80 msgs tem 24 bloqueadas pelo rate limit (56 passam: 60 de burst menos as ja consumidas) e a API segue saudavel depois; PUT de cena com 300KB -> 413 e PUT normal -> 200.
+- Sem mudanca de frontend (sem cache-bust). Worker deployado: version ID `005b66b0-5ce4-4517-9088-65efb9eb3fc4`, health 200 (ver cloudflare/README.md).
+- Validacao: check:js OK (39 — inclui o novo rules), audit:static OK, test:mesa:audit 41/41 (flake conhecido "bug 2" sob carga, verde isolado — Etapa 50 investiga), test:mesa 5/5, test:ficha 28/28.
+
+## Etapa Concluida (2026-07-11 — Etapa 40: Fachada do mapa + remocao do stub mesa-init.js)
 
 Quarta etapa do plano "Mesa Virtual -> VTT completo" (Etapas 37-51). So frontend — sem deploy de Worker.
 

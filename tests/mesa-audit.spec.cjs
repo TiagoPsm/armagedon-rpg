@@ -1013,24 +1013,28 @@ test.describe("Desenhos fim-a-fim (Etapa 38)", () => {
     expect(masterScene.data.drawings.map(d => d.id).sort()).toEqual(["pub", "sec"]);
   });
 
-  test("DO retransmite mesa:drawings:update e remove tracos dm no relay (guarda de fonte)", async () => {
-    // O modulo do DO importa "cloudflare:workers" e nao roda em Node puro —
-    // testes unitarios reais do DO chegam na Etapa 41. Ate la, esta guarda
-    // garante que o tipo nao saia de RELAY_TYPES nem perca o filtro dm.
-    const fs = require("node:fs");
-    const path = require("node:path");
-    const source = fs.readFileSync(
-      path.join(__dirname, "..", "cloudflare", "src", "mesa-realtime.js"),
-      "utf8"
-    );
-    expect(source).toMatch(/DRAWINGS_UPDATE_TYPE = "mesa:drawings:update"/);
-    const relayBlock = source.match(/const RELAY_TYPES = new Set\(\[[^\]]+\]\)/)[0];
-    expect(relayBlock).toContain("DRAWINGS_UPDATE_TYPE");
-    // Tipo NAO pode ser master-only (jogador tambem desenha)
-    const masterOnlyBlock = source.match(/const MASTER_ONLY_TYPES = new Set\(\[[^\]]+\]\)/)[0];
-    expect(masterOnlyBlock).not.toContain("DRAWINGS_UPDATE_TYPE");
-    // Relay filtra camada dm antes de retransmitir
-    expect(source).toMatch(/stroke\.layer !== "dm"/);
+  test("DO retransmite mesa:drawings:update (nao master-only) e remove tracos dm no relay", async () => {
+    // Desde a Etapa 41 as regras do DO vivem em mesa-realtime-rules.js (sem
+    // "cloudflare:workers") — este teste importa exatamente o codigo usado
+    // pelo DO em producao.
+    const { RELAY_TYPES, MASTER_ONLY_TYPES, sanitizeRelayDrawings } =
+      await import("../cloudflare/src/mesa-realtime-rules.js");
+
+    expect(RELAY_TYPES.has("mesa:drawings:update")).toBe(true);
+    expect(MASTER_ONLY_TYPES.has("mesa:drawings:update")).toBe(false); // jogador desenha
+
+    // Sanitizacao do relay: remove dm, mantem publicos, cap 300, nao-array = null
+    const sanitized = sanitizeRelayDrawings([
+      { id: "pub", tool: "line", layer: "tokens" },
+      { id: "sec", tool: "rect", layer: "dm" },
+      "lixo",
+      ...Array.from({ length: 350 }, (_, i) => ({ id: `d${i}`, tool: "line", layer: "tokens" }))
+    ]);
+    expect(sanitized.some(s => s.id === "sec")).toBe(false);
+    expect(sanitized.some(s => s.id === "pub")).toBe(true);
+    expect(sanitized.length).toBe(300);
+    expect(sanitizeRelayDrawings("nao-e-array")).toBeNull();
+    expect(sanitizeRelayDrawings(undefined)).toBeNull();
   });
 
   test("payload da cena inclui desenhos e a assinatura de dedupe muda com traco novo", async ({ page }) => {
@@ -1289,5 +1293,137 @@ test.describe("Fachada do mapa (Etapa 40)", () => {
     expect(result.directFetches).toBe(0); // nenhum fetch fora da fachada
     expect(result.stateAfterUpload.r2Key).toBe("maps/mestre/m1.webp");
     expect(result.stateAfterUpload.publicUrl).toContain("/api/mesa/map/");
+  });
+});
+
+test.describe("Hardening do backend (Etapa 41)", () => {
+  test("readJson: aceita body normal, rejeita 413 acima do cap (declarado e real)", async () => {
+    const { readJson } = await import("../cloudflare/src/auth.js");
+
+    const ok = await readJson(new Request("https://x.dev", {
+      method: "POST", body: JSON.stringify({ a: 1 })
+    }));
+    expect(ok).toEqual({ a: 1 });
+
+    // Content-Length declarado acima do cap → 413 sem ler o body
+    const declared = new Request("https://x.dev", {
+      method: "POST", body: "{}", headers: { "content-length": String(64 * 1024) }
+    });
+    await expect(readJson(declared, 16 * 1024)).rejects.toMatchObject({ status: 413 });
+
+    // Body real acima do cap (sem content-length confiavel) → 413
+    const bigBody = new Request("https://x.dev", {
+      method: "POST", body: JSON.stringify({ blob: "x".repeat(20 * 1024) })
+    });
+    await expect(readJson(bigBody, 16 * 1024)).rejects.toMatchObject({ status: 413 });
+
+    // Cena usa cap maior: o mesmo body passa com 256KB
+    const sceneBody = new Request("https://x.dev", {
+      method: "POST", body: JSON.stringify({ blob: "x".repeat(20 * 1024) })
+    });
+    const scene = await readJson(sceneBody, 256 * 1024);
+    expect(scene.blob.length).toBe(20 * 1024);
+
+    // JSON invalido continua caindo em {} (comportamento antigo preservado)
+    const invalid = await readJson(new Request("https://x.dev", { method: "POST", body: "nao-json" }));
+    expect(invalid).toEqual({});
+  });
+
+  test("saveMesaScene rejeita jogador com 403", async () => {
+    const { saveMesaScene } = await import("../cloudflare/src/mesa.js");
+    const env = { DB: { prepare: () => ({ bind: () => ({ run: async () => ({}), first: async () => null }) }) } };
+
+    let thrown = null;
+    try {
+      await saveMesaScene(env, { role: "player", sub: "u1" }, { tokens: [] });
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown).not.toBeNull();
+    expect(thrown.status).toBe(403);
+  });
+
+  test("cap de mensagem do realtime: 32KB geral, chunk de mapa ate 128KB, nada acima de 256KB", async () => {
+    const { checkRealtimeMessageSize } = await import("../cloudflare/src/mesa-realtime-rules.js");
+
+    expect(checkRealtimeMessageSize(JSON.stringify({ type: "mesa:token:move" })).ok).toBe(true);
+
+    // Mensagem generica acima de 32KB → rejeitada
+    const bigGeneric = JSON.stringify({ type: "mesa:drawings:update", pad: "x".repeat(40 * 1024) });
+    expect(checkRealtimeMessageSize(bigGeneric).ok).toBe(false);
+
+    // Chunk de mapa de ~90KB (64KB binario em base64) → passa
+    const mapChunk = JSON.stringify({ type: "mesa:map:ws:chunk", to: "ana", data: "A".repeat(90 * 1024) });
+    expect(mapChunk.length).toBeGreaterThan(32 * 1024);
+    expect(checkRealtimeMessageSize(mapChunk).ok).toBe(true);
+
+    // Chunk de mapa acima de 128KB → rejeitado
+    const hugeChunk = JSON.stringify({ type: "mesa:map:ws:chunk", to: "ana", data: "A".repeat(140 * 1024) });
+    expect(checkRealtimeMessageSize(hugeChunk).ok).toBe(false);
+
+    // Hard cap absoluto (mesmo que o texto finja ser chunk)
+    expect(checkRealtimeMessageSize("x".repeat(300 * 1024)).ok).toBe(false);
+  });
+
+  test("rate limit por socket: burst de 60, esgota, e recarrega com o tempo; chunk tem bucket proprio", async () => {
+    const { createRateBucket, takeRateToken } = await import("../cloudflare/src/mesa-realtime-rules.js");
+
+    const t0 = 1_000_000;
+    const bucket = createRateBucket(t0);
+
+    // Burst: 60 mensagens gerais passam, a 61a e bloqueada (mesmo instante)
+    let passed = 0;
+    for (let i = 0; i < 61; i++) {
+      if (takeRateToken(bucket, "mesa:token:move", t0)) passed += 1;
+    }
+    expect(passed).toBe(60);
+
+    // Apos 1s, ~30 tokens voltam
+    let refilled = 0;
+    for (let i = 0; i < 40; i++) {
+      if (takeRateToken(bucket, "mesa:token:move", t0 + 1000)) refilled += 1;
+    }
+    expect(refilled).toBe(30);
+
+    // Bucket de chunk e independente: mesmo com o geral esgotado, chunks passam
+    let chunksPassed = 0;
+    for (let i = 0; i < 240; i++) {
+      if (takeRateToken(bucket, "mesa:map:ws:chunk", t0 + 1000)) chunksPassed += 1;
+    }
+    expect(chunksPassed).toBe(240); // burst proprio de 240
+    expect(takeRateToken(bucket, "mesa:map:ws:chunk", t0 + 1000)).toBe(false);
+  });
+
+  test("regras de patch de ficha continuam identicas no modulo extraido (paridade DO)", async () => {
+    const { normalizeSheetPatchPayload, filterPlayerSheetPatch } =
+      await import("../cloudflare/src/mesa-realtime-rules.js");
+
+    const { characterKey, patch } = normalizeSheetPatchPayload({
+      characterKey: " Ana ",
+      charName: "  Ana   Rubra  ",
+      vidaAtual: "-5",
+      integAtual: "",
+      attrForca: "3.9",
+      inventorySlots: "999",
+      inv: [{ name: "Espada", qty: "2", type: "arma", damage: " 1 d 8 " }],
+      campoDesconhecido: "descartado"
+    });
+
+    expect(characterKey).toBe("ana");
+    expect(patch.charName).toBe("Ana Rubra");     // espacos colapsados
+    expect(patch.vidaAtual).toBe("0");            // minimo 0
+    expect(patch.integAtual).toBe("");            // vazio permanece vazio
+    expect(patch.attrForca).toBe("3");            // parseInt
+    expect(patch.inventorySlots).toBe("120");     // teto 120
+    expect(patch.inv[0].damage).toBe("1d8");      // espacos removidos
+    expect(patch.campoDesconhecido).toBeUndefined();
+
+    // Jogador nao pode alterar inventorySlots nem ownedMemories via patch
+    const filtered = filterPlayerSheetPatch({
+      vidaAtual: "5", inventorySlots: "50", ownedMemories: [{ name: "x" }], inv: []
+    });
+    expect(filtered.vidaAtual).toBe("5");
+    expect(filtered.inventorySlots).toBeUndefined();
+    expect(filtered.ownedMemories).toBeUndefined();
   });
 });
