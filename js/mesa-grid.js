@@ -115,6 +115,10 @@ function updateMesaGrid(patch) {
   }
   if (typeof bumpMesaSceneVersion === "function") bumpMesaSceneVersion();
   if (typeof persistState === "function") persistState();
+
+  // Grade mudou (ligou snap, trocou célula): re-conforma todos os tokens
+  // para manter a mesa uniforme (tamanhos NxN, ninguém fora da grade).
+  _conformAllTokensToGrid();
 }
 
 /* ── RENDER ─────────────────────────────────────────────────── */
@@ -195,13 +199,56 @@ function renderMesaGrid() {
   _gridCtx.restore();
 }
 
-/* ── SNAP-TO-GRID ───────────────────────────────────────────── */
+/* ── SNAP-TO-GRID + TAMANHO EM CÉLULAS ──────────────────────── */
+// Com "Encaixar tokens" ligado o token vive em múltiplos inteiros de célula
+// (1x1, 2x2, 3x3...): o diâmetro é quantizado para N células e o quadrado
+// NxN alinha nas linhas da grade (N ímpar centra na célula; N par centra
+// numa interseção). Evita token vazando da grade ou com tamanho "quebrado".
+
+// Lado da célula em px do palco (espaço sem zoom — mesmo dos token.x/y %).
+function _gridCellStagePx() {
+  if (!_gridStageEl) return 0;
+  const surface = typeof window.getMesaMapSurfaceFrac === "function"
+    ? window.getMesaMapSurfaceFrac()
+    : { width: 1 };
+  return _gridState.cellFrac * surface.width * (_gridStageEl.offsetWidth || 0);
+}
+
+// Quantos NxN o token ocupa, a partir do diâmetro real em px do palco.
+function _gridTokenCells(diameterPx, cellPx) {
+  if (!(cellPx > 0)) return 1;
+  return Math.max(1, Math.round(diameterPx / cellPx));
+}
 
 /**
- * Ajusta o token para o centro da célula mais próxima ao soltar o arrasto.
- * Chamado pelo handleDragEnd (mesa-stage.js). Mexe em token.x/y (% do palco,
- * canto superior esquerdo) usando o rect real do elemento para achar o centro.
- *
+ * Quantiza o TAMANHO do token para N células (ajusta token.tokenScale).
+ * O clamp 0.25-4 do contrato da cena limita N em células muito grandes ou
+ * muito pequenas — nesse extremo o token fica no tamanho válido mais próximo.
+ * @returns {boolean} true se a escala mudou.
+ */
+function mesaFitTokenToGrid(token, tokenElement) {
+  if (!_gridState.enabled || !_gridState.snap) return false;
+  if (!token) return false;
+  const cellPx = _gridCellStagePx();
+  if (!(cellPx > 0)) return false;
+
+  const basePx = tokenElement?.offsetWidth || 88; // largura de layout (sem transform)
+  const currentScale = Number(token.tokenScale) || 1;
+  const cells = _gridTokenCells(basePx * currentScale, cellPx);
+  const nextScale = Math.round(Math.max(0.25, Math.min(4, (cells * cellPx) / basePx)) * 100) / 100;
+
+  if (Math.abs(nextScale - currentScale) < 0.005) return false;
+  token.tokenScale = nextScale;
+  if (tokenElement?.isConnected) {
+    tokenElement.style.setProperty("--token-scale", String(nextScale));
+  }
+  return true;
+}
+
+/**
+ * Alinha o token ao quadrado de células mais próximo (posição). Mexe em
+ * token.x/y (% do palco, canto superior esquerdo) usando o rect real do
+ * elemento para achar o centro e o diâmetro.
  * @returns {boolean} true se a posição mudou.
  */
 function mesaSnapTokenToGrid(token, tokenElement) {
@@ -213,30 +260,38 @@ function mesaSnapTokenToGrid(token, tokenElement) {
   const stageH = _gridStageEl.offsetHeight;
   if (stageW < 2 || stageH < 2) return false;
 
-  // Tamanho do token em frações do palco (rect é pós-zoom do palco; as
-  // frações são invariantes ao zoom porque o palco escala junto).
-  const stageRect = _gridStageEl.getBoundingClientRect();
-  const tokenRect = tokenElement?.getBoundingClientRect?.();
-  const tokenWFrac = tokenRect && stageRect.width  > 0 ? tokenRect.width  / stageRect.width  : 0;
-  const tokenHFrac = tokenRect && stageRect.height > 0 ? tokenRect.height / stageRect.height : 0;
+  // Tamanho do token em px de LAYOUT do palco: offsetWidth (sem transform)
+  // x tokenScale. NUNCA usar getBoundingClientRect aqui — o transform do
+  // token tem transição CSS, então logo após um resize o rect ainda reflete
+  // a escala ANTIGA e o snap calcularia N com o tamanho errado.
+  const basePx = tokenElement?.offsetWidth || 88;
+  const scale = Number(token.tokenScale) || 1;
+  const diamPx = basePx * scale;
+  const tokenWFrac = diamPx / stageW;
+  const tokenHFrac = ((tokenElement?.offsetHeight || basePx) * scale) / stageH;
 
   const centerFx = token.x / 100 + tokenWFrac / 2;
   const centerFy = token.y / 100 + tokenHFrac / 2;
 
-  // Palco → mapa → célula mais próxima → centro dela → palco.
+  // Palco → mapa → quadrado NxN mais próximo → centro dele → palco.
   const surface = window.getMesaMapSurfaceFrac();
   const map = window.mesaStageFracToMapFrac(centerFx, centerFy);
   const cellU = _gridState.cellFrac;
+  const cellV = _cellVFrac(surface);
+  const cells = _gridTokenCells(diamPx, _gridCellStagePx());
 
-  // Frações de célula com offset: índice da célula que contém o centro.
-  const snapAxis = (value, cell, offsetFrac) => {
-    if (!(cell > 0)) return value;
-    const shifted = value - offsetFrac * cell;
-    return (Math.floor(shifted / cell) + 0.5) * cell + offsetFrac * cell;
+  // Canto do quadrado NxN cai numa linha da grade: arredonda o canto (não o
+  // centro) para o múltiplo de célula — N ímpar centra na célula, N par na
+  // interseção, sem caso especial.
+  const snapAxis = (center, cell, offsetFrac) => {
+    if (!(cell > 0)) return center;
+    const offset = offsetFrac * cell;
+    const corner = Math.round((center - (cells * cell) / 2 - offset) / cell) * cell + offset;
+    return corner + (cells * cell) / 2;
   };
 
   const snappedU = snapAxis(map.u, cellU, _gridState.offsetXFrac);
-  const snappedV = snapAxis(map.v, _cellVFrac(surface), _gridState.offsetYFrac);
+  const snappedV = snapAxis(map.v, cellV, _gridState.offsetYFrac);
 
   const back = window.mesaMapFracToStageFrac(snappedU, snappedV);
   const nextX = Math.max(0, Math.min(100, (back.fx - tokenWFrac / 2) * 100));
@@ -251,6 +306,42 @@ function mesaSnapTokenToGrid(token, tokenElement) {
     tokenElement.style.top  = `${token.y}%`;
   }
   return true;
+}
+
+/**
+ * Conformidade completa (tamanho + posição) — usada no soltar do arrasto,
+ * no fim do redimensionamento e na re-conformidade em massa do mestre.
+ * @returns {boolean} true se algo mudou.
+ */
+function mesaConformTokenToGrid(token, tokenElement) {
+  const resized = mesaFitTokenToGrid(token, tokenElement);
+  const moved = mesaSnapTokenToGrid(token, tokenElement);
+  return resized || moved;
+}
+
+// Mestre: re-conforma TODOS os tokens quando a grade muda (ligar snap,
+// trocar tamanho da célula). Mantém a mesa uniforme sem arrastar um a um.
+function _conformAllTokensToGrid() {
+  if (!_isGridMaster()) return;
+  if (!_gridState.enabled || !_gridState.snap) return;
+  if (typeof state !== "object" || !Array.isArray(state.tokens)) return;
+
+  let changedAny = false;
+  state.tokens.forEach(token => {
+    const el = document.querySelector(`.mesa-token[data-token-id="${CSS.escape(token.id)}"]`);
+    const changed = mesaConformTokenToGrid(token, el);
+    if (changed) {
+      changedAny = true;
+      // Upsert leva posição E escala; a camada "dm" é bloqueada lá dentro.
+      if (typeof broadcastMesaTokenUpsert === "function") broadcastMesaTokenUpsert(token);
+    }
+  });
+
+  if (changedAny) {
+    if (typeof bumpMesaSceneVersion === "function") bumpMesaSceneVersion();
+    if (typeof persistState === "function") persistState();
+    if (typeof scheduleMesaRender === "function") scheduleMesaRender({ stage: true, inspector: true });
+  }
 }
 
 // Altura da célula em frações VERTICAIS da superfície: a célula é quadrada
@@ -334,4 +425,6 @@ window.setMesaGridFromRemote          = setMesaGridFromRemote;
 window.updateMesaGrid                 = updateMesaGrid;
 window.adjustMesaGridCell             = adjustMesaGridCell;
 window.mesaSnapTokenToGrid            = mesaSnapTokenToGrid;
+window.mesaFitTokenToGrid             = mesaFitTokenToGrid;
+window.mesaConformTokenToGrid         = mesaConformTokenToGrid;
 window.normalizeMesaGridState         = normalizeMesaGridState;

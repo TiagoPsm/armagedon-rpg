@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-11 17:07:03 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-12 01:57:42 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,15 +13,17 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `77ecc63 2026-07-11 feat(mesa): token encaixa no grid — caixa so do circulo, nome em hover/selecao (Etapa 42b)`
+- Ultimo commit: `c41d706 2026-07-11 fix(mesa): grupo Grade nao aparecia pro mestre — corrida de boot no initMesaGrid`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
 M  DEV_STATUS.md
+M  SYSTEM_RULES.md
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  js/mesa-grid.js
+M  js/mesa-stage.js
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
 M  tools/build-pages.cjs
@@ -38,7 +40,9 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 
 ```text
 DEV_STATUS.md
+SYSTEM_RULES.md
 js/mesa-grid.js
+js/mesa-stage.js
 mesa.html
 tests/mesa-audit.spec.cjs
 tools/build-pages.cjs

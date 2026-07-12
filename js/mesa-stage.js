@@ -705,8 +705,9 @@ function handleDragEnd() {
   const token = findToken(state.drag.tokenId);
   // Snap-to-grid (Etapa 42): ajusta ANTES do flush realtime/persist para a
   // posição final transmitida e salva já ser a célula, não o ponto do soltar.
-  if (token && typeof window.mesaSnapTokenToGrid === "function") {
-    window.mesaSnapTokenToGrid(token, state.drag.tokenElement);
+  // Conformidade completa: tamanho quantizado em NxN células + alinhamento.
+  if (token && typeof window.mesaConformTokenToGrid === "function") {
+    window.mesaConformTokenToGrid(token, state.drag.tokenElement);
   }
   flushRealtimeDragMove();
   state.drag.tokenElement?.classList.remove("is-dragging");
@@ -1623,6 +1624,11 @@ function handleResizePointerUp() {
     const scale = parseFloat(scaleStr);
     if (scale > 0 && isFinite(scale)) {
       token.tokenScale = parseFloat(scale.toFixed(2));
+    }
+    // Com grade+snap: quantiza o novo tamanho para NxN células e realinha
+    // (o jogador solta o resize e o token "completa" o quadrado da grade).
+    if (typeof window.mesaConformTokenToGrid === "function") {
+      window.mesaConformTokenToGrid(token, tokenEl);
     }
     bumpMesaSceneVersion();
     persistState({ immediate: true });

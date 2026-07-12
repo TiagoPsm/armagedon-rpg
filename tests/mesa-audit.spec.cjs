@@ -1501,10 +1501,11 @@ test.describe("Grade funcional (Etapa 42)", () => {
       const el = document.querySelector('[data-token-id="ana"]');
       const moved = window.mesaSnapTokenToGrid(token, el);
 
-      // Centro do token em fracao do palco apos o snap
+      // Centro do token por LAYOUT (offsetWidth x tokenScale): o transform
+      // tem transicao CSS e o rect no mesmo frame reflete a escala antiga
+      // (updateMesaGrid re-conforma o token para 1x1 = escala ~1.06).
       const stage = document.getElementById("mesaStageInner");
-      const rect = el.getBoundingClientRect();
-      const tokenWFrac = rect.width / stage.getBoundingClientRect().width;
+      const tokenWFrac = (el.offsetWidth * (token.tokenScale || 1)) / stage.offsetWidth;
       const centerFx = token.x / 100 + tokenWFrac / 2;
       // Sem mapa ativo a superficie e o palco: centro deve cair em (n + 0.5) * 0.1
       const remainder = ((centerFx / 0.1) % 1 + 1) % 1;
@@ -1600,9 +1601,11 @@ test.describe("Encaixe do token no grid (Etapa 42b)", () => {
       token.y = 27.9;
       const el = document.querySelector('#mesaStage [data-token-id="ana"]');
       const moved = window.mesaSnapTokenToGrid(token, el);
-      const stage = document.getElementById("mesaStageInner").getBoundingClientRect();
-      const r = el.getBoundingClientRect();
-      const centerFx = (r.left + r.width / 2 - stage.left) / stage.width;
+      // Medida por LAYOUT: o transform do token tem transicao CSS e o rect
+      // no mesmo frame ainda reflete a escala antiga (pre-conformidade 1x1).
+      const stage = document.getElementById("mesaStageInner");
+      const tokenWFrac = (el.offsetWidth * (token.tokenScale || 1)) / stage.offsetWidth;
+      const centerFx = token.x / 100 + tokenWFrac / 2;
       const remainder = ((centerFx / 0.1) % 1 + 1) % 1;
       return { moved, remainder };
     });
@@ -1634,5 +1637,88 @@ test.describe("Grupo Grade no painel (correcao pos-42)", () => {
     await waitForMesaSettled(page);
     const hidden = await page.evaluate(() => document.getElementById("mesaGridGroup").hidden);
     expect(hidden).toBe(true);
+  });
+});
+
+test.describe("Token em NxN celulas (Etapa 42c)", () => {
+  test("tamanho quantiza para 1x1 / 2x2 e o quadrado alinha na grade", async ({ page }) => {
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    const result = await page.evaluate(() => {
+      window.updateMesaGrid({ enabled: true, snap: true, cellFrac: 0.1, offsetXFrac: 0, offsetYFrac: 0 });
+      const stage = document.getElementById("mesaStageInner");
+      const cellPx = 0.1 * stage.offsetWidth;
+      const token = state.tokens.find(t => t.id === "ana");
+      const el = document.querySelector('#mesaStage [data-token-id="ana"]');
+      const base = el.offsetWidth;
+
+      // Medidas por LAYOUT (token.x + tokenScale x offsetWidth): o transform
+      // do token tem transicao CSS, entao o rect lido no mesmo frame ainda
+      // reflete a escala ANTIGA — nao serve para medir o resultado.
+      const measure = () => {
+        const diam = (token.tokenScale * base) / stage.offsetWidth;
+        const center = token.x / 100 + diam / 2;
+        return { diam, rem: ((center / 0.1) % 1 + 1) % 1 };
+      };
+
+      // Escala "quebrada" perto de 1 celula -> deve virar exatamente 1x1
+      token.tokenScale = 0.8 * (cellPx / base);
+      token.x = 23.7; token.y = 31.2;
+      window.mesaConformTokenToGrid(token, el);
+      const scale1 = token.tokenScale;
+      const m1 = measure(); // N impar: centro da celula (rem 0.5)
+
+      // Escala perto de 2 celulas -> 2x2, centro numa INTERSECAO (rem 0)
+      token.tokenScale = 1.7 * (cellPx / base);
+      window.mesaConformTokenToGrid(token, el);
+      const scale2 = token.tokenScale;
+      const m2 = measure();
+
+      return {
+        cellScale: cellPx / base,
+        scale1, rem1: m1.rem,
+        scale2, rem2: m2.rem,
+        diam1: m1.diam,  // ~0.1 (1 celula)
+        diam2: m2.diam   // ~0.2 (2 celulas)
+      };
+    });
+
+    // 1x1: diametro = 1 celula (10% do palco), centro no meio da celula
+    expect(Math.abs(result.scale1 - result.cellScale)).toBeLessThan(0.02);
+    expect(Math.abs(result.diam1 - 0.1)).toBeLessThan(0.01);
+    expect(Math.abs(result.rem1 - 0.5)).toBeLessThan(0.05);
+
+    // 2x2: diametro = 2 celulas, centro numa intersecao de linhas
+    expect(Math.abs(result.scale2 - 2 * result.cellScale)).toBeLessThan(0.03);
+    expect(Math.abs(result.diam2 - 0.2)).toBeLessThan(0.01);
+    expect(Math.min(result.rem2, 1 - result.rem2)).toBeLessThan(0.05);
+  });
+
+  test("mudar o tamanho da celula re-conforma todos os tokens (mestre)", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    const result = await page.evaluate(() => {
+      const stage = document.getElementById("mesaStageInner");
+      window.updateMesaGrid({ enabled: true, snap: true, cellFrac: 0.08, offsetXFrac: 0, offsetYFrac: 0 });
+      const cellPx = 0.08 * stage.offsetWidth;
+      const el = document.querySelector('#mesaStage [data-token-id="ana"]');
+      const base = el.offsetWidth;
+      const expected = cellPx / base;
+      const scales = state.tokens.map(t => t.tokenScale);
+      return { expected, scales };
+    });
+
+    // Todos os tokens (88px ~ 1 celula com 12-13 colunas) uniformizados em 1x1
+    for (const s of result.scales) {
+      expect(Math.abs(s - result.expected)).toBeLessThan(0.02);
+    }
   });
 });

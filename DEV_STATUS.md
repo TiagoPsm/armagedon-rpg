@@ -30,7 +30,18 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-11 — Correcao pos-42: grupo "Grade" nao aparecia para o mestre)
+## Ultima Etapa Concluida (2026-07-12 — Etapa 42c: token em NxN celulas — tamanho quantizado + alinhamento)
+
+Pedido do Tiago: com a grade ativa, tokens sempre em multiplos inteiros de celula (1x1, 2x2, 3x3...) — redimensionou, ajusta para completar o quadrado; nada de token vazando da grade ou com tamanho quebrado.
+
+- **js/mesa-grid.js**: `mesaFitTokenToGrid` (quantiza o diametro para N celulas ajustando `tokenScale`, respeitando o clamp 0.25-4 do contrato), `mesaSnapTokenToGrid` agora alinha o QUADRADO NxN (canto arredondado para a linha da grade: N impar centra na celula, N par na intersecao — sem caso especial), `mesaConformTokenToGrid` (fit + snap) e `_conformAllTokensToGrid` (mestre re-conforma todos os tokens ao ligar snap/trocar celula, com broadcast de upsert + persist).
+- **js/mesa-stage.js**: soltar do arrasto usa `mesaConformTokenToGrid` (antes so snap); `handleResizePointerUp` conforma apos aplicar a escala do gesto — o jogador solta o resize e o token completa o quadrado.
+- **Armadilha corrigida**: o transform do token tem transicao CSS, entao `getBoundingClientRect` logo apos mudar a escala reflete o tamanho ANTIGO no mesmo frame. O snap passou a medir por LAYOUT (`offsetWidth x tokenScale`, imune a transicao e a zoom); os testes de snap antigos tambem migraram para medida por layout (falhavam por 0.028 celula = os 2.6px da transicao pendente).
+- **Testes** (suite 49 -> 51, describe "Token em NxN celulas (Etapa 42c)"): escala quebrada vira exatamente 1x1 (centro da celula) e 2x2 (centro na intersecao); trocar o tamanho da celula re-conforma todos os tokens do mestre.
+- Cache-bust: mesa-grid.js e mesa-stage.js -> `?v=2026-07-12-token-cells-1`; `MESA_BUNDLE_VERSION` -> `2026-07-12-token-cells-1`. Sem mudanca de Worker (tokenScale ja existia no contrato).
+- Validacao: test:mesa:audit 51/51, test:mesa 5/5, check:js OK, build:pages OK. Preview: token re-conformado para escala 1.06 (= 1 celula de 93.2px), centro em 0.5 da celula.
+
+## Etapa Concluida (2026-07-11 — Correcao pos-42: grupo "Grade" nao aparecia para o mestre)
 
 Bug reportado pelo Tiago (local e online): o grupo "Grade" do painel de configuracoes nunca aparecia — sem ele nao ha como ligar a grade (que nasce desligada). Causa raiz: corrida de boot — `initMesaGrid` roda no DOMContentLoaded e decidia a visibilidade com `isMaster()` ANTES do boot assincrono da Mesa assentar `state.role` (o resultado variava por timing de fetch, por isso o teste original passou).
 
