@@ -279,7 +279,182 @@ function mapSceneRow(row) {
   };
 }
 
-async function getMesaScene(env, actor) {
+/* ── Múltiplas cenas (Etapa 48) ──────────────────────────────
+ * A tabela mesa_scenes já é chaveada por id. O ponteiro da cena ATIVA e os
+ * nomes vivem numa linha especial `meta:mesa` (data_json = { activeId,
+ * names }), sem migração de schema. Jogadores SEMPRE leem a cena ativa;
+ * o mestre pode ler/salvar qualquer cena via ?id=. */
+
+const META_SCENE_ROW_ID = "meta:mesa";
+const MAX_SCENES = 20;
+const SCENE_NAME_MAX = 60;
+
+function isValidSceneId(value) {
+  const id = String(value || "");
+  return /^[a-z0-9_-]{1,40}$/.test(id) && !id.startsWith("meta");
+}
+
+function normalizeSceneName(value, fallback = "Cena sem nome") {
+  const name = String(value || "").replace(/\s+/g, " ").trim().slice(0, SCENE_NAME_MAX);
+  return name || fallback;
+}
+
+async function getMesaSceneMeta(env) {
+  const row = await env.DB.prepare(
+    "select data_json from mesa_scenes where id = ? limit 1"
+  ).bind(META_SCENE_ROW_ID).first();
+  const data = parseSceneData(row?.data_json);
+  const activeId = isValidSceneId(data?.activeId) ? String(data.activeId) : DEFAULT_SCENE_ID;
+  const names = {};
+  if (data?.names && typeof data.names === "object") {
+    Object.entries(data.names).forEach(([id, name]) => {
+      if (isValidSceneId(id)) names[id] = normalizeSceneName(name);
+    });
+  }
+  return { activeId, names };
+}
+
+async function saveMesaSceneMeta(env, meta) {
+  const now = new Date().toISOString();
+  await env.DB.prepare(
+    `
+      insert into mesa_scenes (id, data_json, created_at, updated_at)
+      values (?, ?, ?, ?)
+      on conflict(id) do update set
+        data_json = excluded.data_json,
+        updated_at = excluded.updated_at
+    `
+  )
+    .bind(META_SCENE_ROW_ID, JSON.stringify(meta), now, now)
+    .run();
+}
+
+function requireMaster(actor, action) {
+  if (actor?.role !== "master") {
+    throw jsonError(`Apenas o mestre pode ${action}.`, 403);
+  }
+}
+
+function sceneDisplayName(meta, id) {
+  if (meta.names[id]) return meta.names[id];
+  return id === DEFAULT_SCENE_ID ? "Cena principal" : "Cena sem nome";
+}
+
+async function listMesaScenes(env, actor) {
+  requireMaster(actor, "listar as cenas");
+  const meta = await getMesaSceneMeta(env);
+  const rows = await env.DB.prepare(
+    "select id, updated_at from mesa_scenes where id not like 'meta%' order by created_at asc"
+  ).all();
+  const scenes = (rows?.results || [])
+    .filter(row => isValidSceneId(row.id))
+    .map(row => ({
+      id: row.id,
+      name: sceneDisplayName(meta, row.id),
+      updatedAt: row.updated_at || null,
+      active: row.id === meta.activeId
+    }));
+  // A cena default existe mesmo sem linha (nasce no primeiro PUT).
+  if (!scenes.some(scene => scene.id === DEFAULT_SCENE_ID)) {
+    scenes.unshift({
+      id: DEFAULT_SCENE_ID,
+      name: sceneDisplayName(meta, DEFAULT_SCENE_ID),
+      updatedAt: null,
+      active: meta.activeId === DEFAULT_SCENE_ID
+    });
+  }
+  return { scenes, activeId: meta.activeId };
+}
+
+async function createMesaScene(env, actor, payload) {
+  requireMaster(actor, "criar cenas");
+  const existing = await listMesaScenes(env, actor);
+  if (existing.scenes.length >= MAX_SCENES) {
+    throw jsonError(`Limite de ${MAX_SCENES} cenas atingido.`, 400);
+  }
+  const id = "s" + crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+  const name = normalizeSceneName(payload?.name, "Nova cena");
+  const now = new Date().toISOString();
+  const emptyScene = normalizeMesaScene({});
+
+  const meta = await getMesaSceneMeta(env);
+  meta.names[id] = name;
+  await env.DB.batch([
+    env.DB.prepare(
+      `
+        insert into mesa_scenes (id, data_json, created_by_user_id, updated_by_user_id, created_at, updated_at)
+        values (?, ?, ?, ?, ?, ?)
+      `
+    ).bind(id, JSON.stringify(emptyScene), actor.sub, actor.sub, now, now),
+    env.DB.prepare(
+      `
+        insert into mesa_scenes (id, data_json, created_at, updated_at)
+        values (?, ?, ?, ?)
+        on conflict(id) do update set data_json = excluded.data_json, updated_at = excluded.updated_at
+      `
+    ).bind(META_SCENE_ROW_ID, JSON.stringify(meta), now, now)
+  ]);
+
+  return { id, name, active: false };
+}
+
+async function renameMesaScene(env, actor, sceneId, payload) {
+  requireMaster(actor, "renomear cenas");
+  if (!isValidSceneId(sceneId)) throw jsonError("Cena invalida.", 400);
+  const meta = await getMesaSceneMeta(env);
+  meta.names[sceneId] = normalizeSceneName(payload?.name);
+  await saveMesaSceneMeta(env, meta);
+  return { id: sceneId, name: meta.names[sceneId] };
+}
+
+async function deleteMesaScene(env, actor, sceneId) {
+  requireMaster(actor, "excluir cenas");
+  if (!isValidSceneId(sceneId)) throw jsonError("Cena invalida.", 400);
+  if (sceneId === DEFAULT_SCENE_ID) {
+    throw jsonError("A cena principal nao pode ser excluida.", 400);
+  }
+  const meta = await getMesaSceneMeta(env);
+  if (sceneId === meta.activeId) {
+    throw jsonError("Ative outra cena antes de excluir a cena ativa.", 400);
+  }
+  delete meta.names[sceneId];
+  const now = new Date().toISOString();
+  await env.DB.batch([
+    env.DB.prepare("delete from mesa_scenes where id = ?").bind(sceneId),
+    env.DB.prepare(
+      `
+        insert into mesa_scenes (id, data_json, created_at, updated_at)
+        values (?, ?, ?, ?)
+        on conflict(id) do update set data_json = excluded.data_json, updated_at = excluded.updated_at
+      `
+    ).bind(META_SCENE_ROW_ID, JSON.stringify(meta), now, now)
+  ]);
+  return { ok: true, id: sceneId };
+}
+
+async function activateMesaScene(env, actor, sceneId) {
+  requireMaster(actor, "trocar a cena ativa");
+  if (!isValidSceneId(sceneId)) throw jsonError("Cena invalida.", 400);
+  if (sceneId !== DEFAULT_SCENE_ID) {
+    const row = await env.DB.prepare("select id from mesa_scenes where id = ? limit 1").bind(sceneId).first();
+    if (!row) throw jsonError("Cena nao encontrada.", 404);
+  }
+  const meta = await getMesaSceneMeta(env);
+  meta.activeId = sceneId;
+  await saveMesaSceneMeta(env, meta);
+  return { activeId: sceneId, name: sceneDisplayName(meta, sceneId) };
+}
+
+// Resolve qual cena o ator enxerga: jogador SEMPRE a ativa; mestre pode
+// pedir uma especifica via ?id= (invalida cai na ativa).
+function resolveSceneIdForActor(meta, actor, requestedId) {
+  if (actor?.role === "master" && isValidSceneId(requestedId)) return String(requestedId);
+  return meta.activeId;
+}
+
+async function getMesaScene(env, actor, requestedId) {
+  const meta = await getMesaSceneMeta(env);
+  const sceneId = resolveSceneIdForActor(meta, actor, requestedId);
   const row = await env.DB.prepare(
     `
       select id, data_json, created_at, updated_at, updated_by_user_id
@@ -288,10 +463,15 @@ async function getMesaScene(env, actor) {
       limit 1
     `
   )
-    .bind(DEFAULT_SCENE_ID)
+    .bind(sceneId)
     .first();
 
   const scene = mapSceneRow(row);
+  scene.id = sceneId;
+  // Flag para o chamador: broadcast de cena so faz sentido quando o PUT/GET
+  // e da cena ATIVA (salvar uma cena em preparo nao mexe na mesa dos outros).
+  scene.active = sceneId === meta.activeId;
+  scene.name = sceneDisplayName(meta, sceneId);
   if (actor?.role !== "master") {
     // Traços da camada secreta do mestre não vazam para jogadores.
     scene.data.drawings = scene.data.drawings.filter(stroke => stroke.layer !== "dm");
@@ -312,11 +492,13 @@ async function getMesaScene(env, actor) {
   return scene;
 }
 
-async function saveMesaScene(env, actor, payload) {
+async function saveMesaScene(env, actor, payload, requestedId) {
   if (actor.role !== "master") {
     throw jsonError("Apenas o mestre pode salvar a cena da Mesa.", 403);
   }
 
+  const meta = await getMesaSceneMeta(env);
+  const sceneId = resolveSceneIdForActor(meta, actor, requestedId);
   const data = normalizeMesaScene(payload);
   const now = new Date().toISOString();
 
@@ -332,10 +514,22 @@ async function saveMesaScene(env, actor, payload) {
         updated_at = excluded.updated_at
     `
   )
-    .bind(DEFAULT_SCENE_ID, JSON.stringify(data), actor.sub, actor.sub, now, now)
+    .bind(sceneId, JSON.stringify(data), actor.sub, actor.sub, now, now)
     .run();
 
-  return getMesaScene(env, actor);
+  return getMesaScene(env, actor, sceneId);
 }
 
-export { getMesaScene, normalizeMesaScene, saveMesaScene };
+export {
+  activateMesaScene,
+  createMesaScene,
+  deleteMesaScene,
+  getMesaScene,
+  getMesaSceneMeta,
+  isValidSceneId,
+  listMesaScenes,
+  normalizeMesaScene,
+  normalizeSceneName,
+  renameMesaScene,
+  saveMesaScene
+};

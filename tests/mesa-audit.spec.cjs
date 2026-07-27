@@ -2364,3 +2364,159 @@ test.describe("Fog of War (Etapa 47)", () => {
     expect(result.corner).toBe(255);       // resto coberto
   });
 });
+
+test.describe("Multiplas cenas — backend (Etapa 48)", () => {
+  // Mini-D1 em memoria: cobre exatamente as queries usadas por mesa.js
+  // (upsert 6/4 colunas, select por id, listagem sem meta, delete, batch).
+  function createFakeDb() {
+    const rows = new Map();
+    function makeStatement(sql) {
+      return {
+        bind(...values) {
+          return {
+            sql, values,
+            async first() {
+              const row = rows.get(values[0]);
+              return row ? { ...row } : null;
+            },
+            async run() { applyWrite(sql, values); return { success: true }; },
+            async all() { throw new Error("all() apos bind nao usado"); }
+          };
+        },
+        async all() {
+          if (!/not like 'meta%'/.test(sql)) throw new Error("all() inesperado: " + sql);
+          const results = [...rows.values()]
+            .filter(row => !String(row.id).startsWith("meta"))
+            .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+          return { results: results.map(row => ({ id: row.id, updated_at: row.updated_at })) };
+        }
+      };
+    }
+    function applyWrite(sql, values) {
+      if (/^\s*delete/i.test(sql)) { rows.delete(values[0]); return; }
+      if (/insert into mesa_scenes/i.test(sql)) {
+        const [id, dataJson] = values;
+        const createdAt = values.length >= 6 ? values[4] : values[2];
+        const updatedAt = values.length >= 6 ? values[5] : values[3];
+        const existing = rows.get(id);
+        rows.set(id, {
+          id,
+          data_json: dataJson,
+          created_at: existing?.created_at || createdAt,
+          updated_at: updatedAt,
+          updated_by_user_id: values.length >= 6 ? values[3] : (existing?.updated_by_user_id || null)
+        });
+        return;
+      }
+      throw new Error("write inesperado: " + sql);
+    }
+    return {
+      prepare: sql => makeStatement(sql),
+      async batch(statements) { statements.forEach(st => applyWrite(st.sql, st.values)); return []; }
+    };
+  }
+
+  const MASTER = { role: "master", sub: "u1", username: "mestre" };
+  const PLAYER = { role: "player", sub: "u2", username: "ana" };
+
+  async function expectHttpError(promise, status) {
+    try {
+      await promise;
+      throw new Error("esperava erro " + status);
+    } catch (error) {
+      expect(error?.status).toBe(status); // jsonError lanca Response
+    }
+  }
+
+  test("fluxo completo: criar, listar, ativar; jogador sempre ve a cena ativa", async () => {
+    const mesa = await import("../cloudflare/src/mesa.js");
+    const env = { DB: createFakeDb() };
+
+    // Estado inicial: so a default (virtual), ativa
+    const initial = await mesa.listMesaScenes(env, MASTER);
+    expect(initial.activeId).toBe("default");
+    expect(initial.scenes).toEqual([
+      { id: "default", name: "Cena principal", updatedAt: null, active: true }
+    ]);
+
+    // Salva algo na default e cria a segunda cena
+    await mesa.saveMesaScene(env, MASTER, { tokens: [{ id: "ana", characterKey: "ana", x: 10, y: 10 }] });
+    const created = await mesa.createMesaScene(env, MASTER, { name: "  Caverna   Sombria  " });
+    expect(created.name).toBe("Caverna Sombria");
+
+    const list = await mesa.listMesaScenes(env, MASTER);
+    expect(list.scenes.length).toBe(2);
+    expect(list.scenes.find(s => s.id === created.id)?.active).toBe(false);
+
+    // Jogador ve a ativa (default, com o token); ?id= de jogador e ignorado
+    const playerScene = await mesa.getMesaScene(env, PLAYER, created.id);
+    expect(playerScene.id).toBe("default");
+    expect(playerScene.data.tokens.length).toBe(1);
+
+    // Ativa a caverna: jogador passa a ver a cena vazia nova
+    const activation = await mesa.activateMesaScene(env, MASTER, created.id);
+    expect(activation.activeId).toBe(created.id);
+    expect(activation.name).toBe("Caverna Sombria");
+    const playerAfter = await mesa.getMesaScene(env, PLAYER);
+    expect(playerAfter.id).toBe(created.id);
+    expect(playerAfter.data.tokens.length).toBe(0);
+
+    // Mestre ainda acessa a default por ?id= (active: false — sem broadcast)
+    const masterOld = await mesa.getMesaScene(env, MASTER, "default");
+    expect(masterOld.id).toBe("default");
+    expect(masterOld.active).toBe(false);
+    expect(masterOld.data.tokens.length).toBe(1);
+  });
+
+  test("salvar cena em preparo (?id=) nao mexe na cena ativa dos jogadores", async () => {
+    const mesa = await import("../cloudflare/src/mesa.js");
+    const env = { DB: createFakeDb() };
+    const created = await mesa.createMesaScene(env, MASTER, { name: "Preparo" });
+
+    const saved = await mesa.saveMesaScene(
+      env, MASTER,
+      { tokens: [{ id: "vigia", characterKey: "vigia", x: 50, y: 50 }] },
+      created.id
+    );
+    expect(saved.id).toBe(created.id);
+    expect(saved.active).toBe(false); // index.js NAO transmite este PUT
+
+    const playerScene = await mesa.getMesaScene(env, PLAYER);
+    expect(playerScene.id).toBe("default");
+    expect(playerScene.data.tokens.length).toBe(0);
+  });
+
+  test("guardas: master-only, delete da ativa/principal, ativar inexistente, cap de cenas", async () => {
+    const mesa = await import("../cloudflare/src/mesa.js");
+    const env = { DB: createFakeDb() };
+    const created = await mesa.createMesaScene(env, MASTER, { name: "B" });
+
+    await expectHttpError(mesa.listMesaScenes(env, PLAYER), 403);
+    await expectHttpError(mesa.createMesaScene(env, PLAYER, { name: "x" }), 403);
+    await expectHttpError(mesa.activateMesaScene(env, PLAYER, created.id), 403);
+    await expectHttpError(mesa.deleteMesaScene(env, MASTER, "default"), 400);   // principal
+    await expectHttpError(mesa.activateMesaScene(env, MASTER, "snaoexiste0"), 404);
+    await mesa.activateMesaScene(env, MASTER, created.id);
+    await expectHttpError(mesa.deleteMesaScene(env, MASTER, created.id), 400);  // ativa
+
+    // Volta pra default, dai a exclusao passa e some da lista
+    await mesa.activateMesaScene(env, MASTER, "default");
+    await mesa.deleteMesaScene(env, MASTER, created.id);
+    const list = await mesa.listMesaScenes(env, MASTER);
+    expect(list.scenes.some(s => s.id === created.id)).toBe(false);
+  });
+
+  test("rename normaliza o nome e ids invalidos sao rejeitados", async () => {
+    const mesa = await import("../cloudflare/src/mesa.js");
+    const env = { DB: createFakeDb() };
+    const created = await mesa.createMesaScene(env, MASTER, { name: "A" });
+
+    const renamed = await mesa.renameMesaScene(env, MASTER, created.id, { name: "  Torre   do   Fim " });
+    expect(renamed.name).toBe("Torre do Fim");
+    const list = await mesa.listMesaScenes(env, MASTER);
+    expect(list.scenes.find(s => s.id === created.id)?.name).toBe("Torre do Fim");
+
+    await expectHttpError(mesa.renameMesaScene(env, MASTER, "meta:mesa", { name: "x" }), 400);
+    await expectHttpError(mesa.renameMesaScene(env, MASTER, "ID COM ESPACO", { name: "x" }), 400);
+  });
+});

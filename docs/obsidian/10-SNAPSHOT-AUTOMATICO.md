@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-27 16:13:26 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-27 16:22:58 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,19 +13,18 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `6f7d717 2026-07-27 feat(mesa): Fog of War ÔÇö nevoa no mapa, opaca p/ jogador e 40% p/ mestre, pincel ao vivo (Etapa 47)`
+- Ultimo commit: `6497ba9 2026-07-27 fix(mesa): nevoa com sangria na borda do mapa + fundo do palco mais escuro (pos-47)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
 M  DEV_STATUS.md
-M  VISUAL_RULES.md
-M  css/mesa-stage.css
+M  cloudflare/README.md
+M  cloudflare/src/index.js
+M  cloudflare/src/mesa.js
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-fog.js
-M  mesa.html
-M  tools/build-pages.cjs
+M  tests/mesa-audit.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -39,11 +38,10 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 
 ```text
 DEV_STATUS.md
-VISUAL_RULES.md
-css/mesa-stage.css
-js/mesa-fog.js
-mesa.html
-tools/build-pages.cjs
+cloudflare/README.md
+cloudflare/src/index.js
+cloudflare/src/mesa.js
+tests/mesa-audit.spec.cjs
 ```
 
 ## Paginas Principais

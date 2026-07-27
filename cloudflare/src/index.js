@@ -47,7 +47,15 @@ import {
   transferEchoBetweenPlayers,
   updateEcho
 } from "./echos.js";
-import { getMesaScene, saveMesaScene } from "./mesa.js";
+import {
+  activateMesaScene,
+  createMesaScene,
+  deleteMesaScene,
+  getMesaScene,
+  listMesaScenes,
+  renameMesaScene,
+  saveMesaScene
+} from "./mesa.js";
 import { MesaRealtimeRoom } from "./mesa-realtime.js";
 
 export { MesaRealtimeRoom };
@@ -100,6 +108,36 @@ async function broadcastMesaScene(env, scene, actor) {
     });
   } catch (error) {
     console.warn("Falha ao transmitir cena da Mesa.", error);
+  }
+}
+
+// Etapa 48: o mestre ativou outra cena — todos os clientes recarregam a cena
+// ativa pelo GET /mesa/scene (filtrado por papel), em vez de receber o JSON
+// bruto no broadcast (que vazaria tokens/tracos "dm" para jogadores).
+async function broadcastMesaSceneSwitch(env, activation, actor) {
+  const stub = getMesaRealtimeStub(env);
+  if (!stub) return;
+
+  try {
+    await stub.fetch("https://mesa-realtime.local/broadcast", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json; charset=utf-8"
+      },
+      body: JSON.stringify({
+        type: "mesa:scene:switch",
+        sceneId: activation.activeId,
+        sceneName: activation.name,
+        actor: {
+          id: actor.sub,
+          username: actor.username,
+          role: actor.role
+        },
+        sentAt: new Date().toISOString()
+      })
+    });
+  } catch (error) {
+    console.warn("Falha ao transmitir troca de cena da Mesa.", error);
   }
 }
 
@@ -588,15 +626,54 @@ export default {
 
       if (path === "/api/mesa/scene" && request.method === "GET") {
         const session = await requireAuth(request, env);
-        return withCors(json(await getMesaScene(env, session)), origin);
+        // ?id= so vale para o mestre (resolveSceneIdForActor); jogador
+        // recebe sempre a cena ativa.
+        return withCors(json(await getMesaScene(env, session, url.searchParams.get("id"))), origin);
+      }
+
+      // ── Múltiplas cenas (Etapa 48) — gestao master-only ──
+      if (path === "/api/mesa/scenes" && request.method === "GET") {
+        const session = await requireAuth(request, env);
+        return withCors(json(await listMesaScenes(env, session)), origin);
+      }
+
+      if (path === "/api/mesa/scenes" && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        const body = await readJson(request);
+        return withCors(json(await createMesaScene(env, session, body)), origin);
+      }
+
+      if (path.startsWith("/api/mesa/scenes/") && request.method === "POST" && path.endsWith("/activate")) {
+        const session = await requireAuth(request, env);
+        const sceneId = path.slice("/api/mesa/scenes/".length, -"/activate".length);
+        const activation = await activateMesaScene(env, session, sceneId);
+        await broadcastMesaSceneSwitch(env, activation, session);
+        return withCors(json(activation), origin);
+      }
+
+      if (path.startsWith("/api/mesa/scenes/") && request.method === "PUT") {
+        const session = await requireAuth(request, env);
+        const sceneId = path.slice("/api/mesa/scenes/".length);
+        const body = await readJson(request);
+        return withCors(json(await renameMesaScene(env, session, sceneId, body)), origin);
+      }
+
+      if (path.startsWith("/api/mesa/scenes/") && request.method === "DELETE") {
+        const session = await requireAuth(request, env);
+        const sceneId = path.slice("/api/mesa/scenes/".length);
+        return withCors(json(await deleteMesaScene(env, session, sceneId)), origin);
       }
 
       if (path === "/api/mesa/scene" && request.method === "PUT") {
         const session = await requireAuth(request, env);
         // Cena carrega tokens + desenhos + iniciativa: cap proprio de 256KB
         const body = await readJson(request, 256 * 1024);
-        const saved = await saveMesaScene(env, session, body);
-        await broadcastMesaScene(env, saved, session);
+        const saved = await saveMesaScene(env, session, body, url.searchParams.get("id"));
+        // So a cena ATIVA e transmitida — salvar uma cena em preparo (?id=)
+        // nao pode sobrescrever a mesa que os jogadores estao vendo.
+        if (saved.active) {
+          await broadcastMesaScene(env, saved, session);
+        }
         return withCors(json(saved), origin);
       }
 

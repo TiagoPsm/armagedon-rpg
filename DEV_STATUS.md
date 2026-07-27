@@ -30,7 +30,17 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-27 — Ajuste pos-47: borda do mapa sob a nevoa + fundo do palco)
+## Ultima Etapa Concluida (2026-07-27 — Etapa 48: Multiplas cenas — backend)
+
+Backend de multiplas cenas SEM migracao de schema: a tabela `mesa_scenes` ja era chaveada por id; o ponteiro da cena ativa e os nomes vivem numa linha especial `meta:mesa` (`data_json = { activeId, names }`).
+
+- **cloudflare/src/mesa.js**: `getMesaSceneMeta`/`saveMesaSceneMeta`, `listMesaScenes` (master-only; default aparece mesmo sem linha), `createMesaScene` (id `s`+12 hex, cap 20 cenas, `DB.batch` linha+meta), `renameMesaScene`, `deleteMesaScene` (proibido: cena principal e cena ativa; `DB.batch`), `activateMesaScene` (valida existencia). `getMesaScene`/`saveMesaScene` agora aceitam `?id=` — SO para o mestre (`resolveSceneIdForActor`; jogador sempre recebe a ativa) e a resposta ganhou `id`, `active` e `name`.
+- **cloudflare/src/index.js**: rotas `GET/POST /api/mesa/scenes`, `PUT/DELETE /api/mesa/scenes/:id`, `POST /api/mesa/scenes/:id/activate` (dispara broadcast `mesa:scene:switch` com `{sceneId, sceneName}` — os clientes RE-BUSCAM a cena pelo GET filtrado por papel, o JSON bruto nunca viaja no broadcast para nao vazar camada dm). `GET/PUT /api/mesa/scene?id=`; **PUT de cena nao-ativa NAO e transmitido** (mestre prepara cena sem sobrescrever a mesa dos jogadores).
+- **Testes** (suite 70 -> 74, describe "Multiplas cenas — backend (Etapa 48)"): mini-D1 em memoria exercitando o codigo real — fluxo completo (criar/listar/ativar, jogador sempre na ativa, ?id= ignorado para jogador), save em preparo com `active:false`, guardas (403 jogador, delete da principal/ativa, activate inexistente) e rename normalizado.
+- Deploy do Worker: version `26488a2a-3d0d-4afc-867d-6e35b948d11e` (dry-run antes; health 200). Compatibilidade: cena existente continua como `default` ("Cena principal"), ativa por padrao — zero impacto ate o mestre criar outra cena.
+- Validacao: test:mesa:audit 74/74, check:js OK. Frontend do gerenciador e a Etapa 49.
+
+## Etapa Concluida (2026-07-27 — Ajuste pos-47: borda do mapa sob a nevoa + fundo do palco)
 
 Feedback do Tiago com print da tela do jogador: (1) a borda do mapa aparecia como linhas claras nos limites da area coberta pela nevoa; (2) o fundo do palco estava claro demais, pouco contraste com o mapa.
 
