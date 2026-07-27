@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="css/mesa-stage.css?v=2026-07-27-fog-2" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-06-16-fullbleed-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-06-16-master-vital-card-1" />
-  <link rel="stylesheet" href="css/mesa-map.css?v=2026-07-27-fog-1" />
+  <link rel="stylesheet" href="css/mesa-map.css?v=2026-07-27-scenes-1" />
   <link rel="stylesheet" href="css/mesa-drawing.css?v=2026-06-12-cache-fix-1" />
   <style>
     /* ── TOKEN SCALE ── */
@@ -510,6 +510,15 @@
           </div>
         </div>
 
+        <!-- Múltiplas cenas (Etapa 49) — gerenciador do mestre -->
+        <div class="mesa-map-transform-group" id="mesaScenesGroup" hidden>
+          <span class="mesa-map-transform-label">Cenas</span>
+          <div id="mesaScenesList" class="mesa-scenes-list"></div>
+          <div class="mesa-map-transform-row">
+            <button type="button" class="mesa-transform-btn mesa-scene-create-btn" id="mesaSceneCreateBtn" title="Criar nova cena vazia">+ Nova cena</button>
+          </div>
+        </div>
+
       </div>
 
       <!-- Overlay: baixo direito — ações -->
@@ -660,18 +669,19 @@
   </div>
 
     <script src="js/runtime-config.js?v=2026-05-04-mesa-realtime-1" defer></script>
-  <script src="js/api.js?v=2026-07-11-map-facade-1" defer></script>
+  <script src="js/api.js?v=2026-07-27-scenes-1" defer></script>
   <script src="js/ui.js?v=2026-06-11-soul-notify-1" defer></script>
   <script src="js/auth.js?v=2026-06-13-login-form-1" defer></script>
   <!-- Ordem importante: dependências antes de mesa-core -->
-  <script src="js/mesa-stage.js?v=2026-07-27-status-1" defer></script>
+  <script src="js/mesa-stage.js?v=2026-07-27-scenes-1" defer></script>
   <script src="js/mesa-roster.js?v=2026-06-16-no-dup-inspector-1" defer></script>
   <script src="js/mesa-inspector.js?v=2026-07-27-status-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
-  <script src="js/mesa-core.js?v=2026-07-27-fog-1" defer></script>
+  <script src="js/mesa-core.js?v=2026-07-27-scenes-1" defer></script>
   <script src="js/mesa-map.js?v=2026-07-27-fog-1" defer></script>
   <script src="js/mesa-grid.js?v=2026-07-12-token-cells-1" defer></script>
   <script src="js/mesa-fog.js?v=2026-07-27-fog-2" defer></script>
+  <script src="js/mesa-scenes.js?v=2026-07-27-scenes-1" defer></script>
   <script src="js/mesa-ping.js?v=2026-07-27-ping-1" defer></script>
   <script src="js/mesa-ruler.js?v=2026-07-27-ruler-1" defer></script>
   <script src="js/mesa-dice.js?v=2026-07-27-dice-1" defer></script>

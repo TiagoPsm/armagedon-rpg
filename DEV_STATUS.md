@@ -30,7 +30,18 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-27 — Etapa 48: Multiplas cenas — backend)
+## Ultima Etapa Concluida (2026-07-27 — Etapa 49: Multiplas cenas — frontend)
+
+Gerenciador de cenas do mestre (grupo "Cenas" no painel do mapa) + troca de cena ao vivo para todos. Multi-cena exige backend; o modo local segue com a cena unica de sempre.
+
+- **js/mesa-scenes.js** (NOVO): lista as cenas (ativa em destaque), Ativar / renomear (prompt) / excluir (confirm; bloqueado para ativa e principal na UI e no Worker) / "+ Nova cena". Visibilidade master-only decidida em `refreshMesaScenesUI` (chamado no fim do boot e apos cada switch — licao da corrida de boot). Acoes pela fachada `window.APP`.
+- **js/api.js**: `getMesaScenes`/`createMesaScene`/`renameMesaScene`/`deleteMesaScene`/`activateMesaScene` (cache-bust de api.js em TODAS as 6 paginas HTML).
+- **js/mesa-core.js**: `state.sceneId`/`sceneName` (vem do GET da Etapa 48; definido ANTES de gravar o snapshot local), `mesaSceneStorageKey()` — snapshot local POR CENA: a default mantem a chave legada `tc_virtual_mesa_mock_v1` (ZERO migracao) e as demais ganham sufixo `_<sceneId>`; todos os usos em mesa-core/mesa-stage migrados. `handleMesaSceneSwitch` (evento `mesa:scene:switch`): zera `sceneVersion` + assinaturas de dedupe (cada cena tem a propria linha do tempo — sem isso a versao alta da cena antiga descartaria os deltas da nova), recarrega o GET filtrado por papel, aplica e toast.
+- **Testes** (suite 74 -> 77, describe "Multiplas cenas — frontend (Etapa 49)"): grupo do mestre lista/destaca/aciona a API (delegation testado via click direto — o painel pode estar recolhido); jogador nunca ve o grupo; `mesa:scene:switch` troca tokens/versao/chave de storage e preserva a chave legada intacta.
+- Cache-bust: api.js (6 paginas), mesa-core.js, mesa-stage.js, mesa-scenes.js (novo), mesa-map.css -> `?v=2026-07-27-scenes-1`; `MESA_BUNDLE_VERSION` E `FICHA_BUNDLE_VERSION` -> `2026-07-27-scenes-1` (api.js esta nos dois bundles).
+- Validacao: test:mesa:audit 77/77, test:mesa 5/5, test:ficha 28/28 (api.js mudou), check:js OK, build:pages OK. Sem deploy de Worker (Etapa 48 ja no ar).
+
+## Etapa Concluida (2026-07-27 — Etapa 48: Multiplas cenas — backend)
 
 Backend de multiplas cenas SEM migracao de schema: a tabela `mesa_scenes` ja era chaveada por id; o ponteiro da cena ativa e os nomes vivem numa linha especial `meta:mesa` (`data_json = { activeId, names }`).
 

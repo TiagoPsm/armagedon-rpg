@@ -399,6 +399,22 @@
     async getMesaScene() {
       return request("/mesa/scene");
     },
+    // Múltiplas cenas (Etapa 49) — gestão master-only (o Worker valida).
+    async getMesaScenes() {
+      return request("/mesa/scenes");
+    },
+    async createMesaScene(name) {
+      return request("/mesa/scenes", { method: "POST", body: { name } });
+    },
+    async renameMesaScene(sceneId, name) {
+      return request(`/mesa/scenes/${encodeURIComponent(sceneId)}`, { method: "PUT", body: { name } });
+    },
+    async deleteMesaScene(sceneId) {
+      return request(`/mesa/scenes/${encodeURIComponent(sceneId)}`, { method: "DELETE" });
+    },
+    async activateMesaScene(sceneId) {
+      return request(`/mesa/scenes/${encodeURIComponent(sceneId)}/activate`, { method: "POST", body: {} });
+    },
     async saveMesaScene(data, options = {}) {
       return request("/mesa/scene", {
         method: "PUT",

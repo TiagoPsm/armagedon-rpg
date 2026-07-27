@@ -43,6 +43,7 @@ JS:
 - `js/mesa-ping.js`
 - `js/mesa-ruler.js`
 - `js/mesa-dice.js`
+- `js/mesa-scenes.js`
 - `js/mesa-drawing.js`
 - `js/mesa-select.js`
 - `js/mesa-initiative.js`

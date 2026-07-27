@@ -5,8 +5,8 @@ const repoRoot = path.resolve(__dirname, "..");
 const outDir = path.join(repoRoot, "_site");
 
 // Bump aqui quando mudar arquivos dos bundles
-const FICHA_BUNDLE_VERSION = "2026-07-11-map-facade-1";
-const MESA_BUNDLE_VERSION  = "2026-07-27-fog-2";
+const FICHA_BUNDLE_VERSION = "2026-07-27-scenes-1";
+const MESA_BUNDLE_VERSION  = "2026-07-27-scenes-1";
 
 const files = [
   "index.html", "ficha.html", "mesa.html", "regras.html", "sugestoes.html",
@@ -42,7 +42,7 @@ const mesaJsFiles = [
   "js/runtime-config.js","js/api.js","js/ui.js","js/auth.js",
   "js/mesa-stage.js","js/mesa-roster.js","js/mesa-inspector.js",
   "js/mesa-storage.js","js/mesa-core.js","js/mesa-map.js",
-  "js/mesa-grid.js","js/mesa-fog.js","js/mesa-ping.js","js/mesa-ruler.js","js/mesa-dice.js","js/mesa-drawing.js","js/mesa-select.js"
+  "js/mesa-grid.js","js/mesa-fog.js","js/mesa-scenes.js","js/mesa-ping.js","js/mesa-ruler.js","js/mesa-dice.js","js/mesa-drawing.js","js/mesa-select.js"
 ];
 
 function removeDir(dir) {

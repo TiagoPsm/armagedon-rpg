@@ -847,7 +847,7 @@ function flushRealtimeDragMove() {
 
 function resetPrototype() {
   if (!isMaster()) return;
-  localStorage.removeItem(MESA_STORAGE_KEY);
+  localStorage.removeItem(mesaSceneStorageKey());
   state.tokens = [];
   state.selectedTokenId = "";
   bumpMesaSceneVersion();
@@ -885,7 +885,7 @@ function flushPersistState() {
     return;
   }
 
-  localStorage.setItem(MESA_STORAGE_KEY, JSON.stringify(payload));
+  localStorage.setItem(mesaSceneStorageKey(), JSON.stringify(payload));
   pendingPersistPayload = null;
   lastPersistedMesaSceneSignature = payloadSignature;
   queueRemoteMesaPersist(payload, payloadSignature);

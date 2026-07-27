@@ -2520,3 +2520,116 @@ test.describe("Multiplas cenas — backend (Etapa 48)", () => {
     await expectHttpError(mesa.renameMesaScene(env, MASTER, "ID COM ESPACO", { name: "x" }), 400);
   });
 });
+
+test.describe("Multiplas cenas — frontend (Etapa 49)", () => {
+  test("mestre: grupo Cenas lista, destaca a ativa e Ativar chama a API", async ({ page }) => {
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.evaluate(async () => {
+      window.__sceneCalls = [];
+      window.AUTH = Object.assign({}, window.AUTH, { isBackendEnabled: () => true });
+      window.APP = Object.assign({}, window.APP, {
+        getMesaScenes: async () => ({
+          activeId: "default",
+          scenes: [
+            { id: "default", name: "Cena principal", updatedAt: null, active: true },
+            { id: "scaverna01", name: "Caverna Sombria", updatedAt: null, active: false }
+          ]
+        }),
+        activateMesaScene: async id => { window.__sceneCalls.push(["activate", id]); return { activeId: id }; }
+      });
+      await window.refreshMesaScenesUI();
+    });
+
+    const ui = await page.evaluate(() => ({
+      groupVisible: !document.getElementById("mesaScenesGroup").hidden,
+      rows: [...document.querySelectorAll(".mesa-scene-row")].map(row => ({
+        name: row.querySelector(".mesa-scene-name").textContent,
+        active: row.classList.contains("is-active"),
+        hasActivate: Boolean(row.querySelector('[data-scene-action="activate"]')),
+        hasDelete: Boolean(row.querySelector('[data-scene-action="delete"]'))
+      }))
+    }));
+
+    expect(ui.groupVisible).toBe(true);
+    expect(ui.rows.length).toBe(2);
+    expect(ui.rows[0]).toEqual({ name: "Cena principal", active: true, hasActivate: false, hasDelete: false });
+    expect(ui.rows[1]).toEqual({ name: "Caverna Sombria", active: false, hasActivate: true, hasDelete: true });
+
+    // O painel do mapa pode estar recolhido (elemento fora de vista): dispara
+    // o click direto — o handler e delegation no grupo, nao depende de layout.
+    await page.evaluate(() => {
+      document.querySelector('[data-scene-action="activate"][data-scene-id="scaverna01"]').click();
+    });
+    await page.waitForFunction(() => (window.__sceneCalls || []).length > 0);
+    const calls = await page.evaluate(() => window.__sceneCalls);
+    expect(calls).toContainEqual(["activate", "scaverna01"]);
+  });
+
+  test("jogador: grupo Cenas nunca aparece", async ({ page }) => {
+    await seedPlayerWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const hidden = await page.evaluate(async () => {
+      window.AUTH = Object.assign({}, window.AUTH, { isBackendEnabled: () => true });
+      await window.refreshMesaScenesUI();
+      return document.getElementById("mesaScenesGroup").hidden;
+    });
+    expect(hidden).toBe(true);
+  });
+
+  test("mesa:scene:switch recarrega a cena ativa e o snapshot local vira por-cena", async ({ page }) => {
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(async () => {
+      const legacyBefore = localStorage.getItem("tc_virtual_mesa_mock_v1");
+      window.AUTH = Object.assign({}, window.AUTH, { isBackendEnabled: () => true });
+      window.APP = Object.assign({}, window.APP, {
+        // GET da cena ativa NOVA (id/name vieram na Etapa 48)
+        getMesaScene: async () => ({
+          id: "scaverna01",
+          name: "Caverna Sombria",
+          active: true,
+          data: {
+            sceneVersion: 5,
+            selectedTokenId: "",
+            tokens: [{
+              id: "vigia", characterKey: "vigia", type: "monster", name: "Vigia Sombrio",
+              x: 40, y: 40, visibleToPlayers: true, layer: "tokens", order: 1, tokenScale: 1,
+              currentLife: 20, maxLife: 20, currentIntegrity: 0, maxIntegrity: 0
+            }]
+          },
+          updatedAt: "2026-07-27T00:00:00Z"
+        })
+      });
+
+      await handleMesaSceneSwitch({ sceneId: "scaverna01", sceneName: "Caverna Sombria" });
+
+      return {
+        sceneId: state.sceneId,
+        sceneName: state.sceneName,
+        storageKey: mesaSceneStorageKey(),
+        tokens: state.tokens.map(t => t.id),
+        sceneVersion: state.sceneVersion,
+        suffixedSaved: Boolean(localStorage.getItem("tc_virtual_mesa_mock_v1_scaverna01")),
+        legacyIntact: localStorage.getItem("tc_virtual_mesa_mock_v1") === legacyBefore
+      };
+    });
+
+    expect(result.sceneId).toBe("scaverna01");
+    expect(result.sceneName).toBe("Caverna Sombria");
+    expect(result.storageKey).toBe("tc_virtual_mesa_mock_v1_scaverna01");
+    expect(result.tokens).toEqual(["vigia"]);       // cena trocou de verdade
+    expect(result.sceneVersion).toBe(5);            // linha do tempo da cena nova
+    expect(result.suffixedSaved).toBe(true);        // snapshot local por-cena
+    expect(result.legacyIntact).toBe(true);         // cena default preservada (zero migracao)
+  });
+});

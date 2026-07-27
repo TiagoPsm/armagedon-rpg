@@ -787,3 +787,58 @@
   padding: 0 10px;
   font-size: 0.72rem;
 }
+
+/* ── Gerenciador de cenas (Etapa 49) ─────────────────────────
+ * Grupo "Cenas" no painel do mapa (master-only). Linha ativa em
+ * destaque carmesim; ações compactas por linha. */
+.mesa-scenes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.mesa-scene-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+.mesa-scene-row.is-active {
+  background: rgba(176, 48, 57, 0.18);
+  border-color: rgba(214, 69, 80, 0.55);
+}
+.mesa-scene-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.76rem;
+  color: var(--text, #e8e3d8);
+}
+.mesa-scene-row.is-active .mesa-scene-name {
+  font-weight: 700;
+}
+.mesa-scene-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.mesa-scene-btn {
+  width: auto;
+  min-width: 24px;
+  padding: 0 7px;
+  font-size: 0.7rem;
+}
+.mesa-scene-btn.is-activate {
+  border-color: rgba(214, 69, 80, 0.7);
+}
+.mesa-scene-create-btn {
+  width: auto;
+  padding: 0 10px;
+  font-size: 0.72rem;
+}

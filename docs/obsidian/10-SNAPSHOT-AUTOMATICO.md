@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-27 16:22:58 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-27 16:34:28 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,35 +13,57 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `6497ba9 2026-07-27 fix(mesa): nevoa com sangria na borda do mapa + fundo do palco mais escuro (pos-47)`
+- Ultimo commit: `11ddef2 2026-07-27 feat(worker): multiplas cenas ÔÇö meta:mesa, rotas /mesa/scenes, ?id= e mesa:scene:switch (Etapa 48)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
+M  CLAUDE.md
 M  DEV_STATUS.md
-M  cloudflare/README.md
-M  cloudflare/src/index.js
-M  cloudflare/src/mesa.js
- M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  SYSTEM_RULES.md
+M  css/mesa-map.css
+M  docs/obsidian/07-MESA.md
+M  echos.html
+M  ficha.html
+M  index.html
+M  js/api.js
+M  js/mesa-core.js
+A  js/mesa-scenes.js
+M  js/mesa-stage.js
+M  mesa.html
+M  regras.html
+M  sugestoes.html
 M  tests/mesa-audit.spec.cjs
+M  tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
 .claude/settings.local.json
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ```
 
 ### Arquivos Em Stage
 
 ```text
+CLAUDE.md
 DEV_STATUS.md
-cloudflare/README.md
-cloudflare/src/index.js
-cloudflare/src/mesa.js
+SYSTEM_RULES.md
+css/mesa-map.css
+docs/obsidian/07-MESA.md
+echos.html
+ficha.html
+index.html
+js/api.js
+js/mesa-core.js
+js/mesa-scenes.js
+js/mesa-stage.js
+mesa.html
+regras.html
+sugestoes.html
 tests/mesa-audit.spec.cjs
+tools/build-pages.cjs
 ```
 
 ## Paginas Principais
@@ -55,7 +77,7 @@ tests/mesa-audit.spec.cjs
 
 ## Contagem Rapida
 
-- JavaScript em `js/`: 35 arquivo(s)
+- JavaScript em `js/`: 36 arquivo(s)
 - CSS em `css/`: 13 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
@@ -139,7 +161,7 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js
     0,61 MB  node_modules\playwright-core\lib\vite\traceViewer\assets\defaultSettingsView-GTWI-W_B.js
     0,45 MB  node_modules\playwright-core\lib\utilsBundleImpl\index.js
-    0,43 MB  _site\js\mesa-page.bundle.js
+    0,44 MB  _site\js\mesa-page.bundle.js
 ```
 
 ## Comando De Atualizacao

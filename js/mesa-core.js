@@ -71,8 +71,20 @@ const state = {
   // true quando initMesaPage terminou (sucesso, sem sessao ou erro). Os testes
   // esperam por este flag em vez de dormir um tempo fixo — o sono de 450ms era
   // a raiz da familia de flakes "bug 2" (boot passa disso sob carga).
-  bootCompleted: false
+  bootCompleted: false,
+  // Múltiplas cenas (Etapa 49): id/nome da cena que este cliente está vendo.
+  // Vem do GET /mesa/scene (resposta ganhou id/name na Etapa 48) e muda no
+  // broadcast mesa:scene:switch. Local (sem backend) fica sempre em default.
+  sceneId: "default",
+  sceneName: ""
 };
+
+// Chave do snapshot local POR CENA: a default mantém a chave legada (zero
+// migração para quem já tem cena salva); as demais ganham sufixo _<sceneId>.
+function mesaSceneStorageKey() {
+  const sceneId = String(state.sceneId || "default");
+  return sceneId === "default" ? MESA_STORAGE_KEY : `${MESA_STORAGE_KEY}_${sceneId}`;
+}
 const MESA_CLIENT_ID_KEY = "tc_mesa_client_id";
 const MESA_REALTIME_DELTA_TYPES = new Set([
   "mesa:token:move",
@@ -213,6 +225,12 @@ async function initMesaPage() {
   // roteador padrão (applyMesaRealtimeDelta), não por listeners próprios.
   if (typeof initInitiativeModule === "function") {
     initInitiativeModule();
+  }
+
+  // Gerenciador de cenas (Etapa 49): popula a lista do mestre depois que o
+  // papel assentou (master-only; some sozinho para jogador/local).
+  if (typeof window.refreshMesaScenesUI === "function") {
+    void window.refreshMesaScenesUI();
   }
 }
 
@@ -356,6 +374,13 @@ function bindMesaRealtime() {
 
   window.APP.on("mesa:scene", payload => {
     applyRemoteMesaSceneMessage(payload);
+  });
+
+  // Múltiplas cenas (Etapa 49): o mestre ativou outra cena — TODO cliente
+  // (inclusive o proprio mestre, que tambem recebe o broadcast) recarrega a
+  // cena ativa pelo GET filtrado por papel.
+  window.APP.on("mesa:scene:switch", payload => {
+    void handleMesaSceneSwitch(payload);
   });
 
   window.APP.on("mesa:batch", payload => {
@@ -768,7 +793,7 @@ async function applyRemoteMesaSceneSnapshot(remoteData) {
 
     state.scenePersistence = "remote";
     state.sceneRemoteExists = true;
-    localStorage.setItem(MESA_STORAGE_KEY, JSON.stringify(remoteData));
+    localStorage.setItem(mesaSceneStorageKey(), JSON.stringify(remoteData));
     applyMesaSceneSnapshot(remoteData);
     lastPersistedMesaSceneSignature = remoteSignature;
     lastRemoteMesaSceneSignature = remoteSignature;
@@ -1623,12 +1648,18 @@ async function loadMesaSceneSnapshot(prefetchedResult) {
         : await window.APP.getMesaScene();
       const remoteData = remoteScene?.data && typeof remoteScene.data === "object" ? remoteScene.data : {};
       state.sceneRemoteExists = Boolean(remoteScene?.createdAt || remoteScene?.updatedAt);
+      // Etapa 49: a resposta identifica a cena (id/name da Etapa 48). Definir
+      // ANTES de gravar o snapshot local — a chave de storage e por cena.
+      if (typeof remoteScene?.id === "string" && remoteScene.id) {
+        state.sceneId = remoteScene.id;
+        state.sceneName = String(remoteScene.name || "");
+      }
       // Tokens da camada secreta (dm) nunca vem do backend — vivem apenas no
       // snapshot local do mestre. Sem este merge, o boot sobrescreveria o
       // localStorage com a cena remota e os tokens secretos sumiriam no F5
       // (a protecao de applyMesaSceneSnapshot usa state.tokens, vazio no boot).
       if (isMaster()) {
-        const previousLocal = readJsonStorage(MESA_STORAGE_KEY, {});
+        const previousLocal = readJsonStorage(mesaSceneStorageKey(), {});
         const localSecretTokens = Array.isArray(previousLocal?.tokens)
           ? previousLocal.tokens.filter(token => token?.layer === "dm")
           : [];
@@ -1641,7 +1672,7 @@ async function loadMesaSceneSnapshot(prefetchedResult) {
           ];
         }
       }
-      localStorage.setItem(MESA_STORAGE_KEY, JSON.stringify(remoteData));
+      localStorage.setItem(mesaSceneStorageKey(), JSON.stringify(remoteData));
       state.scenePersistence = "remote";
       rememberMesaSceneSignature(remoteData, { persisted: true, remote: true });
       return remoteData;
@@ -1652,9 +1683,38 @@ async function loadMesaSceneSnapshot(prefetchedResult) {
 
   state.scenePersistence = "local";
   state.sceneRemoteExists = false;
-  const localData = readJsonStorage(MESA_STORAGE_KEY, {});
+  const localData = readJsonStorage(mesaSceneStorageKey(), {});
   rememberMesaSceneSignature(localData, { persisted: true });
   return localData;
+}
+
+// Troca de cena ativa (Etapa 49). Cada cena tem a PROPRIA linha do tempo:
+// zera versao e assinaturas de dedupe antes de recarregar, senao a versao
+// alta da cena antiga descartaria os deltas da nova.
+async function handleMesaSceneSwitch(payload) {
+  const sceneId = String(payload?.sceneId || "default");
+  const previousSceneId = state.sceneId;
+  state.sceneId = sceneId;
+  state.sceneName = String(payload?.sceneName || "");
+  state.sceneVersion = 0;
+  state.selectedTokenId = "";
+  lastPersistedMesaSceneSignature = "";
+  lastRemoteMesaSceneSignature = "";
+
+  const saved = await loadMesaSceneSnapshot(undefined);
+  applyMesaSceneSnapshot(saved);
+  syncSelectedToken();
+  scheduleMesaRender({ summary: true, controls: true, roster: true, stage: true, inspector: true });
+
+  if (previousSceneId !== sceneId && window.UI?.toast) {
+    window.UI.toast(
+      isMaster()
+        ? `Cena ativa: "${state.sceneName || sceneId}".`
+        : `O mestre trocou para a cena "${state.sceneName || sceneId}".`,
+      { kicker: "// Mesa" }
+    );
+  }
+  if (typeof window.refreshMesaScenesUI === "function") window.refreshMesaScenesUI();
 }
 
 function applyMesaSceneSnapshot(saved) {
@@ -1830,7 +1890,7 @@ function bumpMesaSceneVersion() {
 
 function cacheMesaSceneSnapshotLocally() {
   const payload = createMesaScenePayloadFromState();
-  localStorage.setItem(MESA_STORAGE_KEY, JSON.stringify(payload));
+  localStorage.setItem(mesaSceneStorageKey(), JSON.stringify(payload));
   rememberMesaSceneSignature(payload, { persisted: true });
 }
 
