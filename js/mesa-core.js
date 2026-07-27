@@ -1770,7 +1770,8 @@ function mergeTokenWithRoster(savedToken, rosterEntry) {
     x: clamp(Number(savedToken?.x), 3, 82),
     y: clamp(Number(savedToken?.y), 3, 78),
     order: asPositiveInt(savedToken?.order, 1),
-    tokenScale: Math.max(0.25, Math.min(4, Number(savedToken?.tokenScale) || 1))
+    tokenScale: Math.max(0.25, Math.min(4, Number(savedToken?.tokenScale) || 1)),
+    statusMarkers: normalizeMesaStatusMarkers(savedToken?.statusMarkers)
   };
 }
 
@@ -1978,7 +1979,8 @@ function serializeMesaRealtimeToken(token) {
     x: roundTo(token.x, 2),
     y: roundTo(token.y, 2),
     order: token.order || 1,
-    tokenScale: Math.max(0.25, Math.min(4, Number(token.tokenScale) || 1))
+    tokenScale: Math.max(0.25, Math.min(4, Number(token.tokenScale) || 1)),
+    statusMarkers: normalizeMesaStatusMarkers(token.statusMarkers)
   };
 }
 
@@ -2078,6 +2080,7 @@ function createMesaScenePayloadFromState() {
       statsVisibleToPlayers: normalizeStatsVisibility(token.type, token.statsVisibleToPlayers),
       order: token.order || 1,
       tokenScale: roundTo(token.tokenScale || 1, 2),
+      statusMarkers: normalizeMesaStatusMarkers(token.statusMarkers),
       // Dados de exibição embutidos na cena oficial: jogadores não recebem
       // NPCs/monstros no /api/directory, então o token precisa ser
       // auto-suficiente para renderizar no boot (ver mergeTokenWithRoster).
@@ -2174,7 +2177,10 @@ function normalizeMesaScenePayload(payload = {}) {
         layer: normalizeTokenLayer(token?.layer),
         statsVisibleToPlayers: token?.statsVisibleToPlayers === true,
         order: asPositiveInt(token?.order, 1),
-        tokenScale: roundTo(Math.max(0.25, Math.min(4, Number(token?.tokenScale) || 1)), 2)
+        tokenScale: roundTo(Math.max(0.25, Math.min(4, Number(token?.tokenScale) || 1)), 2),
+        // Marcadores na assinatura: persist só-de-marcador não pode cair no
+        // dedupe (mesma lição da grade/iniciativa).
+        statusMarkers: normalizeMesaStatusMarkers(token?.statusMarkers)
       }))
       .filter(token => token.id && token.characterKey)
       .sort((a, b) => a.id.localeCompare(b.id)),

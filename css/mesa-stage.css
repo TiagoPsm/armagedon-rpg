@@ -813,3 +813,66 @@ body.mesa-resize-active * {
   box-shadow: 0 0 6px rgba(214, 69, 80, 0.9);
 }
 #mesaDiceBtn { position: relative; }
+
+/* ── Marcadores de status nos tokens (Etapa 46) ──────────────
+ * Chips de condição no topo do círculo do token (fora da caixa de
+ * layout, como o nome). Whitelist e toggle em mesa-stage.js;
+ * grade de botões do mestre no inspetor. */
+.mesa-token.is-minimal .mesa-token-markers {
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+  width: 96px;
+  pointer-events: none;
+  z-index: 3;
+}
+.mesa-token-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  font-size: 11px;
+  line-height: 1;
+  background: rgba(10, 6, 8, 0.92);
+  border: 1px solid rgba(176, 48, 57, 0.55);
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
+/* Grade de toggles no inspetor do mestre */
+.inspector-action-row.is-markers {
+  align-items: flex-start;
+}
+.inspector-marker-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px;
+  max-width: 210px;
+}
+.inspector-marker-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 0;
+  font-size: 0.85rem;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(176, 48, 57, 0.3);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background var(--transition, 0.15s), border-color var(--transition, 0.15s);
+}
+.inspector-marker-btn:hover {
+  background: rgba(176, 48, 57, 0.2);
+  border-color: rgba(214, 69, 80, 0.7);
+}
+.inspector-marker-btn.is-active {
+  background: rgba(176, 48, 57, 0.35);
+  border-color: rgba(214, 69, 80, 0.95);
+  box-shadow: 0 0 6px rgba(176, 48, 57, 0.45);
+}

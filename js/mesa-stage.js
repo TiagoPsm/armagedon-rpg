@@ -92,7 +92,10 @@ function getTokenContentSignature(token) {
     currentIntegrity: token.currentIntegrity,
     maxIntegrity: token.maxIntegrity,
     tokenScale: token.tokenScale || 1,
-    canResize: canResizeToken(token)
+    canResize: canResizeToken(token),
+    // Marcadores mudam o markup do token — sem eles aqui o elemento antigo
+    // nunca seria recriado e o chip novo não apareceria (Etapa 46).
+    statusMarkers: normalizeMesaStatusMarkers(token.statusMarkers)
   });
 }
 
@@ -239,6 +242,11 @@ function handleInspectorAction(event) {
 
   if (action === "toggle-stats-visibility" && canConfigureStatsVisibility(token)) {
     token.statsVisibleToPlayers = !token.statsVisibleToPlayers;
+  }
+
+  if (action === "toggle-marker") {
+    // Marcadores de status (Etapa 46): whitelist + cap validados no helper.
+    if (!toggleMesaTokenStatusMarker(token, button.dataset.markerKey)) return;
   }
 
   if (action === "center") {
@@ -1647,6 +1655,67 @@ function canResizeToken(token) {
 }
 
 
+/* ── Marcadores de status (Etapa 46) ─────────────────────────
+ * Whitelist unica de condicoes (espelhada no Worker em
+ * cloudflare/src/mesa.js — mudou aqui, mude la). Max 8 por token;
+ * viajam no proprio token via mesa:token:upsert e persistem na cena. */
+const MESA_STATUS_MARKERS = [
+  { key: "veneno",       icon: "☠️", label: "Envenenado" },
+  { key: "sangramento",  icon: "🩸", label: "Sangrando" },
+  { key: "queimando",    icon: "🔥", label: "Queimando" },
+  { key: "congelado",    icon: "❄️", label: "Congelado" },
+  { key: "atordoado",    icon: "💫", label: "Atordoado" },
+  { key: "derrubado",    icon: "⬇️", label: "Derrubado" },
+  { key: "amaldicoado",  icon: "👁️", label: "Amaldiçoado" },
+  { key: "abencoado",    icon: "✨", label: "Abençoado" },
+  { key: "medo",         icon: "😱", label: "Amedrontado" },
+  { key: "invisivel",    icon: "👻", label: "Invisível" },
+  { key: "inconsciente", icon: "💤", label: "Inconsciente" },
+  { key: "morto",        icon: "💀", label: "Morto" }
+];
+const MESA_STATUS_MARKERS_BY_KEY = new Map(MESA_STATUS_MARKERS.map(marker => [marker.key, marker]));
+const MESA_MAX_STATUS_MARKERS = 8;
+
+function normalizeMesaStatusMarkers(list) {
+  if (!Array.isArray(list)) return [];
+  const seen = new Set();
+  const result = [];
+  list.forEach(rawKey => {
+    const key = String(rawKey || "").trim().toLowerCase();
+    if (!MESA_STATUS_MARKERS_BY_KEY.has(key) || seen.has(key)) return;
+    seen.add(key);
+    result.push(key);
+  });
+  return result.slice(0, MESA_MAX_STATUS_MARKERS);
+}
+
+/** Liga/desliga um marcador no token. Retorna true se algo mudou. */
+function toggleMesaTokenStatusMarker(token, rawKey) {
+  const key = String(rawKey || "").trim().toLowerCase();
+  if (!token || !MESA_STATUS_MARKERS_BY_KEY.has(key)) return false;
+  const current = normalizeMesaStatusMarkers(token.statusMarkers);
+  if (current.includes(key)) {
+    token.statusMarkers = current.filter(existing => existing !== key);
+    return true;
+  }
+  if (current.length >= MESA_MAX_STATUS_MARKERS) {
+    window.UI?.toast?.(`Máximo de ${MESA_MAX_STATUS_MARKERS} marcadores por token.`, { kicker: "// Mesa" });
+    return false;
+  }
+  token.statusMarkers = [...current, key];
+  return true;
+}
+
+function renderTokenStatusMarkers(token) {
+  const markers = normalizeMesaStatusMarkers(token.statusMarkers);
+  if (!markers.length) return "";
+  const chips = markers.map(key => {
+    const marker = MESA_STATUS_MARKERS_BY_KEY.get(key);
+    return `<span class="mesa-token-marker" data-marker="${marker.key}" title="${escapeAttribute(marker.label)}">${marker.icon}</span>`;
+  }).join("");
+  return `<div class="mesa-token-markers" aria-hidden="true">${chips}</div>`;
+}
+
 function renderToken(token) {
   // Estilo unico: token redondo (minimal).
   return renderTokenMinimal(token);
@@ -1678,6 +1747,7 @@ function renderTokenMinimal(token) {
           : `<span class="mesa-token-avatar-fallback">${escapeHtml(token.initials)}</span>`}
         ${hiddenBadge}
       </div>
+      ${renderTokenStatusMarkers(token)}
       <h3 class="mesa-token-name">${escapeHtml(token.name)}</h3>
       ${resizeHandle}
     </article>

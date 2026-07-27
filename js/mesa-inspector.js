@@ -84,6 +84,13 @@ function renderInspector() {
           </div>
         ` : ""}
 
+        <div class="inspector-action-row is-markers">
+          <span class="inspector-action-label">Marcadores</span>
+          <div class="inspector-marker-grid">
+            ${buildInspectorMarkerButtons(token)}
+          </div>
+        </div>
+
         <div class="inspector-action-row">
           <span class="inspector-action-label">Palco</span>
           <div class="inspector-action-btns">
@@ -95,6 +102,20 @@ function renderInspector() {
     </section>
     ` : ""}
   `;
+}
+
+// Marcadores de status (Etapa 46): grade de toggles do mestre. A whitelist
+// MESA_STATUS_MARKERS vive em mesa-stage.js (carregado antes deste arquivo).
+function buildInspectorMarkerButtons(token) {
+  const active = new Set(normalizeMesaStatusMarkers(token.statusMarkers));
+  return MESA_STATUS_MARKERS.map(marker => `
+    <button type="button"
+            class="inspector-marker-btn ${active.has(marker.key) ? "is-active" : ""}"
+            data-inspector-action="toggle-marker"
+            data-marker-key="${marker.key}"
+            title="${escapeAttribute(marker.label)}"
+            aria-pressed="${active.has(marker.key)}">${marker.icon}</button>
+  `).join("");
 }
 
 function buildInspectorStatsSection(token, canEditCurrent, canEditAll, canViewStats) {

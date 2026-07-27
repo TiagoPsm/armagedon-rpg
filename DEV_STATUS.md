@@ -30,7 +30,21 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-27 — Etapa 45: Dados na Mesa — o DO rola)
+## Ultima Etapa Concluida (2026-07-27 — Etapa 46: Marcadores de status nos tokens)
+
+Grade "Marcadores" no inspetor do mestre: 12 condicoes (whitelist) que viram chips com icone no topo do circulo do token, visiveis para todos e persistentes na cena. Max 8 por token; viajam no proprio token via `mesa:token:upsert` (canal existente — zero mudanca no DO).
+
+- **js/mesa-stage.js**: whitelist `MESA_STATUS_MARKERS` (veneno, sangramento, queimando, congelado, atordoado, derrubado, amaldicoado, abencoado, medo, invisivel, inconsciente, morto) + `normalizeMesaStatusMarkers` (whitelist, dedupe, cap 8) + `toggleMesaTokenStatusMarker` (toast no cap) + chips no `renderTokenMinimal`. Acao `toggle-marker` no `handleInspectorAction` (mestre: bump -> upsert -> persist, padrao existente).
+- **Armadilha corrigida**: `getTokenContentSignature` decide quando RECRIAR o elemento do token — sem `statusMarkers` nela, o chip novo nunca aparecia (o elemento antigo era reaproveitado). Mesma familia da licao da assinatura da cena.
+- **js/mesa-core.js**: `statusMarkers` em `serializeMesaRealtimeToken` (upsert), `createMesaScenePayloadFromState` (cena oficial), `normalizeMesaScenePayload` (ASSINATURA — persist so-de-marcador nao cai no dedupe) e `mergeTokenWithRoster` (aplicar delta/boot preserva).
+- **js/mesa-inspector.js**: `buildInspectorMarkerButtons` — grade de toggles (icone + title, `.is-active`), so no inspetor do mestre (jogador nao marca; e condicao narrativa aplicada pelo mestre).
+- **cloudflare/src/mesa.js**: `normalizeSceneStatusMarkers` (whitelist espelhada + cap 8) em `normalizeSceneToken` — cena antiga sem o campo vira `[]`.
+- **Testes** (suite 62 -> 66, describe "Marcadores de status nos tokens (Etapa 46)"): Worker filtra whitelist/dedupe/cap; toggle do mestre renderiza chip + transmite upsert + entra na assinatura; cap de 8 no cliente (9o recusado, chave invalida recusada); jogador recebe upsert remoto e renderiza chips (whitelist aplicada no merge).
+- Cache-bust: mesa-stage.js, mesa-core.js, mesa-inspector.js e mesa-stage.css -> `?v=2026-07-27-status-1`; `MESA_BUNDLE_VERSION` -> `2026-07-27-status-1`.
+- Deploy do Worker: version `fd78827c-4ac1-4084-840d-b3d7a512d880` (dry-run antes; health 200).
+- Validacao: test:mesa:audit 66/66, test:mesa 5/5, check:js OK, build:pages OK. Prova visual via Playwright: chips ☠🔥👁 no topo do token + grade "Marcadores" no inspetor com os ativos destacados.
+
+## Etapa Concluida (2026-07-27 — Etapa 45: Dados na Mesa — o DO rola)
 
 Painel "Dados da Mesa" (botao DADOS no rail esquerdo): rolagem compartilhada onde QUEM ROLA E O SERVIDOR — o cliente envia `mesa:dice:request` e o Durable Object valida a formula, rola com `crypto.getRandomValues` (rejection sampling, sem vies) e transmite `mesa:dice:result` a TODOS, inclusive quem pediu. Resultado a prova de trapaça: `mesa:dice:result` NAO esta em `RELAY_TYPES`, entao cliente nao consegue forjar. Historico das ultimas 20 rolagens no storage do DO, entregue no `mesa:ready` (quem entra depois ve).
 

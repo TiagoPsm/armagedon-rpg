@@ -2109,3 +2109,120 @@ test.describe("Dados na Mesa (Etapa 45)", () => {
     expect(result.rendered).toBe(20);
   });
 });
+
+test.describe("Marcadores de status nos tokens (Etapa 46)", () => {
+  test("Worker: normalizeMesaScene filtra whitelist, dedupe e cap de 8", async () => {
+    const { normalizeMesaScene } = await import("../cloudflare/src/mesa.js");
+
+    const scene = normalizeMesaScene({
+      tokens: [{
+        id: "ana",
+        characterKey: "ana",
+        x: 10, y: 10,
+        statusMarkers: [
+          "VENENO", "veneno", "hackeado", "sangramento", "queimando", "congelado",
+          "atordoado", "derrubado", "amaldicoado", "abencoado", "medo"
+        ]
+      }]
+    });
+
+    const markers = scene.tokens[0].statusMarkers;
+    expect(markers[0]).toBe("veneno");            // case-insensitive
+    expect(markers).not.toContain("hackeado");    // fora da whitelist
+    expect(new Set(markers).size).toBe(markers.length); // sem duplicata
+    expect(markers.length).toBe(8);               // cap de 8 (9 validos enviados)
+
+    const legacy = normalizeMesaScene({ tokens: [{ id: "ana", characterKey: "ana", x: 1, y: 1 }] });
+    expect(legacy.tokens[0].statusMarkers).toEqual([]); // cena antiga sem o campo
+  });
+
+  test("mestre: toggle no inspetor renderiza o chip, transmite upsert e entra na assinatura", async ({ page }) => {
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    await page.evaluate(() => {
+      window.__markerSent = [];
+      window.APP = Object.assign({}, window.APP, {
+        sendRealtime: message => { window.__markerSent.push(message); return true; }
+      });
+      window.AUTH = Object.assign({}, window.AUTH, { isBackendEnabled: () => true });
+      selectToken("ana");
+    });
+    await page.waitForSelector('.inspector-marker-btn[data-marker-key="veneno"]');
+    await page.click('.inspector-marker-btn[data-marker-key="veneno"]');
+    await page.click('.inspector-marker-btn[data-marker-key="queimando"]');
+    // O render do palco e agendado via rAF — espera o segundo chip pintar.
+    await page.waitForSelector('[data-token-id="ana"] .mesa-token-marker[data-marker="queimando"]');
+
+    const result = await page.evaluate(() => {
+      const token = state.tokens.find(t => t.id === "ana");
+      const chips = [...document.querySelectorAll('[data-token-id="ana"] .mesa-token-marker')]
+        .map(el => el.dataset.marker);
+      const upserts = window.__markerSent.filter(m => m.type === "mesa:token:upsert");
+      const signature = normalizeMesaScenePayload(createMesaScenePayloadFromState());
+      return {
+        markers: token.statusMarkers,
+        chips,
+        upsertMarkers: upserts.length ? upserts[upserts.length - 1].token.statusMarkers : null,
+        signatureMarkers: signature.tokens[0].statusMarkers,
+        activeButtons: document.querySelectorAll(".inspector-marker-btn.is-active").length
+      };
+    });
+
+    expect(result.markers).toEqual(["veneno", "queimando"]);
+    expect(result.chips).toEqual(["veneno", "queimando"]);       // chips no token
+    expect(result.upsertMarkers).toEqual(["veneno", "queimando"]); // broadcast
+    expect(result.signatureMarkers).toEqual(["veneno", "queimando"]); // assinatura (dedupe)
+    expect(result.activeButtons).toBe(2);
+  });
+
+  test("cap de 8 no cliente: o nono marcador nao entra", async ({ page }) => {
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    const result = await page.evaluate(() => {
+      const token = state.tokens.find(t => t.id === "ana");
+      const all = MESA_STATUS_MARKERS.map(m => m.key);
+      const applied = all.map(key => toggleMesaTokenStatusMarker(token, key));
+      return { markers: token.statusMarkers, applied, invalid: toggleMesaTokenStatusMarker(token, "hackeado") };
+    });
+
+    expect(result.markers.length).toBe(8);
+    expect(result.applied.slice(0, 8).every(Boolean)).toBe(true);
+    expect(result.applied.slice(8).some(Boolean)).toBe(false); // 9-12 recusados
+    expect(result.invalid).toBe(false);                        // fora da whitelist
+  });
+
+  test("jogador: upsert remoto com marcadores renderiza os chips", async ({ page }) => {
+    await seedPlayerWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof state !== "undefined" && state.session != null);
+
+    const result = await page.evaluate(async () => {
+      const token = state.tokens.find(t => t.id === "ana");
+      await applyMesaRealtimeDelta({
+        type: "mesa:token:upsert",
+        clientId: "cliente-do-mestre",
+        sceneVersion: 99,
+        actor: { username: "mestre", role: "master" },
+        token: { ...token, statusMarkers: ["morto", "amaldicoado", "invalido"] }
+      });
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      return {
+        markers: state.tokens.find(t => t.id === "ana").statusMarkers,
+        chips: [...document.querySelectorAll('[data-token-id="ana"] .mesa-token-marker')].map(el => el.dataset.marker)
+      };
+    });
+
+    expect(result.markers).toEqual(["morto", "amaldicoado"]); // whitelist aplicada
+    expect(result.chips).toEqual(["morto", "amaldicoado"]);
+  });
+});

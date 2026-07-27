@@ -67,6 +67,27 @@ function normalizeVital(value) {
   return Math.max(0, Math.min(999999, Math.round(numeric)));
 }
 
+// Marcadores de status (Etapa 46): whitelist espelhada de js/mesa-stage.js
+// (MESA_STATUS_MARKERS) — mudou la, mude aqui. Max 8 por token.
+const SCENE_STATUS_MARKERS = new Set([
+  "veneno", "sangramento", "queimando", "congelado", "atordoado", "derrubado",
+  "amaldicoado", "abencoado", "medo", "invisivel", "inconsciente", "morto"
+]);
+const MAX_STATUS_MARKERS = 8;
+
+function normalizeSceneStatusMarkers(list) {
+  if (!Array.isArray(list)) return [];
+  const seen = new Set();
+  const result = [];
+  list.forEach(rawKey => {
+    const key = String(rawKey || "").trim().toLowerCase();
+    if (!SCENE_STATUS_MARKERS.has(key) || seen.has(key)) return;
+    seen.add(key);
+    result.push(key);
+  });
+  return result.slice(0, MAX_STATUS_MARKERS);
+}
+
 function normalizeSceneToken(token) {
   const characterKey = normalizeText(token?.characterKey || token?.id).toLowerCase();
   if (!characterKey) return null;
@@ -81,6 +102,7 @@ function normalizeSceneToken(token) {
     layer: token?.layer === "dm" ? "dm" : "tokens",
     order: normalizeOrder(token?.order),
     tokenScale: Math.round(clamp(token?.tokenScale, 0.25, 4) * 100) / 100 || 1,
+    statusMarkers: normalizeSceneStatusMarkers(token?.statusMarkers),
     // Dados de exibição embutidos: permitem que jogadores (que não recebem
     // NPCs/monstros no /api/directory) renderizem qualquer token da cena.
     type: normalizeTokenType(token?.type),
