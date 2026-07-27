@@ -40,6 +40,7 @@ JS:
 - `js/mesa-map.js`
 - `js/mesa-grid.js`
 - `js/mesa-ping.js`
+- `js/mesa-ruler.js`
 - `js/mesa-drawing.js`
 - `js/mesa-select.js`
 - `js/mesa-initiative.js`

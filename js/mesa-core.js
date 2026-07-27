@@ -79,7 +79,8 @@ const MESA_REALTIME_DELTA_TYPES = new Set([
   "mesa:initiative:update",
   "mesa:initiative:roll",
   "mesa:grid:update",
-  "mesa:ping"
+  "mesa:ping",
+  "mesa:ruler"
 ]);
 const MESA_SHEET_PATCH_TYPE = "mesa:sheet:patch";
 const MESA_ECHO_VITALS_TYPE = "mesa:echo:vitals";
@@ -521,6 +522,14 @@ async function applyMesaRealtimeDelta(payload) {
     // Canal efêmero (Etapa 43): pulso de ~2s no palco, nada persiste.
     if (typeof showMesaPingFromRemote === "function") {
       showMesaPingFromRemote(payload);
+    }
+    return;
+  }
+
+  if (type === "mesa:ruler") {
+    // Canal efêmero (Etapa 44): régua ao vivo de outro participante.
+    if (typeof applyMesaRulerFromRemote === "function") {
+      applyMesaRulerFromRemote(payload);
     }
     return;
   }

@@ -616,3 +616,60 @@ body.mesa-resize-active * {
   80%  { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* ── Régua de medição (Etapa 44) ─────────────────────────────
+ * Overlay efêmero criado por mesa-ruler.js em #mesaStageInner.
+ * Própria = dourada; dos outros = carmesim com nome do autor.
+ * Nunca captura o mouse; some ao soltar (ou por TTL nas remotas). */
+#mesaRulerOverlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 29; /* acima de mapa/grade/desenhos/tokens, abaixo do ping (30) */
+}
+.mesa-ruler,
+.mesa-ruler-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+.mesa-ruler-line {
+  stroke: rgba(214, 69, 80, 0.95);
+  stroke-width: 2.5;
+  stroke-dasharray: 8 6;
+  stroke-linecap: round;
+}
+.mesa-ruler-dot {
+  fill: rgba(214, 69, 80, 0.95);
+}
+.mesa-ruler.is-self .mesa-ruler-line { stroke: rgba(216, 180, 90, 0.95); }
+.mesa-ruler.is-self .mesa-ruler-dot  { fill: rgba(216, 180, 90, 0.95); }
+.mesa-ruler-label {
+  position: absolute;
+  transform: translate(-50%, -160%);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(10, 6, 8, 0.92);
+  border: 1px solid rgba(214, 69, 80, 0.55);
+  color: var(--text, #e8e3d8);
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.mesa-ruler.is-self .mesa-ruler-label {
+  border-color: rgba(216, 180, 90, 0.6);
+}
+.mesa-ruler-name {
+  position: absolute;
+  transform: translate(-50%, 12px);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text, #e8e3d8);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+  white-space: nowrap;
+  pointer-events: none;
+}

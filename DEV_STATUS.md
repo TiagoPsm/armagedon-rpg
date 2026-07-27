@@ -30,7 +30,20 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-27 — Etapa 43: Ping no mapa — canal efemero)
+## Ultima Etapa Concluida (2026-07-27 — Etapa 44: Regua de medicao)
+
+Shift+arrastar no palco mede distancia em celulas e metros; enquanto arrasta, todos os participantes veem a regua ao vivo. Mesmo modelo efemero do ping: `mesa:ruler` e apenas retransmitido pelo DO, nada entra na cena nem persiste.
+
+- **js/mesa-ruler.js** (NOVO): Shift+arrastar capturado em fase de captura no `#mesaStageWrap` (nao vira drag/pan/rubber-band); linha tracejada + pontas + chip com a medida, propria dourada e remota carmesim com nome do autor (paleta do ping). Medida por LAYOUT (px de `offsetWidth`, imune a zoom): `celulas = distPx / (cellFrac x largura da superficie x largura do palco)` — usa a celula da grade atual (default 0.05 sem grade configurada) e `1 celula = 1,5 m` (`MESA_RULER_METERS_PER_CELL`). Broadcast a 10Hz (`MESA_RULER_BROADCAST_MS = 100`); soltar/Escape envia `active: false` imediato. Coordenadas viajam como fracao do MAPA (`mesaStageFracToMapFrac`, o helper unico da Etapa 42) — cada cliente reconverte para o proprio palco; sem mapa, `space: "stage"`. Regua remota expira por TTL de 4s se o emissor sumir sem `active:false` (sweep de 1s que se auto-desliga). Exports: `measureMesaRuler`, `applyMesaRulerFromRemote`.
+- **css/mesa-stage.css**: `#mesaRulerOverlay` (z-index 29, abaixo do ping 30), `.mesa-ruler` com linha SVG em coordenadas percentuais (escala com o zoom junto do palco), `.mesa-ruler-label` (chip da medida no ponto medio) e `.mesa-ruler-name`.
+- **cloudflare/src/mesa-realtime-rules.js**: `RULER_TYPE = "mesa:ruler"` em `RELAY_TYPES` (NAO master-only — jogador mede; anti-spam pelo rate limit geral). Zero codigo novo no DO.
+- **js/mesa-core.js**: `"mesa:ruler"` em `MESA_REALTIME_DELTA_TYPES` + branch efemero em `applyMesaRealtimeDelta`.
+- **Testes** (suite 54 -> 58, describe "Regua de medicao (Etapa 44)"): regra do DO; medida horizontal exata (0.4 de palco / celula 0.1 = 4 cel = 6 m) e diagonal em px de layout; Shift+arrastar real mostra a regua, transmite `mesa:ruler`, NAO inicia drag (`state.drag` continua null), some ao soltar com `active:false` e nada entra na cena; regua remota aparece com nome e some no `active:false`.
+- Cache-bust: mesa-core.js e mesa-ruler.js (novo) e mesa-stage.css -> `?v=2026-07-27-ruler-1`; `MESA_BUNDLE_VERSION` -> `2026-07-27-ruler-1`; mesa-ruler.js no bundle da Mesa (apos mesa-ping.js).
+- Deploy do Worker: version `d55ec756-79b8-413e-afa3-2d6c9d98ad08` (dry-run antes; health 200).
+- Validacao: test:mesa:audit 58/58, test:mesa 5/5, check:js OK, build:pages OK. Prova visual via Playwright: regua propria dourada "4,7 cel · 7,0 m" + remota carmesim "4,5 cel · 6,7 m" com nome "ana" sobre a grade.
+
+## Etapa Concluida (2026-07-27 — Etapa 43: Ping no mapa — canal efemero)
 
 Alt+clique no palco emite um ping visivel para todos os participantes por ~2s. Canal 100% efemero: nada entra na cena, nada persiste no D1 nem no storage do DO — o Durable Object apenas repassa.
 

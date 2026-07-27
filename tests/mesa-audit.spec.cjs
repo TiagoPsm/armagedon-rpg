@@ -1816,3 +1816,134 @@ test.describe("Ping no mapa (Etapa 43)", () => {
     expect(result.name).toBe("ana");
   });
 });
+
+test.describe("Regua de medicao (Etapa 44)", () => {
+  test("DO rules: mesa:ruler e retransmitido e NAO e master-only (jogador mede)", async () => {
+    const { RULER_TYPE, MASTER_ONLY_TYPES, RELAY_TYPES } =
+      await import("../cloudflare/src/mesa-realtime-rules.js");
+    expect(RULER_TYPE).toBe("mesa:ruler");
+    expect(RELAY_TYPES.has(RULER_TYPE)).toBe(true);
+    expect(MASTER_ONLY_TYPES.has(RULER_TYPE)).toBe(false);
+  });
+
+  test("medida em celulas/metros usa a celula da grade (1 celula = 1,5m)", async ({ page }) => {
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    const result = await page.evaluate(() => {
+      window.updateMesaGrid({ enabled: true, cellFrac: 0.1, offsetXFrac: 0, offsetYFrac: 0 });
+      // Sem mapa: superficie = palco. 0.4 da largura / celula de 0.1 = 4 celulas.
+      const horizontal = window.measureMesaRuler(0.2, 0.3, 0.6, 0.3);
+      // Diagonal em px de layout (celula quadrada em px)
+      const stage = document.getElementById("mesaStageInner");
+      const cellPx = 0.1 * stage.offsetWidth;
+      const dx = 0.3 * stage.offsetWidth;
+      const dy = 0.2 * stage.offsetHeight;
+      const expectedDiag = Math.hypot(dx, dy) / cellPx;
+      const diagonal = window.measureMesaRuler(0.1, 0.1, 0.4, 0.3);
+      return { horizontal, diagonal, expectedDiag };
+    });
+
+    expect(Math.abs(result.horizontal.cells - 4)).toBeLessThan(0.01);
+    expect(Math.abs(result.horizontal.meters - 6)).toBeLessThan(0.01);
+    expect(Math.abs(result.diagonal.cells - result.expectedDiag)).toBeLessThan(0.01);
+  });
+
+  test("Shift+arrastar mostra a regua, transmite mesa:ruler e encerra com active:false", async ({ page }) => {
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    await page.evaluate(() => {
+      window.__rulerSent = [];
+      window.APP = Object.assign({}, window.APP, {
+        sendRealtime: message => { window.__rulerSent.push(message); return true; }
+      });
+      window.AUTH = Object.assign({}, window.AUTH, { isBackendEnabled: () => true });
+    });
+
+    const wrap = page.locator("#mesaStageWrap");
+    const box = await wrap.boundingBox();
+    await page.keyboard.down("Shift");
+    await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * 0.5);
+    await page.mouse.down();
+    for (let step = 1; step <= 5; step++) {
+      await page.mouse.move(
+        box.x + box.width * (0.25 + step * 0.06),
+        box.y + box.height * 0.5
+      );
+      await page.waitForTimeout(60);
+    }
+
+    const during = await page.evaluate(() => ({
+      rulers: document.querySelectorAll("#mesaRulerOverlay .mesa-ruler.is-self").length,
+      label: document.querySelector(".mesa-ruler-label")?.textContent || "",
+      sentActive: (window.__rulerSent || []).filter(m => m.type === "mesa:ruler" && m.active).length,
+      dragStarted: Boolean(state.drag)
+    }));
+
+    await page.mouse.up();
+    await page.keyboard.up("Shift");
+
+    const after = await page.evaluate(() => ({
+      rulers: document.querySelectorAll("#mesaRulerOverlay .mesa-ruler").length,
+      sentEnd: (window.__rulerSent || []).filter(m => m.type === "mesa:ruler" && m.active === false).length,
+      sceneHasRuler: JSON.stringify(createMesaScenePayloadFromState()).includes("ruler")
+    }));
+
+    expect(during.rulers).toBe(1);                    // regua propria visivel
+    expect(during.label).toMatch(/cél · .+ m/);       // rotulo "N,N cél · N,N m"
+    expect(during.sentActive).toBeGreaterThan(0);     // transmitiu durante o arrasto
+    expect(during.dragStarted).toBe(false);           // nao virou drag/pan/rubber-band
+    expect(after.rulers).toBe(0);                     // sumiu ao soltar
+    expect(after.sentEnd).toBeGreaterThan(0);         // avisou o fim (active:false)
+    expect(after.sceneHasRuler).toBe(false);          // nada persiste na cena
+  });
+
+  test("jogador: regua remota aparece com nome do autor e some no active:false", async ({ page }) => {
+    await seedPlayerWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof state !== "undefined" && state.session != null);
+
+    const shown = await page.evaluate(async () => {
+      await applyMesaRealtimeDelta({
+        type: "mesa:ruler",
+        clientId: "cliente-remoto",
+        active: true,
+        u1: 0.2, v1: 0.3, u2: 0.5, v2: 0.3,
+        space: "stage",
+        actor: { username: "mestre", role: "master" }
+      });
+      const ruler = document.querySelector("#mesaRulerOverlay .mesa-ruler");
+      return {
+        count: document.querySelectorAll("#mesaRulerOverlay .mesa-ruler").length,
+        isSelf: Boolean(ruler?.classList.contains("is-self")),
+        name: ruler?.querySelector(".mesa-ruler-name")?.textContent || "",
+        label: ruler?.querySelector(".mesa-ruler-label")?.textContent || ""
+      };
+    });
+
+    const removed = await page.evaluate(async () => {
+      await applyMesaRealtimeDelta({
+        type: "mesa:ruler",
+        clientId: "cliente-remoto",
+        active: false,
+        actor: { username: "mestre", role: "master" }
+      });
+      return document.querySelectorAll("#mesaRulerOverlay .mesa-ruler").length;
+    });
+
+    expect(shown.count).toBe(1);
+    expect(shown.isSelf).toBe(false);
+    expect(shown.name).toBe("mestre");
+    expect(shown.label).toMatch(/cél · .+ m/);
+    expect(removed).toBe(0);
+  });
+});

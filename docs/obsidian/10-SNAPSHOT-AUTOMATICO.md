@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-27 15:07:29 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-27 15:17:46 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `d58f484 2026-07-12 feat(mesa): token em NxN celulas ÔÇö tamanho quantizado + alinhamento na grade (Etapa 42c)`
+- Ultimo commit: `6eb1fd9 2026-07-27 feat(mesa): ping no mapa ÔÇö Alt+clique pulsa para todos, canal efemero (Etapa 43)`
 
 ### Alteracoes Locais
 
@@ -28,7 +28,7 @@ M  css/mesa-stage.css
 M  docs/obsidian/07-MESA.md
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  js/mesa-core.js
-A  js/mesa-ping.js
+A  js/mesa-ruler.js
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
 M  tools/build-pages.cjs
@@ -52,7 +52,7 @@ cloudflare/src/mesa-realtime-rules.js
 css/mesa-stage.css
 docs/obsidian/07-MESA.md
 js/mesa-core.js
-js/mesa-ping.js
+js/mesa-ruler.js
 mesa.html
 tests/mesa-audit.spec.cjs
 tools/build-pages.cjs
@@ -69,7 +69,7 @@ tools/build-pages.cjs
 
 ## Contagem Rapida
 
-- JavaScript em `js/`: 32 arquivo(s)
+- JavaScript em `js/`: 33 arquivo(s)
 - CSS em `css/`: 13 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 

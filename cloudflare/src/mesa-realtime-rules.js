@@ -19,6 +19,9 @@ const GRID_UPDATE_TYPE = "mesa:grid:update";
 // Ping no mapa (Etapa 43): canal efêmero — qualquer participante emite,
 // o DO só repassa (nada entra na cena nem no storage do DO).
 const PING_TYPE = "mesa:ping";
+// Régua de medição (Etapa 44): mesmo modelo efêmero do ping — qualquer
+// participante mede; broadcast a 10Hz enquanto arrasta, active:false encerra.
+const RULER_TYPE = "mesa:ruler";
 const SHEET_PATCH_TYPE = "mesa:sheet:patch";
 const ECHO_VITALS_TYPE = "mesa:echo:vitals";
 const SHEET_CHANGED_TYPE = "sheet:changed";
@@ -41,6 +44,7 @@ const RELAY_TYPES = new Set([
   INITIATIVE_ROLL_TYPE,
   DRAWINGS_UPDATE_TYPE,
   PING_TYPE,
+  RULER_TYPE,
   "mesa:batch"
 ]);
 
@@ -342,6 +346,7 @@ export {
   MOVE_LOCK_TYPE,
   PING_TYPE,
   RATE_LIMIT,
+  RULER_TYPE,
   RELAY_TYPES,
   SHEET_CHANGED_TYPE,
   SHEET_PATCH_TYPE,
