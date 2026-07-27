@@ -57,7 +57,7 @@ Scripts load via `<script src="...">` tags in order. **Script order in `ficha.ht
 |---|---|
 | `index.html` | `js/auth.js`, `js/api.js`, `js/ui.js` |
 | `ficha.html` | `js/ficha-core.js`, `js/ficha-sheet.js`, `js/ficha-master.js`, `js/ficha-inventory.js`, `js/ficha-memories.js`, `js/ficha-soul.js`, `js/ficha-dice.js`, `js/ficha-habs.js`, `js/ficha-passives.js`, `js/ficha-init.js` |
-| `mesa.html` | `js/mesa-core.js`, `js/mesa-stage.js`, `js/mesa-roster.js`, `js/mesa-inspector.js`, `js/mesa-storage.js`, `js/mesa-drawing.js`, `js/mesa-select.js`, `js/mesa-map.js`, `js/mesa-grid.js`, `js/mesa-initiative.js` |
+| `mesa.html` | `js/mesa-core.js`, `js/mesa-stage.js`, `js/mesa-roster.js`, `js/mesa-inspector.js`, `js/mesa-storage.js`, `js/mesa-drawing.js`, `js/mesa-select.js`, `js/mesa-map.js`, `js/mesa-grid.js`, `js/mesa-ping.js`, `js/mesa-initiative.js` |
 | `regras.html` | `js/regras.js` |
 | `sugestoes.html` | `js/sugestoes.js` |
 

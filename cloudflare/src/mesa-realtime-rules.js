@@ -16,6 +16,9 @@ const INITIATIVE_ROLL_TYPE = "mesa:initiative:roll";
 const DRAWINGS_UPDATE_TYPE = "mesa:drawings:update";
 // Grade (Etapa 42): estado completo da grade da cena, autoritativo do mestre.
 const GRID_UPDATE_TYPE = "mesa:grid:update";
+// Ping no mapa (Etapa 43): canal efêmero — qualquer participante emite,
+// o DO só repassa (nada entra na cena nem no storage do DO).
+const PING_TYPE = "mesa:ping";
 const SHEET_PATCH_TYPE = "mesa:sheet:patch";
 const ECHO_VITALS_TYPE = "mesa:echo:vitals";
 const SHEET_CHANGED_TYPE = "sheet:changed";
@@ -37,6 +40,7 @@ const RELAY_TYPES = new Set([
   ECHO_VITALS_TYPE,
   INITIATIVE_ROLL_TYPE,
   DRAWINGS_UPDATE_TYPE,
+  PING_TYPE,
   "mesa:batch"
 ]);
 
@@ -336,6 +340,7 @@ export {
   MAX_WS_MESSAGE_CHARS,
   MAX_WS_MESSAGE_CHARS_HARD,
   MOVE_LOCK_TYPE,
+  PING_TYPE,
   RATE_LIMIT,
   RELAY_TYPES,
   SHEET_CHANGED_TYPE,

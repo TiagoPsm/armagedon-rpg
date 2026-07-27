@@ -30,7 +30,20 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-12 — Etapa 42c: token em NxN celulas — tamanho quantizado + alinhamento)
+## Ultima Etapa Concluida (2026-07-27 — Etapa 43: Ping no mapa — canal efemero)
+
+Alt+clique no palco emite um ping visivel para todos os participantes por ~2s. Canal 100% efemero: nada entra na cena, nada persiste no D1 nem no storage do DO — o Durable Object apenas repassa.
+
+- **js/mesa-ping.js** (NOVO): Alt+clique capturado em fase de captura no `#mesaStageWrap` (intercepta ANTES de drag/pan/selecao, `preventDefault` + `stopPropagation`); fracao do clique calculada pelo rect do `#mesaStageInner` (ja embute o zoom). Coordenadas viajam como fracao do MAPA (`u`/`v` via helper unico `mesaStageFracToMapFrac` de mesa-map.js) com `space: "map"`; sem mapa ativo, `space: "stage"` e fracao do palco direto — ping cai no MESMO ponto do mapa para todos, independente do pan/zoom local. Throttle local de 300ms; cap de 12 pulsos simultaneos (o mais antigo sai). Pulso proprio e dourado (`.is-self`), dos outros e carmesim com o nome do autor embaixo (`.mesa-ping-name`, via `payload.actor.username` que o DO anexa).
+- **css/mesa-stage.css**: `.mesa-ping` — nucleo 14px + 2 ondas concentricas (`::before`/`::after` com delay), `z-index: 30` (acima de mapa/grade/desenhos/tokens), `pointer-events: none`; animacoes `mesa-ping-wave`/`mesa-ping-core` de 2s em sincronia com `MESA_PING_DURATION_MS`.
+- **cloudflare/src/mesa-realtime-rules.js**: `PING_TYPE = "mesa:ping"` em `RELAY_TYPES` (relay generico; NAO e master-only — jogador pinga). Zero codigo novo no DO.
+- **js/mesa-core.js**: `"mesa:ping"` em `MESA_REALTIME_DELTA_TYPES` + branch em `applyMesaRealtimeDelta` (chama `showMesaPingFromRemote` e retorna — sem render, sem cache, sem persist).
+- **Testes** (suite 51 -> 54, describe "Ping no mapa (Etapa 43)"): regra do DO (relay sim, master-only nao); Alt+clique emite `mesa:ping` com u/v corretos, mostra pulso `.is-self`, nao muda `sceneVersion` nem o payload da cena, e o pulso expira sozinho; jogador recebe ping remoto com nome do autor na posicao certa.
+- Cache-bust: mesa-core.js e mesa-ping.js (novo) e mesa-stage.css -> `?v=2026-07-27-ping-1`; `MESA_BUNDLE_VERSION` -> `2026-07-27-ping-1`; mesa-ping.js adicionado ao bundle da Mesa (apos mesa-grid.js).
+- Deploy do Worker: version `dfb08f41-619f-4664-a4fd-7e62ac60e091` (dry-run antes; health 200).
+- Validacao: test:mesa:audit 54/54, test:mesa 5/5, check:js OK, build:pages OK.
+
+## Etapa Concluida (2026-07-12 — Etapa 42c: token em NxN celulas — tamanho quantizado + alinhamento)
 
 Pedido do Tiago: com a grade ativa, tokens sempre em multiplos inteiros de celula (1x1, 2x2, 3x3...) — redimensionou, ajusta para completar o quadrado; nada de token vazando da grade ou com tamanho quebrado.
 

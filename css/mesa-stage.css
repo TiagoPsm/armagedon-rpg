@@ -558,3 +558,61 @@ body.mesa-resize-active * {
 .mesa-stage[data-token-style="card"] .mesa-token.is-minimal .token-bars {
   display: revert;
 }
+
+/* ── Ping no mapa (Etapa 43) ─────────────────────────────────
+ * Pulso efêmero (~2s) criado por mesa-ping.js em #mesaStageInner.
+ * Fica acima de mapa/grade/desenhos/tokens e nunca captura o mouse.
+ * Duração da animação em sincronia com MESA_PING_DURATION_MS. */
+.mesa-ping {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  background: var(--accent, #b03039);
+  box-shadow: 0 0 10px rgba(176, 48, 57, 0.9);
+  pointer-events: none;
+  z-index: 30;
+  animation: mesa-ping-core 2s ease-out forwards;
+}
+.mesa-ping::before,
+.mesa-ping::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(214, 69, 80, 0.9);
+  animation: mesa-ping-wave 1s ease-out 2;
+}
+.mesa-ping::after {
+  animation-delay: 0.25s;
+}
+.mesa-ping.is-self {
+  background: #d8b45a;
+  box-shadow: 0 0 10px rgba(216, 180, 90, 0.9);
+}
+.mesa-ping.is-self::before,
+.mesa-ping.is-self::after {
+  border-color: rgba(216, 180, 90, 0.9);
+}
+.mesa-ping-name {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text, #e8e3d8);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+  white-space: nowrap;
+  pointer-events: none;
+}
+@keyframes mesa-ping-wave {
+  0%   { transform: scale(1);   opacity: 0.95; }
+  100% { transform: scale(4.5); opacity: 0; }
+}
+@keyframes mesa-ping-core {
+  0%   { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}

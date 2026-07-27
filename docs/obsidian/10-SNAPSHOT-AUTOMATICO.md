@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-12 01:57:42 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-27 15:07:29 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,17 +13,22 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `c41d706 2026-07-11 fix(mesa): grupo Grade nao aparecia pro mestre — corrida de boot no initMesaGrid`
+- Ultimo commit: `d58f484 2026-07-12 feat(mesa): token em NxN celulas ÔÇö tamanho quantizado + alinhamento na grade (Etapa 42c)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
+M  CLAUDE.md
 M  DEV_STATUS.md
 M  SYSTEM_RULES.md
+M  cloudflare/README.md
+M  cloudflare/src/mesa-realtime-rules.js
+M  css/mesa-stage.css
+M  docs/obsidian/07-MESA.md
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-grid.js
-M  js/mesa-stage.js
+M  js/mesa-core.js
+A  js/mesa-ping.js
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
 M  tools/build-pages.cjs
@@ -39,10 +44,15 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ### Arquivos Em Stage
 
 ```text
+CLAUDE.md
 DEV_STATUS.md
 SYSTEM_RULES.md
-js/mesa-grid.js
-js/mesa-stage.js
+cloudflare/README.md
+cloudflare/src/mesa-realtime-rules.js
+css/mesa-stage.css
+docs/obsidian/07-MESA.md
+js/mesa-core.js
+js/mesa-ping.js
 mesa.html
 tests/mesa-audit.spec.cjs
 tools/build-pages.cjs
@@ -59,7 +69,7 @@ tools/build-pages.cjs
 
 ## Contagem Rapida
 
-- JavaScript em `js/`: 31 arquivo(s)
+- JavaScript em `js/`: 32 arquivo(s)
 - CSS em `css/`: 13 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 

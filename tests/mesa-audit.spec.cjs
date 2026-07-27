@@ -1722,3 +1722,97 @@ test.describe("Token em NxN celulas (Etapa 42c)", () => {
     }
   });
 });
+
+test.describe("Ping no mapa (Etapa 43)", () => {
+  test("DO rules: mesa:ping e retransmitido e NAO e master-only (jogador pinga)", async () => {
+    const { PING_TYPE, MASTER_ONLY_TYPES, RELAY_TYPES } =
+      await import("../cloudflare/src/mesa-realtime-rules.js");
+    expect(PING_TYPE).toBe("mesa:ping");
+    expect(RELAY_TYPES.has(PING_TYPE)).toBe(true);
+    expect(MASTER_ONLY_TYPES.has(PING_TYPE)).toBe(false);
+  });
+
+  test("Alt+clique emite mesa:ping, mostra pulso local e nada persiste", async ({ page }) => {
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    // Captura a emissao realtime sem backend real
+    const versionBefore = await page.evaluate(() => {
+      window.__pingsSent = [];
+      window.APP = Object.assign({}, window.APP, {
+        sendRealtime: message => { window.__pingsSent.push(message); return true; }
+      });
+      window.AUTH = Object.assign({}, window.AUTH, { isBackendEnabled: () => true });
+      return state.sceneVersion || 0;
+    });
+
+    // Alt+clique no centro do palco (handler em fase de captura no wrap)
+    await page.locator("#mesaStageWrap").click({ modifiers: ["Alt"] });
+
+    const result = await page.evaluate(() => {
+      const sent = (window.__pingsSent || []).filter(m => String(m?.type) === "mesa:ping");
+      const pulse = document.querySelector(".mesa-ping");
+      return {
+        sent,
+        pulseCount: document.querySelectorAll(".mesa-ping").length,
+        isSelf: Boolean(pulse?.classList.contains("is-self")),
+        versionAfter: state.sceneVersion || 0,
+        sceneHasPing: JSON.stringify(createMesaScenePayloadFromState()).includes("ping")
+      };
+    });
+
+    expect(result.sent.length).toBe(1);
+    // Sem mapa ativo o ping viaja em fracao do palco (clique no centro ~0.5)
+    expect(result.sent[0].space).toBe("stage");
+    expect(Math.abs(result.sent[0].u - 0.5)).toBeLessThan(0.1);
+    expect(Math.abs(result.sent[0].v - 0.5)).toBeLessThan(0.1);
+    expect(result.pulseCount).toBe(1);
+    expect(result.isSelf).toBe(true);
+    // Canal efemero: nada muda na cena nem na versao
+    expect(result.versionAfter).toBe(versionBefore);
+    expect(result.sceneHasPing).toBe(false);
+
+    // Pulso expira sozinho (~2s)
+    await page.waitForFunction(
+      () => document.querySelectorAll(".mesa-ping").length === 0,
+      null,
+      { timeout: 3500 }
+    );
+  });
+
+  test("jogador: recebe mesa:ping remoto com o nome do autor", async ({ page }) => {
+    await seedPlayerWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof state !== "undefined" && state.session != null);
+
+    const result = await page.evaluate(async () => {
+      await applyMesaRealtimeDelta({
+        type: "mesa:ping",
+        clientId: "cliente-remoto",
+        u: 0.4,
+        v: 0.6,
+        space: "stage",
+        actor: { username: "ana", role: "player" }
+      });
+      const pulse = document.querySelector(".mesa-ping");
+      return {
+        count: document.querySelectorAll(".mesa-ping").length,
+        left: pulse?.style.left || "",
+        top: pulse?.style.top || "",
+        isSelf: Boolean(pulse?.classList.contains("is-self")),
+        name: pulse?.querySelector(".mesa-ping-name")?.textContent || ""
+      };
+    });
+
+    expect(result.count).toBe(1);
+    expect(result.left).toBe("40%");
+    expect(result.top).toBe("60%");
+    expect(result.isSelf).toBe(false);
+    expect(result.name).toBe("ana");
+  });
+});
