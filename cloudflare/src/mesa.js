@@ -116,6 +116,36 @@ function normalizeSceneToken(token) {
   };
 }
 
+// Fog of War (Etapa 47): névoa amarrada ao mapa. Ops de pincel circular em
+// frações do mapa exibido ({ mode, u, v, r }), aplicadas na ordem; névoa
+// ativa sem ops = tudo coberto. Cap de 400 ops. Espelha js/mesa-fog.js.
+const MAX_FOG_OPS = 400;
+
+function normalizeSceneFog(fog) {
+  if (!fog || typeof fog !== "object") return null;
+  const round4 = value => Math.round(Number(value) * 10000) / 10000;
+  const clampNum = (value, min, max) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return null;
+    return Math.min(max, Math.max(min, n));
+  };
+  const ops = (Array.isArray(fog.ops) ? fog.ops : [])
+    .map(op => {
+      if (!op || typeof op !== "object") return null;
+      const mode = op.mode === "hide" ? "hide" : (op.mode === "reveal" ? "reveal" : null);
+      const u = clampNum(op.u, -1, 2);
+      const v = clampNum(op.v, -1, 2);
+      const r = clampNum(op.r, 0.005, 1);
+      if (!mode || u === null || v === null || r === null) return null;
+      return { mode, u: round4(u), v: round4(v), r: round4(r) };
+    })
+    .filter(Boolean)
+    .slice(0, MAX_FOG_OPS);
+  const enabled = fog.enabled === true;
+  if (!enabled && !ops.length) return null;
+  return { enabled, ops };
+}
+
 // Desenhos oficiais da cena: traços em frações 0–1 do palco, mesmos campos do
 // mesa-drawing.js. Caps evitam inflar o D1; a camada "dm" é filtrada no GET
 // para não-mestres (mesmo contrato dos tokens secretos).
@@ -233,6 +263,7 @@ function normalizeMesaScene(payload) {
     initiative,
     map: normalizeSceneMap(source?.map),
     grid: normalizeSceneGrid(source?.grid),
+    fog: normalizeSceneFog(source?.fog),
     drawings
   };
 }

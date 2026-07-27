@@ -30,7 +30,21 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-27 — Correcao: flake "bug 2" resolvido na raiz — boot flag)
+## Ultima Etapa Concluida (2026-07-27 — Etapa 47: Fog of War)
+
+Grupo "Nevoa" no painel do mapa (mestre): nevoa amarrada ao MAPA que cobre a cena para os jogadores (100% opaca — token sob a nevoa fica invisivel) enquanto o mestre enxerga atraves (40%). Pincel de revelar/cobrir com broadcast ao vivo; estado persiste na cena oficial.
+
+- **js/mesa-fog.js** (NOVO, modelado no mesa-grid.js): estado `{ enabled, ops[] }` — cada op e um pincel circular `{ mode: reveal|hide, u, v, r }` em fracoes do MAPA (helper unico de mesa-map.js), aplicado NA ORDEM no canvas `#mesaFogCanvas` (reveal = destination-out, hide = repinta). Nevoa ativa sem ops = tudo coberto. Cap 400 ops (toast manda usar "Cobrir tudo"). O canvas e desenhado 100% opaco e a diferenca de papel e a OPACIDADE CSS do elemento (jogador 1.0 / mestre 0.4) — evita acumulo de alpha nos hides. Pincel do mestre em fase de captura (como ping/regua, nao vira drag), ops espacadas a 40% do raio, broadcast 10Hz durante a pincelada e persist so no soltar. Esc desarma o pincel.
+- **mesa.html**: canvas `#mesaFogCanvas` (z-index 26 — acima dos tokens, abaixo de regua 29/ping 30) + grupo `#mesaFogGroup` no painel do mapa (Ativar, pinceis Revelar/Cobrir, tamanho do pincel 2-25% com +/-, "Cobrir tudo"). Visibilidade master-only via `_syncFogSettingsUI` a cada sync (licao da corrida de boot da grade).
+- **cloudflare/src/mesa.js**: `normalizeSceneFog` (mode whitelist, u/v clamp -1..2, r 0.005..1, 4 casas, cap 400; desligada sem ops = null) + campo `fog` em `normalizeMesaScene`.
+- **cloudflare/src/mesa-realtime-rules.js**: `FOG_UPDATE_TYPE = "mesa:fog:update"` em MASTER_ONLY_TYPES (DO bloqueia jogador, relay generico — zero codigo novo no DO).
+- **js/mesa-core.js**: tipo no delta router (aplica + cache local), `fog` no payload da cena, na ASSINATURA (persist so-de-nevoa nao cai no dedupe) e no apply de snapshot (`undefined` = cena antiga preserva). **js/mesa-map.js**: `renderMesaFog` chamado junto com `renderMesaGrid` no applyMapTransform e no map-clear.
+- **Testes** (suite 66 -> 70, describe "Fog of War (Etapa 47)"): Worker normaliza ops (whitelist/clamps/cap/null); regra master-only no DO; mestre liga nevoa + pincela com arrasto REAL (pixel revelado alpha 0, canto coberto 255, CSS 0.4, sem drag de token, cena+assinatura com fog, broadcast contado); jogador nao altera, aplica delta do mestre e ve CSS opacity 1.
+- Cache-bust: mesa-core.js, mesa-map.js, mesa-fog.js (novo) -> `?v=2026-07-27-fog-1`; mesa-map.css idem; `MESA_BUNDLE_VERSION` -> `2026-07-27-fog-1`; mesa-fog.js no bundle apos mesa-grid.js.
+- Deploy do Worker: version `d9a50dfb-56bc-40a2-83c1-53ca6b81df57` (dry-run antes; health 200).
+- Validacao: test:mesa:audit 70/70, test:mesa 5/5, check:js OK, build:pages OK. Prova visual via Playwright: mestre ve o monstro esmaecido sob a nevoa; jogador NAO ve o token coberto (so a area revelada).
+
+## Etapa Concluida (2026-07-27 — Correcao: flake "bug 2" resolvido na raiz — boot flag)
 
 A familia de flakes de timing (o "bug 2" que falhava sob carga e passava isolado, planejada para a Etapa 50) foi corrigida na raiz, antecipada a pedido do Tiago:
 

@@ -39,6 +39,7 @@ JS:
 - `js/mesa-storage.js`
 - `js/mesa-map.js`
 - `js/mesa-grid.js`
+- `js/mesa-fog.js`
 - `js/mesa-ping.js`
 - `js/mesa-ruler.js`
 - `js/mesa-dice.js`

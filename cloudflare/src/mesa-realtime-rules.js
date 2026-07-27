@@ -16,6 +16,8 @@ const INITIATIVE_ROLL_TYPE = "mesa:initiative:roll";
 const DRAWINGS_UPDATE_TYPE = "mesa:drawings:update";
 // Grade (Etapa 42): estado completo da grade da cena, autoritativo do mestre.
 const GRID_UPDATE_TYPE = "mesa:grid:update";
+// Fog of War (Etapa 47): estado completo da névoa, autoritativo do mestre.
+const FOG_UPDATE_TYPE = "mesa:fog:update";
 // Ping no mapa (Etapa 43): canal efêmero — qualquer participante emite,
 // o DO só repassa (nada entra na cena nem no storage do DO).
 const PING_TYPE = "mesa:ping";
@@ -41,7 +43,8 @@ const MASTER_ONLY_TYPES = new Set([
   "mesa:token:remove",
   "mesa:scene:clear",
   INITIATIVE_UPDATE_TYPE,
-  GRID_UPDATE_TYPE
+  GRID_UPDATE_TYPE,
+  FOG_UPDATE_TYPE
 ]);
 
 const RELAY_TYPES = new Set([
@@ -376,6 +379,7 @@ export {
   DICE_RESULT_TYPE,
   DRAWINGS_UPDATE_TYPE,
   ECHO_VITALS_TYPE,
+  FOG_UPDATE_TYPE,
   GRID_UPDATE_TYPE,
   INITIATIVE_ROLL_TYPE,
   INITIATIVE_UPDATE_TYPE,

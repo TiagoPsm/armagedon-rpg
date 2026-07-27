@@ -708,8 +708,9 @@ function renderMesaMapLayer(blobUrl, mapName) {
     if (emptyState && mesaStage && !mesaStage.children.length) {
       emptyState.hidden = false;
     }
-    // Mapa limpo: a grade volta a ancorar no palco inteiro (Etapa 42).
+    // Mapa limpo: a grade e a névoa voltam a ancorar no palco inteiro.
     if (typeof window.renderMesaGrid === "function") window.renderMesaGrid();
+    if (typeof window.renderMesaFog === "function") window.renderMesaFog();
   }
 
   if (label) {
@@ -760,8 +761,9 @@ function applyMapTransform() {
     } catch {}
   }
 
-  // A grade acompanha o mapa: qualquer pan/zoom/troca redesenha (Etapa 42).
+  // Grade e névoa acompanham o mapa: qualquer pan/zoom/troca redesenha.
   if (typeof window.renderMesaGrid === "function") window.renderMesaGrid();
+  if (typeof window.renderMesaFog === "function") window.renderMesaFog();
 }
 
 function adjustMapScale(delta) {

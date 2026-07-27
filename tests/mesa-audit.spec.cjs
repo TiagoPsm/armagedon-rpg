@@ -2230,3 +2230,137 @@ test.describe("Marcadores de status nos tokens (Etapa 46)", () => {
     expect(result.chips).toEqual(["morto", "amaldicoado"]);
   });
 });
+
+test.describe("Fog of War (Etapa 47)", () => {
+  test("Worker: normalizeMesaScene normaliza a nevoa (whitelist de ops, clamps, cap 400)", async () => {
+    const { normalizeMesaScene } = await import("../cloudflare/src/mesa.js");
+
+    const on = normalizeMesaScene({
+      tokens: [],
+      fog: {
+        enabled: true,
+        ops: [
+          { mode: "reveal", u: 0.5, v: 0.5, r: 0.1 },
+          { mode: "hide", u: 5, v: -9, r: 99 },          // clamps
+          { mode: "explodir", u: 0.1, v: 0.1, r: 0.1 },  // mode invalido -> fora
+          { mode: "reveal", u: "x", v: 0.1, r: 0.1 },    // coord invalida -> fora
+          "lixo"
+        ]
+      }
+    });
+    expect(on.fog.enabled).toBe(true);
+    expect(on.fog.ops.length).toBe(2);
+    expect(on.fog.ops[0]).toEqual({ mode: "reveal", u: 0.5, v: 0.5, r: 0.1 });
+    expect(on.fog.ops[1]).toEqual({ mode: "hide", u: 2, v: -1, r: 1 }); // clamp -1..2 / 0.005..1
+
+    const many = normalizeMesaScene({
+      tokens: [],
+      fog: { enabled: true, ops: Array.from({ length: 450 }, () => ({ mode: "reveal", u: 0.5, v: 0.5, r: 0.05 })) }
+    });
+    expect(many.fog.ops.length).toBe(400);               // cap
+
+    const off = normalizeMesaScene({ tokens: [], fog: { enabled: false, ops: [] } });
+    expect(off.fog).toBeNull();                          // desligada sem ops
+    const legacy = normalizeMesaScene({ tokens: [] });
+    expect(legacy.fog).toBeNull();                       // cena antiga
+  });
+
+  test("DO rules: mesa:fog:update e master-only e retransmitido", async () => {
+    const { FOG_UPDATE_TYPE, MASTER_ONLY_TYPES, RELAY_TYPES } =
+      await import("../cloudflare/src/mesa-realtime-rules.js");
+    expect(FOG_UPDATE_TYPE).toBe("mesa:fog:update");
+    expect(MASTER_ONLY_TYPES.has(FOG_UPDATE_TYPE)).toBe(true);
+    expect(RELAY_TYPES.has(FOG_UPDATE_TYPE)).toBe(true);
+  });
+
+  test("mestre: ativar cobre o palco (40% CSS), pincel revela e tudo entra na cena", async ({ page }) => {
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    // Liga a nevoa e pinta um reveal via pincel REAL (arrasto no palco)
+    await page.evaluate(() => {
+      window.__fogSent = [];
+      window.APP = Object.assign({}, window.APP, {
+        sendRealtime: message => { window.__fogSent.push(message); return true; }
+      });
+      window.AUTH = Object.assign({}, window.AUTH, { isBackendEnabled: () => true });
+      window.updateMesaFog({ enabled: true });
+      window.setMesaFogBrush("reveal");
+    });
+
+    const wrap = page.locator("#mesaStageWrap");
+    const box = await wrap.boundingBox();
+    await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.5);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5, { steps: 6 });
+    await page.mouse.up();
+
+    const result = await page.evaluate(() => {
+      const canvas = document.getElementById("mesaFogCanvas");
+      const ctx = canvas.getContext("2d");
+      // Ponto revelado (meio do arrasto) vs canto coberto
+      const midX = Math.floor(canvas.width * 0.4);
+      const midY = Math.floor(canvas.height * 0.5);
+      const revealed = ctx.getImageData(midX, midY, 1, 1).data[3];
+      const corner = ctx.getImageData(Math.floor(canvas.width * 0.05), Math.floor(canvas.height * 0.05), 1, 1).data[3];
+      const fogState = window.getMesaFogState();
+      const payload = createMesaScenePayloadFromState();
+      const signature = normalizeMesaScenePayload(payload);
+      return {
+        cssOpacity: canvas.style.opacity,
+        revealed,
+        corner,
+        opsCount: fogState.ops.length,
+        stateDrag: Boolean(state.drag),
+        payloadFog: payload.fog?.enabled,
+        signatureOps: signature.fog?.ops.length,
+        sentFog: (window.__fogSent || []).filter(m => m.type === "mesa:fog:update").length
+      };
+    });
+
+    expect(result.cssOpacity).toBe("0.4");            // mestre enxerga atraves
+    expect(result.corner).toBe(255);                  // canto segue coberto (opaco no canvas)
+    expect(result.revealed).toBe(0);                  // area pincelada 100% revelada
+    expect(result.opsCount).toBeGreaterThan(0);
+    expect(result.stateDrag).toBe(false);             // pincel nao vira drag de token
+    expect(result.payloadFog).toBe(true);             // nevoa na cena oficial
+    expect(result.signatureOps).toBe(result.opsCount); // e na assinatura (dedupe)
+    expect(result.sentFog).toBeGreaterThan(0);        // transmitiu ao vivo
+  });
+
+  test("jogador: nao altera a nevoa, recebe o estado do mestre e ve 100% opaco", async ({ page }) => {
+    await seedPlayerWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(async () => {
+      // Tentativa direta do jogador: no-op (updateMesaFog e master-only)
+      window.updateMesaFog({ enabled: true });
+      const blocked = window.getMesaFogState();
+
+      // Delta autoritativo vindo do mestre via DO
+      await applyMesaRealtimeDelta({
+        type: "mesa:fog:update",
+        clientId: "cliente-do-mestre",
+        fog: { enabled: true, ops: [{ mode: "reveal", u: 0.5, v: 0.5, r: 0.2 }] }
+      });
+      const applied = window.getMesaFogState();
+
+      const canvas = document.getElementById("mesaFogCanvas");
+      const ctx = canvas.getContext("2d");
+      const center = ctx.getImageData(Math.floor(canvas.width / 2), Math.floor(canvas.height / 2), 1, 1).data[3];
+      const corner = ctx.getImageData(Math.floor(canvas.width * 0.03), Math.floor(canvas.height * 0.03), 1, 1).data[3];
+      return { blocked, applied, cssOpacity: canvas.style.opacity, center, corner };
+    });
+
+    expect(result.blocked.enabled).toBe(false);
+    expect(result.applied.enabled).toBe(true);
+    expect(result.applied.ops.length).toBe(1);
+    expect(result.cssOpacity).toBe("1");   // jogador nao enxerga sob a nevoa
+    expect(result.center).toBe(0);         // area revelada pelo mestre
+    expect(result.corner).toBe(255);       // resto coberto
+  });
+});

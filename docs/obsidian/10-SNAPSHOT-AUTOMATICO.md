@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-27 15:55:21 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-27 16:05:54 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,15 +13,23 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `baaacbd 2026-07-27 feat(mesa): marcadores de status nos tokens ÔÇö whitelist de 12, max 8, chips visiveis a todos (Etapa 46)`
+- Ultimo commit: `cc840a5 2026-07-27 fix(mesa): flake 'bug 2' resolvido na raiz ÔÇö boot flag substitui sono fixo nos testes`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
+M  CLAUDE.md
 M  DEV_STATUS.md
- M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  SYSTEM_RULES.md
+M  cloudflare/README.md
+M  cloudflare/src/mesa-realtime-rules.js
+M  cloudflare/src/mesa.js
+M  css/mesa-map.css
+M  docs/obsidian/07-MESA.md
 M  js/mesa-core.js
+A  js/mesa-fog.js
+M  js/mesa-map.js
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
 M  tools/build-pages.cjs
@@ -31,14 +39,22 @@ M  tools/build-pages.cjs
 
 ```text
 .claude/settings.local.json
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ```
 
 ### Arquivos Em Stage
 
 ```text
+CLAUDE.md
 DEV_STATUS.md
+SYSTEM_RULES.md
+cloudflare/README.md
+cloudflare/src/mesa-realtime-rules.js
+cloudflare/src/mesa.js
+css/mesa-map.css
+docs/obsidian/07-MESA.md
 js/mesa-core.js
+js/mesa-fog.js
+js/mesa-map.js
 mesa.html
 tests/mesa-audit.spec.cjs
 tools/build-pages.cjs
@@ -55,7 +71,7 @@ tools/build-pages.cjs
 
 ## Contagem Rapida
 
-- JavaScript em `js/`: 34 arquivo(s)
+- JavaScript em `js/`: 35 arquivo(s)
 - CSS em `css/`: 13 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
@@ -139,7 +155,7 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js
     0,61 MB  node_modules\playwright-core\lib\vite\traceViewer\assets\defaultSettingsView-GTWI-W_B.js
     0,45 MB  node_modules\playwright-core\lib\utilsBundleImpl\index.js
-    0,41 MB  node_modules\@img\sharp-win32-x64\lib\sharp-win32-x64.node
+    0,43 MB  _site\js\mesa-page.bundle.js
 ```
 
 ## Comando De Atualizacao

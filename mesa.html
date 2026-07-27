@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="css/mesa-stage.css?v=2026-07-27-status-1" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-06-16-fullbleed-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-06-16-master-vital-card-1" />
-  <link rel="stylesheet" href="css/mesa-map.css?v=2026-07-11-grid-1" />
+  <link rel="stylesheet" href="css/mesa-map.css?v=2026-07-27-fog-1" />
   <link rel="stylesheet" href="css/mesa-drawing.css?v=2026-06-12-cache-fix-1" />
   <style>
     /* ── TOKEN SCALE ── */
@@ -291,6 +291,10 @@
             <div class="sel-handle" data-handle="se"></div>
           </div>
 
+          <!-- Fog of War (Etapa 47) — acima dos tokens; opaco p/ jogador,
+               40% p/ mestre (opacidade CSS controlada por mesa-fog.js) -->
+          <canvas id="mesaFogCanvas" aria-hidden="true"></canvas>
+
           <div id="mesaEmptyState" class="mesa-empty-state" hidden>
             <strong>Nenhum token em cena.</strong>
             <p>Use a escalacao abaixo para colocar personagens, NPCs e monstros no palco.</p>
@@ -486,6 +490,26 @@
           </div>
         </div>
 
+        <!-- Fog of War (Etapa 47) — controles do mestre -->
+        <div class="mesa-map-transform-group" id="mesaFogGroup" hidden>
+          <span class="mesa-map-transform-label">N&eacute;voa</span>
+          <label class="mesa-grid-check">
+            <input type="checkbox" id="mesaFogToggle"> Ativar n&eacute;voa
+          </label>
+          <div class="mesa-map-transform-row">
+            <button type="button" class="mesa-transform-btn mesa-fog-brush-btn" id="mesaFogRevealBtn" title="Pincel: revelar &aacute;rea (arraste no palco)">Revelar</button>
+            <button type="button" class="mesa-transform-btn mesa-fog-brush-btn" id="mesaFogHideBtn" title="Pincel: cobrir &aacute;rea (arraste no palco)">Cobrir</button>
+          </div>
+          <div class="mesa-map-transform-row">
+            <button type="button" class="mesa-transform-btn" onclick="adjustMesaFogBrush(-1)" title="Pincel menor">&#8722;</button>
+            <span id="mesaFogBrushLabel" class="mesa-map-scale-val" title="Tamanho do pincel (% da largura do mapa)">7</span>
+            <button type="button" class="mesa-transform-btn" onclick="adjustMesaFogBrush(1)" title="Pincel maior">+</button>
+          </div>
+          <div class="mesa-map-transform-row">
+            <button type="button" class="mesa-transform-btn mesa-fog-reset-btn" id="mesaFogResetBtn" title="Cobrir o mapa inteiro de novo (zera as pinceladas)">Cobrir tudo</button>
+          </div>
+        </div>
+
       </div>
 
       <!-- Overlay: baixo direito — ações -->
@@ -644,9 +668,10 @@
   <script src="js/mesa-roster.js?v=2026-06-16-no-dup-inspector-1" defer></script>
   <script src="js/mesa-inspector.js?v=2026-07-27-status-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
-  <script src="js/mesa-core.js?v=2026-07-27-boot-flag-1" defer></script>
-  <script src="js/mesa-map.js?v=2026-07-11-grid-1" defer></script>
+  <script src="js/mesa-core.js?v=2026-07-27-fog-1" defer></script>
+  <script src="js/mesa-map.js?v=2026-07-27-fog-1" defer></script>
   <script src="js/mesa-grid.js?v=2026-07-12-token-cells-1" defer></script>
+  <script src="js/mesa-fog.js?v=2026-07-27-fog-1" defer></script>
   <script src="js/mesa-ping.js?v=2026-07-27-ping-1" defer></script>
   <script src="js/mesa-ruler.js?v=2026-07-27-ruler-1" defer></script>
   <script src="js/mesa-dice.js?v=2026-07-27-dice-1" defer></script>

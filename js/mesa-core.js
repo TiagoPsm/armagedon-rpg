@@ -83,6 +83,7 @@ const MESA_REALTIME_DELTA_TYPES = new Set([
   "mesa:initiative:update",
   "mesa:initiative:roll",
   "mesa:grid:update",
+  "mesa:fog:update",
   "mesa:ping",
   "mesa:ruler",
   "mesa:dice:result"
@@ -529,6 +530,17 @@ async function applyMesaRealtimeDelta(payload) {
       }
     }
     return; // não precisa scheduleMesaRender
+  }
+
+  if (type === "mesa:fog:update") {
+    // Estado completo da névoa (mestre → todos; o DO bloqueia jogador).
+    // Snapshot local ganha a névoa nova (F5 preserva); quem persiste a cena
+    // oficial é o próprio mestre emissor.
+    if (typeof setMesaFogFromRemote === "function") {
+      setMesaFogFromRemote(payload?.fog || null);
+      cacheMesaSceneSnapshotLocally();
+    }
+    return;
   }
 
   if (type === "mesa:ping") {
@@ -1704,6 +1716,14 @@ function applyMesaSceneSnapshot(saved) {
     );
   }
 
+  // Névoa oficial (Etapa 47): mesmo contrato da grade — `undefined` (cena
+  // antiga sem o campo) preserva o estado atual; null = névoa desligada.
+  if (typeof window.applyMesaSceneFogFromSnapshot === "function") {
+    window.applyMesaSceneFogFromSnapshot(
+      saved && Object.prototype.hasOwnProperty.call(saved, "fog") ? saved.fog : undefined
+    );
+  }
+
   return { seeded, savedTokenCount: savedTokens.length };
 }
 
@@ -2106,6 +2126,8 @@ function createMesaScenePayloadFromState() {
     map: typeof window.getMesaSceneMapPayload === "function" ? window.getMesaSceneMapPayload() : null,
     // Grade oficial (Etapa 42) — mantida pelo mesa-grid.js; null = desligada.
     grid: typeof window.getMesaGridScenePayload === "function" ? window.getMesaGridScenePayload() : null,
+    // Névoa oficial (Etapa 47) — mantida pelo mesa-fog.js; null = desligada.
+    fog: typeof window.getMesaFogScenePayload === "function" ? window.getMesaFogScenePayload() : null,
     // Desenhos oficiais da cena (inclui camada "dm" do mestre — o PUT é
     // master-only e o Worker filtra "dm" no GET para jogadores). Jogador que
     // entra depois recebe os traços no boot sem depender do mestre online.
@@ -2238,6 +2260,14 @@ function normalizeMesaScenePayload(payload = {}) {
       ? (() => {
           const grid = window.normalizeMesaGridState(payload.grid);
           return grid.enabled || grid.snap ? grid : null;
+        })()
+      : null,
+    // Névoa na assinatura pelo mesmo motivo (persist só-de-névoa não pode
+    // cair no dedupe). Normalização espelha o Worker.
+    fog: typeof window.normalizeMesaFogState === "function" && payload?.fog
+      ? (() => {
+          const fog = window.normalizeMesaFogState(payload.fog);
+          return fog.enabled || fog.ops.length ? fog : null;
         })()
       : null
   };
