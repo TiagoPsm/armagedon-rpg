@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-27 15:49:38 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-27 15:55:21 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,21 +13,15 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `3770d7a 2026-07-27 feat(mesa): dados na Mesa ÔÇö o DO rola com crypto, historico de 20 compartilhado (Etapa 45)`
+- Ultimo commit: `baaacbd 2026-07-27 feat(mesa): marcadores de status nos tokens ÔÇö whitelist de 12, max 8, chips visiveis a todos (Etapa 46)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
 M  DEV_STATUS.md
-M  SYSTEM_RULES.md
-M  cloudflare/README.md
-M  cloudflare/src/mesa.js
-M  css/mesa-stage.css
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  js/mesa-core.js
-M  js/mesa-inspector.js
-M  js/mesa-stage.js
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
 M  tools/build-pages.cjs
@@ -44,13 +38,7 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 
 ```text
 DEV_STATUS.md
-SYSTEM_RULES.md
-cloudflare/README.md
-cloudflare/src/mesa.js
-css/mesa-stage.css
 js/mesa-core.js
-js/mesa-inspector.js
-js/mesa-stage.js
 mesa.html
 tests/mesa-audit.spec.cjs
 tools/build-pages.cjs

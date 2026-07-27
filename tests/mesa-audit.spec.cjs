@@ -45,7 +45,11 @@ function installAppEmitHook(page) {
 // instalar spies — sem isso, chamadas atrasadas do boot contaminam a contagem.
 async function waitForMesaSettled(page) {
   await page.waitForSelector("#mesaStageWrap");
-  await page.waitForTimeout(450);
+  // Espera o boot assincrono TERMINAR de verdade (state.bootCompleted, setado
+  // no .finally de bootMesaPage) em vez de dormir 450ms — o sono fixo era a
+  // raiz da familia de flakes "bug 2": sob carga o boot passa de 450ms e o
+  // teste rodava com state/role/APP pela metade.
+  await page.waitForFunction(() => typeof state !== "undefined" && state.bootCompleted === true);
 }
 
 function seedMasterWithScene(page, tokens) {

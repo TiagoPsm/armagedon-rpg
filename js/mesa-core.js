@@ -67,7 +67,11 @@ const state = {
   onlineUsers: [],
   // Trava global controlada pelo mestre: quando true, jogadores nao movem
   // nem o proprio token. Estado vem do Durable Object (mesa:ready / mesa:move:lock).
-  playersMoveLocked: false
+  playersMoveLocked: false,
+  // true quando initMesaPage terminou (sucesso, sem sessao ou erro). Os testes
+  // esperam por este flag em vez de dormir um tempo fixo — o sono de 450ms era
+  // a raiz da familia de flakes "bug 2" (boot passa disso sob carga).
+  bootCompleted: false
 };
 const MESA_CLIENT_ID_KEY = "tc_mesa_client_id";
 const MESA_REALTIME_DELTA_TYPES = new Set([
@@ -124,9 +128,13 @@ if (document.readyState === "loading") {
 function bootMesaPage() {
   if (mesaInitStarted) return;
   mesaInitStarted = true;
-  initMesaPage().catch(error => {
-    console.error("Falha ao iniciar a mesa virtual.", error);
-  });
+  initMesaPage()
+    .catch(error => {
+      console.error("Falha ao iniciar a mesa virtual.", error);
+    })
+    .finally(() => {
+      state.bootCompleted = true;
+    });
 }
 
 function preFillMesaPage() {

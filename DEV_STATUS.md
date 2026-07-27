@@ -30,7 +30,17 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-27 — Etapa 46: Marcadores de status nos tokens)
+## Ultima Etapa Concluida (2026-07-27 — Correcao: flake "bug 2" resolvido na raiz — boot flag)
+
+A familia de flakes de timing (o "bug 2" que falhava sob carga e passava isolado, planejada para a Etapa 50) foi corrigida na raiz, antecipada a pedido do Tiago:
+
+- **Causa raiz**: `waitForMesaSettled` dos testes dormia 450ms fixos apos o `#mesaStageWrap` aparecer, mas o boot assincrono (`initMesaPage`: AUTH + 3 fetches paralelos + hydrate + modulos) passa de 450ms sob carga — o teste rodava com `state`/`role`/`APP` pela metade.
+- **js/mesa-core.js**: novo flag `state.bootCompleted`, setado no `.finally()` de `bootMesaPage` (cobre sucesso, sem sessao e erro).
+- **tests/mesa-audit.spec.cjs**: `waitForMesaSettled` agora espera `state.bootCompleted === true` (deterministico) em vez do sono fixo.
+- Resultado: 66/66 em duas rodadas consecutivas e a suite caiu de ~39s para ~24s (as esperas agora terminam quando o boot termina, nao no pior caso).
+- Cache-bust: mesa-core.js -> `?v=2026-07-27-boot-flag-1`; `MESA_BUNDLE_VERSION` idem. Sem mudanca de Worker.
+
+## Etapa Concluida (2026-07-27 — Etapa 46: Marcadores de status nos tokens)
 
 Grade "Marcadores" no inspetor do mestre: 12 condicoes (whitelist) que viram chips com icone no topo do circulo do token, visiveis para todos e persistentes na cena. Max 8 por token; viajam no proprio token via `mesa:token:upsert` (canal existente — zero mudanca no DO).
 
