@@ -16,6 +16,11 @@ C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 
 A pasta antiga `rpg-campaign` nao deve ser usada para editar layout, CSS, HTML ou assets publicados.
 
+## Palco da Mesa (2026-07-27)
+
+- O fundo do palco da Mesa e MAIS ESCURO que o resto da UI de proposito: base `rgba(2,3,5,.98)` com gradientes vermelhos/violeta bem sutis e glow central a 55% — o mapa (imagem clara) e o unico ponto de luz, e a Fog of War se funde com o fundo.
+- A nevoa (Fog of War) desenha com sangria de 3px alem da borda do mapa: nenhuma fileira de pixels do mapa ou linha da grade pode aparecer como "borda" na tela do jogador.
+
 ## Direcao de Arte
 
 - Estilo principal: dark fantasy

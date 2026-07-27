@@ -197,11 +197,15 @@ function renderMesaFog() {
   const surfW = surface.width * stageW;
   const surfH = surface.height * stageH;
 
-  // Névoa cobre a interseção superfície ∩ canvas (não pinta fora do mapa).
-  const clipLeft = Math.max(0, surfLeft);
-  const clipTop = Math.max(0, surfTop);
-  const clipRight = Math.min(cw, surfLeft + surfW);
-  const clipBottom = Math.min(ch, surfTop + surfH);
+  // Névoa cobre a interseção superfície ∩ canvas, com SANGRIA de alguns px
+  // além da borda do mapa: sem ela, o arredondamento sub-pixel do recorte
+  // deixava a última fileira de pixels do mapa (e as linhas da grade no
+  // limite) aparecendo como uma borda clara na tela do jogador.
+  const bleed = 3 * dpr;
+  const clipLeft = Math.max(0, surfLeft - bleed);
+  const clipTop = Math.max(0, surfTop - bleed);
+  const clipRight = Math.min(cw, surfLeft + surfW + bleed);
+  const clipBottom = Math.min(ch, surfTop + surfH + bleed);
   if (clipRight <= clipLeft || clipBottom <= clipTop) return;
 
   _fogCtx.save();

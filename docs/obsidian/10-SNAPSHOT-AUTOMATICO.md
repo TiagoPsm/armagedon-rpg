@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-27 16:05:54 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-27 16:13:26 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,25 +13,18 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `cc840a5 2026-07-27 fix(mesa): flake 'bug 2' resolvido na raiz ÔÇö boot flag substitui sono fixo nos testes`
+- Ultimo commit: `6f7d717 2026-07-27 feat(mesa): Fog of War ÔÇö nevoa no mapa, opaca p/ jogador e 40% p/ mestre, pincel ao vivo (Etapa 47)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-M  CLAUDE.md
 M  DEV_STATUS.md
-M  SYSTEM_RULES.md
-M  cloudflare/README.md
-M  cloudflare/src/mesa-realtime-rules.js
-M  cloudflare/src/mesa.js
-M  css/mesa-map.css
-M  docs/obsidian/07-MESA.md
-M  js/mesa-core.js
-A  js/mesa-fog.js
-M  js/mesa-map.js
+M  VISUAL_RULES.md
+M  css/mesa-stage.css
+ M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  js/mesa-fog.js
 M  mesa.html
-M  tests/mesa-audit.spec.cjs
 M  tools/build-pages.cjs
 ```
 
@@ -39,24 +32,17 @@ M  tools/build-pages.cjs
 
 ```text
 .claude/settings.local.json
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ```
 
 ### Arquivos Em Stage
 
 ```text
-CLAUDE.md
 DEV_STATUS.md
-SYSTEM_RULES.md
-cloudflare/README.md
-cloudflare/src/mesa-realtime-rules.js
-cloudflare/src/mesa.js
-css/mesa-map.css
-docs/obsidian/07-MESA.md
-js/mesa-core.js
+VISUAL_RULES.md
+css/mesa-stage.css
 js/mesa-fog.js
-js/mesa-map.js
 mesa.html
-tests/mesa-audit.spec.cjs
 tools/build-pages.cjs
 ```
 

@@ -30,7 +30,16 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-27 — Etapa 47: Fog of War)
+## Ultima Etapa Concluida (2026-07-27 — Ajuste pos-47: borda do mapa sob a nevoa + fundo do palco)
+
+Feedback do Tiago com print da tela do jogador: (1) a borda do mapa aparecia como linhas claras nos limites da area coberta pela nevoa; (2) o fundo do palco estava claro demais, pouco contraste com o mapa.
+
+- **js/mesa-fog.js**: sangria de 3px (x DPR) alem da superficie do mapa no render da nevoa — o arredondamento sub-pixel do recorte deixava a ultima fileira de pixels do mapa (e as linhas da grade no limite) escapando na tela do jogador. Verificado por medida: alpha 255 exatamente na borda superior do mapa.
+- **css/mesa-stage.css**: fundo do palco escurecido (base `rgba(2,3,5,.98)`, gradientes tintados reduzidos ~50%) e glow central de 0.9 -> 0.55 — o mapa vira o unico ponto de luz do palco. Regra registrada em VISUAL_RULES.md.
+- Cache-bust: mesa-fog.js e mesa-stage.css -> `?v=2026-07-27-fog-2`; `MESA_BUNDLE_VERSION` idem. Sem mudanca de Worker.
+- Validacao: test:mesa:audit 70/70, check:js OK, build:pages OK. Prova visual (Playwright, papel jogador, mapa + nevoa): sem linhas na borda, fundo escuro.
+
+## Etapa Concluida (2026-07-27 — Etapa 47: Fog of War)
 
 Grupo "Nevoa" no painel do mapa (mestre): nevoa amarrada ao MAPA que cobre a cena para os jogadores (100% opaca — token sob a nevoa fica invisivel) enquanto o mestre enxerga atraves (40%). Pincel de revelar/cobrir com broadcast ao vivo; estado persiste na cena oficial.
 
