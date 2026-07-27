@@ -673,3 +673,143 @@ body.mesa-resize-active * {
   white-space: nowrap;
   pointer-events: none;
 }
+
+/* ── Dados da Mesa (Etapa 45) ────────────────────────────────
+ * Painel flutuante no canto inferior esquerdo do palco. O botão
+ * DADOS (rail esquerdo) alterna; badge .has-new quando chega
+ * rolagem com o painel fechado. */
+.mesa-dice-panel {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 40;
+  width: min(300px, calc(100% - 28px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(12, 7, 9, 0.96);
+  border: 1px solid rgba(176, 48, 57, 0.45);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+.mesa-dice-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text, #e8e3d8);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+}
+.mesa-dice-close {
+  background: none;
+  border: none;
+  color: var(--text-dim, #9a8f80);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.mesa-dice-close:hover { color: var(--text, #e8e3d8); }
+.mesa-dice-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mesa-dice-die {
+  flex: 1 0 56px;
+  padding: 7px 0;
+  background: rgba(176, 48, 57, 0.14);
+  border: 1px solid rgba(176, 48, 57, 0.5);
+  border-radius: 7px;
+  color: var(--text, #e8e3d8);
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background var(--transition, 0.15s), border-color var(--transition, 0.15s);
+}
+.mesa-dice-die:hover {
+  background: rgba(176, 48, 57, 0.32);
+  border-color: rgba(214, 69, 80, 0.85);
+}
+.mesa-dice-opts {
+  display: flex;
+  gap: 10px;
+}
+.mesa-dice-opts label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim, #9a8f80);
+  font-size: 0.74rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.mesa-dice-opts input {
+  width: 100%;
+  min-width: 0;
+  padding: 5px 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(176, 48, 57, 0.35);
+  border-radius: 6px;
+  color: var(--text, #e8e3d8);
+  font-size: 0.82rem;
+}
+.mesa-dice-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mesa-dice-empty {
+  color: var(--text-dim, #9a8f80);
+  font-size: 0.76rem;
+}
+.mesa-dice-entry {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "who total" "detail total";
+  column-gap: 8px;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(176, 48, 57, 0.22);
+  border-radius: 7px;
+}
+.mesa-dice-who {
+  grid-area: who;
+  color: var(--text, #e8e3d8);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+.mesa-dice-who.is-master { color: #d8b45a; }
+.mesa-dice-detail {
+  grid-area: detail;
+  color: var(--text-dim, #9a8f80);
+  font-size: 0.72rem;
+  overflow-wrap: anywhere;
+}
+.mesa-dice-total {
+  grid-area: total;
+  align-self: center;
+  color: #d64550;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+/* Badge de rolagem nova com o painel fechado */
+#mesaDiceBtn.has-new::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d64550;
+  box-shadow: 0 0 6px rgba(214, 69, 80, 0.9);
+}
+#mesaDiceBtn { position: relative; }

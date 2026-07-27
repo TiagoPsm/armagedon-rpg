@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="css/reset.css?v=2026-06-12-cache-fix-1" />
   <link rel="stylesheet" href="css/components.css?v=2026-06-12-modal-stack-1" />
   <link rel="stylesheet" href="css/mesa.css?v=2026-06-19-dm-layer-1" />
-  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-07-27-ruler-1" />
+  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-07-27-dice-1" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-06-16-fullbleed-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-06-16-master-vital-card-1" />
   <link rel="stylesheet" href="css/mesa-map.css?v=2026-07-11-grid-1" />
@@ -231,6 +231,18 @@
           </svg>
           <span>INIC.</span>
         </button>
+        <button class="vtt-tb-btn" id="mesaDiceBtn"
+                title="Dados da Mesa — rolagem visível para todos (o servidor rola)" aria-pressed="false">
+          <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <!-- d20 estilizado -->
+            <polygon points="10,1.5 17.5,6 17.5,14 10,18.5 2.5,14 2.5,6" stroke-linejoin="round"/>
+            <polygon points="10,5.5 14.5,12.5 5.5,12.5" stroke-linejoin="round"/>
+            <line x1="10" y1="1.5" x2="10" y2="5.5"/>
+            <line x1="2.5" y1="14" x2="5.5" y2="12.5"/>
+            <line x1="17.5" y1="14" x2="14.5" y2="12.5"/>
+          </svg>
+          <span>DADOS</span>
+        </button>
       </div>
 
       <!-- Contador de tokens -->
@@ -309,6 +321,33 @@
         </div>
 
       </div>
+
+      <!-- Painel de Dados da Mesa (Etapa 45) — o Durable Object rola;
+           histórico compartilhado das últimas 20 rolagens -->
+      <aside id="mesaDicePanel" class="mesa-dice-panel" hidden aria-label="Dados da Mesa">
+        <div class="mesa-dice-head">
+          <strong>Dados da Mesa</strong>
+          <button type="button" id="mesaDiceCloseBtn" class="mesa-dice-close" aria-label="Fechar painel de dados">×</button>
+        </div>
+        <div class="mesa-dice-quick">
+          <button type="button" class="mesa-dice-die" data-die="4">d4</button>
+          <button type="button" class="mesa-dice-die" data-die="6">d6</button>
+          <button type="button" class="mesa-dice-die" data-die="8">d8</button>
+          <button type="button" class="mesa-dice-die" data-die="10">d10</button>
+          <button type="button" class="mesa-dice-die" data-die="12">d12</button>
+          <button type="button" class="mesa-dice-die" data-die="20">d20</button>
+          <button type="button" class="mesa-dice-die" data-die="100">d100</button>
+        </div>
+        <div class="mesa-dice-opts">
+          <label>Qtd
+            <input id="mesaDiceQty" type="number" min="1" max="20" value="1" inputmode="numeric">
+          </label>
+          <label>Mod
+            <input id="mesaDiceMod" type="number" min="-99" max="99" value="0" inputmode="numeric">
+          </label>
+        </div>
+        <ol id="mesaDiceHistory" class="mesa-dice-history" aria-live="polite"></ol>
+      </aside>
 
       <!-- Flyout de desenho — abre ao clicar no botão da caneta -->
       <div id="mesaDrawFlyout" class="vtt-draw-flyout" hidden aria-label="Ferramentas de desenho">
@@ -605,11 +644,12 @@
   <script src="js/mesa-roster.js?v=2026-06-16-no-dup-inspector-1" defer></script>
   <script src="js/mesa-inspector.js?v=2026-06-19-dm-layer-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
-  <script src="js/mesa-core.js?v=2026-07-27-ruler-1" defer></script>
+  <script src="js/mesa-core.js?v=2026-07-27-dice-1" defer></script>
   <script src="js/mesa-map.js?v=2026-07-11-grid-1" defer></script>
   <script src="js/mesa-grid.js?v=2026-07-12-token-cells-1" defer></script>
   <script src="js/mesa-ping.js?v=2026-07-27-ping-1" defer></script>
   <script src="js/mesa-ruler.js?v=2026-07-27-ruler-1" defer></script>
+  <script src="js/mesa-dice.js?v=2026-07-27-dice-1" defer></script>
   <script src="js/mesa-drawing.js?v=2026-07-10-drawings-sync-1" defer></script>
   <script src="js/mesa-select.js?v=2026-07-11-interaction-fix-1" defer></script>
   <script src="js/mesa-initiative.js?v=2026-07-10-initiative-sync-1" defer></script>

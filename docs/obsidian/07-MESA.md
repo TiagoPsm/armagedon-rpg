@@ -41,6 +41,7 @@ JS:
 - `js/mesa-grid.js`
 - `js/mesa-ping.js`
 - `js/mesa-ruler.js`
+- `js/mesa-dice.js`
 - `js/mesa-drawing.js`
 - `js/mesa-select.js`
 - `js/mesa-initiative.js`

@@ -4,12 +4,15 @@ import { DurableObject } from "cloudflare:workers";
 // entao os testes unitarios (tests/mesa-audit.spec.cjs) exercitam exatamente
 // o codigo usado aqui.
 import {
+  DICE_REQUEST_TYPE,
+  DICE_RESULT_TYPE,
   DRAWINGS_UPDATE_TYPE,
   ECHO_VITALS_TYPE,
   INITIATIVE_ROLL_TYPE,
   MAP_SIGNAL_TYPES,
   MASTER_ONLY_MAP_SIGNAL_TYPES,
   MASTER_ONLY_TYPES,
+  MAX_DICE_HISTORY,
   MOVE_LOCK_TYPE,
   RELAY_TYPES,
   SHEET_CHANGED_TYPE,
@@ -19,8 +22,11 @@ import {
   filterPlayerSheetPatch,
   isPlainObject,
   normalizeCharacterKey,
+  normalizeDiceLabel,
   normalizeEchoVitals,
   normalizeSheetPatchPayload,
+  parseMesaDiceFormula,
+  rollMesaDice,
   sanitizeRelayDrawings,
   takeRateToken
 } from "./mesa-realtime-rules.js";
@@ -29,6 +35,22 @@ const ROOM_NAME = "default";
 // Trava global de movimento: quando ativa, jogadores nao movem nem o proprio
 // token. Persistida no storage do DO; mestre alterna via mesa:move:lock.
 const MOVE_LOCK_STORAGE_KEY = "playersMoveLocked";
+// Historico das ultimas rolagens de dados da Mesa (cap MAX_DICE_HISTORY),
+// mais recente primeiro. Entregue a cada cliente no mesa:ready.
+const DICE_HISTORY_STORAGE_KEY = "diceHistory";
+
+// Inteiro uniforme em 1..sides com crypto.getRandomValues (rejection sampling
+// para nao enviesar o modulo). Fonte unica de aleatoriedade das rolagens.
+function secureRandomInt(sides) {
+  const limit = Math.floor(0x100000000 / sides) * sides;
+  const buffer = new Uint32Array(1);
+  let value = 0;
+  do {
+    crypto.getRandomValues(buffer);
+    value = buffer[0];
+  } while (value >= limit);
+  return (value % sides) + 1;
+}
 
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
@@ -102,6 +124,7 @@ class MesaRealtimeRoom extends DurableObject {
     const [client, server] = Object.values(pair);
     const user = normalizeSocketUser(request);
     const playersMoveLocked = await this.isPlayersMoveLocked();
+    const diceHistory = (await this.ctx.storage.get(DICE_HISTORY_STORAGE_KEY)) || [];
 
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment({
@@ -114,6 +137,7 @@ class MesaRealtimeRoom extends DurableObject {
       room: ROOM_NAME,
       user,
       playersMoveLocked,
+      diceHistory,
       online: this.getPresence(),
       sentAt: new Date().toISOString()
     });
@@ -193,6 +217,11 @@ class MesaRealtimeRoom extends DurableObject {
       return;
     }
 
+    if (String(payload?.type || "") === DICE_REQUEST_TYPE) {
+      await this.handleDiceRequest(ws, payload);
+      return;
+    }
+
     if (RELAY_TYPES.has(String(payload?.type || ""))) {
       await this.handleRealtimeRelay(ws, payload);
       return;
@@ -228,6 +257,50 @@ class MesaRealtimeRoom extends DurableObject {
       },
       sentAt: new Date().toISOString()
     });
+  }
+
+  /**
+   * Dados na Mesa (Etapa 45): o DO rola — o cliente so pede. A formula e
+   * validada (parseMesaDiceFormula), a rolagem usa crypto.getRandomValues e o
+   * resultado e transmitido a TODOS (inclusive quem pediu: fonte unica da
+   * verdade). mesa:dice:result nao esta em RELAY_TYPES, entao um cliente
+   * malicioso nao consegue forjar resultado. Historico (cap 20) no storage,
+   * entregue no mesa:ready para quem entra depois.
+   */
+  async handleDiceRequest(ws, payload) {
+    const attachment = readAttachment(ws) || {};
+    const spec = parseMesaDiceFormula(payload?.formula);
+    if (!spec) {
+      sendJson(ws, {
+        type: "mesa:dice:ack",
+        ok: false,
+        reason: "Formula de dados invalida. Use NdM (+/- mod), ex: 2d20+3.",
+        messageId: payload?.messageId || "",
+        sentAt: new Date().toISOString()
+      });
+      return;
+    }
+
+    const { rolls, total } = rollMesaDice(spec, secureRandomInt);
+    const entry = {
+      id: crypto.randomUUID(),
+      formula: spec.formula,
+      label: normalizeDiceLabel(payload?.label),
+      rolls,
+      modifier: spec.modifier,
+      total,
+      actor: {
+        username: attachment.username || "usuario",
+        role: attachment.role || "player"
+      },
+      sentAt: new Date().toISOString()
+    };
+
+    const history = (await this.ctx.storage.get(DICE_HISTORY_STORAGE_KEY)) || [];
+    history.unshift(entry);
+    await this.ctx.storage.put(DICE_HISTORY_STORAGE_KEY, history.slice(0, MAX_DICE_HISTORY));
+
+    this.broadcast({ type: DICE_RESULT_TYPE, ...entry });
   }
 
   // Jogador pode emitir mesa:token:move quando a trava global esta aberta e o

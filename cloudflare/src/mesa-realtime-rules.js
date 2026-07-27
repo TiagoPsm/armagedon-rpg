@@ -22,6 +22,13 @@ const PING_TYPE = "mesa:ping";
 // Régua de medição (Etapa 44): mesmo modelo efêmero do ping — qualquer
 // participante mede; broadcast a 10Hz enquanto arrasta, active:false encerra.
 const RULER_TYPE = "mesa:ruler";
+// Dados na Mesa (Etapa 45): o cliente PEDE (mesa:dice:request) e quem rola e o
+// DO com crypto.getRandomValues — resultado a prova de trapaça, transmitido a
+// todos como mesa:dice:result. NENHUM dos dois entra em RELAY_TYPES: request
+// tem handler proprio e result so nasce no DO (cliente nao consegue forjar).
+const DICE_REQUEST_TYPE = "mesa:dice:request";
+const DICE_RESULT_TYPE = "mesa:dice:result";
+const MAX_DICE_HISTORY = 20;
 const SHEET_PATCH_TYPE = "mesa:sheet:patch";
 const ECHO_VITALS_TYPE = "mesa:echo:vitals";
 const SHEET_CHANGED_TYPE = "sheet:changed";
@@ -142,6 +149,41 @@ function takeRateToken(bucket, type, now) {
   if (state.tokens < 1) return false;
   state.tokens -= 1;
   return true;
+}
+
+/* ── Dados na Mesa (Etapa 45) ───────────────────────────────── */
+
+// Gramatica: "NdM", "dM" ou "NdM±K" — N 1-20, M em {2,4,6,8,10,12,20,100},
+// K -99..99. Espacos e maiusculas tolerados ("2 D 20 + 3" vale).
+const DICE_ALLOWED_SIDES = new Set([2, 4, 6, 8, 10, 12, 20, 100]);
+
+function parseMesaDiceFormula(value) {
+  const text = String(value || "").toLowerCase().replace(/\s+/g, "");
+  const match = /^(\d{0,2})d(\d{1,3})([+-]\d{1,2})?$/.exec(text);
+  if (!match) return null;
+  const count = match[1] === "" ? 1 : Number.parseInt(match[1], 10);
+  const sides = Number.parseInt(match[2], 10);
+  const modifier = match[3] ? Number.parseInt(match[3], 10) : 0;
+  if (count < 1 || count > 20) return null;
+  if (!DICE_ALLOWED_SIDES.has(sides)) return null;
+  const suffix = modifier === 0 ? "" : (modifier > 0 ? `+${modifier}` : String(modifier));
+  return { count, sides, modifier, formula: `${count}d${sides}${suffix}` };
+}
+
+/**
+ * Rola um spec de parseMesaDiceFormula. `randomInt(sides)` deve devolver um
+ * inteiro uniforme em 1..sides — o DO injeta a versao crypto; os testes, uma
+ * deterministica. Retorna { rolls, total }.
+ */
+function rollMesaDice(spec, randomInt) {
+  const rolls = [];
+  for (let i = 0; i < spec.count; i += 1) rolls.push(randomInt(spec.sides));
+  const total = rolls.reduce((sum, roll) => sum + roll, 0) + spec.modifier;
+  return { rolls, total };
+}
+
+function normalizeDiceLabel(value) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, 60);
 }
 
 /* ── Sanitizacao de desenhos no relay ───────────────────────── */
@@ -330,6 +372,8 @@ function normalizeEchoVitals(vitals) {
 
 export {
   ATTRIBUTES,
+  DICE_REQUEST_TYPE,
+  DICE_RESULT_TYPE,
   DRAWINGS_UPDATE_TYPE,
   ECHO_VITALS_TYPE,
   GRID_UPDATE_TYPE,
@@ -339,6 +383,7 @@ export {
   MAP_WS_CHUNK_TYPE,
   MASTER_ONLY_MAP_SIGNAL_TYPES,
   MASTER_ONLY_TYPES,
+  MAX_DICE_HISTORY,
   MAX_MAP_CHUNK_MESSAGE_CHARS,
   MAX_RELAY_DRAWINGS,
   MAX_WS_MESSAGE_CHARS,
@@ -355,8 +400,11 @@ export {
   filterPlayerSheetPatch,
   isPlainObject,
   normalizeCharacterKey,
+  normalizeDiceLabel,
   normalizeEchoVitals,
   normalizeSheetPatchPayload,
+  parseMesaDiceFormula,
+  rollMesaDice,
   sanitizeRelayDrawings,
   takeRateToken
 };

@@ -1947,3 +1947,165 @@ test.describe("Regua de medicao (Etapa 44)", () => {
     expect(removed).toBe(0);
   });
 });
+
+test.describe("Dados na Mesa (Etapa 45)", () => {
+  test("DO rules: formula validada, rolagem com RNG injetado, tipos fora do relay", async () => {
+    const { DICE_REQUEST_TYPE, DICE_RESULT_TYPE, MAX_DICE_HISTORY, RELAY_TYPES, parseMesaDiceFormula, rollMesaDice } =
+      await import("../cloudflare/src/mesa-realtime-rules.js");
+
+    expect(DICE_REQUEST_TYPE).toBe("mesa:dice:request");
+    expect(DICE_RESULT_TYPE).toBe("mesa:dice:result");
+    expect(MAX_DICE_HISTORY).toBe(20);
+    // Nenhum dos dois passa pelo relay generico: request tem handler proprio
+    // e result so nasce no DO — cliente nao consegue forjar resultado.
+    expect(RELAY_TYPES.has(DICE_REQUEST_TYPE)).toBe(false);
+    expect(RELAY_TYPES.has(DICE_RESULT_TYPE)).toBe(false);
+
+    // Gramatica: NdM (+/- K), tolerante a espacos/maiusculas
+    expect(parseMesaDiceFormula("2d20+3")).toEqual({ count: 2, sides: 20, modifier: 3, formula: "2d20+3" });
+    expect(parseMesaDiceFormula("d6")).toEqual({ count: 1, sides: 6, modifier: 0, formula: "1d6" });
+    expect(parseMesaDiceFormula(" 20 D 100 - 99 ")).toEqual({ count: 20, sides: 100, modifier: -99, formula: "20d100-99" });
+    expect(parseMesaDiceFormula("0d6")).toBeNull();      // count < 1
+    expect(parseMesaDiceFormula("21d6")).toBeNull();     // count > 20
+    expect(parseMesaDiceFormula("3d7")).toBeNull();      // lado fora da whitelist
+    expect(parseMesaDiceFormula("2d20+100")).toBeNull(); // mod > 99
+    expect(parseMesaDiceFormula("abc")).toBeNull();
+    expect(parseMesaDiceFormula("")).toBeNull();
+
+    // Rolagem deterministica com RNG injetado (o DO injeta a versao crypto)
+    const spec = parseMesaDiceFormula("3d6+2");
+    const maxed = rollMesaDice(spec, sides => sides);
+    expect(maxed.rolls).toEqual([6, 6, 6]);
+    expect(maxed.total).toBe(20);
+    const floored = rollMesaDice(spec, () => 1);
+    expect(floored.rolls).toEqual([1, 1, 1]);
+    expect(floored.total).toBe(5);
+  });
+
+  test("painel: sem backend rola local com crypto e registra no historico", async ({ page }) => {
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    await page.click("#mesaDiceBtn");
+    await page.fill("#mesaDiceQty", "2");
+    await page.fill("#mesaDiceMod", "3");
+    await page.click('.mesa-dice-die[data-die="20"]');
+
+    const result = await page.evaluate(() => {
+      const history = window.getMesaDiceHistory();
+      const entryEl = document.querySelector("#mesaDiceHistory .mesa-dice-entry");
+      return {
+        panelOpen: !document.getElementById("mesaDicePanel").hidden,
+        history,
+        who: entryEl?.querySelector(".mesa-dice-who")?.textContent || "",
+        total: entryEl?.querySelector(".mesa-dice-total")?.textContent || ""
+      };
+    });
+
+    expect(result.panelOpen).toBe(true);
+    expect(result.history.length).toBe(1);
+    const entry = result.history[0];
+    expect(entry.formula).toBe("2d20+3");
+    expect(entry.local).toBe(true);
+    expect(entry.rolls.length).toBe(2);
+    entry.rolls.forEach(roll => {
+      expect(roll).toBeGreaterThanOrEqual(1);
+      expect(roll).toBeLessThanOrEqual(20);
+    });
+    expect(entry.total).toBe(entry.rolls[0] + entry.rolls[1] + 3);
+    expect(result.who).toContain("(local)");
+    expect(Number(result.total)).toBe(entry.total);
+  });
+
+  test("com backend: pedido vai como mesa:dice:request e o resultado do DO rende a entrada", async ({ page }) => {
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    const result = await page.evaluate(async () => {
+      window.__diceSent = [];
+      window.APP = Object.assign({}, window.APP, {
+        sendRealtime: message => { window.__diceSent.push(message); return true; }
+      });
+      window.AUTH = Object.assign({}, window.AUTH, { isBackendEnabled: () => true });
+
+      // Pedido: NAO gera entrada local (quem rola e o DO)
+      window.requestMesaDiceRoll("2d6+1");
+      const afterRequest = window.getMesaDiceHistory().length;
+
+      // Resultado oficial vindo do DO (broadcast para todos, sem clientId)
+      await applyMesaRealtimeDelta({
+        type: "mesa:dice:result",
+        id: "do-roll-1",
+        formula: "2d6+1",
+        rolls: [4, 6],
+        modifier: 1,
+        total: 11,
+        actor: { username: "ana", role: "player" },
+        sentAt: new Date().toISOString()
+      });
+      // Dedupe por id: o mesmo resultado nao entra duas vezes
+      await applyMesaRealtimeDelta({
+        type: "mesa:dice:result",
+        id: "do-roll-1",
+        formula: "2d6+1",
+        rolls: [4, 6],
+        modifier: 1,
+        total: 11,
+        actor: { username: "ana", role: "player" }
+      });
+
+      return {
+        sent: window.__diceSent.filter(m => m.type === "mesa:dice:request"),
+        afterRequest,
+        history: window.getMesaDiceHistory(),
+        badge: document.getElementById("mesaDiceBtn").classList.contains("has-new")
+      };
+    });
+
+    expect(result.sent.length).toBe(1);
+    expect(result.sent[0].formula).toBe("2d6+1");
+    expect(result.afterRequest).toBe(0);          // cliente nao inventa numero
+    expect(result.history.length).toBe(1);        // dedupe por id segurou a copia
+    expect(result.history[0].total).toBe(11);
+    expect(result.history[0].actor.username).toBe("ana");
+    expect(result.badge).toBe(true);              // painel fechado -> badge
+  });
+
+  test("historico do mesa:ready substitui a lista e respeita o cap de 20", async ({ page }) => {
+    await seedPlayerWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof state !== "undefined" && state.session != null);
+
+    const result = await page.evaluate(() => {
+      // 25 entradas (mais recente primeiro, como o DO guarda) -> mantem 20
+      const fromDo = Array.from({ length: 25 }, (_, i) => ({
+        id: "h-" + i,
+        formula: "1d20",
+        rolls: [((i * 7) % 20) + 1],
+        modifier: 0,
+        total: ((i * 7) % 20) + 1,
+        actor: { username: i % 2 ? "ana" : "mestre", role: i % 2 ? "player" : "master" },
+        sentAt: new Date().toISOString()
+      }));
+      window.setMesaDiceHistory(fromDo);
+      const history = window.getMesaDiceHistory();
+      return {
+        count: history.length,
+        firstId: history[0]?.id,
+        rendered: document.querySelectorAll("#mesaDiceHistory .mesa-dice-entry").length
+      };
+    });
+
+    expect(result.count).toBe(20);
+    expect(result.firstId).toBe("h-0");   // mais recente continua no topo
+    expect(result.rendered).toBe(20);
+  });
+});

@@ -30,7 +30,21 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-27 — Etapa 44: Regua de medicao)
+## Ultima Etapa Concluida (2026-07-27 — Etapa 45: Dados na Mesa — o DO rola)
+
+Painel "Dados da Mesa" (botao DADOS no rail esquerdo): rolagem compartilhada onde QUEM ROLA E O SERVIDOR — o cliente envia `mesa:dice:request` e o Durable Object valida a formula, rola com `crypto.getRandomValues` (rejection sampling, sem vies) e transmite `mesa:dice:result` a TODOS, inclusive quem pediu. Resultado a prova de trapaça: `mesa:dice:result` NAO esta em `RELAY_TYPES`, entao cliente nao consegue forjar. Historico das ultimas 20 rolagens no storage do DO, entregue no `mesa:ready` (quem entra depois ve).
+
+- **cloudflare/src/mesa-realtime-rules.js**: `DICE_REQUEST_TYPE`/`DICE_RESULT_TYPE`/`MAX_DICE_HISTORY=20` + `parseMesaDiceFormula` (gramatica NdM±K: N 1-20, M em {2,4,6,8,10,12,20,100}, K -99..99, tolerante a espacos/maiusculas) + `rollMesaDice(spec, randomInt)` com RNG INJETADO (o DO injeta a versao crypto; os testes, uma deterministica) + `normalizeDiceLabel`.
+- **cloudflare/src/mesa-realtime.js**: `secureRandomInt` (crypto.getRandomValues + rejection sampling), `handleDiceRequest` (valida -> rola -> guarda no storage `diceHistory` cap 20 -> broadcast; formula invalida recebe `mesa:dice:ack` de erro), `diceHistory` no payload do `mesa:ready`.
+- **js/mesa-dice.js** (NOVO): painel flutuante (dados rapidos d4-d100, Qtd 1-20, Mod ±99, historico), `requestMesaDiceRoll` (com backend: so pede e espera o resultado do DO; sem backend: rola LOCAL com o mesmo RNG crypto e marca "(local)" — regra local-first do projeto), `applyMesaDiceResult` (dedupe por id, cap 20), `setMesaDiceHistory` (substitui a lista no mesa:ready), badge no botao + toast quando chega rolagem com o painel fechado.
+- **js/mesa-core.js**: `"mesa:dice:result"` em `MESA_REALTIME_DELTA_TYPES` + branch (o cliente NUNCA inventa numero — so exibe o que o DO mandou); `mesa:ready` alimenta `setMesaDiceHistory`.
+- **mesa.html**: botao DADOS (icone d20) no grupo de ferramentas do rail + `<aside id="mesaDicePanel">`.
+- **Testes** (suite 58 -> 62, describe "Dados na Mesa (Etapa 45)"): gramatica completa da formula + rolagem deterministica com RNG injetado + tipos fora do relay; painel local (2d20+3 rola com crypto, entra no historico com "(local)"); com backend o pedido vai como `mesa:dice:request` SEM entrada local e o resultado do DO rende a entrada (com dedupe por id e badge); historico do mesa:ready substitui a lista e respeita o cap 20.
+- Cache-bust: mesa-core.js e mesa-dice.js (novo) e mesa-stage.css -> `?v=2026-07-27-dice-1`; `MESA_BUNDLE_VERSION` -> `2026-07-27-dice-1`; mesa-dice.js no bundle da Mesa (apos mesa-ruler.js).
+- Deploy do Worker: version `038dc024-0b51-4aa4-aa6d-baf3d9a34218` (dry-run antes; health 200).
+- Validacao: test:mesa:audit 62/62 (uma rodada teve o flake conhecido do "bug 2", que passa isolado — familia de timing da Etapa 50), test:mesa 5/5, check:js OK, build:pages OK. Prova visual via Playwright: painel com historico ("voce (local) 30", "ana 19", "bruno 8").
+
+## Etapa Concluida (2026-07-27 — Etapa 44: Regua de medicao)
 
 Shift+arrastar no palco mede distancia em celulas e metros; enquanto arrasta, todos os participantes veem a regua ao vivo. Mesmo modelo efemero do ping: `mesa:ruler` e apenas retransmitido pelo DO, nada entra na cena nem persiste.
 

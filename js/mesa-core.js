@@ -80,7 +80,8 @@ const MESA_REALTIME_DELTA_TYPES = new Set([
   "mesa:initiative:roll",
   "mesa:grid:update",
   "mesa:ping",
-  "mesa:ruler"
+  "mesa:ruler",
+  "mesa:dice:result"
 ]);
 const MESA_SHEET_PATCH_TYPE = "mesa:sheet:patch";
 const MESA_ECHO_VITALS_TYPE = "mesa:echo:vitals";
@@ -315,6 +316,10 @@ function bindMesaRealtime() {
   window.APP.on("mesa:ready", payload => {
     state.realtimeStatus = "online";
     state.playersMoveLocked = Boolean(payload?.playersMoveLocked);
+    // Histórico compartilhado de dados (Etapa 45) — vem do storage do DO.
+    if (Array.isArray(payload?.diceHistory) && typeof setMesaDiceHistory === "function") {
+      setMesaDiceHistory(payload.diceHistory);
+    }
     updateMesaPresence(payload);
     void resyncMesaSceneAfterReconnect();
     scheduleMesaRender({ summary: true, controls: true });
@@ -530,6 +535,15 @@ async function applyMesaRealtimeDelta(payload) {
     // Canal efêmero (Etapa 44): régua ao vivo de outro participante.
     if (typeof applyMesaRulerFromRemote === "function") {
       applyMesaRulerFromRemote(payload);
+    }
+    return;
+  }
+
+  if (type === "mesa:dice:result") {
+    // Rolagem oficial vinda do DO (Etapa 45) — inclusive a própria: o
+    // resultado só nasce no servidor, o cliente nunca inventa o número.
+    if (typeof applyMesaDiceResult === "function") {
+      applyMesaDiceResult(payload);
     }
     return;
   }
