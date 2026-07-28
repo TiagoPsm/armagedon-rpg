@@ -92,6 +92,8 @@ const MESA_REALTIME_DELTA_TYPES = new Set([
   "mesa:token:remove",
   "mesa:scene:clear",
   "mesa:drawings:update",
+  "mesa:drawings:add",
+  "mesa:drawings:remove",
   "mesa:initiative:update",
   "mesa:initiative:roll",
   "mesa:grid:update",
@@ -100,6 +102,9 @@ const MESA_REALTIME_DELTA_TYPES = new Set([
   "mesa:ruler",
   "mesa:dice:result"
 ]);
+// Garganta do aviso de recusa do backend (mesa:scene:ack ok:false).
+const MESA_ACK_WARNING_THROTTLE_MS = 4000;
+let lastMesaAckWarningAt = 0;
 const MESA_SHEET_PATCH_TYPE = "mesa:sheet:patch";
 const MESA_ECHO_VITALS_TYPE = "mesa:echo:vitals";
 const MESA_ATTRIBUTE_NAMES = ["Forca", "Agilidade", "Inteligencia", "Resistencia", "Alma"];
@@ -387,6 +392,21 @@ function bindMesaRealtime() {
     applyMesaRealtimeBatch(payload);
   });
 
+  // Recusa do backend (Etapa 50). O DO já mandava mesa:scene:ack com ok:false
+  // em toda recusa — tamanho, rate-limit, permissao, payload invalido — e
+  // NINGUEM escutava: a acao sumia sem qualquer sinal na tela. Agora avisa,
+  // com garganta de 4s para uma rajada nao virar chuva de toasts.
+  window.APP.on("mesa:scene:ack", payload => {
+    if (!payload || payload.ok !== false) return;
+    const now = Date.now();
+    if (now - lastMesaAckWarningAt < MESA_ACK_WARNING_THROTTLE_MS) return;
+    lastMesaAckWarningAt = now;
+    window.UI?.toast?.(
+      payload.reason || "O servidor recusou a ultima acao da Mesa.",
+      { kicker: "// Mesa" }
+    );
+  });
+
   MESA_REALTIME_DELTA_TYPES.forEach(eventName => {
     window.APP.on(eventName, payload => {
       void applyMesaRealtimeDelta(payload);
@@ -555,6 +575,22 @@ async function applyMesaRealtimeDelta(payload) {
       }
     }
     return; // não precisa scheduleMesaRender
+  }
+
+  // Deltas de desenho (Etapa 50): um traço novo ou uma lista de ids apagados.
+  // Mesmo pós-processamento do full-state — snapshot local + PUT do mestre.
+  if (type === "mesa:drawings:add" && typeof applyMesaDrawingAddFromRemote === "function") {
+    applyMesaDrawingAddFromRemote(payload.stroke);
+    cacheMesaSceneSnapshotLocally();
+    if (isMaster() && typeof persistState === "function") persistState();
+    return;
+  }
+
+  if (type === "mesa:drawings:remove" && typeof applyMesaDrawingRemoveFromRemote === "function") {
+    applyMesaDrawingRemoveFromRemote(payload.ids);
+    cacheMesaSceneSnapshotLocally();
+    if (isMaster() && typeof persistState === "function") persistState();
+    return;
   }
 
   if (type === "mesa:fog:update") {

@@ -30,7 +30,28 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-27 — Etapa 49: Multiplas cenas — frontend)
+## Ultima Etapa Concluida (2026-07-28 — Etapa 50: Auditoria multi-frente + performance)
+
+Auditoria medida (nao estimada) da Mesa com o VTT completo. O achado grave: **a sincronia de desenhos morria em silencio** depois de ~12 tracos.
+
+**Achado 1 — desenho estourava o cap de mensagem do DO (CORRIGIDO).** `mesa:drawings:update` mandava o ESTADO COMPLETO a cada traco, com as coordenadas CRUAS (`0.02145922746781116` — 19 caracteres por numero, enquanto o Worker salva 4 casas). Medido com arrasto real no Playwright: **5 tracos a lapis = 13,4KB**; o cap do DO e 32KB por mensagem, ou seja o quadro parava de sincronizar por volta do 12o traco. Pior: o DO respondia `mesa:scene:ack ok:false` e **nenhum cliente escutava esse evento** — o mestre continuava vendo os proprios tracos e o jogador simplesmente parava de receber, sem erro em lugar nenhum.
+
+- **js/mesa-drawing.js**: coordenada arredondada JA NA CAPTURA (`_toPercent`) para as mesmas 4 casas que o Worker salva — mesmos 5 tracos passaram de 13.438 para 5.460 bytes (**2,5x menor**, zero diferenca visivel); ralo de pontos redundantes (`DRAW_MIN_POINT_DIST`, 0,2% do canvas — o mousemove dispara muito mais que o necessario); caps do cliente alinhados aos do Worker (`DRAW_MAX_POINTS` 200, `DRAW_MAX_STROKES` 300 com toast) — sem isso o que fica na tela diverge do que e salvo.
+- **Broadcast por DELTA**: `_commitStrokeAdd` manda so o traco recem-fechado (`mesa:drawings:add`, ~1KB) e `_commitStrokeRemove` manda so os ids (`mesa:drawings:remove`) — borracha, Ctrl+Z e `deleteDrawingsById`. O full-state (`mesa:drawings:update`) sobrou para limpar o quadro e para o reenvio a quem entra depois, agora com teto de seguranca (`DRAW_FULL_STATE_MAX_CHARS` = 30KB): acima disso o envio e PULADO, porque quem entra recebe os tracos pelo `GET /mesa/scene` de qualquer forma e mandar assim so faria o DO recusar sem avisar.
+- **cloudflare/src/mesa-realtime-rules.js**: `DRAWINGS_ADD_TYPE`/`DRAWINGS_REMOVE_TYPE` em RELAY_TYPES (qualquer participante desenha, como o full-state ja era) + `sanitizeRelayDrawingStroke` (um traco; recusa camada `dm`, id vazio e nao-objeto) e `sanitizeRelayDrawingIds` (ids, cap `MAX_RELAY_DRAWINGS`). **cloudflare/src/mesa-realtime.js**: sanitizacao dos dois tipos antes do relay.
+- **js/mesa-core.js**: os dois tipos no delta router (`applyMesaDrawingAddFromRemote` e idempotente por id — reenvio nao desenha duas vezes; o remove remoto nunca apaga traco `dm` do mestre) + snapshot local e PUT do mestre como no full-state.
+
+**Achado 2 — toda recusa do backend sumia em silencio (CORRIGIDO).** O DO ja mandava `mesa:scene:ack ok:false` em tamanho, rate-limit, permissao e payload invalido, e ninguem escutava. `js/mesa-core.js` agora avisa na tela, com garganta de 4s para uma rajada nao virar chuva de toasts.
+
+**Fronte medida e APROVADA (sem mudanca):** boot nao escala com tokens (0/10/20/40 tokens: 173/167/197/115ms); render da nevoa com os 400 ops do cap = 0,17ms; render do palco com 40 tokens = 0,45ms; assinatura de dedupe da cena = 0,17ms; zoom/pan com nevoa + grade ativas: nenhuma long task; sem vazamento de nos DOM em ciclos repetidos de render/pincel; rate-limit do DO (30 msg/s, burst 60) com folga real — os canais mais falantes sao regua e nevoa a 10Hz e um gesto so acontece por vez.
+
+- **Testes** (suite 77 -> 83, describe "Auditoria multi-frente + performance (Etapa 50)"): regras do DO (relay + sanitizacao de traco/ids/cap); traco novo viaja sozinho com o quadro ja acima de 32KB (prova que o full-state NAO cabia e o delta cabe); borracha manda so ids e traco `dm` nunca vira mensagem; arredondamento na captura + idempotencia do add remoto + remove remoto que nao apaga `dm`; recusa do backend vira aviso (com garganta); full-state acima do teto nao e enviado.
+- Cache-bust: mesa-core.js e mesa-drawing.js -> `?v=2026-07-28-audit50-1`; `MESA_BUNDLE_VERSION` idem.
+- Deploy do Worker: version `0dc8151d-b91e-4ce7-8eb3-5dfeba73ec33` (dry-run antes; health 200). Compativel com cliente antigo: o full-state continua aceito.
+- Validacao: test:mesa:audit 83/83, test:mesa 5/5, test:ficha 28/28, perf:mesa OK, check:js OK, audit:static OK, build:pages OK.
+- Pendencia: rodada real com 2 janelas (mestre + jogador logados) desenhando ao vivo — Etapa 51.
+
+## Etapa Concluida (2026-07-27 — Etapa 49: Multiplas cenas — frontend)
 
 Gerenciador de cenas do mestre (grupo "Cenas" no painel do mapa) + troca de cena ao vivo para todos. Multi-cena exige backend; o modo local segue com a cena unica de sempre.
 

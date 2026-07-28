@@ -6,6 +6,8 @@ import { DurableObject } from "cloudflare:workers";
 import {
   DICE_REQUEST_TYPE,
   DICE_RESULT_TYPE,
+  DRAWINGS_ADD_TYPE,
+  DRAWINGS_REMOVE_TYPE,
   DRAWINGS_UPDATE_TYPE,
   ECHO_VITALS_TYPE,
   INITIATIVE_ROLL_TYPE,
@@ -27,6 +29,8 @@ import {
   normalizeSheetPatchPayload,
   parseMesaDiceFormula,
   rollMesaDice,
+  sanitizeRelayDrawingIds,
+  sanitizeRelayDrawingStroke,
   sanitizeRelayDrawings,
   takeRateToken
 } from "./mesa-realtime-rules.js";
@@ -365,6 +369,39 @@ class MesaRealtimeRoom extends DurableObject {
         return;
       }
       payload = { ...payload, drawings: sanitized };
+    }
+
+    // Delta de desenho (Etapa 50): UM traco recem-fechado. Mesma regra da
+    // camada secreta — traco "dm" nunca e retransmitido.
+    if (type === DRAWINGS_ADD_TYPE) {
+      const stroke = sanitizeRelayDrawingStroke(payload?.stroke);
+      if (!stroke) {
+        sendJson(ws, {
+          type: "mesa:scene:ack",
+          ok: false,
+          reason: "Traco de desenho invalido.",
+          messageId: payload?.messageId || "",
+          sentAt: new Date().toISOString()
+        });
+        return;
+      }
+      payload = { ...payload, stroke };
+    }
+
+    // Remocao por id (borracha/desfazer): lista enxuta em vez do estado inteiro.
+    if (type === DRAWINGS_REMOVE_TYPE) {
+      const ids = sanitizeRelayDrawingIds(payload?.ids);
+      if (!ids) {
+        sendJson(ws, {
+          type: "mesa:scene:ack",
+          ok: false,
+          reason: "Lista de tracos a remover invalida.",
+          messageId: payload?.messageId || "",
+          sentAt: new Date().toISOString()
+        });
+        return;
+      }
+      payload = { ...payload, ids };
     }
 
     // Rolagem de iniciativa: jogador so pode rolar pelo proprio personagem

@@ -18,6 +18,33 @@ let _stageInnerEl  = null;
 
 const ERASE_RADIUS = 22;
 
+/* ── Limites e precisão (Etapa 50) ─────────────────────────────────
+ * A auditoria mediu 13,4KB para 5 traços a lápis: as coordenadas iam
+ * cruas (0.02145922746781116 = 19 caracteres por número), o cap de
+ * 32KB por mensagem WS estourava em ~12 traços e o DO passava a
+ * RECUSAR o broadcast em silêncio — o mestre continuava vendo os
+ * próprios traços e o jogador parava de receber.
+ *
+ * Três medidas: (1) arredondar na captura para as MESMAS 4 casas que o
+ * Worker salva (2,4x menor, zero diferença visível); (2) ralo de
+ * pontos redundantes (o mousemove dispara muito mais que o necessário);
+ * (3) caps iguais aos do Worker, senão o que fica na tela diverge do
+ * que é salvo. Junto com o broadcast por delta, a mensagem passou a ser
+ * sempre de UM traço.
+ */
+const DRAW_COORD_DECIMALS = 4;
+const DRAW_MIN_POINT_DIST = 0.002;   // 0,2% do canvas entre pontos do lápis
+const DRAW_MAX_POINTS  = 200;        // = MAX_DRAW_POINTS do Worker
+const DRAW_MAX_STROKES = 300;        // = MAX_DRAWINGS do Worker
+// Teto de segurança do full-state (só o reenvio a quem entra depois usa):
+// abaixo do cap de 32KB do DO, com folga para o envelope.
+const DRAW_FULL_STATE_MAX_CHARS = 30 * 1024;
+
+function _round4(value) {
+  const factor = 10 ** DRAW_COORD_DECIMALS;
+  return Math.round(value * factor) / factor;
+}
+
 const PALETTE = [
   "#e84040", "#e86820", "#e8c020", "#40c860",
   "#40b8e8", "#4058e8", "#a040e8", "#e840a0",
@@ -194,7 +221,9 @@ function _canvasPos(e) {
 function _toPercent(x, y) {
   const w = _drawCanvasEl ? (_drawCanvasEl.offsetWidth  || 1) : 1;
   const h = _drawCanvasEl ? (_drawCanvasEl.offsetHeight || 1) : 1;
-  return { px: x / w, py: y / h };
+  // Arredondado já na captura: é a mesma precisão que o Worker salva, então
+  // nada se perde e o payload encolhe ~2,4x (ver bloco de limites acima).
+  return { px: _round4(x / w), py: _round4(y / h) };
 }
 
 function _fromPercent(px, py) {
@@ -235,9 +264,9 @@ function _bindDrawEvents() {
       for (let i = _strokes.length - 1; i >= 0; i--) {
         const strokeLayer = _strokes[i].layer === "dm" ? "dm" : "tokens";
         if (strokeLayer === activeLayer) {
-          _strokes.splice(i, 1);
+          const [undone] = _strokes.splice(i, 1);
           renderDrawings();
-          _broadcastDrawings();
+          _commitStrokeRemove([undone]);
           break;
         }
       }
@@ -287,7 +316,15 @@ function _onDrawMove(e) {
   _activeStroke.x2 = px;
   _activeStroke.y2 = py;
   if (_activeTool === "pencil") {
-    _activeStroke.points.push([px, py]);
+    const pts = _activeStroke.points;
+    // Ralo: o mousemove dispara muito mais que o necessário; pontos a menos de
+    // DRAW_MIN_POINT_DIST não mudam o traço na tela e só inflam o payload.
+    const last = pts[pts.length - 1];
+    if (last && Math.hypot(px - last[0], py - last[1]) < DRAW_MIN_POINT_DIST) return;
+    // Cap igual ao do Worker: sem ele, o traço na tela teria mais pontos do que
+    // o traço salvo e o desenho "mudaria sozinho" no próximo reload.
+    if (pts.length >= DRAW_MAX_POINTS) return;
+    pts.push([px, py]);
   }
   renderDrawings();
 }
@@ -301,10 +338,20 @@ function _onDrawEnd() {
     // Lápis: garantir pelo menos 2 pontos (evita ponto sem renderizar)
     if (_activeTool === "pencil") {
       const pts = _activeStroke.points;
-      if (pts.length === 1) pts.push([pts[0][0] + 0.001, pts[0][1] + 0.001]);
+      if (pts.length === 1) pts.push([_round4(pts[0][0] + 0.001), _round4(pts[0][1] + 0.001)]);
     }
-    _strokes.push(_activeStroke);
-    _broadcastDrawings();
+    if (_strokes.length >= DRAW_MAX_STROKES) {
+      window.UI?.toast?.(
+        `Limite de ${DRAW_MAX_STROKES} traços — use a borracha ou limpe o quadro.`,
+        { kicker: "// Mesa" }
+      );
+      _activeStroke = null;
+      renderDrawings();
+      return;
+    }
+    const stroke = _activeStroke;
+    _strokes.push(stroke);
+    _commitStrokeAdd(stroke);
   }
 
   _activeStroke = null;
@@ -313,12 +360,11 @@ function _onDrawEnd() {
 
 // ── Borracha ───────────────────────────────────────────────────────
 function _eraseAt(x, y) {
-  const before = _strokes.length;
+  const erased = _strokes.filter(s => _hitTest(s, x, y));
+  if (!erased.length) return;
   _strokes = _strokes.filter(s => !_hitTest(s, x, y));
-  if (_strokes.length !== before) {
-    renderDrawings();
-    _broadcastDrawings();
-  }
+  renderDrawings();
+  _commitStrokeRemove(erased);
 }
 
 function _hitTest(s, mx, my) {
@@ -435,9 +481,11 @@ function clearAllDrawings() {
 // ── Deletar strokes por ID ─────────────────────────────────────────
 function deleteDrawingsById(ids) {
   const idSet = new Set(ids.map(String));
+  const removed = _strokes.filter(s => idSet.has(String(s.id)));
+  if (!removed.length) return;
   _strokes = _strokes.filter(s => !idSet.has(String(s.id)));
   renderDrawings();
-  _broadcastDrawings();
+  _commitStrokeRemove(removed);
 }
 
 // ── Sync externo ───────────────────────────────────────────────────
@@ -455,21 +503,77 @@ function setDrawingsFromRemote(strokes) {
   renderDrawings();
 }
 
+// Chega um traço solto de outro cliente (mesa:drawings:add). Idempotente: um
+// id já conhecido é ignorado, então reenvio/duplicata não desenha duas vezes.
+function applyMesaDrawingAddFromRemote(stroke) {
+  if (!stroke || typeof stroke !== "object") return;
+  if (stroke.layer === "dm") return;   // traço secreto nunca vem pela rede
+  const id = String(stroke.id || "");
+  if (!id || _strokes.some(s => String(s.id) === id)) return;
+  if (_strokes.length >= DRAW_MAX_STROKES) return;
+  _strokes.push(stroke);
+  _persistDrawings();
+  renderDrawings();
+}
+
+// Chega uma remoção de outro cliente (mesa:drawings:remove). O mestre nunca
+// deixa a rede apagar um traço da camada secreta dele.
+function applyMesaDrawingRemoveFromRemote(ids) {
+  if (!Array.isArray(ids) || !ids.length) return;
+  const idSet = new Set(ids.map(String));
+  const before = _strokes.length;
+  _strokes = _strokes.filter(s => !(idSet.has(String(s.id)) && s.layer !== "dm"));
+  if (_strokes.length === before) return;
+  _persistDrawings();
+  renderDrawings();
+}
+
 function getDrawingsSnapshot() {
   return _strokes.slice();
 }
 
+// Persiste local + cena oficial. Comum aos três caminhos de mutação.
+function _persistDrawingsAndScene() {
+  _persistDrawings();
+  // Cena oficial ganha os traços: mestre persiste no backend; jogador atualiza
+  // o snapshot local (o traço dele vira oficial quando o mestre receber o
+  // delta e persistir).
+  if (typeof persistState === "function") persistState();
+}
+
+// Traço recém-fechado → viaja sozinho. Traço "dm" (secreto do mestre) NUNCA sai
+// pelo realtime; ele só chega ao backend pelo PUT /mesa/scene do mestre.
+function _commitStrokeAdd(stroke) {
+  if (stroke && stroke.layer !== "dm" && typeof sendMesaRealtimeDelta === "function") {
+    sendMesaRealtimeDelta("mesa:drawings:add", { stroke });
+  }
+  _persistDrawingsAndScene();
+}
+
+// Borracha/desfazer/deleção → só os ids. Mesma regra da camada secreta.
+function _commitStrokeRemove(strokes) {
+  const ids = (Array.isArray(strokes) ? strokes : [])
+    .filter(s => s && s.layer !== "dm")
+    .map(s => String(s.id || ""))
+    .filter(Boolean);
+  if (ids.length && typeof sendMesaRealtimeDelta === "function") {
+    sendMesaRealtimeDelta("mesa:drawings:remove", { ids });
+  }
+  _persistDrawingsAndScene();
+}
+
+// Estado completo. Sobrou para dois casos: limpar o quadro (payload vazio) e o
+// reenvio a quem entra depois. Acima do teto de segurança o envio é PULADO — o
+// jogador que entra recebe os traços pelo GET /mesa/scene de qualquer forma, e
+// mandar assim mesmo só faria o DO recusar em silêncio (o bug da Etapa 50).
 function _broadcastDrawings() {
   _persistDrawings();
   if (typeof sendMesaRealtimeDelta === "function") {
-    // Traços da camada secreta ("dm") NUNCA saem pelo canal realtime — eles só
-    // chegam ao backend pelo PUT /mesa/scene do mestre (o Worker filtra "dm"
-    // no GET para jogadores).
-    sendMesaRealtimeDelta("mesa:drawings:update", { drawings: _strokes.filter(s => s.layer !== "dm") });
+    const drawings = _strokes.filter(s => s.layer !== "dm");
+    if (JSON.stringify(drawings).length <= DRAW_FULL_STATE_MAX_CHARS) {
+      sendMesaRealtimeDelta("mesa:drawings:update", { drawings });
+    }
   }
-  // Cena oficial ganha os traços: mestre persiste no backend; jogador atualiza
-  // o snapshot local (o traço dele vira oficial quando o mestre receber o
-  // delta acima e persistir).
   if (typeof persistState === "function") {
     persistState();
   }

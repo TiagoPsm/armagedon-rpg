@@ -2633,3 +2633,236 @@ test.describe("Multiplas cenas — frontend (Etapa 49)", () => {
     expect(result.legacyIntact).toBe(true);         // cena default preservada (zero migracao)
   });
 });
+
+/* ============================================================
+ * Etapa 50 — Auditoria multi-frente + performance
+ *
+ * O achado da auditoria: mesa:drawings:update carregava o ESTADO
+ * COMPLETO com coordenadas cruas (0.02145922746781116). Medido:
+ * 5 tracos a lapis = 13,4KB; o cap do DO e 32KB por mensagem, ou
+ * seja ~12 tracos e o backend passava a RECUSAR — e ninguem
+ * escutava mesa:scene:ack, entao a sincronia morria em silencio.
+ *
+ * Correcoes: coordenada arredondada na captura (mesmas 4 casas do
+ * Worker), ralo de pontos, caps iguais aos do Worker, broadcast por
+ * DELTA (add de um traco / remove por id) e ack visivel.
+ * ============================================================ */
+test.describe("Auditoria multi-frente + performance (Etapa 50)", () => {
+  test("DO rules: add/remove de desenho sao relay e sanitizam camada dm, id e cap", async () => {
+    const {
+      RELAY_TYPES,
+      MASTER_ONLY_TYPES,
+      MAX_RELAY_DRAWINGS,
+      sanitizeRelayDrawingIds,
+      sanitizeRelayDrawingStroke
+    } = await import("../cloudflare/src/mesa-realtime-rules.js");
+
+    // Qualquer participante desenha (como o full-state ja era): relay, nao master-only.
+    expect(RELAY_TYPES.has("mesa:drawings:add")).toBe(true);
+    expect(RELAY_TYPES.has("mesa:drawings:remove")).toBe(true);
+    expect(MASTER_ONLY_TYPES.has("mesa:drawings:add")).toBe(false);
+    expect(MASTER_ONLY_TYPES.has("mesa:drawings:remove")).toBe(false);
+
+    // add: traco secreto, sem id ou nao-objeto sao recusados
+    expect(sanitizeRelayDrawingStroke({ id: "s1", layer: "dm" })).toBeNull();
+    expect(sanitizeRelayDrawingStroke({ id: "  ", layer: "tokens" })).toBeNull();
+    expect(sanitizeRelayDrawingStroke("nao-objeto")).toBeNull();
+    expect(sanitizeRelayDrawingStroke([{ id: "s1" }])).toBeNull();
+    const ok = sanitizeRelayDrawingStroke({ id: " s1 ", layer: "tokens", tool: "pencil" });
+    expect(ok.id).toBe("s1");
+    expect(ok.tool).toBe("pencil");
+
+    // remove: lista de ids, vazios caem fora, cap igual ao do full-state
+    expect(sanitizeRelayDrawingIds("nao-array")).toBeNull();
+    expect(sanitizeRelayDrawingIds([" ", ""])).toBeNull();
+    expect(sanitizeRelayDrawingIds([" a ", "", "b"])).toEqual(["a", "b"]);
+    const muitos = Array.from({ length: MAX_RELAY_DRAWINGS + 50 }, (_, i) => `id${i}`);
+    expect(sanitizeRelayDrawingIds(muitos).length).toBe(MAX_RELAY_DRAWINGS);
+  });
+
+  test("traco novo viaja sozinho e cabe no cap de 32KB (o full-state nao cabia)", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(() => {
+      const calls = [];
+      sendMesaRealtimeDelta = (type, payload) => { calls.push({ type, payload }); return true; };
+
+      // Quadro ja pesado: 40 tracos de 200 pontos. Antes, QUALQUER traco novo
+      // reenviava tudo isso e estourava o cap.
+      const pesados = [];
+      for (let s = 0; s < 40; s += 1) {
+        const points = [];
+        for (let p = 0; p < 200; p += 1) points.push([Math.round(p / 2) / 100, Math.round(s / 2) / 100]);
+        pesados.push({ id: `pes${s}`, tool: "pencil", color: "#e84040", width: 3, layer: "tokens",
+          x1: 0, y1: 0, x2: 1, y2: 1, points });
+      }
+      _strokes = pesados;
+      const fullStateBytes = JSON.stringify({ drawings: _strokes }).length;
+
+      // Traco novo pelo caminho real de commit
+      const novo = { id: "novo1", tool: "pencil", color: "#e84040", width: 3, layer: "tokens",
+        x1: 0.1, y1: 0.1, x2: 0.2, y2: 0.2, points: [[0.1, 0.1], [0.2, 0.2]] };
+      _strokes.push(novo);
+      _commitStrokeAdd(novo);
+
+      const add = calls.find(c => c.type === "mesa:drawings:add");
+      return {
+        fullStateBytes,
+        tipos: calls.map(c => c.type),
+        addBytes: JSON.stringify(add?.payload || {}).length,
+        addStrokeId: add?.payload?.stroke?.id
+      };
+    });
+
+    expect(result.fullStateBytes).toBeGreaterThan(32 * 1024);  // o quadro NAO cabe inteiro
+    expect(result.tipos).toContain("mesa:drawings:add");
+    expect(result.tipos).not.toContain("mesa:drawings:update"); // nao reenvia o estado todo
+    expect(result.addStrokeId).toBe("novo1");
+    expect(result.addBytes).toBeLessThan(8 * 1024);             // o delta cabe folgado
+  });
+
+  test("borracha e desfazer mandam so os ids; traco secreto nunca sai pela rede", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(() => {
+      const calls = [];
+      sendMesaRealtimeDelta = (type, payload) => { calls.push({ type, payload }); return true; };
+      _strokes = [
+        { id: "a", tool: "line", layer: "tokens", x1: 0, y1: 0, x2: 1, y2: 1, points: null },
+        { id: "segredo", tool: "line", layer: "dm", x1: 0, y1: 0, x2: 1, y2: 1, points: null },
+        { id: "b", tool: "line", layer: "tokens", x1: 0, y1: 0, x2: 1, y2: 1, points: null }
+      ];
+      deleteDrawingsById(["a", "b"]);
+      const removeCall = calls.find(c => c.type === "mesa:drawings:remove");
+
+      // Traco secreto: some da tela do mestre, mas nao vira mensagem de rede
+      calls.length = 0;
+      deleteDrawingsById(["segredo"]);
+      return {
+        ids: removeCall?.payload?.ids,
+        payloadRemove: JSON.stringify(removeCall?.payload || {}),
+        restantes: _strokes.map(s => s.id),
+        tiposAposSegredo: calls.map(c => c.type)
+      };
+    });
+
+    expect(result.ids).toEqual(["a", "b"]);
+    expect(result.payloadRemove).not.toContain("points");   // so ids, sem geometria
+    expect(result.restantes).toEqual([]);
+    expect(result.tiposAposSegredo).not.toContain("mesa:drawings:remove");
+  });
+
+  test("coordenadas sao arredondadas na captura e add remoto e idempotente", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(() => {
+      // Captura: nenhuma coordenada pode ter mais de 4 casas (o Worker salva 4;
+      // mandar 17 so inflava o payload em ~2,5x).
+      const p = _toPercent(123.456789, 77.7777);
+      const casas = valor => (String(valor).split(".")[1] || "").length;
+
+      // Idempotencia do add remoto: reenvio/duplicata nao desenha duas vezes
+      _strokes = [];
+      const stroke = { id: "r1", tool: "line", layer: "tokens", x1: 0, y1: 0, x2: 1, y2: 1, points: null };
+      applyMesaDrawingAddFromRemote(stroke);
+      applyMesaDrawingAddFromRemote(stroke);
+      const aposDuplicata = _strokes.length;
+
+      // Traco secreto vindo da rede e ignorado (ninguem injeta na camada dm)
+      applyMesaDrawingAddFromRemote({ id: "x", layer: "dm" });
+      const aposDm = _strokes.length;
+
+      // Remocao remota nao apaga traco secreto do mestre
+      _strokes.push({ id: "meu-segredo", layer: "dm" });
+      applyMesaDrawingRemoveFromRemote(["r1", "meu-segredo"]);
+
+      return {
+        casasX: casas(p.px), casasY: casas(p.py),
+        aposDuplicata, aposDm,
+        finais: _strokes.map(s => s.id)
+      };
+    });
+
+    expect(result.casasX).toBeLessThanOrEqual(4);
+    expect(result.casasY).toBeLessThanOrEqual(4);
+    expect(result.aposDuplicata).toBe(1);
+    expect(result.aposDm).toBe(1);
+    expect(result.finais).toEqual(["meu-segredo"]);
+  });
+
+  test("recusa do backend vira aviso na tela (antes sumia em silencio)", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(() => {
+      const toasts = [];
+      window.UI = window.UI || {};
+      window.UI.toast = message => { toasts.push(String(message)); };
+
+      window.APP.__testEmit("mesa:scene:ack", { ok: false, reason: "Mensagem excede o limite de tamanho do realtime." });
+      const aposRecusa = toasts.length;
+      // Rajada: garganta de 4s evita chuva de toasts
+      window.APP.__testEmit("mesa:scene:ack", { ok: false, reason: "Outra recusa." });
+      const aposRajada = toasts.length;
+      // Sucesso nao avisa nada
+      window.APP.__testEmit("mesa:scene:ack", { ok: true });
+      return { aposRecusa, aposRajada, total: toasts.length, primeiro: toasts[0] };
+    });
+
+    expect(result.aposRecusa).toBe(1);
+    expect(result.aposRajada).toBe(1);
+    expect(result.total).toBe(1);
+    expect(result.primeiro).toContain("limite de tamanho");
+  });
+
+  test("full-state acima do teto nao e enviado (o DO recusaria em silencio)", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(() => {
+      const calls = [];
+      sendMesaRealtimeDelta = (type, payload) => { calls.push({ type, payload }); return true; };
+
+      // Quadro pequeno: reenvio a quem entra depois continua acontecendo
+      _strokes = [{ id: "s1", tool: "line", layer: "tokens", x1: 0, y1: 0, x2: 1, y2: 1, points: null }];
+      _broadcastDrawings();
+      const pequeno = calls.filter(c => c.type === "mesa:drawings:update").length;
+
+      // Quadro gigante: pular o envio e melhor que ser recusado sem aviso —
+      // quem entra recebe os tracos pelo GET /mesa/scene de qualquer forma.
+      calls.length = 0;
+      const pesados = [];
+      for (let s = 0; s < 60; s += 1) {
+        const points = [];
+        for (let p = 0; p < 200; p += 1) points.push([Math.round(p / 2) / 100, Math.round(s / 2) / 100]);
+        pesados.push({ id: `pes${s}`, tool: "pencil", layer: "tokens", x1: 0, y1: 0, x2: 1, y2: 1, points });
+      }
+      _strokes = pesados;
+      _broadcastDrawings();
+      const gigante = calls.filter(c => c.type === "mesa:drawings:update").length;
+
+      return { pequeno, gigante };
+    });
+
+    expect(result.pequeno).toBe(1);
+    expect(result.gigante).toBe(0);
+  });
+});

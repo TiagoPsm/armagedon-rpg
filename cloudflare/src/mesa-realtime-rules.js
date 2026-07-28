@@ -14,6 +14,13 @@ const INITIATIVE_ROLL_TYPE = "mesa:initiative:roll";
 // o estado completo dos tracos visiveis. Tracos da camada secreta ("dm") nunca
 // deveriam sair do cliente do mestre — o DO remove qualquer um que chegue.
 const DRAWINGS_UPDATE_TYPE = "mesa:drawings:update";
+// Deltas de desenho (Etapa 50): o estado completo estourava o cap de 32KB por
+// mensagem depois de ~12 tracos a lapis — o DO recusava e a sincronia morria em
+// silencio. Agora o traco recem-fechado viaja sozinho (add, sempre poucos KB) e
+// a borracha manda so os ids (remove). O full-state segue existindo apenas para
+// o reenvio a quem entra depois, e o cliente so o manda quando cabe.
+const DRAWINGS_ADD_TYPE = "mesa:drawings:add";
+const DRAWINGS_REMOVE_TYPE = "mesa:drawings:remove";
 // Grade (Etapa 42): estado completo da grade da cena, autoritativo do mestre.
 const GRID_UPDATE_TYPE = "mesa:grid:update";
 // Fog of War (Etapa 47): estado completo da névoa, autoritativo do mestre.
@@ -53,6 +60,8 @@ const RELAY_TYPES = new Set([
   ECHO_VITALS_TYPE,
   INITIATIVE_ROLL_TYPE,
   DRAWINGS_UPDATE_TYPE,
+  DRAWINGS_ADD_TYPE,
+  DRAWINGS_REMOVE_TYPE,
   PING_TYPE,
   RULER_TYPE,
   "mesa:batch"
@@ -204,6 +213,31 @@ function sanitizeRelayDrawings(drawings) {
   return drawings
     .filter(stroke => isPlainObject(stroke) && stroke.layer !== "dm")
     .slice(0, MAX_RELAY_DRAWINGS);
+}
+
+/**
+ * Sanitiza mesa:drawings:add — UM traco, com id nao vazio e fora da camada
+ * secreta. Retorna o traco ou null (o DO recusa a mensagem).
+ */
+function sanitizeRelayDrawingStroke(stroke) {
+  if (!isPlainObject(stroke)) return null;
+  if (stroke.layer === "dm") return null;
+  const id = String(stroke.id || "").trim().slice(0, 40);
+  if (!id) return null;
+  return { ...stroke, id };
+}
+
+/**
+ * Sanitiza mesa:drawings:remove — lista de ids (cap MAX_RELAY_DRAWINGS).
+ * Retorna o array limpo ou null se nao sobrar nenhum id valido.
+ */
+function sanitizeRelayDrawingIds(ids) {
+  if (!Array.isArray(ids)) return null;
+  const clean = ids
+    .map(id => String(id || "").trim().slice(0, 40))
+    .filter(Boolean)
+    .slice(0, MAX_RELAY_DRAWINGS);
+  return clean.length ? clean : null;
 }
 
 /* ── Normalizacao de patch de ficha / vitais de Echo ────────── */
@@ -377,6 +411,8 @@ export {
   ATTRIBUTES,
   DICE_REQUEST_TYPE,
   DICE_RESULT_TYPE,
+  DRAWINGS_ADD_TYPE,
+  DRAWINGS_REMOVE_TYPE,
   DRAWINGS_UPDATE_TYPE,
   ECHO_VITALS_TYPE,
   FOG_UPDATE_TYPE,
@@ -409,6 +445,8 @@ export {
   normalizeSheetPatchPayload,
   parseMesaDiceFormula,
   rollMesaDice,
+  sanitizeRelayDrawingIds,
+  sanitizeRelayDrawingStroke,
   sanitizeRelayDrawings,
   takeRateToken
 };
