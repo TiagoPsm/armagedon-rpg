@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-28 17:27:54 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-28 19:51:48 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `9bda578 2026-07-27 feat(mesa): gerenciador de multiplas cenas ÔÇö troca ao vivo, snapshot local por cena (Etapa 49)`
+- Ultimo commit: `10c3dda 2026-07-28 fix(mesa): desenho sincroniza por delta ÔÇö o full-state estourava o cap do DO (Etapa 50)`
 
 ### Alteracoes Locais
 
@@ -22,13 +22,13 @@
 M  DEV_STATUS.md
 M  SYSTEM_RULES.md
 M  cloudflare/README.md
-M  cloudflare/src/mesa-realtime-rules.js
-M  cloudflare/src/mesa-realtime.js
+M  cloudflare/src/mesa.js
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  js/mesa-core.js
-M  js/mesa-drawing.js
+M  js/mesa-fog.js
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
+M  tests/mesa-online.spec.cjs
 M  tools/build-pages.cjs
 ```
 
@@ -45,12 +45,12 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 DEV_STATUS.md
 SYSTEM_RULES.md
 cloudflare/README.md
-cloudflare/src/mesa-realtime-rules.js
-cloudflare/src/mesa-realtime.js
+cloudflare/src/mesa.js
 js/mesa-core.js
-js/mesa-drawing.js
+js/mesa-fog.js
 mesa.html
 tests/mesa-audit.spec.cjs
+tests/mesa-online.spec.cjs
 tools/build-pages.cjs
 ```
 

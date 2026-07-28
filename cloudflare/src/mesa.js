@@ -142,8 +142,12 @@ function normalizeSceneFog(fog) {
     .filter(Boolean)
     .slice(0, MAX_FOG_OPS);
   const enabled = fog.enabled === true;
-  if (!enabled && !ops.length) return null;
-  return { enabled, ops };
+  // Base do mapa (2026-07-28): "revealed" = tudo descoberto com a nevoa ainda
+  // ativa (as ops de "hide" e que cobrem). Cena antiga sem o campo e qualquer
+  // valor invalido caem em "hidden", o comportamento de sempre.
+  const base = fog.base === "revealed" ? "revealed" : "hidden";
+  if (!enabled && !ops.length && base === "hidden") return null;
+  return { enabled, base, ops };
 }
 
 // Desenhos oficiais da cena: traços em frações 0–1 do palco, mesmos campos do

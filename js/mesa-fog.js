@@ -9,9 +9,15 @@
  * pelo helper único de mesa-map.js. Pan/zoom só re-renderizam.
  * Sem mapa ativo, a superfície é o próprio palco.
  *
- * Estado: { enabled, ops[] } — cada op é um pincel circular
+ * Estado: { enabled, base, ops[] } — cada op é um pincel circular
  * { mode: "reveal"|"hide", u, v, r } (r = fração da LARGURA do
- * mapa), aplicado NA ORDEM. Névoa ativa sem ops = tudo coberto.
+ * mapa), aplicado NA ORDEM sobre a BASE.
+ *
+ * `base` é o ponto de partida do mapa (2026-07-28): "hidden" (padrão,
+ * tudo coberto — é o comportamento de sempre) ou "revealed" (tudo
+ * descoberto). Com base "revealed" o pincel "Cobrir" vira a
+ * ferramenta principal: revela o mapa inteiro e esconde só a sala
+ * secreta. Cena antiga sem o campo cai em "hidden" — zero migração.
  * Cap de 400 ops (o Worker também corta).
  *
  * RENDER
@@ -37,7 +43,10 @@ const MESA_FOG_BRUSH_MIN = 0.02;
 const MESA_FOG_BRUSH_MAX = 0.25;
 const MESA_FOG_BRUSH_STEP = 0.01;
 
-let _fogState = { enabled: false, ops: [] };
+const MESA_FOG_BASE_HIDDEN = "hidden";
+const MESA_FOG_BASE_REVEALED = "revealed";
+
+let _fogState = { enabled: false, base: MESA_FOG_BASE_HIDDEN, ops: [] };
 let _fogCanvasEl = null;
 let _fogCtx = null;
 let _fogStageEl = null;
@@ -52,7 +61,7 @@ let _fogLastBroadcastAt = 0;
 /* ── NORMALIZAÇÃO (mesmos limites do Worker) ────────────────── */
 
 function normalizeMesaFogState(fog) {
-  if (!fog || typeof fog !== "object") return { enabled: false, ops: [] };
+  if (!fog || typeof fog !== "object") return { enabled: false, base: MESA_FOG_BASE_HIDDEN, ops: [] };
   const round4 = value => Math.round(Number(value) * 10000) / 10000;
   const clampNum = (value, min, max) => {
     const n = Number(value);
@@ -72,19 +81,26 @@ function normalizeMesaFogState(fog) {
     })
     .filter(Boolean)
     .slice(0, MESA_FOG_MAX_OPS);
-  return { enabled: fog.enabled === true, ops };
+  // Cena antiga (sem o campo) e qualquer valor estranho caem em "hidden" — o
+  // comportamento de sempre, tudo coberto.
+  const base = fog.base === MESA_FOG_BASE_REVEALED ? MESA_FOG_BASE_REVEALED : MESA_FOG_BASE_HIDDEN;
+  return { enabled: fog.enabled === true, base, ops };
 }
 
 /* ── ESTADO / CONTRATO DA CENA ──────────────────────────────── */
 
 function getMesaFogState() {
-  return { enabled: _fogState.enabled, ops: _fogState.ops.map(op => ({ ...op })) };
+  return {
+    enabled: _fogState.enabled,
+    base: _fogState.base,
+    ops: _fogState.ops.map(op => ({ ...op }))
+  };
 }
 
-// Consumido por createMesaScenePayloadFromState. Névoa desligada e sem ops
-// vira null — cenas antigas e o dedupe de assinatura não mudam.
+// Consumido por createMesaScenePayloadFromState. Névoa desligada, sem ops e na
+// base padrão vira null — cenas antigas e o dedupe de assinatura não mudam.
 function getMesaFogScenePayload() {
-  if (!_fogState.enabled && !_fogState.ops.length) return null;
+  if (!_fogState.enabled && !_fogState.ops.length && _fogState.base === MESA_FOG_BASE_HIDDEN) return null;
   return getMesaFogState();
 }
 
@@ -135,10 +151,18 @@ function updateMesaFog(patch) {
   _commitFog();
 }
 
-// "Cobrir tudo" = névoa ativa sem ops. Também zera o histórico de pincel
-// (é o reset recomendado quando o cap de 400 ops é atingido).
+// "Cobrir tudo" = névoa ativa, base coberta, sem ops. Também zera o histórico
+// de pincel (é o reset recomendado quando o cap de 400 ops é atingido).
 function resetMesaFog() {
-  updateMesaFog({ enabled: true, ops: [] });
+  updateMesaFog({ enabled: true, base: MESA_FOG_BASE_HIDDEN, ops: [] });
+}
+
+// "Revelar tudo" = névoa ativa com o mapa inteiro descoberto. Diferente de
+// desligar a névoa: ela continua armada, então o pincel "Cobrir" volta a
+// esconder pontos específicos (usar quando o grupo já explorou o mapa e só a
+// sala do chefe fica no escuro).
+function revealAllMesaFog() {
+  updateMesaFog({ enabled: true, base: MESA_FOG_BASE_REVEALED, ops: [] });
 }
 
 /** Adiciona uma pincelada (fração do mapa). Retorna false no cap. */
@@ -214,7 +238,11 @@ function renderMesaFog() {
   _fogCtx.clip();
 
   _fogCtx.fillStyle = MESA_FOG_COLOR;
-  _fogCtx.fillRect(clipLeft, clipTop, clipRight - clipLeft, clipBottom - clipTop);
+  // Base "hidden": pinta tudo e as ops abrem buracos. Base "revealed": começa
+  // limpo e só as ops de "hide" cobrem — o mapa inteiro nasce descoberto.
+  if (_fogState.base !== MESA_FOG_BASE_REVEALED) {
+    _fogCtx.fillRect(clipLeft, clipTop, clipRight - clipLeft, clipBottom - clipTop);
+  }
 
   // Ops na ordem: reveal apaga (destination-out), hide repinta por cima.
   _fogState.ops.forEach(op => {
@@ -328,8 +356,23 @@ function _syncFogSettingsUI() {
     hide.classList.toggle("is-active", _fogBrushMode === "hide");
     hide.disabled = !_fogState.enabled;
   }
+  // "Cobrir tudo" / "Revelar tudo": cada um fica marcado e desabilitado quando
+  // a mesa JA esta naquele estado — clicar de novo nao mudaria nada. Com a
+  // nevoa desligada os dois ficam clicaveis: servem para ligar ja no estado
+  // escolhido (os dois se comportam igual, sem pegadinha).
+  const semPinceladas = !_fogState.ops.length;
+  const jaCoberto = _fogState.enabled && _fogState.base !== MESA_FOG_BASE_REVEALED && semPinceladas;
+  const jaRevelado = _fogState.enabled && _fogState.base === MESA_FOG_BASE_REVEALED && semPinceladas;
   const resetBtn = document.getElementById("mesaFogResetBtn");
-  if (resetBtn) resetBtn.disabled = !_fogState.enabled && !_fogState.ops.length;
+  if (resetBtn) {
+    resetBtn.classList.toggle("is-active", jaCoberto);
+    resetBtn.disabled = jaCoberto;
+  }
+  const revealAllBtn = document.getElementById("mesaFogRevealAllBtn");
+  if (revealAllBtn) {
+    revealAllBtn.classList.toggle("is-active", jaRevelado);
+    revealAllBtn.disabled = jaRevelado;
+  }
   const sizeLbl = document.getElementById("mesaFogBrushLabel");
   if (sizeLbl) sizeLbl.textContent = String(Math.round(_fogBrushRadius * 100));
 }
@@ -338,9 +381,15 @@ function _bindFogSettingsUI() {
   const toggle = document.getElementById("mesaFogToggle");
   if (toggle) {
     toggle.addEventListener("change", () => {
+      // Ler a intenção ANTES de qualquer coisa que sincronize a UI. Era aqui o
+      // bug de "não dá para desligar a névoa" (2026-07-28): setMesaFogBrush
+      // chama _syncFogSettingsUI, que reescreve `toggle.checked` a partir do
+      // estado AINDA ligado — a linha seguinte lia `true` de volta e a névoa
+      // se religava sozinha. Ligar funcionava; desligar, nunca.
+      const querLigada = toggle.checked;
       // Desligar a névoa limpa o pincel armado (não faz sentido pintar).
-      if (!toggle.checked) setMesaFogBrush(null);
-      updateMesaFog({ enabled: toggle.checked });
+      if (!querLigada) setMesaFogBrush(null);
+      updateMesaFog({ enabled: querLigada });
     });
   }
   document.getElementById("mesaFogRevealBtn")?.addEventListener("click", () => {
@@ -350,6 +399,7 @@ function _bindFogSettingsUI() {
     setMesaFogBrush(_fogBrushMode === "hide" ? null : "hide");
   });
   document.getElementById("mesaFogResetBtn")?.addEventListener("click", () => resetMesaFog());
+  document.getElementById("mesaFogRevealAllBtn")?.addEventListener("click", () => revealAllMesaFog());
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && _fogBrushMode) setMesaFogBrush(null);
   });
@@ -388,6 +438,7 @@ window.applyMesaSceneFogFromSnapshot = applyMesaSceneFogFromSnapshot;
 window.setMesaFogFromRemote          = setMesaFogFromRemote;
 window.updateMesaFog                 = updateMesaFog;
 window.resetMesaFog                  = resetMesaFog;
+window.revealAllMesaFog              = revealAllMesaFog;
 window.setMesaFogBrush               = setMesaFogBrush;
 window.adjustMesaFogBrush            = adjustMesaFogBrush;
 window.normalizeMesaFogState         = normalizeMesaFogState;

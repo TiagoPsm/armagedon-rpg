@@ -2363,7 +2363,9 @@ function normalizeMesaScenePayload(payload = {}) {
     fog: typeof window.normalizeMesaFogState === "function" && payload?.fog
       ? (() => {
           const fog = window.normalizeMesaFogState(payload.fog);
-          return fog.enabled || fog.ops.length ? fog : null;
+          // Mesma condicao de getMesaFogScenePayload: so vira null quando a
+          // nevoa esta desligada, sem pinceladas E na base padrao.
+          return fog.enabled || fog.ops.length || fog.base === "revealed" ? fog : null;
         })()
       : null
   };

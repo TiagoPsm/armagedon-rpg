@@ -120,11 +120,18 @@ test.describe("Mesa online - fluxo autenticado", () => {
     const websocketResult = await page.evaluate(
       async ({ masterToken, playerToken, wsUrl, relayProbe }) => {
         const messageId = `codex-online-${Date.now()}`;
+        // Sonda do delta de desenho da Etapa 50: o traco de teste tem id
+        // reconhecivel e e REMOVIDO logo apos o jogador confirmar o recebimento,
+        // para nao deixar sujeira na cena caso um cliente do mestre esteja
+        // aberto e persista o que chega pelo realtime.
+        const probeStrokeId = `smoke-${Date.now()}`;
         const state = {
           masterReady: false,
           playerReady: false,
           masterAck: false,
           playerSawRelay: false,
+          playerSawDrawAdd: false,
+          playerSawDrawRemove: false,
           masterTypes: [],
           playerTypes: []
         };
@@ -135,6 +142,8 @@ test.describe("Mesa online - fluxo autenticado", () => {
           const masterSocket = openSocket(masterToken);
           const playerSocket = openSocket(playerToken);
           let relaySent = false;
+          let drawSent = false;
+          let drawCleaned = false;
 
           const cleanup = () => {
             try { masterSocket.close(); } catch {}
@@ -166,6 +175,37 @@ test.describe("Mesa online - fluxo autenticado", () => {
 
             if (relayProbe && (!state.masterAck || !state.playerSawRelay)) return;
 
+            // Segundo passo da sonda: traco novo pelo canal de DELTA (Etapa 50).
+            // Antes dessa etapa o desenho ia como estado completo e o DO recusava
+            // acima de 32KB; aqui provamos que o add chega ao jogador em producao.
+            if (relayProbe && !drawSent) {
+              drawSent = true;
+              masterSocket.send(JSON.stringify({
+                type: "mesa:drawings:add",
+                stroke: {
+                  id: probeStrokeId, tool: "line", color: "#e84040", width: 3,
+                  layer: "tokens", x1: 0.01, y1: 0.01, x2: 0.02, y2: 0.02, points: null
+                },
+                clientId: "codex-online-master",
+                messageId: `${messageId}-draw`
+              }));
+              return;
+            }
+
+            // Limpeza: remove o traco da sonda assim que o jogador confirma.
+            if (relayProbe && state.playerSawDrawAdd && !drawCleaned) {
+              drawCleaned = true;
+              masterSocket.send(JSON.stringify({
+                type: "mesa:drawings:remove",
+                ids: [probeStrokeId],
+                clientId: "codex-online-master",
+                messageId: `${messageId}-draw-clean`
+              }));
+              return;
+            }
+
+            if (relayProbe && !state.playerSawDrawRemove) return;
+
             window.clearTimeout(timeout);
             cleanup();
             resolve(state);
@@ -190,6 +230,13 @@ test.describe("Mesa online - fluxo autenticado", () => {
             if (side === "player" && type === "mesa:token:move" && payload.messageId === messageId) {
               state.playerSawRelay = true;
             }
+            if (side === "player" && type === "mesa:drawings:add" && payload.stroke?.id === probeStrokeId) {
+              state.playerSawDrawAdd = true;
+            }
+            if (side === "player" && type === "mesa:drawings:remove"
+                && Array.isArray(payload.ids) && payload.ids.includes(probeStrokeId)) {
+              state.playerSawDrawRemove = true;
+            }
 
             finishIfReady();
           };
@@ -213,6 +260,10 @@ test.describe("Mesa online - fluxo autenticado", () => {
     if (RUN_RELAY_PROBE) {
       expect(websocketResult.masterAck).toBe(true);
       expect(websocketResult.playerSawRelay).toBe(true);
+      // Delta de desenho da Etapa 50 funcionando de ponta a ponta em producao,
+      // e o traco da sonda removido em seguida (sem sujeira na cena).
+      expect(websocketResult.playerSawDrawAdd).toBe(true);
+      expect(websocketResult.playerSawDrawRemove).toBe(true);
     }
 
     const masterContext = await browser.newContext();
@@ -231,9 +282,29 @@ test.describe("Mesa online - fluxo autenticado", () => {
       if (message.type() === "error") consoleErrors.push(message.text());
     });
     await masterPage.goto(`${SITE_BASE_URL}/mesa.html?online-ui=${Date.now()}`);
-    await expect(masterPage.locator("#mesaStage canvas.mesa-stage-canvas")).toHaveCount(1, { timeout: 15000 });
+    // O boot da Mesa e assincrono: esperar a flag em vez de um seletor solto
+    // (mesma licao dos testes locais — sem isso o smoke le a pagina pela metade).
+    await masterPage.waitForFunction(
+      () => typeof state !== "undefined" && state.bootCompleted === true,
+      { timeout: 20000 }
+    );
+    await expect(masterPage.locator("#mesaStageWrap")).toBeVisible({ timeout: 15000 });
     await expect(masterPage.locator("#rosterList")).toBeVisible({ timeout: 15000 });
     await expect(masterPage.locator("#rosterSearchField")).toBeVisible({ timeout: 15000 });
+    // Ferramentas do mestre construidas nas Etapas 42-49 precisam estar na tela
+    // publicada — se um bundle sair incompleto, e aqui que aparece.
+    const ferramentasDoMestre = await masterPage.evaluate(() => ({
+      grade: !document.getElementById("mesaGridGroup")?.hidden,
+      nevoa: !document.getElementById("mesaFogGroup")?.hidden,
+      cenas: !document.getElementById("mesaScenesGroup")?.hidden,
+      dados: Boolean(document.getElementById("mesaDicePanel")),
+      nevoaCanvas: Boolean(document.getElementById("mesaFogCanvas")),
+      desenhoCanvas: Boolean(document.getElementById("mesaDrawCanvas"))
+    }));
+    expect(ferramentasDoMestre).toEqual({
+      grade: true, nevoa: true, cenas: true,
+      dados: true, nevoaCanvas: true, desenhoCanvas: true
+    });
     expect(consoleErrors).toEqual([]);
     await masterContext.close();
 
@@ -253,10 +324,24 @@ test.describe("Mesa online - fluxo autenticado", () => {
       if (message.type() === "error") playerConsoleErrors.push(message.text());
     });
     await playerPage.goto(`${SITE_BASE_URL}/mesa.html?online-player-ui=${Date.now()}`);
-    await expect(playerPage.locator("#mesaStage canvas.mesa-stage-canvas")).toHaveCount(1, { timeout: 15000 });
-    await expect(playerPage.locator(".player-sheet-panel")).toBeVisible({ timeout: 15000 });
+    await playerPage.waitForFunction(
+      () => typeof state !== "undefined" && state.bootCompleted === true,
+      { timeout: 20000 }
+    );
+    await expect(playerPage.locator("#mesaStageWrap")).toBeVisible({ timeout: 15000 });
+    await expect(playerPage.locator(".player-side-panel")).toBeVisible({ timeout: 15000 });
     await expect(playerPage.locator("#rosterSearchField")).toBeHidden({ timeout: 15000 });
     await expect(playerPage.locator("[data-roster-action]")).toHaveCount(0);
+    // Nada de mestre pode vazar para o jogador na tela publicada.
+    const vazamentoNoJogador = await playerPage.evaluate(() => ({
+      grade: !document.getElementById("mesaGridGroup")?.hidden,
+      nevoa: !document.getElementById("mesaFogGroup")?.hidden,
+      cenas: !document.getElementById("mesaScenesGroup")?.hidden,
+      tokensSecretos: document.querySelectorAll("#mesaStage .mesa-token.is-layer-dm").length
+    }));
+    expect(vazamentoNoJogador).toEqual({
+      grade: false, nevoa: false, cenas: false, tokensSecretos: 0
+    });
     expect(playerConsoleErrors).toEqual([]);
     await playerContext.close();
   });

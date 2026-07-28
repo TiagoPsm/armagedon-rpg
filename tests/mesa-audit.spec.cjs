@@ -2866,3 +2866,333 @@ test.describe("Auditoria multi-frente + performance (Etapa 50)", () => {
     expect(result.gigante).toBe(0);
   });
 });
+
+/* ============================================================
+ * Nevoa: cobrir tudo x revelar tudo (2026-07-28)
+ *
+ * A nevoa ganhou uma BASE: "hidden" (padrao, tudo coberto — o
+ * comportamento de sempre) e "revealed" (tudo descoberto com a
+ * nevoa AINDA ativa, entao o pincel "Cobrir" volta a esconder
+ * pontos). Cena antiga sem o campo cai em "hidden".
+ * ============================================================ */
+test.describe("Nevoa: cobrir tudo x revelar tudo (2026-07-28)", () => {
+  test("Worker: base normalizada, cena antiga cai em hidden", async () => {
+    const { normalizeMesaScene } = await import("../cloudflare/src/mesa.js");
+
+    // Cena ANTIGA (sem o campo) continua coberta — zero migracao
+    const antiga = normalizeMesaScene({ fog: { enabled: true, ops: [] } });
+    expect(antiga.fog).toEqual({ enabled: true, base: "hidden", ops: [] });
+
+    // Valor invalido tambem cai em hidden (nunca revela sem o mestre mandar)
+    const invalida = normalizeMesaScene({ fog: { enabled: true, base: "qualquer", ops: [] } });
+    expect(invalida.fog.base).toBe("hidden");
+
+    // Revelar tudo sobrevive ao round-trip
+    const revelada = normalizeMesaScene({ fog: { enabled: true, base: "revealed", ops: [] } });
+    expect(revelada.fog).toEqual({ enabled: true, base: "revealed", ops: [] });
+
+    // Desligada, sem ops e na base padrao continua virando null
+    expect(normalizeMesaScene({ fog: { enabled: false, ops: [] } }).fog).toBeNull();
+    // ...mas base "revealed" e estado, entao NAO pode ser descartado
+    expect(normalizeMesaScene({ fog: { enabled: false, base: "revealed", ops: [] } }).fog)
+      .toEqual({ enabled: false, base: "revealed", ops: [] });
+  });
+
+  test("mestre: os dois botoes trocam a base, entram na cena e sao transmitidos", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(() => {
+      const calls = [];
+      sendMesaRealtimeDelta = (type, payload) => { calls.push({ type, payload }); return true; };
+
+      // Liga a nevoa: base padrao e coberta
+      updateMesaFog({ enabled: true });
+      const aoLigar = getMesaFogState().base;
+
+      // Revelar tudo: base vira revealed, a nevoa CONTINUA ativa
+      document.getElementById("mesaFogRevealAllBtn").click();
+      const revelado = getMesaFogState();
+      // Ler o estado dos botoes AGORA: cada mutacao seguinte re-sincroniza a UI
+      // e um classList lido no fim ja estaria desatualizado.
+      const revealAllBtn = document.getElementById("mesaFogRevealAllBtn");
+      const resetBtn = document.getElementById("mesaFogResetBtn");
+      const revealAllMarcado = revealAllBtn.classList.contains("is-active");
+      const revealAllDesabilitado = revealAllBtn.disabled;
+      const resetHabilitadoQuandoRevelado = !resetBtn.disabled;
+
+      // Com o mapa revelado, o pincel "Cobrir" ainda esconde pontos
+      updateMesaFog({ ops: [{ mode: "hide", u: 0.5, v: 0.5, r: 0.1 }] });
+      const comBuraco = getMesaFogState();
+
+      // Cobrir tudo: volta para hidden e zera as pinceladas
+      document.getElementById("mesaFogResetBtn").click();
+      const coberto = getMesaFogState();
+
+      return {
+        aoLigar,
+        reveladoBase: revelado.base,
+        reveladoAtivo: revelado.enabled,
+        revealAllMarcado,
+        revealAllDesabilitado,
+        resetHabilitadoQuandoRevelado,
+        comBuracoBase: comBuraco.base,
+        comBuracoOps: comBuraco.ops.length,
+        cobertoBase: coberto.base,
+        cobertoOps: coberto.ops.length,
+        basesTransmitidas: calls.filter(c => c.type === "mesa:fog:update").map(c => c.payload.fog?.base),
+        baseNaCena: createMesaScenePayloadFromState().fog?.base
+      };
+    });
+
+    expect(result.aoLigar).toBe("hidden");            // ligar a nevoa cobre, como sempre
+    expect(result.reveladoBase).toBe("revealed");
+    expect(result.reveladoAtivo).toBe(true);          // revelar != desligar a nevoa
+    expect(result.revealAllMarcado).toBe(true);       // botao do estado atual fica marcado
+    expect(result.revealAllDesabilitado).toBe(true);  // ...e sem clique redundante
+    expect(result.resetHabilitadoQuandoRevelado).toBe(true);
+    expect(result.comBuracoBase).toBe("revealed");    // pincel Cobrir funciona sobre o revelado
+    expect(result.comBuracoOps).toBe(1);
+    expect(result.cobertoBase).toBe("hidden");
+    expect(result.cobertoOps).toBe(0);                // Cobrir tudo zera as pinceladas
+    expect(result.basesTransmitidas).toContain("revealed");
+    expect(result.basesTransmitidas).toContain("hidden");
+    expect(result.baseNaCena).toBe("hidden");
+  });
+
+  test("render: revelar tudo deixa o mapa limpo; cobrir tudo pinta de novo", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(() => {
+      const canvas = document.getElementById("mesaFogCanvas");
+      const ctx = canvas.getContext("2d");
+      const alphaNoCentro = () => {
+        const x = Math.floor(canvas.width / 2);
+        const y = Math.floor(canvas.height / 2);
+        return ctx.getImageData(x, y, 1, 1).data[3];
+      };
+
+      updateMesaFog({ enabled: true, base: "hidden", ops: [] });
+      const coberto = alphaNoCentro();
+
+      revealAllMesaFog();
+      const revelado = alphaNoCentro();
+
+      // Com a base revelada, uma op de "hide" no centro cobre de novo
+      updateMesaFog({ ops: [{ mode: "hide", u: 0.5, v: 0.5, r: 0.5 }] });
+      const escondidoDeNovo = alphaNoCentro();
+
+      resetMesaFog();
+      const cobertoDeNovo = alphaNoCentro();
+
+      return { coberto, revelado, escondidoDeNovo, cobertoDeNovo };
+    });
+
+    expect(result.coberto).toBe(255);           // tudo coberto
+    expect(result.revelado).toBe(0);            // tudo descoberto
+    expect(result.escondidoDeNovo).toBe(255);   // pincel Cobrir sobre o revelado
+    expect(result.cobertoDeNovo).toBe(255);     // Cobrir tudo volta ao inicio
+  });
+
+  test("jogador: recebe a base do mestre e nao tem os botoes", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedPlayerWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(() => {
+      // Jogador nunca muda a nevoa por conta propria
+      revealAllMesaFog();
+      const aposTentativa = getMesaFogState().base;
+
+      // ...mas recebe o estado do mestre e renderiza limpo
+      setMesaFogFromRemote({ enabled: true, base: "revealed", ops: [] });
+      const canvas = document.getElementById("mesaFogCanvas");
+      const ctx = canvas.getContext("2d");
+      const alpha = ctx.getImageData(
+        Math.floor(canvas.width / 2), Math.floor(canvas.height / 2), 1, 1
+      ).data[3];
+
+      return {
+        aposTentativa,
+        baseRemota: getMesaFogState().base,
+        alpha,
+        grupoEscondido: document.getElementById("mesaFogGroup").hidden,
+        opacidade: canvas.style.opacity
+      };
+    });
+
+    expect(result.aposTentativa).toBe("hidden");   // guarda de papel intacta
+    expect(result.baseRemota).toBe("revealed");
+    expect(result.alpha).toBe(0);                  // mapa limpo para o jogador
+    expect(result.grupoEscondido).toBe(true);
+    expect(result.opacidade).toBe("1");            // jogador segue com nevoa opaca
+  });
+});
+
+/* ============================================================
+ * Nevoa: liga/desliga (2026-07-28)
+ *
+ * BUG encontrado pelo Tiago: nao dava para DESLIGAR a nevoa.
+ * O handler do checkbox fazia `if (!toggle.checked) setMesaFogBrush(null)`
+ * e so DEPOIS lia `toggle.checked` de novo — mas setMesaFogBrush chama
+ * _syncFogSettingsUI, que reescreve `toggle.checked` a partir do estado
+ * AINDA ligado. A leitura seguinte via `true` e a nevoa se religava
+ * sozinha. Ligar sempre funcionou; desligar, nunca (desde a Etapa 47).
+ * Correcao: ler a intencao ANTES de qualquer sync de UI.
+ * ============================================================ */
+test.describe("Nevoa: liga/desliga (2026-07-28)", () => {
+  test("desligar funciona mesmo com o pincel armado (o bug do religa sozinho)", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(() => {
+      const toggle = document.getElementById("mesaFogToggle");
+      const wrap = document.getElementById("mesaStageWrap");
+
+      toggle.click();                     // liga pelo controle REAL
+      const aposLigar = getMesaFogState().enabled;
+
+      // Pincel armado e a condicao que disparava o bug — era exatamente o
+      // estado do print do Tiago ("Revelar" destacado).
+      setMesaFogBrush("reveal");
+      const pincelArmado = _fogBrushMode;
+
+      toggle.click();                     // desliga
+      return {
+        aposLigar,
+        pincelArmado,
+        enabled: getMesaFogState().enabled,
+        checkbox: toggle.checked,
+        pincelAposDesligar: _fogBrushMode,
+        cursorDePincel: wrap.classList.contains("is-fog-brushing"),
+        // Nevoa desligada, sem pinceladas e na base padrao nao ocupa espaco na
+        // cena: vira null (mesma regra de antes desta mudanca).
+        cenaFog: createMesaScenePayloadFromState().fog
+      };
+    });
+
+    expect(result.aposLigar).toBe(true);
+    expect(result.pincelArmado).toBe("reveal");
+    expect(result.enabled).toBe(false);          // <- o bug: ficava true
+    expect(result.checkbox).toBe(false);
+    expect(result.pincelAposDesligar).toBeNull(); // desligar desarma o pincel
+    expect(result.cursorDePincel).toBe(false);
+    expect(result.cenaFog).toBeNull();
+  });
+
+  test("desligar limpa a tela e preserva as pinceladas; religar restaura", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(() => {
+      const canvas = document.getElementById("mesaFogCanvas");
+      const ctx = canvas.getContext("2d");
+      const alpha = (fx, fy) => ctx.getImageData(
+        Math.floor(canvas.width * fx), Math.floor(canvas.height * fy), 1, 1
+      ).data[3];
+      const toggle = document.getElementById("mesaFogToggle");
+
+      toggle.click();
+      updateMesaFog({ ops: [{ mode: "reveal", u: 0.5, v: 0.5, r: 0.2 }] });
+      const ligada = { centro: alpha(0.5, 0.5), canto: alpha(0.05, 0.05) };
+
+      toggle.click();                     // desliga
+      const desligada = { centro: alpha(0.5, 0.5), canto: alpha(0.05, 0.05) };
+      const opsPreservadas = getMesaFogState().ops.length;
+      const pinceisDesabilitados = document.getElementById("mesaFogRevealBtn").disabled
+        && document.getElementById("mesaFogHideBtn").disabled;
+
+      toggle.click();                     // religa
+      const religada = { centro: alpha(0.5, 0.5), canto: alpha(0.05, 0.05) };
+
+      return { ligada, desligada, opsPreservadas, pinceisDesabilitados, religada };
+    });
+
+    expect(result.ligada).toEqual({ centro: 0, canto: 255 });     // buraco revelado
+    expect(result.desligada).toEqual({ centro: 0, canto: 0 });    // tela limpa
+    expect(result.opsPreservadas).toBe(1);                        // pinceladas nao se perdem
+    expect(result.pinceisDesabilitados).toBe(true);
+    expect(result.religada).toEqual({ centro: 0, canto: 255 });   // volta igualzinho
+  });
+
+  test("com a nevoa desligada os dois botoes 'tudo' ligam ja no estado escolhido", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(() => {
+      const cobrirTudo = document.getElementById("mesaFogResetBtn");
+      const revelarTudo = document.getElementById("mesaFogRevealAllBtn");
+
+      // Desligada: os dois clicaveis (sem pegadinha entre eles)
+      const desligada = { cobrir: cobrirTudo.disabled, revelar: revelarTudo.disabled };
+
+      revelarTudo.click();
+      const aposRevelarTudo = {
+        enabled: getMesaFogState().enabled,
+        base: getMesaFogState().base,
+        revelarDesabilitado: revelarTudo.disabled,   // ja esta nesse estado
+        cobrirDesabilitado: cobrirTudo.disabled
+      };
+
+      cobrirTudo.click();
+      const aposCobrirTudo = {
+        enabled: getMesaFogState().enabled,
+        base: getMesaFogState().base,
+        cobrirDesabilitado: cobrirTudo.disabled,
+        revelarDesabilitado: revelarTudo.disabled
+      };
+
+      return { desligada, aposRevelarTudo, aposCobrirTudo };
+    });
+
+    expect(result.desligada).toEqual({ cobrir: false, revelar: false });
+    expect(result.aposRevelarTudo).toEqual({
+      enabled: true, base: "revealed", revelarDesabilitado: true, cobrirDesabilitado: false
+    });
+    expect(result.aposCobrirTudo).toEqual({
+      enabled: true, base: "hidden", cobrirDesabilitado: true, revelarDesabilitado: false
+    });
+  });
+
+  test("jogador recebe o desligamento do mestre e a tela dele limpa", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedPlayerWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const result = await page.evaluate(() => {
+      const canvas = document.getElementById("mesaFogCanvas");
+      const ctx = canvas.getContext("2d");
+      const canto = () => ctx.getImageData(5, 5, 1, 1).data[3];
+
+      setMesaFogFromRemote({ enabled: true, base: "hidden", ops: [] });
+      const coberto = canto();
+
+      setMesaFogFromRemote({ enabled: false, base: "hidden", ops: [] });
+      return { coberto, aposDesligar: canto(), enabled: getMesaFogState().enabled };
+    });
+
+    expect(result.coberto).toBe(255);
+    expect(result.aposDesligar).toBe(0);
+    expect(result.enabled).toBe(false);
+  });
+});

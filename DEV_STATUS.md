@@ -30,7 +30,49 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-28 — Etapa 50: Auditoria multi-frente + performance)
+## Ultima Etapa Concluida (2026-07-28 — BUG: nao dava para DESLIGAR a nevoa)
+
+Tiago pediu para garantir que o liga/desliga da nevoa funcionava antes de commitar. Nao funcionava: **desligar a nevoa nunca funcionou desde a Etapa 47**.
+
+- **Causa**: o handler do checkbox fazia `if (!toggle.checked) setMesaFogBrush(null)` e so DEPOIS lia `toggle.checked` de novo para montar o patch. Mas `setMesaFogBrush` chama `_syncFogSettingsUI`, que reescreve `toggle.checked` a partir do estado — que ainda estava LIGADO. A leitura seguinte via `true` e a nevoa se religava sozinha, no mesmo clique. Ligar sempre funcionou; desligar, nunca. Nao dependia de ter pincel armado: `setMesaFogBrush(null)` roda em todo desligamento.
+- **Correcao** (js/mesa-fog.js): ler a intencao (`const querLigada = toggle.checked`) ANTES de qualquer coisa que sincronize a UI. Licao registrada: em handler de evento, capturar o valor do controle antes de chamar funcao que re-renderiza a propria UI.
+- **Ajuste junto**: os botoes "Cobrir tudo" e "Revelar tudo" estavam com regras de habilitacao assimetricas (com a nevoa desligada, um clicava e o outro nao). Agora os dois seguem a mesma regra — desabilitado apenas quando a mesa JA esta naquele estado; com a nevoa desligada os dois ligam ja no estado escolhido.
+- **Testes** (suite 87 -> 91, describe "Nevoa: liga/desliga"): desligar com o pincel armado (o cenario exato do print do Tiago) — nevoa desliga, checkbox desmarca, pincel desarma, cursor volta ao normal e a nevoa some da cena; desligar limpa a tela (alpha 0 no centro E no canto) mas PRESERVA as pinceladas, e religar restaura o mesmo desenho; os dois botoes "tudo" com a nevoa desligada; jogador recebe o desligamento do mestre.
+- Validacao: suite completa 127/127 (1 skip = fluxo online autenticado), check:js OK, audit:static OK, build:pages OK.
+
+## Etapa Concluida (2026-07-28 — Melhoria da nevoa: cobrir tudo x revelar tudo)
+
+Pedido do Tiago: dois botoes distintos para cobrir o mapa inteiro e descobrir o mapa inteiro. A nevoa ganhou uma BASE em vez de um botao solto.
+
+- **Modelo**: o estado da nevoa passou de `{ enabled, ops[] }` para `{ enabled, base, ops[] }`. `base` e o ponto de partida do mapa: `hidden` (padrao — tudo coberto, o comportamento de sempre) ou `revealed` (tudo descoberto). As ops continuam sendo aplicadas NA ORDEM por cima da base, entao com base `revealed` o pincel "Cobrir" vira a ferramenta principal: revela o mapa inteiro e esconde so a sala do chefe. Cena antiga sem o campo (e qualquer valor invalido) cai em `hidden` — ZERO migracao, e nunca revela sem o mestre mandar.
+- **Por que nao usei "desligar a nevoa" como "revelar tudo"**: desligada, o pincel some e o jogador nao tem nevoa nenhuma; revelada, a nevoa segue armada e o mestre pode voltar a cobrir pontos na hora. Sao estados diferentes de verdade.
+- **js/mesa-fog.js**: `revealAllMesaFog()` (novo) e `resetMesaFog()` agora setam a base explicitamente; render pinta a base so quando `hidden`; `_syncFogSettingsUI` marca (`is-active`) e desabilita o botao do estado ATUAL — clicar de novo nao faria nada.
+- **mesa.html**: botao `#mesaFogRevealAllBtn` ("Revelar tudo") ao lado de "Cobrir tudo".
+- **cloudflare/src/mesa.js**: `normalizeSceneFog` normaliza `base` (whitelist; invalido vira `hidden`) e so descarta a nevoa (null) quando esta desligada, sem ops E na base padrao — base `revealed` e estado, nao pode sumir no round-trip.
+- **js/mesa-core.js**: assinatura de dedupe alinhada a mesma condicao (mudar so a base nao pode cair no dedupe — licao das etapas anteriores).
+- **Testes** (suite 83 -> 87, describe "Nevoa: cobrir tudo x revelar tudo"): Worker normaliza a base e mantem a cena antiga em `hidden`; os dois botoes trocam a base, entram na cena e sao transmitidos (com o estado dos botoes lido no momento certo — a UI re-sincroniza a cada mutacao); render medido por alpha do canvas (coberto 255 -> revelado 0 -> pincel Cobrir 255 -> Cobrir tudo 255); jogador nao muda a nevoa, recebe a base do mestre e segue com opacidade 1.
+- Cache-bust: mesa-fog.js e mesa-core.js -> `?v=2026-07-28-fog-base-1`; `MESA_BUNDLE_VERSION` idem.
+- Deploy do Worker: version `8b5a4914-7984-4400-825f-2e78364bb39f` (dry-run antes; health 200).
+- Validacao: test:mesa:audit 87/87, test:mesa 5/5, test:ficha 28/28, check:js OK, audit:static OK, build:pages OK. Prova visual: coberto, revelado e revelado-com-buraco.
+
+## Etapa Concluida (2026-07-28 — Etapa 51: Deploy final + smoke em producao)
+
+Fechamento do plano "Mesa Virtual -> VTT completo" (Etapas 37-51). Verificacao do que esta PUBLICADO e conserto do smoke de producao, que estava cego desde a Etapa 33.
+
+**Verificado em producao (leitura, sem tocar em dado):**
+- Pages publicou o bundle novo: `mesa-page.bundle.js?v=2026-07-28-audit50-1`. Conferido pelo CONTEUDO, nao so pela URL — o bundle publicado e minificado pelo terser (252KB numa linha; o `_site` local tem 463KB) e contem `_commitStrokeAdd`, `_commitStrokeRemove`, `applyMesaDrawingAddFromRemote`, `applyMesaDrawingRemoveFromRemote`, `mesa:scene:ack` e `DRAW_MAX_STROKES`, alem de `renderMesaFog`, `refreshMesaScenesUI`, `requestMesaDiceRoll`, `measureMesaRuler`, `showMesaPing` e `normalizeMesaStatusMarkers`.
+- API: `/api/health` 200; `/api/mesa/scene` e `/api/mesa/scenes` sem sessao -> 401; `/api/mesa/realtime` sem upgrade -> 426.
+- mesa.html publicada carrega sem NENHUM erro de console e redireciona para o login quando nao ha sessao (comportamento correto).
+
+**Achado — o smoke de producao estava cego (CORRIGIDO).** `tests/mesa-online.spec.cjs` ainda exigia `#mesaStage canvas.mesa-stage-canvas` (o renderer Canvas foi REMOVIDO na Etapa 33 — os tokens sao 100% DOM desde entao) e `.player-sheet-panel` (classe que so existe no CSS; o elemento renderizado e `.player-side-panel`). Ou seja: o unico teste que roda contra o site publicado falharia por seletor morto, nao por problema real, e nao cobria nada das Etapas 42-50.
+
+- **tests/mesa-online.spec.cjs**: seletores corrigidos; espera `state.bootCompleted` em vez de um seletor solto (mesma licao dos testes locais); mestre passou a verificar as ferramentas construidas nas Etapas 42-49 na tela PUBLICADA (grupos Grade/Nevoa/Cenas visiveis, painel de dados, canvas de nevoa e de desenho) — se um bundle sair incompleto, e aqui que aparece; jogador verifica o inverso (nenhum grupo do mestre, nenhum token da camada dm, sem busca de escalacao, sem acao de roster).
+- **Sonda de realtime (opt-in `ARMAGEDON_ONLINE_RELAY_PROBE=1`)** ganhou o delta de desenho da Etapa 50: o mestre manda `mesa:drawings:add` e o teste exige que o jogador RECEBA — a prova de ponta a ponta, em producao, do bug corrigido na etapa anterior. A sonda se limpa sozinha: assim que o jogador confirma, o mestre manda `mesa:drawings:remove` com o mesmo id, para nao deixar sujeira na cena caso um cliente do mestre esteja aberto e persista o que chega pelo realtime.
+- Seletores novos validados no servidor local antes da entrega (mestre: grupos visiveis + `is-layer-dm` real; jogador: tudo escondido e zero token secreto).
+- Validacao: `test:mesa:online` parte publica 2/2 contra o site REAL; suite local 119/119 (1 skip = fluxo autenticado, que exige credenciais); check:js OK.
+- **Pendencia que so o Tiago pode fechar**: o fluxo autenticado (login de mestre + jogador). Rodar com as variaveis `ARMAGEDON_MASTER_USERNAME`, `ARMAGEDON_MASTER_PASSWORD`, `ARMAGEDON_PLAYER_USERNAME`, `ARMAGEDON_PLAYER_PASSWORD` (e `ARMAGEDON_ONLINE_RELAY_PROBE=1` para a sonda de realtime + desenho) e depois `npm run test:mesa:online`. As credenciais ficam so na maquina dele — nunca no repositorio.
+
+## Etapa Concluida (2026-07-28 — Etapa 50: Auditoria multi-frente + performance)
 
 Auditoria medida (nao estimada) da Mesa com o VTT completo. O achado grave: **a sincronia de desenhos morria em silencio** depois de ~12 tracos.
 
