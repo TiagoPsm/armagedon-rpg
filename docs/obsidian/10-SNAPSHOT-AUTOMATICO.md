@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-28 19:51:48 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-29 13:36:55 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `10c3dda 2026-07-28 fix(mesa): desenho sincroniza por delta ÔÇö o full-state estourava o cap do DO (Etapa 50)`
+- Ultimo commit: `30ea9f7 2026-07-28 fix(mesa): nevoa nao desligava + botao "Revelar tudo" + smoke de producao (Etapa 51)`
 
 ### Alteracoes Locais
 
@@ -21,14 +21,15 @@
  M .claude/settings.local.json
 M  DEV_STATUS.md
 M  SYSTEM_RULES.md
+M  VISUAL_RULES.md
 M  cloudflare/README.md
+M  cloudflare/src/index.js
 M  cloudflare/src/mesa.js
- M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-core.js
-M  js/mesa-fog.js
+M  css/mesa-map.css
+M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  js/mesa-map.js
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
-M  tests/mesa-online.spec.cjs
 M  tools/build-pages.cjs
 ```
 
@@ -36,7 +37,6 @@ M  tools/build-pages.cjs
 
 ```text
 .claude/settings.local.json
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ```
 
 ### Arquivos Em Stage
@@ -44,13 +44,15 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ```text
 DEV_STATUS.md
 SYSTEM_RULES.md
+VISUAL_RULES.md
 cloudflare/README.md
+cloudflare/src/index.js
 cloudflare/src/mesa.js
-js/mesa-core.js
-js/mesa-fog.js
+css/mesa-map.css
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+js/mesa-map.js
 mesa.html
 tests/mesa-audit.spec.cjs
-tests/mesa-online.spec.cjs
 tools/build-pages.cjs
 ```
 
@@ -148,8 +150,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
     0,73 MB  debug.log
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js
     0,61 MB  node_modules\playwright-core\lib\vite\traceViewer\assets\defaultSettingsView-GTWI-W_B.js
+    0,46 MB  _site\js\mesa-page.bundle.js
     0,45 MB  node_modules\playwright-core\lib\utilsBundleImpl\index.js
-    0,44 MB  _site\js\mesa-page.bundle.js
 ```
 
 ## Comando De Atualizacao

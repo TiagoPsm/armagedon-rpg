@@ -55,6 +55,99 @@ Pedido do Tiago: dois botoes distintos para cobrir o mapa inteiro e descobrir o 
 - Deploy do Worker: version `8b5a4914-7984-4400-825f-2e78364bb39f` (dry-run antes; health 200).
 - Validacao: test:mesa:audit 87/87, test:mesa 5/5, test:ficha 28/28, check:js OK, audit:static OK, build:pages OK. Prova visual: coberto, revelado e revelado-com-buraco.
 
+## Etapa Concluida (2026-07-29 — Etapa 56: Testes e docs do plano 52-56)
+
+Fechamento do plano "palco se adapta ao mapa + resolucao" (Etapas 52-56).
+
+- **tests/mesa-audit.spec.cjs** (suite 91 -> 96, describe "Palco ajustado ao mapa + resolucao (Etapas 52-55)"):
+  1. Worker: `fit` sobrevive ao round-trip; **cena antiga sem o campo -> `fit:false` com transform preservado**; `"sim"` -> false (estrito, nao coercao); map sem url -> null.
+  2. Fit da ao palco a proporcao EXATA da imagem (4:1 num painel 4:3), centralizado na sobra, com `background-size` == a caixa (prova de zero corte); desligar limpa os estilos inline e devolve o palco ao canvas inteiro.
+  3. Alinhamento: sem fit, token na fracao (0.25, 0.75) do palco cai em outro ponto do mapa; com fit e identidade exata. Cobre tambem o travamento — `adjustMapScale`/`panMap` inertes e o transform do mestre intacto apos o ciclo liga/desliga.
+  4. Toggle: clique REAL no checkbox (passa pelo listener), payload da cena com `fit` e transform identidade; grupo some sem mapa; jogador liga/desliga por remoto, **legado (`undefined`) nao desliga**, mestre ignora remoto.
+  5. Compressao: 5000x2500 -> 4096x2048 (proporcao preservada); 1200x800 continua 1200x800 (sem upscale); WebP dentro dos limites volta como a MESMA instancia de Blob.
+- **Teste antigo ajustado**: "Worker normaliza o campo map da cena" afirma o shape EXATO do `map` com `toEqual` — passou a incluir `fit: false`. Nao e workaround: e justamente onde o default da ausencia fica visivel e verificado.
+- **Docs**: SYSTEM_RULES.md (regra do palco ajustado + resolucao, com o travamento do pan e o porque), VISUAL_RULES.md (secao do letterbox: `data-fit-map`, contraste do fundo, borda carmesim, sem animacao), cloudflare/README.md e DEV_STATUS.md.
+- Validacao final: **test:mesa:audit 96/96, test:mesa 5/5, test:ficha 28/28**, check:js OK (45), audit:static OK, build:pages OK, `wrangler deploy --dry-run` limpo.
+- **Deploy do Worker FEITO** (2026-07-29, autorizado pelo Tiago): `armagedon-api` version ID `516576f4-01ae-4072-86a3-934adbd8734b`. Dry-run limpo antes; health 200 (`{"ok":true,"service":"armagedon-cloudflare"}`); POST /api/mesa/map sem auth responde 401 (rota viva). Verificado pelo CONTEUDO publicado (nao so pela URL), lendo o bundle deployado: `fit: map.fit === true` presente em `normalizeSceneMap` e `file.size > 12 * 1024 * 1024` -> "Mapa excede o limite de 12 MB" na rota de upload. Busca por `8 * 1024 * 1024` no bundle: ZERO ocorrencias — o cap antigo saiu de vez.
+- **Commit PENDENTE** (13 arquivos). Aguardando ok do Tiago.
+
+## Etapa Concluida (2026-07-29 — Etapa 55: Resolucao dos mapas)
+
+Quarta das 5 etapas. Pedido do Tiago: "os mapas sempre com a melhor resolucao possivel".
+
+**O teto real nao era de pixels, era de BYTES.** O Worker recusa upload de mapa com 413 (POST /api/mesa/map). Subir `WEBP_MAX_PX` as cegas colocaria o mapa num estado meio quebrado: visivel local e via P2P, mas ausente para quem entrasse depois, porque o R2/cena nunca receberia. Entao a compressao virou **orientada a orcamento**: mira o maximo de pixels e so degrada se passar do teto.
+
+- **js/mesa-map.js**: `WEBP_MAX_PX` 1920 -> **4096** (2,1x linear, 4,5x em area) e `WEBP_QUALITY` 0.82 -> **0.92**. Novos `WEBP_QUALITY_STEPS` [0.92, 0.86, 0.80, 0.72], `WEBP_MIN_PX` 2048 e `MAP_BYTES_BUDGET` 10MB.
+- **Ordem de degradacao deliberada**: qualidade PRIMEIRO (quase invisivel num mapa), dimensao so depois — dimensao e o que o mestre sente ao dar zoom.
+- **Atalho sem perda**: fonte que ja e WebP, dentro do cap de pixels e do orcamento, e devolvida INTACTA (mesma instancia de Blob). Antes, todo import re-encodava — lossy sobre lossy sem ganhar bytes.
+- **Nunca faz upscale**: mapa de 1200px continua 1200px, nao vira 4096 falso.
+- **Reamostragem**: `imageSmoothingQuality = "high"` explicito. O default varia por navegador e o "low" deixa halo em linha fina (grade desenhada, contorno de parede).
+- **cloudflare/src/index.js**: cap de upload 8MB -> **12MB**. Nao e alvo: e folga para o envelope multipart sobre o orcamento de 10MB do cliente. Continua teto protetivo.
+- **Docs**: cloudflare/README.md e SYSTEM_RULES.md atualizados (limite antigo de 8MB citado em ambos).
+- Cache-bust: mesa-map.js -> `?v=2026-07-29-fitmap-4`.
+- Validacao: check:js OK (45), audit:static OK, build:pages OK, `wrangler deploy --dry-run` limpo (bindings MESA_REALTIME/DB/MAPS presentes). Medido no navegador com imagens sinteticas:
+  - battlemap 6000x4000 (PNG 11.23MB) -> **4096x2731 WebP 0.12MB** em 1.4s, q0.92 de primeira.
+  - ruido extremo 6000x4000 (PNG 74.73MB) -> 4096x2731, 6.11MB, 2.8s — mesmo conteudo patologico mantem dimensao cheia.
+  - pequeno 1200x800 -> continua 1200x800 (sem upscale).
+  - passthrough: WebP dentro dos limites volta como a MESMA instancia de Blob (zero perda geracional).
+  - escada acionada (ruido puro 4096x4096, PNG 55MB, praticamente incompressivel): percorreu os 4 passos e parou em **q0.72 / 9.72MB mantendo 4096x4096** — degradou qualidade e NAO tocou na dimensao, exatamente a prioridade desenhada.
+- **Custo conhecido**: o caso patologico levou 15.6s (4 tentativas de encode sobre 16MP incompressiveis). Mapa real resolve em 1.4-2.8s numa passada so. O indicador de loading ja cobre a espera, mas fica registrado como pior caso.
+- **Nota de alcance util**: com o fit da Etapa 52 a caixa e limitada pelo painel; os 4096px pagam quando o mestre usa o zoom de palco (ate 3x). Acima disso seriam pixels que a tela nunca mostra.
+- **Deploy do Worker PENDENTE** (acumulado das Etapas 54 e 55: `fit` na cena + cap 12MB). Aguardando ok do Tiago.
+- Proxima: 56 testes + docs.
+
+## Etapa Concluida (2026-07-29 — Etapa 54: UI, flag por cena e sync do fit)
+
+Terceira das 5 etapas. O ajuste deixa de ser so console e vira recurso: botao no painel do mestre, memoria por cena e sync com jogadores.
+
+**Onde a flag mora.** DENTRO do `map` da cena (`{ id, url, fit, transform }`), nao num campo solto no topo. Motivo: so faz sentido com mapa ativo e precisa trocar JUNTO com o mapa na troca de cena — o gerenciador de cenas (Etapa 49) passa a levar o fit de brinde, sem codigo novo.
+
+**Sem mudanca no Durable Object.** `mesa:map:set` ja e relay master-only sem sanitizacao campo-a-campo (ver `MASTER_ONLY_MAP_SIGNAL_TYPES` em mesa-realtime-rules.js), entao o `fit` pega carona no evento de transform que ja existia. Clientes antigos ignoram o campo.
+
+- **cloudflare/src/mesa.js**: `normalizeSceneMap` ganha `fit: map.fit === true`. Comparacao estrita, nao coercao — string `"sim"` vira `false`. Cena antiga (sem o campo) vira `fit:false` com o transform intacto: e a garantia de zero regressao de coordenadas.
+- **mesa.html**: grupo `#mesaMapFitGroup` com `#mesaMapFitToggle` ("Ajustar ao mapa") no topo do painel de configuracoes, antes de Escala — ele muda o enquadramento, entao vem antes dos ajustes finos. Hint explica que o zoom do palco e o jeito de aproximar.
+- **js/mesa-map.js**: `_syncFitToggleUI()` (espelha estado + mostra so p/ mestre COM mapa), `_bindFitToggle()` (change -> setStageFitToMap + broadcast + persist) e `_applyRemoteFit()`. `getMesaSceneMapPayload` e `broadcastMapTransform` passam a mandar `fit`. `_applySceneMapRef` e `_renderSceneMapFromUrl` aplicam o fit da cena ANTES do probe/transform.
+- **Legado nao desliga o recurso**: `_applyRemoteFit(undefined)` mantem o estado local em vez de forcar `false` — um payload de cliente antigo no meio da sessao nao pode apagar o ajuste do mestre. Mestre ignora fit remoto (ele e a fonte de verdade), exceto no boot pela cena, que e a memoria dele pos-F5.
+- Cache-bust: mesa-map.js -> `?v=2026-07-29-fitmap-3`; `MESA_BUNDLE_VERSION` -> `2026-07-29-fitmap-1`.
+- Validacao: check:js OK (45), audit:static OK, build:pages OK, console limpo.
+  - Worker (node, round-trip real de `normalizeMesaScene`): `fit:true` -> true; `fit:false` -> false; **cena antiga sem o campo -> `fit:false` com transform {0.02, -0.03, 1.8} preservado**; `fit:"sim"` -> false; map sem url -> null.
+  - UI no preview: grupo oculto sem mapa, visivel com mapa para mestre; clique REAL no checkbox liga o fit (inner 932x655 -> 932x233), esconde o grupo de Escala e o payload da cena vira `{fit:true, transform:{0,0,1}}`; desclicar restaura 932x655 e `{fit:false}`.
+  - Jogador: recebe `fit:true` e liga; `undefined` (legado) NAO desliga; `fit:false` desliga. Mestre ignora o remoto.
+- Nao verificado: prova visual do painel — o Browser pane nao estava compondo frames (screenshot indisponivel). Geometria conferida por DOM: grupo 167x77 px, texto "PALCO / Ajustar ao mapa / Mostra o mapa inteiro, sem corte...", primeiro na ordem do painel.
+- **Deploy do Worker PENDENTE** (mudanca em cloudflare/src/mesa.js): sem o deploy, o `fit` e descartado no PUT da cena e nao sobrevive a F5. Aguardando ok do Tiago.
+- Proximas: 55 resolucao (WEBP_MAX_PX), 56 testes + docs.
+
+## Etapa Concluida (2026-07-29 — Etapa 53: Ancoragem das camadas no mapa)
+
+Segunda das 5 etapas do plano "palco se adapta ao mapa + resolucao". Ainda desligada por padrao (a UI e a flag por cena entram na 54).
+
+**O problema real.** Metade das camadas ja convertia coordenadas para o espaco do MAPA via os helpers da Etapa 42 (`getMesaMapSurfaceFrac` / `mesaStageFracToMapFrac` / `mesaMapFracToStageFrac`): grade (mesa-grid.js), nevoa (mesa-fog.js), regua (mesa-ruler.js) e ping (mesa-ping.js). Tokens (`token.x/y` em % de `#mesaStage`) e desenhos (fracoes do `#mesaDrawCanvas`) NAO — usam fracao do PALCO. Como `#mesaStage` e `#mesaDrawCanvas` sao `inset:0` dentro do inner, eles ja herdam a caixa da Etapa 52 de graca; o desalinhamento so aparece quando o mestre da pan/zoom no MAPA dentro da caixa.
+
+**A decisao.** Nao migrar o espaco de coordenadas (quebraria cenas salvas + protocolo de realtime + normalizacao no Worker). Em vez disso: **travar o transform do mapa em identidade quando o fit esta ligado**. O pan/escala do mapa existe SO para compensar o corte do cover; com o fit nao ha corte, entao o controle perdeu a funcao — e e justamente ele que descola os tokens. Travado, fracao-do-palco == fracao-do-mapa por construcao e TODAS as camadas ficam ancoradas na imagem, com zero migracao e zero mudanca de protocolo. Para aproximar, o mestre usa o zoom de palco (`_stageZoom`), que escala mapa + tokens + grade + nevoa juntos e preserva o alinhamento.
+
+- **js/mesa-map.js**: `_getEffectiveMapTransform()` (identidade no modo fit, guardado caso contrario) e `isMapTransformLocked()`. Passaram a usar o EFETIVO em vez do guardado: `applyMapTransform`, `_getMapCoverDims`, `getMesaMapSurfaceFrac`, `broadcastMapTransform` (senao o jogador recebia o pan do mestre e saia do lugar) e `_normalizedMapTransform` (senao a cena oficial guardava um deslocamento que o jogador do boot aplicaria). `adjustMapScale`/`panMap` viram no-op travados. `_syncMapTransformControls()` esconde `#mesaMapScaleGroup` e `#mesaMapHint` — controle vivo que nao responde e bug.
+- **Preservacao**: o transform guardado NAO e zerado nem sobrescrito no localStorage enquanto travado (`applyMapTransform` pula o persist) — sai intacto e volta a valer se o fit for desligado.
+- Cache-bust: mesa-map.js -> `?v=2026-07-29-fitmap-2`.
+- Validacao: check:js OK (45), console limpo. Medido no preview (painel 932x655, imagem 4000x1000, mestre com pan/zoom guardado {x:120, y:-40, scale:1.8}):
+  - Fit OFF (comportamento atual): superficie do mapa = {left:-1.901, top:-0.461, width:5.06, height:1.8} — a imagem ocupa 506% da largura do palco, ~80% fora da tela. Token na fracao (0.25, 0.75) do palco cai em (0.425, 0.673) do mapa: **desalinhado**, grade e nevoa o situam num ponto e ele e desenhado em outro.
+  - Fit ON: superficie = {0, 0, 1, 1}; token (0.25, 0.75) -> mapa (0.25, 0.75), **identidade exata**. `background-position` zerado, `background-size` 932x233 (imagem inteira). `isMapTransformLocked()` true, controles ocultos. `adjustMapScale(0.5)` e `panMap(999,999)` nao alteraram nem o guardado nem a superficie. Transform da cena persistida: {xFrac:0, yFrac:0, scale:1} com fit vs {xFrac:0.0254, yFrac:-0.0339, scale:1.8} sem.
+  - Fit OFF de novo: superficie volta exatamente a {-1.901, -0.461, 5.06, 1.8} e o guardado sobrevive intacto ({120, -40, 1.8}).
+- Proximas: 54 UI + flag por cena + sync, 55 resolucao (WEBP_MAX_PX), 56 testes + docs.
+
+## Etapa Concluida (2026-07-29 — Etapa 52: Caixa do palco na proporcao do mapa)
+
+Primeira das 5 etapas do plano "palco se adapta ao mapa + resolucao". Aqui so a FUNDACAO: a matematica da caixa. Sem UI, sem persistencia, sem sync — e DESLIGADA por padrao, para nao deslocar coordenadas de cenas ja salvas.
+
+**Problema:** o palco sempre preenche o canvas inteiro (`.vtt-canvas .mesa-stage-wrap { inset:0 !important }`) e o mapa entra com `background-size: cover`. Se a proporcao da imagem nao bate com a do painel, o mapa e CORTADO. Num mapa 4000x1000 num painel 932x655, o cover exibia 2620x655 — 64% da largura fora da tela. O mestre compensava na mao com o pan/escala do painel de mapa.
+
+**Solucao:** com o fit ligado, `#mesaStageInner` deixa de ser `inset:0` e recebe left/top/width/height inline com a proporcao EXATA da imagem, centralizado no wrap (letterbox). Como a caixa fica na proporcao certa, o `coverScale` de `applyMapTransform()` vira encaixe perfeito — a imagem aparece inteira. As camadas internas (mapa, grade, nevoa, desenhos, tokens, regua, ping) sao todas `inset:0` dentro do inner, entao herdam a caixa nova sem mudanca nenhuma; grid, fog e draw ja tinham `ResizeObserver` no `#mesaStageInner` e se remedem sozinhos.
+
+- **js/mesa-map.js**: secao "AJUSTE DO PALCO AO MAPA" — `_fitToMap`, `isStageFitToMap()`, `setStageFitToMap()`, `applyStageFitBox()` e `_observeStageResize()` (ResizeObserver no wrap, so reage com o fit ligado). `applyMapTransform()` chama `applyStageFitBox()` ANTES do calculo de cover, porque o cover mede `offsetWidth/Height` do layer. `renderMesaMapLayer()` reaplica a caixa ao limpar o mapa (volta ao inset:0). Expostos em `window` para a UI da Etapa 54.
+- **css/mesa-map.css**: `#mesaStageWrap[data-fit-map]` — fundo do letterbox mais escuro (`#050307`) e borda carmesim discreta no inner, para o limite do territorio jogavel ficar obvio.
+- Cache-bust: mesa-map.js e mesa-map.css -> `?v=2026-07-29-fitmap-1`.
+- Validacao: check:js OK (45). Medido no preview (wrap 932x655, imagem stub 4000x1000): inner vira 932x233 (proporcao 4.000 exata), centralizado em top 211px = (655-233)/2, `background-size: 932px 233px` (ou seja, zero corte). `getMesaMapSurfaceFrac()` retorna {left:0, top:0, width:1, height:1} — a superficie do mapa passa a coincidir com o palco, que e o que vai alinhar grade/nevoa/regua na Etapa 53. Desligar restaura 932x655 e limpa os estilos inline. Console sem erros.
+- Proximas: 53 ancoragem das camadas (verificar tokens e desenhos, que usam fracao do PALCO e nao do mapa), 54 UI + flag por cena + sync, 55 resolucao (WEBP_MAX_PX), 56 testes + docs.
+
 ## Etapa Concluida (2026-07-28 — Etapa 51: Deploy final + smoke em producao)
 
 Fechamento do plano "Mesa Virtual -> VTT completo" (Etapas 37-51). Verificacao do que esta PUBLICADO e conserto do smoke de producao, que estava cego desde a Etapa 33.
@@ -70,7 +163,8 @@ Fechamento do plano "Mesa Virtual -> VTT completo" (Etapas 37-51). Verificacao d
 - **Sonda de realtime (opt-in `ARMAGEDON_ONLINE_RELAY_PROBE=1`)** ganhou o delta de desenho da Etapa 50: o mestre manda `mesa:drawings:add` e o teste exige que o jogador RECEBA — a prova de ponta a ponta, em producao, do bug corrigido na etapa anterior. A sonda se limpa sozinha: assim que o jogador confirma, o mestre manda `mesa:drawings:remove` com o mesmo id, para nao deixar sujeira na cena caso um cliente do mestre esteja aberto e persista o que chega pelo realtime.
 - Seletores novos validados no servidor local antes da entrega (mestre: grupos visiveis + `is-layer-dm` real; jogador: tudo escondido e zero token secreto).
 - Validacao: `test:mesa:online` parte publica 2/2 contra o site REAL; suite local 119/119 (1 skip = fluxo autenticado, que exige credenciais); check:js OK.
-- **Pendencia que so o Tiago pode fechar**: o fluxo autenticado (login de mestre + jogador). Rodar com as variaveis `ARMAGEDON_MASTER_USERNAME`, `ARMAGEDON_MASTER_PASSWORD`, `ARMAGEDON_PLAYER_USERNAME`, `ARMAGEDON_PLAYER_PASSWORD` (e `ARMAGEDON_ONLINE_RELAY_PROBE=1` para a sonda de realtime + desenho) e depois `npm run test:mesa:online`. As credenciais ficam so na maquina dele — nunca no repositorio.
+- **FECHADO em 2026-07-28 pelo Tiago**: `npm run test:mesa:online` **3/3 na maquina dele**, com credenciais reais de mestre e jogador — inclusive o "fluxo autenticado" (8,3s), que conecta as DUAS sessoes no WebSocket de producao ao mesmo tempo. Com isso o plano "Mesa Virtual -> VTT completo" (Etapas 37-51) esta validado de ponta a ponta em producao.
+- Como repetir: definir `ARMAGEDON_MASTER_USERNAME`, `ARMAGEDON_MASTER_PASSWORD`, `ARMAGEDON_PLAYER_USERNAME`, `ARMAGEDON_PLAYER_PASSWORD` (e `ARMAGEDON_ONLINE_RELAY_PROBE=1` para a sonda de realtime + delta de desenho) e rodar `npm run test:mesa:online`. **No PowerShell use `$env:NOME = ...`** — o formato `NOME=valor npm run ...` e de bash e faz o teste ser PULADO em silencio. As credenciais ficam so na maquina do Tiago, nunca no repositorio. Rodar fora de sessao: com a sonda ligada um traco de teste aparece na mesa ao vivo por instantes (ele se apaga sozinho).
 
 ## Etapa Concluida (2026-07-28 — Etapa 50: Auditoria multi-frente + performance)
 

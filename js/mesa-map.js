@@ -20,8 +20,12 @@
  *
  * OTIMIZAÇÕES
  * ─────────────────────────────────────────────────────────────
- *  - Compressão WebP antes de qualquer transferência
- *    PNG 15 MB → WebP ~350 KB (Canvas API, max 1920 px)
+ *  - Compressão WebP antes de qualquer transferência (Etapa 55)
+ *    Orientada a ORÇAMENTO, não a um cap fixo: mira 4096 px em q0.92 e só
+ *    degrada (qualidade primeiro, dimensão depois) se passar de 10 MB — o
+ *    teto real é o 413 do Worker no upload, não a contagem de pixels.
+ *    Fonte que já é WebP dentro dos limites passa intacta (sem perda
+ *    geracional).
  *  - Cache do jogador no IndexedDB por SHA-256
  *    Mapa igual = zero re-download em qualquer sessão futura
  *  - Announce/have: mestre só transfere para quem não tem cache
@@ -58,9 +62,26 @@ const EV_MAP_WS_END    = "mesa:map:ws:end";     // mestre → jogador: fim de tr
 const EV_MAP_SET       = "mesa:map:set";         // (compatibilidade Fase 3 / R2)
 const EV_MAP_CLEAR     = "mesa:map:clear";       // mestre → todos: limpar mapa
 
-// Parâmetros de compressão
-const WEBP_MAX_PX   = 1920;   // maior dimensão em pixels
-const WEBP_QUALITY  = 0.82;   // 0-1, 0.82 é ótimo equilíbrio tamanho/qualidade
+// Parâmetros de compressão (Etapa 55)
+// Antes: 1920px fixo em q0.82 — um battlemap de 4096px chegava ao palco com
+// metade da resolução, e o zoom de palco (até 3x) ampliava esse borrão.
+//
+// O teto real NÃO é de pixels, é de BYTES: o Worker recusa upload de mapa
+// acima de MAP_UPLOAD_LIMIT (413 em POST /api/mesa/map). Estourar isso deixa
+// o mapa num estado meio quebrado — visível localmente e via P2P, mas ausente
+// para quem entrar depois, porque o R2/cena nunca recebeu. Então a estratégia
+// é MAXIMIZAR PIXELS DENTRO DE UM ORÇAMENTO, não subir o cap às cegas.
+const WEBP_MAX_PX   = 4096;   // maior dimensão em pixels (nunca faz upscale)
+const WEBP_QUALITY  = 0.92;   // qualidade inicial — só cai se o orçamento exigir
+
+// Degradação em ordem: primeiro qualidade (imperceptível), depois dimensão.
+const WEBP_QUALITY_STEPS = [0.92, 0.86, 0.80, 0.72];
+const WEBP_MIN_PX        = 2048;  // piso de dimensão: abaixo disso não reduz mais
+
+// Orçamento de bytes do mapa comprimido. Folga deliberada sob o limite do
+// Worker (12 MB): o multipart do upload e o envelope base64 do relay WS somam
+// alguns por cento, e um 413 no meio da sessão é pior que 2% menos qualidade.
+const MAP_BYTES_BUDGET = 10 * 1024 * 1024;
 
 // WebRTC
 const P2P_TIMEOUT_MS = 8_000; // ms até desistir do P2P e usar WS
@@ -206,6 +227,151 @@ function bindZoomControl() {
   }
 }
 
+/* ── AJUSTE DO PALCO AO MAPA (Etapa 52) ─────────────────────── */
+// Por padrão o palco preenche o canvas inteiro e o mapa entra com "cover":
+// se a proporção da imagem não bate com a do painel, sobra corte nas bordas.
+//
+// Com o fit ligado, o #mesaStageInner deixa de ser inset:0 e passa a ter
+// EXATAMENTE a proporção da imagem, centralizado no wrap (letterbox). Como a
+// caixa fica na proporção certa, o cover de applyMapTransform() vira encaixe
+// perfeito — a imagem aparece inteira, sem corte, e as camadas internas
+// (grade, névoa, desenhos, tokens) herdam a nova caixa por serem inset:0.
+//
+// A UI e a persistência por cena entram na Etapa 54; aqui o estado é local e
+// começa DESLIGADO, para não deslocar coordenadas de cenas já salvas.
+
+let _fitToMap = false;
+
+/** O palco está ajustado à proporção do mapa? */
+function isStageFitToMap() {
+  return _fitToMap;
+}
+
+/**
+ * Liga/desliga o ajuste do palco à proporção do mapa.
+ * @param {boolean} on
+ */
+function setStageFitToMap(on) {
+  const next = !!on;
+  if (next === _fitToMap) return;
+  _fitToMap = next;
+  // applyMapTransform() já reaplica a caixa e redesenha grade e névoa.
+  applyMapTransform();
+}
+
+/* ── UI DO FIT (mestre) — Etapa 54 ──────────────────────────── */
+
+/** Espelha o estado atual no checkbox e mostra o grupo só p/ mestre com mapa. */
+function _syncFitToggleUI() {
+  const group  = document.getElementById("mesaMapFitGroup");
+  const toggle = document.getElementById("mesaMapFitToggle");
+  if (toggle) toggle.checked = _fitToMap;
+  if (group)  group.hidden = !(_isMasterRole() && !!mesaMapState.activeMapUrl);
+}
+
+/** Liga o checkbox: muda o fit, avisa os jogadores e grava na cena. */
+function _bindFitToggle() {
+  const toggle = document.getElementById("mesaMapFitToggle");
+  if (!toggle) return;
+  toggle.addEventListener("change", () => {
+    setStageFitToMap(toggle.checked);
+    // O fit muda o que está na tela: jogadores online recebem na hora e a
+    // cena oficial guarda para quem entrar depois (e para o F5 do mestre).
+    broadcastMapTransform();
+    _scheduleMapScenePersist();
+  });
+}
+
+/**
+ * Aplica o fit vindo do mestre (realtime ou cena oficial). Etapa 54.
+ * `undefined` = cliente/cena antigos, sem o campo: mantém o estado local em
+ * vez de forçar false, para um payload legado não desligar o ajuste no meio
+ * da sessão. O mestre ignora — a fonte de verdade do fit é ele.
+ */
+function _applyRemoteFit(value) {
+  if (value === undefined || value === null) return;
+  if (_isMasterRole()) return;
+  setStageFitToMap(value === true);
+}
+
+/**
+ * Calcula o maior retângulo com a proporção da imagem que cabe no wrap e
+ * aplica ao #mesaStageInner. Sem fit (ou sem mapa/dimensões) devolve o inner
+ * ao inset:0 do CSS.
+ */
+function applyStageFitBox() {
+  const wrap  = document.getElementById("mesaStageWrap");
+  const inner = document.getElementById("mesaStageInner");
+  if (!wrap || !inner) return;
+
+  const iw = mesaMapState._imgW;
+  const ih = mesaMapState._imgH;
+  const active = !!(_fitToMap && mesaMapState.activeMapUrl && iw > 0 && ih > 0);
+
+  if (!active) {
+    inner.style.left = inner.style.top = "";
+    inner.style.right = inner.style.bottom = "";
+    inner.style.width = inner.style.height = "";
+    wrap.removeAttribute("data-fit-map");
+    return;
+  }
+
+  const cw = wrap.clientWidth  || 1;
+  const ch = wrap.clientHeight || 1;
+  const fit = Math.min(cw / iw, ch / ih);   // "contain": cabe inteiro
+  const w = Math.max(1, Math.round(iw * fit));
+  const h = Math.max(1, Math.round(ih * fit));
+
+  // left/top + width/height sobrepõem o inset:0 (right/bottom viram auto para
+  // a caixa não ficar sobre-restringida).
+  inner.style.left   = `${Math.round((cw - w) / 2)}px`;
+  inner.style.top    = `${Math.round((ch - h) / 2)}px`;
+  inner.style.right  = "auto";
+  inner.style.bottom = "auto";
+  inner.style.width  = `${w}px`;
+  inner.style.height = `${h}px`;
+  wrap.setAttribute("data-fit-map", "");
+}
+
+/**
+ * Transform EFETIVO do mapa (Etapa 53).
+ *
+ * O pan/escala do mapa existe só para compensar o corte do "cover". Com o fit
+ * ligado não há corte: a imagem já preenche a caixa exatamente. Manter o
+ * controle ativo aí seria nocivo — mover a imagem dentro da caixa descola o
+ * mapa dos tokens e dos desenhos, que usam fração do PALCO (ao contrário de
+ * grade/névoa/régua/ping, que convertem para fração do MAPA).
+ *
+ * Travando em identidade no modo fit, fração-do-palco ≡ fração-do-mapa por
+ * construção e TODAS as camadas ficam ancoradas na imagem — sem migrar
+ * coordenada e sem mexer no protocolo de sync. Para aproximar, o mestre usa o
+ * zoom de palco, que escala tudo junto e preserva o alinhamento.
+ *
+ * O transform guardado NÃO é zerado: sai intacto do localStorage e volta a
+ * valer se o fit for desligado.
+ */
+function _getEffectiveMapTransform() {
+  if (_fitToMap && mesaMapState.activeMapUrl && mesaMapState._imgW && mesaMapState._imgH) {
+    return { x: 0, y: 0, scale: 1 };
+  }
+  return mesaMapState.mapTransform;
+}
+
+/** O pan/escala do mapa está travado (fit ligado)? */
+function isMapTransformLocked() {
+  return _getEffectiveMapTransform() !== mesaMapState.mapTransform;
+}
+
+/** Recalcula a caixa quando o painel muda de tamanho (janela, sidebars). */
+function _observeStageResize() {
+  const wrap = document.getElementById("mesaStageWrap");
+  if (!wrap || typeof ResizeObserver !== "function") return;
+  // Só reage quando o fit está ligado; caso contrário o inset:0 já resolve.
+  new ResizeObserver(() => {
+    if (_fitToMap) applyMapTransform();
+  }).observe(wrap);
+}
+
 /* ── CAMADA ATIVA ───────────────────────────────────────────── */
 
 const MESA_ACTIVE_LAYER_KEY = "mesaActiveLayer";
@@ -274,6 +440,8 @@ async function initMesaMap() {
     bindMesaMapPresence();
     bindMapInteractions();
     bindZoomControl();
+    _observeStageResize();
+    _bindFitToggle();
 
     if (mesaMapState.isMaster) {
       document.body.classList.add("is-master");
@@ -402,26 +570,86 @@ async function findCachedMapByHash(hash) {
  */
 async function compressToWebP(blob, maxPx = WEBP_MAX_PX, quality = WEBP_QUALITY) {
   const bitmap = await createImageBitmap(blob);
-  let { width, height } = bitmap;
+  const srcMax = Math.max(bitmap.width, bitmap.height);
 
-  // Escalar mantendo proporção, só se necessário
-  const ratio = Math.min(maxPx / width, maxPx / height, 1);
-  width  = Math.round(width  * ratio);
-  height = Math.round(height * ratio);
+  try {
+    // Atalho sem perda: fonte já é WebP, já cabe no cap de pixels e no
+    // orçamento. Re-encodar aqui seria perda geracional pura — a imagem
+    // passaria por uma segunda compressão com lossy sobre lossy, sem ganhar
+    // nada em bytes.
+    if (blob.type === "image/webp" && srcMax <= maxPx && blob.size <= MAP_BYTES_BUDGET) {
+      console.info(`[mesa-map] Original preservado: ${bitmap.width}x${bitmap.height} WebP, ${_fmtMB(blob.size)}`);
+      return blob;
+    }
+
+    // Nunca faz upscale: um mapa de 1200px não vira 4096px falso.
+    let targetMax = Math.min(srcMax, maxPx);
+    let best = null;
+
+    // Degrada na ordem certa: primeiro qualidade (quase invisível num mapa),
+    // só depois dimensão (que é o que o mestre realmente sente ao dar zoom).
+    while (true) {
+      for (const q of _qualitySteps(quality)) {
+        const out = await _encodeWebP(bitmap, targetMax, q);
+        // Guarda o menor produzido até agora, para o caso de nada caber.
+        if (!best || out.blob.size < best.blob.size) best = out;
+        if (out.blob.size <= MAP_BYTES_BUDGET) {
+          const nota = (out.w === srcMax || out.w === bitmap.width) ? "" : ` (origem ${bitmap.width}x${bitmap.height})`;
+          console.info(`[mesa-map] Mapa: ${out.w}x${out.h} q${q} ${_fmtMB(out.blob.size)}${nota}`);
+          return out.blob;
+        }
+      }
+      if (targetMax <= WEBP_MIN_PX) break;
+      targetMax = Math.max(WEBP_MIN_PX, Math.round(targetMax * 0.8));
+    }
+
+    // Piso atingido e ainda acima do orçamento (mapa gigante e muito
+    // detalhado). Devolve o menor: o upload pode falhar com 413, e é melhor
+    // dizer isso alto do que degradar a imagem até virar borrão.
+    console.warn(
+      `[mesa-map] Mapa nao coube no orcamento de ${_fmtMB(MAP_BYTES_BUDGET)}: ` +
+      `melhor tentativa ${best.w}x${best.h} = ${_fmtMB(best.blob.size)}. ` +
+      `O upload para o R2 pode ser recusado; considere reduzir o mapa na origem.`
+    );
+    return best.blob;
+  } finally {
+    bitmap.close(); // libera memória do ImageBitmap em qualquer caminho
+  }
+}
+
+/** Passos de qualidade a tentar, começando na qualidade pedida. */
+function _qualitySteps(startQuality) {
+  const steps = WEBP_QUALITY_STEPS.filter(q => q <= startQuality);
+  return steps.length ? steps : [startQuality];
+}
+
+/** Desenha o bitmap redimensionado e codifica em WebP. */
+function _encodeWebP(bitmap, targetMax, quality) {
+  const ratio = Math.min(targetMax / bitmap.width, targetMax / bitmap.height, 1);
+  const w = Math.max(1, Math.round(bitmap.width  * ratio));
+  const h = Math.max(1, Math.round(bitmap.height * ratio));
 
   const canvas = document.createElement("canvas");
-  canvas.width  = width;
-  canvas.height = height;
-  canvas.getContext("2d").drawImage(bitmap, 0, 0, width, height);
-  bitmap.close(); // libera memória do ImageBitmap
+  canvas.width  = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  // Reamostragem de alta qualidade: o default varia entre navegadores e o
+  // "low" deixa halo em linhas finas de mapa (grades desenhadas, contornos).
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(bitmap, 0, 0, w, h);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
-      b => b ? resolve(b) : reject(new Error("[mesa-map] toBlob retornou null")),
+      b => b ? resolve({ blob: b, w, h }) : reject(new Error("[mesa-map] toBlob retornou null")),
       "image/webp",
       quality
     );
   });
+}
+
+function _fmtMB(bytes) {
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
 /**
@@ -708,7 +936,11 @@ function renderMesaMapLayer(blobUrl, mapName) {
     if (emptyState && mesaStage && !mesaStage.children.length) {
       emptyState.hidden = false;
     }
-    // Mapa limpo: a grade e a névoa voltam a ancorar no palco inteiro.
+    // Mapa limpo: o palco volta a preencher o canvas e a grade e a névoa
+    // voltam a ancorar no palco inteiro. O toggle de fit some junto (sem
+    // mapa não há proporção a que ajustar).
+    applyStageFitBox();
+    _syncFitToggleUI();
     if (typeof window.renderMesaGrid === "function") window.renderMesaGrid();
     if (typeof window.renderMesaFog === "function") window.renderMesaFog();
   }
@@ -726,7 +958,13 @@ function applyMapTransform() {
   const layer = document.getElementById("mesaMapLayer");
   if (!layer) return;
 
-  const { x, y, scale } = mesaMapState.mapTransform;
+  // A caixa do palco vem primeiro: o cover abaixo mede offsetWidth/Height do
+  // layer, que só está correto depois do fit aplicado.
+  applyStageFitBox();
+
+  // Efetivo, não o guardado: no modo fit o pan/escala fica travado em
+  // identidade (ver _getEffectiveMapTransform).
+  const { x, y, scale } = _getEffectiveMapTransform();
   const s = Math.max(0.1, Math.min(8, scale));
 
   // "cover" escalado: calcula o tamanho cover e multiplica por s
@@ -751,8 +989,10 @@ function applyMapTransform() {
   const lbl = document.getElementById("mesaMapScaleLabel");
   if (lbl) lbl.textContent = `${Math.round(s * 100)}%`;
 
-  // Persistir por mapa
-  if (mesaMapState.activeMapId) {
+  // Persistir por mapa. No modo fit o transform é identidade FORÇADA, não uma
+  // escolha do mestre — salvar aqui apagaria o pan/zoom que ele havia ajustado
+  // e que deve voltar intacto se o fit for desligado.
+  if (mesaMapState.activeMapId && !isMapTransformLocked()) {
     try {
       localStorage.setItem(
         `mesa_map_tr_${mesaMapState.activeMapId}`,
@@ -761,13 +1001,33 @@ function applyMapTransform() {
     } catch {}
   }
 
+  // Com o fit ligado, pan/escala do mapa não fazem mais nada: esconder o grupo
+  // evita um controle vivo que não responde.
+  _syncMapTransformControls();
+
   // Grade e névoa acompanham o mapa: qualquer pan/zoom/troca redesenha.
   if (typeof window.renderMesaGrid === "function") window.renderMesaGrid();
   if (typeof window.renderMesaFog === "function") window.renderMesaFog();
 }
 
+/**
+ * Mostra/esconde os controles de pan e escala do mapa conforme o travamento.
+ * Só age quando há mapa ativo — sem mapa, renderMesaMapLayer() já os oculta.
+ */
+function _syncMapTransformControls() {
+  _syncFitToggleUI();
+  if (!mesaMapState.activeMapUrl) return;
+  const locked     = isMapTransformLocked();
+  const scaleGroup = document.getElementById("mesaMapScaleGroup");
+  const hint       = document.getElementById("mesaMapHint");
+  if (scaleGroup) scaleGroup.hidden = locked;
+  if (hint)       hint.hidden       = locked;
+}
+
 function adjustMapScale(delta) {
   if (!mesaMapState.activeMapUrl) return;
+  // Fit ligado: escalar a imagem dentro da caixa a descolaria dos tokens.
+  if (isMapTransformLocked()) return;
   mesaMapState.mapTransform.scale = Math.max(0.1, Math.min(8,
     mesaMapState.mapTransform.scale + delta));
   applyMapTransform();
@@ -776,6 +1036,7 @@ function adjustMapScale(delta) {
 
 function panMap(dx, dy) {
   if (!mesaMapState.activeMapUrl) return;
+  if (isMapTransformLocked()) return;
   mesaMapState.mapTransform.x += dx;
   mesaMapState.mapTransform.y += dy;
   applyMapTransform();
@@ -801,7 +1062,7 @@ function _getMapCoverDims() {
   if (!layer || !mesaMapState._imgW || !mesaMapState._imgH) return null;
   const cw = layer.offsetWidth  || 1;
   const ch = layer.offsetHeight || 1;
-  const s  = Math.max(0.1, Math.min(8, mesaMapState.mapTransform.scale));
+  const s  = Math.max(0.1, Math.min(8, _getEffectiveMapTransform().scale));
   const coverScale = Math.max(cw / mesaMapState._imgW, ch / mesaMapState._imgH);
   return {
     w: Math.max(1, mesaMapState._imgW * coverScale * s),
@@ -830,7 +1091,7 @@ function getMesaMapSurfaceFrac() {
   }
   const cw = layer.offsetWidth  || 1;
   const ch = layer.offsetHeight || 1;
-  const { x, y } = mesaMapState.mapTransform;
+  const { x, y } = _getEffectiveMapTransform();
   // background-position: calc(50% + Xpx) → canto da imagem em px do container
   const leftPx = (cw - dims.w) / 2 + x;
   const topPx  = (ch - dims.h) / 2 + y;
@@ -863,6 +1124,10 @@ function mesaMapFracToStageFrac(u, v) {
   };
 }
 
+window.isStageFitToMap        = isStageFitToMap;
+window.isMapTransformLocked   = isMapTransformLocked;
+window.setStageFitToMap       = setStageFitToMap;
+window.applyStageFitBox       = applyStageFitBox;
 window.getMesaMapSurfaceFrac  = getMesaMapSurfaceFrac;
 window.mesaStageFracToMapFrac = mesaStageFracToMapFrac;
 window.mesaMapFracToStageFrac = mesaMapFracToStageFrac;
@@ -876,12 +1141,17 @@ function broadcastMapTransform() {
     _mapTransformBroadcastTimer = 0;
     const dims = _getMapCoverDims();
     if (!dims) return;
-    const { x, y, scale } = mesaMapState.mapTransform;
+    // Efetivo: com o fit ligado o jogador precisa receber identidade, não o
+    // pan/zoom guardado — senão o mapa dele sai do lugar em relação ao mestre.
+    const { x, y, scale } = _getEffectiveMapTransform();
     _sendRealtime({
       type:          EV_MAP_SET,
       transformOnly: true,
       mapId:         mesaMapState.activeMapId,
       from:          mesaMapState.myUserId,
+      // O fit pega carona no mesmo evento: é relay master-only já liberado no
+      // Durable Object e clientes antigos simplesmente ignoram o campo.
+      fit:           isStageFitToMap(),
       transform: {
         xFrac: x / dims.w,
         yFrac: y / dims.h,
@@ -940,11 +1210,15 @@ function _isMasterRole() {
 
 // Transform atual normalizado (frações do tamanho exibido da imagem).
 function _normalizedMapTransform() {
-  const fallback = mesaMapState.sceneMapRef?.transform
-    || { xFrac: 0, yFrac: 0, scale: Math.max(0.1, Math.min(8, mesaMapState.mapTransform.scale || 1)) };
+  // Efetivo em toda a função: a cena oficial precisa guardar o que está de
+  // fato NA TELA. Com o fit ligado isso é identidade — persistir o transform
+  // guardado faria o jogador que entra depois desenhar o mapa deslocado.
+  const eff = _getEffectiveMapTransform();
+  const fallback = (isMapTransformLocked() ? null : mesaMapState.sceneMapRef?.transform)
+    || { xFrac: 0, yFrac: 0, scale: Math.max(0.1, Math.min(8, eff.scale || 1)) };
   const dims = _getMapCoverDims();
   if (!dims) return fallback;
-  const { x, y, scale } = mesaMapState.mapTransform;
+  const { x, y, scale } = eff;
   return {
     xFrac: Math.round((x / dims.w) * 10000) / 10000,
     yFrac: Math.round((y / dims.h) * 10000) / 10000,
@@ -958,6 +1232,7 @@ window.getMesaSceneMapPayload = function () {
     return {
       id:        mesaMapState.activeMapId,
       url:       mesaMapState.activeMapPublicUrl,
+      fit:       isStageFitToMap(),
       transform: _normalizedMapTransform()
     };
   }
@@ -1005,6 +1280,11 @@ function _applySceneMapRef(ref) {
     if (mesaMapState.activeMapId && mesaMapState.activeMapId === ref.id) {
       mesaMapState.activeMapPublicUrl = ref.url;
       mesaMapState._uploadedMapId = ref.id;
+      // O fit é do mestre, mas depois de um F5 quem tem a memória é a cena.
+      if (ref.fit !== undefined) {
+        setStageFitToMap(ref.fit === true);
+        _syncFitToggleUI();
+      }
       return;
     }
     // Mestre com outro mapa local ativo: o local manda (a cena converge no
@@ -1020,6 +1300,7 @@ function _applySceneMapRef(ref) {
   // Jogador: renderiza a URL da cena (dedupe por URL + id; se for o mesmo
   // mapa, só realinha o transform).
   if (mesaMapState._lastSceneMapUrl === ref.url && mesaMapState.activeMapId === ref.id) {
+    _applyRemoteFit(ref.fit);
     if (ref.transform) _applyRemoteMapTransform(ref.transform, ref.id);
     return;
   }
@@ -1038,6 +1319,12 @@ function _renderSceneMapFromUrl(ref) {
   mesaMapState._lastSceneMapUrl = ref.url;
   mesaMapState._imgW = 0;
   mesaMapState._imgH = 0;
+
+  // Fit da cena antes do probe: troca de cena troca o fit junto com o mapa.
+  if (ref.fit !== undefined) {
+    if (_isMasterRole()) { setStageFitToMap(ref.fit === true); _syncFitToggleUI(); }
+    else _applyRemoteFit(ref.fit);
+  }
 
   const probe = new Image();
   probe.onload = function () {
@@ -1509,11 +1796,15 @@ function bindPlayerMapListeners() {
   window.APP.on(EV_MAP_SET, (msg) => {
     if (!isFromMaster(msg)) return;
     if (msg.transformOnly && msg.transform) {
+      // Fit antes do transform: ele decide se o transform recebido vale ou é
+      // sobreposto por identidade (ver _getEffectiveMapTransform).
+      _applyRemoteFit(msg.fit);
       _applyRemoteMapTransform(msg.transform, msg.mapId);
       return;
     }
     const { url, mapId } = msg;
     if (!url) return;
+    _applyRemoteFit(msg.fit);
     // Caminho completo (probe de dimensões + transform pendente), igual ao
     // boot pela cena oficial — antes só trocava o background e o transform
     // do mestre nunca era aplicado neste fallback.

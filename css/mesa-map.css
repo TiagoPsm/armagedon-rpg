@@ -19,6 +19,22 @@
   display: none;
 }
 
+/* ── PALCO AJUSTADO AO MAPA (Etapa 52) ───────────────────────
+ * Com data-fit-map, o #mesaStageInner recebe left/top/width/height inline
+ * (calculados em mesa-map.js) e passa a ter a proporção exata da imagem.
+ * Sobra letterbox no wrap: escurecemos e marcamos a borda do mapa para o
+ * limite do território jogável ficar óbvio. */
+
+#mesaStageWrap[data-fit-map] {
+  background: #050307;
+}
+
+#mesaStageWrap[data-fit-map] #mesaStageInner {
+  box-shadow:
+    0 0 0 1px rgba(176, 48, 57, 0.35),
+    0 0 28px rgba(0, 0, 0, 0.75);
+}
+
 /* Quando não há mapa, o stage mantém seu fundo gradiente normal */
 
 /* Quando há mapa ativo, esconde overlay de tokens vazio e resquícios do sistema de cena */

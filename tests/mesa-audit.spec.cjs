@@ -511,6 +511,9 @@ test.describe("Mesa igual para todos (correcoes 2026-07-07)", () => {
     expect(valid.map).toEqual({
       id: "cf-abc",
       url: "https://api.dev/api/mesa/map/maps/mestre/cf-abc.webp",
+      // fit entrou na Etapa 55; payload sem o campo cai em false — este teste
+      // afirma o shape EXATO, entao e aqui que a ausencia vira default visivel.
+      fit: false,
       transform: { xFrac: 0.25, yFrac: -8, scale: 20 }
     });
 
@@ -3194,5 +3197,248 @@ test.describe("Nevoa: liga/desliga (2026-07-28)", () => {
     expect(result.coberto).toBe(255);
     expect(result.aposDesligar).toBe(0);
     expect(result.enabled).toBe(false);
+  });
+});
+
+/* ============================================================
+ * Palco ajustado ao mapa + resolucao (Etapas 52-55, 2026-07-29)
+ * ============================================================ */
+test.describe("Palco ajustado ao mapa + resolucao (Etapas 52-55)", () => {
+
+  // Prepara mestre com um mapa "ativo" de dimensoes conhecidas, sem depender
+  // de rede: so o que applyStageFitBox/applyMapTransform de fato leem.
+  const seedMapaAtivo = (iw, ih) => {
+    mesaMapState.isMaster = true;
+    window.isMaster = () => true;
+    mesaMapState._imgW = iw;
+    mesaMapState._imgH = ih;
+    mesaMapState.activeMapUrl = "blob:teste";
+    mesaMapState.activeMapId = "map-teste";
+    mesaMapState.activeMapPublicUrl = "https://exemplo/r2/map-teste.webp";
+    document.getElementById("mesaMapLayer").removeAttribute("hidden");
+    applyMapTransform();
+  };
+
+  test("Worker: fit sobrevive ao round-trip e cena antiga nao muda de comportamento", async () => {
+    const { normalizeMesaScene } = await import("../cloudflare/src/mesa.js");
+    const url = "https://exemplo.com/mapa.webp";
+
+    expect(normalizeMesaScene({ map: { id: "m1", url, fit: true } }).map.fit).toBe(true);
+    expect(normalizeMesaScene({ map: { id: "m1", url, fit: false } }).map.fit).toBe(false);
+
+    // Cena ANTIGA (sem o campo): fit desligado E transform intacto â€” e a
+    // garantia de que nenhuma coordenada ja salva se desloca.
+    const antiga = normalizeMesaScene({
+      map: { id: "m1", url, transform: { xFrac: 0.02, yFrac: -0.03, scale: 1.8 } }
+    }).map;
+    expect(antiga.fit).toBe(false);
+    expect(antiga.transform).toEqual({ xFrac: 0.02, yFrac: -0.03, scale: 1.8 });
+
+    // Comparacao estrita, nao coercao: string truthy nao liga o fit
+    expect(normalizeMesaScene({ map: { id: "m1", url, fit: "sim" } }).map.fit).toBe(false);
+    // Sem url nao ha mapa â€” logo nao ha fit
+    expect(normalizeMesaScene({ map: { fit: true } }).map).toBeNull();
+  });
+
+  test("fit da ao palco a proporcao exata da imagem, centralizado e sem corte", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const r = await page.evaluate((seedSrc) => {
+      eval(`(${seedSrc})`)(4000, 1000);   // proporcao 4:1, o pior caso do "cover"
+      const wrap  = document.getElementById("mesaStageWrap");
+      const inner = document.getElementById("mesaStageInner");
+      const layer = document.getElementById("mesaMapLayer");
+      const wrapBox = [wrap.clientWidth, wrap.clientHeight];
+
+      setStageFitToMap(true);
+      const ligado = {
+        inner:   [inner.clientWidth, inner.clientHeight],
+        top:     inner.style.top,
+        bgSize:  layer.style.backgroundSize,
+        temAttr: wrap.hasAttribute("data-fit-map")
+      };
+      setStageFitToMap(false);
+      const desligado = {
+        inner:      [inner.clientWidth, inner.clientHeight],
+        leftInline: inner.style.left,
+        temAttr:    wrap.hasAttribute("data-fit-map")
+      };
+      return { wrapBox, ligado, desligado };
+    }, seedMapaAtivo.toString());
+
+    const [cw, ch] = r.wrapBox;
+    const esperadoH = Math.round(1000 * Math.min(cw / 4000, ch / 1000));
+
+    // Proporcao exata da IMAGEM (4:1), nao a do painel
+    expect(r.ligado.inner[1]).toBe(esperadoH);
+    expect(r.ligado.inner[0] / r.ligado.inner[1]).toBeCloseTo(4, 2);
+    // Centralizado na sobra (letterbox)
+    expect(r.ligado.top).toBe(`${Math.round((ch - esperadoH) / 2)}px`);
+    // background-size == a caixa: a imagem cabe inteira, ZERO corte
+    expect(r.ligado.bgSize).toBe(`${r.ligado.inner[0]}px ${r.ligado.inner[1]}px`);
+    expect(r.ligado.temAttr).toBe(true);
+
+    // Desligar devolve o palco ao canvas inteiro e limpa os estilos inline
+    expect(r.desligado.inner).toEqual(r.wrapBox);
+    expect(r.desligado.leftInline).toBe("");
+    expect(r.desligado.temAttr).toBe(false);
+  });
+
+  test("com fit, fracao do palco == fracao do mapa (tokens e desenhos alinhados)", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const r = await page.evaluate((seedSrc) => {
+      eval(`(${seedSrc})`)(4000, 1000);
+      // Mestre havia compensado o corte na mao â€” o estado que causa o desvio
+      mesaMapState.mapTransform = { x: 120, y: -40, scale: 1.8 };
+      applyMapTransform();
+      const semFit = {
+        surface: getMesaMapSurfaceFrac(),
+        token:   mesaStageFracToMapFrac(0.25, 0.75)
+      };
+
+      setStageFitToMap(true);
+      const comFit = {
+        surface:       getMesaMapSurfaceFrac(),
+        token:         mesaStageFracToMapFrac(0.25, 0.75),
+        travado:       isMapTransformLocked(),
+        escalaOculta:  document.getElementById("mesaMapScaleGroup").hidden,
+        toggleVisivel: !document.getElementById("mesaMapFitGroup").hidden
+      };
+      // Controles de mapa devem ser inertes enquanto travado
+      adjustMapScale(0.5);
+      panMap(999, 999);
+      comFit.aposMexer = {
+        guardado: { ...mesaMapState.mapTransform },
+        surface:  getMesaMapSurfaceFrac()
+      };
+
+      setStageFitToMap(false);
+      return { semFit, comFit, guardadoNoFim: { ...mesaMapState.mapTransform } };
+    }, seedMapaAtivo.toString());
+
+    // Sem fit, o token cai num ponto do mapa diferente de onde e desenhado
+    expect(r.semFit.token.u).not.toBeCloseTo(0.25, 2);
+    expect(r.semFit.surface.width).toBeGreaterThan(1);
+
+    // Com fit a superficie do mapa COINCIDE com o palco: identidade
+    expect(r.comFit.surface).toMatchObject({ left: 0, top: 0, width: 1, height: 1, hasMap: true });
+    expect(r.comFit.token.u).toBeCloseTo(0.25, 6);
+    expect(r.comFit.token.v).toBeCloseTo(0.75, 6);
+    expect(r.comFit.travado).toBe(true);
+    expect(r.comFit.escalaOculta).toBe(true);
+    expect(r.comFit.toggleVisivel).toBe(true);
+
+    // Travado de verdade: pan/escala nao movem nada...
+    expect(r.comFit.aposMexer.guardado).toEqual({ x: 120, y: -40, scale: 1.8 });
+    expect(r.comFit.aposMexer.surface).toMatchObject({ left: 0, top: 0, width: 1, height: 1 });
+    // ...e o transform do mestre sobrevive intacto ao ciclo liga/desliga
+    expect(r.guardadoNoFim).toEqual({ x: 120, y: -40, scale: 1.8 });
+  });
+
+  test("toggle do mestre grava na cena; jogador recebe e legado nao desliga", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const r = await page.evaluate((seedSrc) => {
+      eval(`(${seedSrc})`)(4000, 1000);
+      const toggle = document.getElementById("mesaMapFitToggle");
+      const out = {};
+
+      toggle.click();                       // clique REAL, passa pelo listener
+      out.ligado = { fit: isStageFitToMap(), payload: getMesaSceneMapPayload() };
+      toggle.click();
+      out.desligado = { fit: isStageFitToMap(), payload: getMesaSceneMapPayload() };
+
+      // Sem mapa o grupo some (nao ha proporcao a que ajustar)
+      mesaMapState.activeMapUrl = "";
+      renderMesaMapLayer("", "");
+      out.semMapaOculto = document.getElementById("mesaMapFitGroup").hidden;
+
+      // â”€â”€ Jogador â”€â”€
+      eval(`(${seedSrc})`)(4000, 1000);
+      window.isMaster = () => false;
+      mesaMapState.isMaster = false;
+      setStageFitToMap(false);
+      _applyRemoteFit(true);       out.jogadorLiga      = isStageFitToMap();
+      _applyRemoteFit(undefined);  out.legadoNaoDesliga = isStageFitToMap();
+      _applyRemoteFit(false);      out.jogadorDesliga   = isStageFitToMap();
+
+      // Mestre e a fonte de verdade: ignora fit remoto
+      window.isMaster = () => true;
+      mesaMapState.isMaster = true;
+      setStageFitToMap(true);
+      _applyRemoteFit(false);      out.mestreIgnoraRemoto = isStageFitToMap();
+      return out;
+    }, seedMapaAtivo.toString());
+
+    expect(r.ligado.fit).toBe(true);
+    expect(r.ligado.payload.fit).toBe(true);
+    // Travado => a cena guarda identidade, nao o pan guardado
+    expect(r.ligado.payload.transform).toEqual({ xFrac: 0, yFrac: 0, scale: 1 });
+    expect(r.desligado.fit).toBe(false);
+    expect(r.desligado.payload.fit).toBe(false);
+    expect(r.semMapaOculto).toBe(true);
+
+    expect(r.jogadorLiga).toBe(true);
+    // Payload legado (sem o campo) NAO pode apagar o ajuste do mestre
+    expect(r.legadoNaoDesliga).toBe(true);
+    expect(r.jogadorDesliga).toBe(false);
+    expect(r.mestreIgnoraRemoto).toBe(true);
+  });
+
+  test("compressao: respeita o cap de 4096, nunca faz upscale e nao re-encoda WebP", async ({ page }) => {
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const r = await page.evaluate(async () => {
+      function png(w, h) {
+        const c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        const x = c.getContext("2d");
+        const g = x.createLinearGradient(0, 0, w, h);
+        g.addColorStop(0, "#2b2118"); g.addColorStop(1, "#1a1410");
+        x.fillStyle = g; x.fillRect(0, 0, w, h);
+        for (let i = 0; i < 40; i++) {
+          x.fillStyle = `hsl(${(i * 37) % 360} 30% ${18 + (i % 22)}%)`;
+          x.fillRect((i * 613) % w, (i * 941) % h, 90, 70);
+        }
+        return new Promise(res => c.toBlob(res, "image/png"));
+      }
+      const dims = async b => {
+        const bm = await createImageBitmap(b);
+        const d = [bm.width, bm.height];
+        bm.close();
+        return d;
+      };
+
+      // Maior que o cap: reduz para 4096 no maior lado, mantendo proporcao
+      const grande = await compressToWebP(await png(5000, 2500));
+      // Menor que o cap: NAO faz upscale
+      const pequeno = await compressToWebP(await png(1200, 800));
+      // Ja WebP dentro dos limites: volta a MESMA instancia (zero perda geracional)
+      const webp   = await compressToWebP(await png(1600, 1000));
+      const denovo = await compressToWebP(webp);
+
+      return {
+        grande: await dims(grande), grandeTipo: grande.type,
+        pequeno: await dims(pequeno),
+        passthrough: denovo === webp, passthroughDim: await dims(denovo)
+      };
+    });
+
+    expect(r.grande).toEqual([4096, 2048]);   // proporcao 2:1 preservada
+    expect(r.grandeTipo).toBe("image/webp");
+    expect(r.pequeno).toEqual([1200, 800]);   // sem upscale
+    expect(r.passthrough).toBe(true);
+    expect(r.passthroughDim).toEqual([1600, 1000]);
   });
 });

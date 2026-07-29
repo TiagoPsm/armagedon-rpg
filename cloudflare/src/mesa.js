@@ -205,6 +205,11 @@ function normalizeSceneMap(map) {
   return {
     id: normalizeText(map.id).slice(0, 80),
     url,
+    // Etapa 54: palco ajustado a proporcao da imagem. Vive DENTRO do map
+    // porque so faz sentido com mapa ativo e precisa trocar junto com ele na
+    // troca de cena. Default false: cena antiga (sem o campo) mantem o
+    // comportamento "cover" e as coordenadas que ja tem salvas.
+    fit: map.fit === true,
     transform: {
       xFrac: Math.round(clamp(rawTransform.xFrac ?? 0, -8, 8) * 10000) / 10000,
       yFrac: Math.round(clamp(rawTransform.yFrac ?? 0, -8, 8) * 10000) / 10000,

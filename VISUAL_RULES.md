@@ -225,6 +225,22 @@ Comportamento visual consolidado:
 - O inspetor permite editar Vida/Integridade atuais tambem dos tokens de Echo (mestre em todos; jogador nos proprios Echos), reutilizando os mesmos editores de stat; o maximo do Echo fica somente leitura na Mesa (ajustado na pagina de Echos)
 - Visual deve seguir a mesma linguagem dark fantasy da ficha, mas com densidade maior por ser ferramenta de mesa
 
+### Palco ajustado ao mapa (Etapa 52)
+
+Com "Ajustar ao mapa" ligado, o `#mesaStageInner` recebe `left/top/width/height`
+inline (calculados em `js/mesa-map.js`) e passa a ter a proporcao exata da
+imagem. Sobra letterbox no wrap — e essa sobra precisa ler como "fora do
+territorio", nao como area jogavel vazia:
+
+- `#mesaStageWrap[data-fit-map]` escurece o fundo para `#050307` (mais escuro
+  que o `#030205` do canvas, para o palco destacar por contraste)
+- borda carmesim discreta no inner (`0 0 0 1px rgba(176,48,57,0.35)`) mais
+  sombra externa — marca o limite do mapa sem competir com o conteudo
+- nada animado: o letterbox e moldura, nao elemento de cena
+
+O atributo `data-fit-map` e a unica chave CSS; toda a geometria vem do JS,
+porque depende das dimensoes naturais da imagem importada.
+
 Arquivos visuais atuais da Mesa:
 
 - `css/mesa-base.css`

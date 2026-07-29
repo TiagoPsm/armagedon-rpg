@@ -878,10 +878,13 @@ export default {
 
         if (!file || !(file instanceof File)) return errorJson("Campo 'file' obrigatorio.", 400, origin);
         if (!mapId) return errorJson("Campo 'mapId' obrigatorio.", 400, origin);
-        // Cap de upload de mapa (Etapa 41): 8MB — acima disso o cliente ja
-        // deveria ter comprimido (o mesa-map converte para webp antes).
-        if (file.size > 8 * 1024 * 1024) {
-          return errorJson("Mapa excede o limite de 8 MB.", 413, origin);
+        // Cap de upload de mapa (Etapa 41; elevado na Etapa 55): 12MB. O
+        // cliente comprime para WebP mirando um orcamento de 10MB
+        // (MAP_BYTES_BUDGET em mesa-map.js), entao os 12MB sao a folga para
+        // o envelope multipart — nao um alvo. Continua sendo um teto
+        // protetivo: acima disso o cliente nao comprimiu como deveria.
+        if (file.size > 12 * 1024 * 1024) {
+          return errorJson("Mapa excede o limite de 12 MB.", 413, origin);
         }
 
         // Chave no R2: maps/<username>/<mapId>.webp
