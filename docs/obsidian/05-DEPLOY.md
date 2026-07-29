@@ -1,6 +1,36 @@
 # Deploy
 
-## Publicacao Atual
+## ATENCAO: existem DOIS destinos de publicacao
+
+O mesmo push na `main` publica em dois lugares, por pipelines diferentes:
+
+| Destino | Pipeline | Comando de build | Minifica? |
+|---|---|---|---|
+| `https://tiagopsm.github.io/armagedon-rpg/` | GitHub Actions (`.github/workflows/pages.yml`, versionado) | `npm run build` | SIM |
+| `https://armagedon-rpg.pages.dev/` | Cloudflare Pages (configurado no painel, NAO versionado) | `npm run build:pages` | **NAO** |
+
+`build` = `build:pages` + `minify`. O Cloudflare Pages roda so a primeira metade, entao
+entrega o bundle cru.
+
+**Comprovado byte a byte (2026-07-29)**: `_site/js/mesa-page.bundle.js` apos `build:pages`
+tem 485.698 B — exatamente o que o pages.dev serve. Apos `build` tem 258.983 B — exatamente
+o que o github.io serve. Nao e minify falhando calado: `tools/minify.cjs` faz `require` de
+terser e clean-css no topo do modulo, entao ausencia deles derrubaria o build inteiro.
+
+**Custo na pagina da Mesa** (medido na rede, ja com brotli do CF):
+- hoje no pages.dev: 147,4 KB (js 118,2 + css 29,2)
+- com o comando certo: 68,3 KB (js 53,2 + css 15,1)
+- desperdicio: **~79 KB por carga fria**, mais ~281 KB a mais de codigo para o navegador
+  parsear (632 KB crus contra 351 KB)
+
+**Correcao**: no painel do Cloudflare Pages, trocar o build command de `npm run build:pages`
+para `npm run build`. As dependencias necessarias (terser, clean-css) ja sao devDependencies
+e ja estao sendo instaladas — o build atual roda `build:pages`, que vive no mesmo pacote.
+
+Enquanto os dois destinos existirem, verificar deploy nos DOIS: mesma versao de `?v=` nao
+garante mesmo conteudo servido.
+
+## Publicacao Atual (GitHub Pages)
 
 - Repositorio: `TiagoPsm/armagedon-rpg`
 - Branch: `main`

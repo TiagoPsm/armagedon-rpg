@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-29 14:40:51 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-29 15:42:05 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,25 +13,14 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `e9a7919 2026-07-29 feat(mesa): palco se adapta a proporcao do mapa + resolucao 4096 (Etapas 52-56)`
+- Ultimo commit: `6f50cf2 2026-07-29 fix(mesa): fit descobrivel + grade fluida + nitidez no zoom (Etapas 57-58)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-M  DEV_STATUS.md
-M  SYSTEM_RULES.md
-M  VISUAL_RULES.md
-M  css/mesa-map.css
-M  css/mesa.css
+M  docs/obsidian/05-DEPLOY.md
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-drawing.js
-M  js/mesa-fog.js
-M  js/mesa-grid.js
-M  js/mesa-map.js
-M  mesa.html
-M  tests/mesa-audit.spec.cjs
-M  tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -43,19 +32,8 @@ M  tools/build-pages.cjs
 ### Arquivos Em Stage
 
 ```text
-DEV_STATUS.md
-SYSTEM_RULES.md
-VISUAL_RULES.md
-css/mesa-map.css
-css/mesa.css
+docs/obsidian/05-DEPLOY.md
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/mesa-drawing.js
-js/mesa-fog.js
-js/mesa-grid.js
-js/mesa-map.js
-mesa.html
-tests/mesa-audit.spec.cjs
-tools/build-pages.cjs
 ```
 
 ## Paginas Principais
@@ -152,8 +130,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
     0,73 MB  debug.log
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js
     0,61 MB  node_modules\playwright-core\lib\vite\traceViewer\assets\defaultSettingsView-GTWI-W_B.js
-    0,46 MB  _site\js\mesa-page.bundle.js
     0,45 MB  node_modules\playwright-core\lib\utilsBundleImpl\index.js
+    0,41 MB  node_modules\@img\sharp-win32-x64\lib\sharp-win32-x64.node
 ```
 
 ## Comando De Atualizacao
