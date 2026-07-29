@@ -165,6 +165,74 @@ function getStageZoom() {
   return _stageZoom;
 }
 
+/* ── NITIDEZ NO ZOOM (Etapa 58) ─────────────────────────────── */
+// O zoom de palco é um transform:scale() no #mesaStageInner. Os canvas lá
+// dentro têm buffer de tamanho FIXO (offsetWidth × dpr): a 300% o compositor
+// amplia esse bitmap 3x e a grade sai borrada, por mais resolução que o mapa
+// tenha. A correção é render-los na escala em que serão EXIBIDOS.
+
+// Teto de memória do buffer: 24 MP ≈ 96 MB em RGBA. Acima disso o ganho
+// visual não paga a alocação (e navegador em aba de fundo pode recusar).
+const MAX_CANVAS_PIXELS = 24e6;
+
+/**
+ * Escala de rasterização para os canvas do palco: densidade da tela vezes o
+ * zoom atual, limitada pelo teto de memória.
+ * @param {number} w — largura CSS do canvas
+ * @param {number} h — altura CSS do canvas
+ */
+function getMesaRenderScale(w, h) {
+  const dpr  = window.devicePixelRatio || 1;
+  const zoom = Math.max(1, _stageZoom);
+  const area = Math.max(1, (w || 1) * (h || 1));
+  let scale = dpr * zoom;
+  if (area * scale * scale > MAX_CANVAS_PIXELS) {
+    scale = Math.sqrt(MAX_CANVAS_PIXELS / area);
+  }
+  return Math.max(1, scale);
+}
+window.getMesaRenderScale = getMesaRenderScale;
+
+let _rescaleRaf = 0;
+
+/**
+ * Re-dimensiona os canvas do palco para a escala de zoom atual. Coalescido
+ * por frame: o slider de zoom dispara muitos eventos seguidos e realocar
+ * buffer a cada um seria caro.
+ */
+function rescaleStageCanvases() {
+  if (_rescaleRaf) return;
+  const run = () => {
+    _rescaleRaf = 0;
+    if (typeof _resizeGridCanvas === "function") _resizeGridCanvas();
+    if (typeof _resizeFogCanvas  === "function") _resizeFogCanvas();
+    if (typeof _resizeDrawCanvas === "function") _resizeDrawCanvas();
+  };
+  if (typeof requestAnimationFrame !== "function") { run(); return; }
+  _rescaleRaf = requestAnimationFrame(run);
+}
+window.rescaleStageCanvases = rescaleStageCanvases;
+
+/**
+ * Marca o palco como "em transformação" por um instante. A classe leva o
+ * will-change: transform — mantê-lo permanente promovia o inner a uma camada
+ * rasterizada UMA vez na escala base, e era isso que deixava o MAPA borrado
+ * ao ampliar. Sem a classe, o navegador re-rasteriza na escala exibida.
+ */
+let _transformingTimer = 0;
+function _markStageTransforming() {
+  const inner = document.getElementById("mesaStageInner");
+  if (!inner) return;
+  inner.classList.add("is-transforming");
+  if (_transformingTimer) clearTimeout(_transformingTimer);
+  _transformingTimer = setTimeout(() => {
+    _transformingTimer = 0;
+    inner.classList.remove("is-transforming");
+    // Saiu da camada promovida: agora vale re-rasterizar tudo em alta.
+    rescaleStageCanvases();
+  }, 180);
+}
+
 /** Aplica transform composta (translate + scale) ao inner do palco. */
 function _applyStageTransform() {
   const inner = document.getElementById("mesaStageInner");
@@ -173,6 +241,9 @@ function _applyStageTransform() {
   const z = _stageZoom;
   inner.style.transform =
     (x === 0 && y === 0 && z === 1) ? "" : `translate(${x}px,${y}px) scale(${z})`;
+  // Promove a camada só durante o movimento (fluidez) e devolve a
+  // rasterização normal ao parar (nitidez). Ver _markStageTransforming.
+  _markStageTransforming();
 }
 
 /**
@@ -259,15 +330,56 @@ function setStageFitToMap(on) {
   applyMapTransform();
 }
 
+/**
+ * Fit padrao quando o MESTRE escolhe um mapa (Etapa 57).
+ *
+ * A Etapa 54 deixou o ajuste desligado por padrao para nao deslocar as
+ * coordenadas de cenas ja salvas. Na pratica isso escondeu o recurso: o mapa
+ * continuava cortado e o botao ficava a dois cliques de distancia, num painel
+ * que o mestre nao abre. Aqui a regra fica: MAPA NOVO NASCE AJUSTADO; cena
+ * antiga que ja tem um mapa continua obedecendo o `fit` gravado nela.
+ *
+ * Chamado so nos caminhos em que o mestre ESCOLHE um mapa (abrir arquivo,
+ * biblioteca, pasta conectada) — nunca no boot nem no recebimento pelo
+ * jogador, onde a cena e o mestre respectivamente mandam.
+ */
+function _fitDefaultForNewMap() {
+  if (!_isMasterRole()) return;
+  setStageFitToMap(true);
+  _syncFitToggleUI();
+  broadcastMapTransform();
+  _scheduleMapScenePersist();
+}
+
 /* ── UI DO FIT (mestre) — Etapa 54 ──────────────────────────── */
 
-/** Espelha o estado atual no checkbox e mostra o grupo só p/ mestre com mapa. */
+/** Espelha o estado atual nos dois controles (barra + painel). */
 function _syncFitToggleUI() {
+  const visivel = !!(_isMasterRole() && mesaMapState.activeMapUrl);
+
   const group  = document.getElementById("mesaMapFitGroup");
   const toggle = document.getElementById("mesaMapFitToggle");
   if (toggle) toggle.checked = _fitToMap;
-  if (group)  group.hidden = !(_isMasterRole() && !!mesaMapState.activeMapUrl);
+  if (group)  group.hidden = !visivel;
+
+  // Botão da barra (Etapa 57) — o caminho curto para o mesmo estado.
+  const btn = document.getElementById("mesaMapFitBtn");
+  if (btn) {
+    btn.hidden = !visivel;
+    btn.setAttribute("aria-pressed", String(_fitToMap));
+    btn.classList.toggle("is-active", _fitToMap);
+    btn.textContent = _fitToMap ? "Ajustado" : "Ajustar";
+  }
 }
+
+/** Alterna o fit pela barra. Mesmo efeito do checkbox do painel. */
+function toggleStageFitToMap() {
+  setStageFitToMap(!_fitToMap);
+  _syncFitToggleUI();
+  broadcastMapTransform();
+  _scheduleMapScenePersist();
+}
+window.toggleStageFitToMap = toggleStageFitToMap;
 
 /** Liga o checkbox: muda o fit, avisa os jogadores e grava na cena. */
 function _bindFitToggle() {
@@ -730,6 +842,7 @@ async function openAndSetLocalMap() {
 
     await saveMesaMapToDB(mapEntry);
     await applyActiveMap(mapEntry);
+    _fitDefaultForNewMap();   // mapa novo nasce ajustado (Etapa 57)
 
     // Armazenar na memória para evitar re-comprimir
     mesaMapState.activeEntry = mapEntry;
@@ -1005,9 +1118,41 @@ function applyMapTransform() {
   // evita um controle vivo que não responde.
   _syncMapTransformControls();
 
-  // Grade e névoa acompanham o mapa: qualquer pan/zoom/troca redesenha.
+  // Grade e névoa acompanham o mapa. Antes redesenhavam SINCRONAMENTE aqui, e
+  // como o arrasto chama applyMapTransform a cada mousemove (dezenas por
+  // frame), o mapa — que é só background-position, barato — andava na hora
+  // enquanto os dois canvas ficavam para trás: a grade "vinha atrasada".
+  // Agora os redesenhos são coalescidos em um por frame.
+  _scheduleMapLayersRedraw();
+}
+
+let _mapLayersRedrawRaf = 0;
+
+/** Agenda um único redesenho de grade+névoa por frame. */
+function _scheduleMapLayersRedraw() {
+  if (_mapLayersRedrawRaf) return;
+  if (typeof requestAnimationFrame !== "function") { _redrawMapLayers(); return; }
+  _mapLayersRedrawRaf = requestAnimationFrame(() => {
+    _mapLayersRedrawRaf = 0;
+    _redrawMapLayers();
+  });
+}
+
+function _redrawMapLayers() {
   if (typeof window.renderMesaGrid === "function") window.renderMesaGrid();
   if (typeof window.renderMesaFog === "function") window.renderMesaFog();
+}
+
+/**
+ * Força o redesenho pendente agora. Usado por testes e por caminhos que
+ * precisam medir o canvas logo após mexer no transform.
+ */
+function flushMapLayersRedraw() {
+  if (_mapLayersRedrawRaf) {
+    cancelAnimationFrame(_mapLayersRedrawRaf);
+    _mapLayersRedrawRaf = 0;
+  }
+  _redrawMapLayers();
 }
 
 /**
@@ -2140,6 +2285,7 @@ async function setActiveMapFromLibrary(mapId) {
   setMesaMapLoading(true);
   try {
     await applyActiveMap(mapEntry);
+    _fitDefaultForNewMap();   // Etapa 57
     mesaMapState.activeEntry = mapEntry;
     if (mesaMapState.playersOnline) {
       announceMapToPlayers(mapEntry);
@@ -2812,6 +2958,7 @@ async function setMapFromConnectedFolder(path) {
 
     renderMesaMapLayer(blobUrl, entry.fullName);
     resetMapTransform();
+    _fitDefaultForNewMap();   // Etapa 57
 
     if (mesaMapState.playersOnline) {
       announceMapToPlayers(cfEntry);

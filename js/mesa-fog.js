@@ -183,9 +183,12 @@ function _addFogOp(mode, u, v) {
 
 function _resizeFogCanvas() {
   if (!_fogCanvasEl || !_fogStageEl) return;
-  const dpr = window.devicePixelRatio || 1;
   const w = _fogStageEl.offsetWidth;
   const h = _fogStageEl.offsetHeight;
+  // Escala de EXIBIÇÃO (densidade x zoom de palco) — ver Etapa 58.
+  const dpr = typeof window.getMesaRenderScale === "function"
+    ? window.getMesaRenderScale(w, h)
+    : (window.devicePixelRatio || 1);
   if (_fogCanvasEl.width !== Math.round(w * dpr) || _fogCanvasEl.height !== Math.round(h * dpr)) {
     _fogCanvasEl.width = Math.round(w * dpr);
     _fogCanvasEl.height = Math.round(h * dpr);
@@ -209,7 +212,8 @@ function renderMesaFog() {
 
   if (!_fogState.enabled || cw < 2 || ch < 2) return;
 
-  const dpr = window.devicePixelRatio || 1;
+  // Deriva do buffer REAL (ver comentário equivalente em mesa-grid.js).
+  const dpr = (_fogCanvasEl.width / Math.max(1, _fogStageEl.offsetWidth)) || 1;
   const surface = typeof window.getMesaMapSurfaceFrac === "function"
     ? window.getMesaMapSurfaceFrac()
     : { left: 0, top: 0, width: 1, height: 1, hasMap: false };

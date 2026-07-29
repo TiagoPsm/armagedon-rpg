@@ -19,6 +19,14 @@
   display: none;
 }
 
+/* Botao "Ajustar" na barra visivel (Etapa 57) — estado ligado em carmesim,
+   igual aos demais toggles ativos da Mesa. */
+#mesaMapFitBtn.is-active {
+  background: rgba(176, 48, 57, 0.28);
+  border-color: rgba(214, 69, 80, 0.85);
+  color: #f0cfcc;
+}
+
 /* ── PALCO AJUSTADO AO MAPA (Etapa 52) ───────────────────────
  * Com data-fit-map, o #mesaStageInner recebe left/top/width/height inline
  * (calculados em mesa-map.js) e passa a ter a proporção exata da imagem.

@@ -241,6 +241,26 @@ territorio", nao como area jogavel vazia:
 O atributo `data-fit-map` e a unica chave CSS; toda a geometria vem do JS,
 porque depende das dimensoes naturais da imagem importada.
 
+### Nitidez no zoom de palco (Etapa 58)
+
+O zoom de palco e um `transform: scale()` no `#mesaStageInner`. Duas armadilhas
+de rasterizacao, ambas ja tratadas — nao reintroduzir:
+
+- **`will-change: transform` nao pode ser permanente** no inner. Permanente,
+  promove o elemento a uma camada rasterizada UMA vez na escala base, e o
+  mapa (background-image) sai borrado ao ampliar. Ele vive so em
+  `.mesa-stage-inner.is-transforming`, classe posta durante o movimento e
+  removida ~180ms depois.
+- **Canvas dentro do inner precisa de buffer proporcional ao zoom.**
+  `offsetWidth x devicePixelRatio` basta a 100%, mas a 300% o compositor
+  estica o bitmap. Grade, nevoa e desenhos usam `getMesaRenderScale()`
+  (densidade x zoom, com teto de 24 MP) e re-rasterizam via
+  `rescaleStageCanvases()`.
+
+Regra geral: dentro de um elemento com `transform: scale()`, qualquer bitmap
+de tamanho fixo vai borrar. Ou se re-rasteriza na escala exibida, ou se
+aceita o borrao.
+
 Arquivos visuais atuais da Mesa:
 
 - `css/mesa-base.css`

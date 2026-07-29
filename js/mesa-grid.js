@@ -125,9 +125,11 @@ function updateMesaGrid(patch) {
 
 function _resizeGridCanvas() {
   if (!_gridCanvasEl || !_gridStageEl) return;
-  const dpr = window.devicePixelRatio || 1;
   const w = _gridStageEl.offsetWidth;
   const h = _gridStageEl.offsetHeight;
+  // Escala de EXIBIÇÃO (densidade x zoom de palco), não só a densidade da
+  // tela: a 300% um buffer em 1x seria esticado pelo compositor. Etapa 58.
+  const dpr = _gridRenderScale(w, h);
   if (_gridCanvasEl.width !== Math.round(w * dpr) || _gridCanvasEl.height !== Math.round(h * dpr)) {
     _gridCanvasEl.width  = Math.round(w * dpr);
     _gridCanvasEl.height = Math.round(h * dpr);
@@ -140,9 +142,18 @@ function _resizeGridCanvas() {
  * (pan/zoom/troca de mapa) e resize do palco. Idempotente e barato —
  * apenas linhas 2D no canvas dedicado.
  */
+/** Escala de rasterização; cai na densidade da tela se mesa-map não carregou. */
+function _gridRenderScale(w, h) {
+  return typeof window.getMesaRenderScale === "function"
+    ? window.getMesaRenderScale(w, h)
+    : (window.devicePixelRatio || 1);
+}
+
 function renderMesaGrid() {
   if (!_gridCanvasEl || !_gridCtx || !_gridStageEl) return;
-  const dpr = window.devicePixelRatio || 1;
+  // Deriva a escala do buffer REAL, não recalcula: se o zoom mudou e o
+  // resize ainda não rodou, recalcular daria coordenadas fora do canvas.
+  const dpr = (_gridCanvasEl.width / Math.max(1, _gridStageEl.offsetWidth)) || 1;
   const cw = _gridCanvasEl.width;
   const ch = _gridCanvasEl.height;
   _gridCtx.clearRect(0, 0, cw, ch);

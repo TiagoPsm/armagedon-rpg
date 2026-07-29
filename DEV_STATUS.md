@@ -55,6 +55,46 @@ Pedido do Tiago: dois botoes distintos para cobrir o mapa inteiro e descobrir o 
 - Deploy do Worker: version `8b5a4914-7984-4400-825f-2e78364bb39f` (dry-run antes; health 200).
 - Validacao: test:mesa:audit 87/87, test:mesa 5/5, test:ficha 28/28, check:js OK, audit:static OK, build:pages OK. Prova visual: coberto, revelado e revelado-com-buraco.
 
+## Etapa Concluida (2026-07-29 — Etapa 58: Nitidez no zoom)
+
+Pedido do Tiago: "e possivel melhorar a resolucao do grid e se possivel do mapa tbm" — print com o palco a 300%, grade e mapa borrados.
+
+**A causa NAO era falta de pixels na origem.** Conta: palco com ~950 px de largura em CSS, exibido a 300% = ~2850 px; o WebP do mapa tem 4096 px. Sobra resolucao. O borrao vinha de rasterizacao em escala errada, por dois motivos independentes:
+
+1. **`will-change: transform` permanente** no `.mesa-stage-inner` (css/mesa.css). Isso promove o elemento a uma camada de composicao que o navegador rasteriza UMA vez na escala base e depois estica — a 300%, textura 1x ampliada 3x. Afetava o MAPA (background-image).
+2. **Canvas com buffer fixo** em `offsetWidth x devicePixelRatio`. Um bitmap de tamanho fixo SEMPRE borra ao ser escalado pelo compositor, independente de camada. Afetava grade, nevoa e desenhos.
+
+Correcoes:
+- **js/mesa-map.js**: `getMesaRenderScale(w, h)` — densidade da tela vezes o zoom atual, limitada por `MAX_CANVAS_PIXELS` (24 MP ≈ 96 MB RGBA). `rescaleStageCanvases()` re-dimensiona os tres canvas, coalescido por frame (o slider de zoom dispara muitos eventos e realocar buffer a cada um seria caro). `_markStageTransforming()` poe a classe `is-transforming` no inner durante o movimento e a remove ~180ms depois, ja disparando o rescale.
+- **css/mesa.css**: `will-change: transform` sai do `.mesa-stage-inner` e passa a valer so em `.is-transforming` — fluidez enquanto move, nitidez ao parar.
+- **js/mesa-grid.js, js/mesa-fog.js, js/mesa-drawing.js**: o resize usa `getMesaRenderScale`; o RENDER passou a **derivar a escala do buffer REAL** (`canvas.width / offsetWidth`) em vez de recalcular. Sem isso, um render disparado entre a mudanca de zoom e o resize usaria escala nova com buffer antigo e desenharia fora do canvas.
+- Fallback: os tres modulos caem em `devicePixelRatio` se `getMesaRenderScale` nao existir (mesa-map nao carregado).
+- Cache-bust: mesa.css, mesa-map.js, mesa-grid.js, mesa-fog.js, mesa-drawing.js -> `?v=2026-07-29-sharp-1`; `MESA_BUNDLE_VERSION` idem.
+- **Testes** (suite 99 -> 101, describe "Nitidez no zoom (Etapa 58)"): a 100% o buffer dos tres canvas e `offsetWidth x dpr` (comportamento de sempre); **a 300% TRIPLICA** — antes ficava na base e o compositor esticava; teto de 24 MP respeitado em area de 4000x4000; voltar o zoom devolve o buffer ao tamanho normal (nao fica inflado). E `will-change` computado: `auto` parado, `transform` durante o movimento, `auto` de novo ao parar.
+- Validacao: test:mesa:audit 101/101, test:mesa 5/5, test:ficha 28/28, **perf:mesa 1/1** (rodada de proposito: a mudanca aumenta memoria de canvas), check:js OK (45), audit:static OK, build:pages OK.
+- **Nota**: o mapa REFF ja ativo foi importado antes da Etapa 55, entao esta guardado em 1920px. Reabri-lo pela Biblioteca/pasta re-comprime em 4096px — so ai a resolucao nova vale para ele.
+- **Nao verificado**: nitidez percebida a olho. O Browser pane nao compoe frames nesta sessao, entao a prova e numerica (tamanho de buffer e will-change computado), nao visual.
+
+## Etapa Concluida (2026-07-29 — Etapa 57: Correcoes de uso do fit)
+
+Feedback do Tiago apos usar em producao: "nao parece ter funcionado — quando arrasto o mapa a grade vem junto e atrasada, e o mapa esta cortado". Diagnostico: DOIS problemas, e o segundo era erro de desenho meu.
+
+**1. A grade vinha atrasada (bug real de performance).** `applyMapTransform` redesenhava grade e nevoa SINCRONAMENTE, e o arrasto chama essa funcao a cada `mousemove` (dezenas por frame, ver o handler em `bindMapInteractions`). O mapa e so `background-position` (barato, aplicado na hora); os dois canvas precisam de redesenho completo — entao ficavam para tras. Corrigido com coalescencia por frame (`_scheduleMapLayersRedraw` com `requestAnimationFrame`), mais `flushMapLayersRedraw()` para quem precisa medir o canvas logo apos mexer no transform.
+
+**2. O mapa continuava cortado (erro de desenho meu).** Na Etapa 54 deixei o fit desligado por padrao para nao deslocar coordenadas de cenas salvas — decisao correta para os DADOS, pessima para o USO: o recurso ficou invisivel. O toggle estava so no painel de engrenagem (`#mesaMapTransform`), a dois cliques, num lugar que o mestre nao abre no fluxo normal (ele usa a trilha lateral + Biblioteca de Mapas). Sem ligar nada, o comportamento continuava o antigo — e como o mapa seguia arrastavel, dava para desloca-lo e ver a grade sozinha na area vazia, exatamente o print que o Tiago mandou.
+
+Duas correcoes, mantendo a garantia de zero migracao:
+- **Mapa novo nasce ajustado** (`_fitDefaultForNewMap`): so nos caminhos em que o MESTRE escolhe um mapa — abrir arquivo, biblioteca, pasta conectada. Nunca no boot (a cena manda) nem no recebimento pelo jogador (o mestre manda). Cena antiga com mapa ja gravado continua obedecendo o `fit` dela.
+- **Botao "Ajustar" na barra visivel** (`#mesaMapFitBtn`, ao lado de "Limpar mapa"), com rotulo que vira "Ajustado" e destaque carmesim quando ligado. Compartilha estado com o checkbox do painel — os dois sao a mesma verdade.
+
+- **js/mesa-map.js**: `_scheduleMapLayersRedraw`/`_redrawMapLayers`/`flushMapLayersRedraw`, `_fitDefaultForNewMap`, `toggleStageFitToMap`; `_syncFitToggleUI` passa a espelhar os dois controles.
+- **mesa.html** / **css/mesa-map.css**: botao da barra + estado `.is-active`.
+- Cache-bust: mesa-map.js -> `?v=2026-07-29-fitmap-5`, mesa-map.css -> `?v=2026-07-29-fitmap-2`, `MESA_BUNDLE_VERSION` -> `2026-07-29-fitmap-2`.
+- **Testes** (suite 96 -> 99, describe "Fit: descoberta e fluidez (Etapa 57)"): botao da barra alterna e fica em sincronia com o checkbox (e some sem mapa); mapa novo do mestre nasce ajustado e o jogador NAO liga sozinho; **60 `panMap` no mesmo frame produzem 0 redesenhos durante o frame e exatamente 1 depois** — a prova do conserto do atraso (antes eram 60 sincronos).
+- **Bug meu no teste, corrigido**: a primeira versao lia `classList` no `return`, depois do bloco do jogador ter re-sincronizado a UI — mesma armadilha ja documentada no teste da nevoa. O codigo estava certo; o teste e que media no momento errado.
+- **Mojibake corrigido**: o `Add-Content` do PowerShell usado para anexar as suites gravou os travessoes em cp1252 (`â€"` no lugar de `—`) — 3 ocorrencias tinham entrado no commit e9a7919 e 2 eram novas. Todas as 5 convertidas de volta; varredura nos demais arquivos do commit: limpos. Anexar arquivo com acento por PowerShell exige `-Encoding utf8` no `Add-Content` (o `-Encoding` do `Out-File` nao cobre este caso).
+- Validacao: test:mesa:audit 99/99, test:mesa 5/5, test:ficha 28/28, check:js OK (45), audit:static OK, build:pages OK.
+
 ## Etapa Concluida (2026-07-29 — Etapa 56: Testes e docs do plano 52-56)
 
 Fechamento do plano "palco se adapta ao mapa + resolucao" (Etapas 52-56).

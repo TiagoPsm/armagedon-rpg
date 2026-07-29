@@ -153,10 +153,13 @@ function _bindDrawingsPresence() {
 // ── Resize canvas para cobrir o stageInner ─────────────────────────
 function _resizeDrawCanvas() {
   if (!_drawCanvasEl || !_stageInnerEl) return;
-  const dpr = window.devicePixelRatio || 1;
   const w   = _stageInnerEl.offsetWidth;
   const h   = _stageInnerEl.offsetHeight;
   if (!w || !h) return;
+  // Escala de EXIBIÇÃO (densidade x zoom de palco) — ver Etapa 58.
+  const dpr = typeof window.getMesaRenderScale === "function"
+    ? window.getMesaRenderScale(w, h)
+    : (window.devicePixelRatio || 1);
 
   _drawCanvasEl.style.width  = w + "px";
   _drawCanvasEl.style.height = h + "px";

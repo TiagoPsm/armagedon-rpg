@@ -300,6 +300,15 @@ html {
   position: absolute;
   inset: 0;
   transform-origin: center center;
+}
+
+/* will-change SÓ durante o movimento (Etapa 58).
+   Permanente, ele promovia o inner a uma camada de composição rasterizada
+   UMA vez na escala base — a 300% de zoom o compositor esticava essa textura
+   e o mapa saía borrado, mesmo com 4096px de origem. Aplicado só enquanto
+   arrasta/zooma (classe posta por _markStageTransforming e removida ~180ms
+   depois), mantém a fluidez do movimento e devolve a nitidez ao parar. */
+.mesa-stage-inner.is-transforming {
   will-change: transform;
 }
 

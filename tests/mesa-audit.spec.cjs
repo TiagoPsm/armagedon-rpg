@@ -3226,7 +3226,7 @@ test.describe("Palco ajustado ao mapa + resolucao (Etapas 52-55)", () => {
     expect(normalizeMesaScene({ map: { id: "m1", url, fit: true } }).map.fit).toBe(true);
     expect(normalizeMesaScene({ map: { id: "m1", url, fit: false } }).map.fit).toBe(false);
 
-    // Cena ANTIGA (sem o campo): fit desligado E transform intacto â€” e a
+    // Cena ANTIGA (sem o campo): fit desligado E transform intacto — e a
     // garantia de que nenhuma coordenada ja salva se desloca.
     const antiga = normalizeMesaScene({
       map: { id: "m1", url, transform: { xFrac: 0.02, yFrac: -0.03, scale: 1.8 } }
@@ -3236,7 +3236,7 @@ test.describe("Palco ajustado ao mapa + resolucao (Etapas 52-55)", () => {
 
     // Comparacao estrita, nao coercao: string truthy nao liga o fit
     expect(normalizeMesaScene({ map: { id: "m1", url, fit: "sim" } }).map.fit).toBe(false);
-    // Sem url nao ha mapa â€” logo nao ha fit
+    // Sem url nao ha mapa — logo nao ha fit
     expect(normalizeMesaScene({ map: { fit: true } }).map).toBeNull();
   });
 
@@ -3295,7 +3295,7 @@ test.describe("Palco ajustado ao mapa + resolucao (Etapas 52-55)", () => {
 
     const r = await page.evaluate((seedSrc) => {
       eval(`(${seedSrc})`)(4000, 1000);
-      // Mestre havia compensado o corte na mao â€” o estado que causa o desvio
+      // Mestre havia compensado o corte na mao — o estado que causa o desvio
       mesaMapState.mapTransform = { x: 120, y: -40, scale: 1.8 };
       applyMapTransform();
       const semFit = {
@@ -3440,5 +3440,242 @@ test.describe("Palco ajustado ao mapa + resolucao (Etapas 52-55)", () => {
     expect(r.pequeno).toEqual([1200, 800]);   // sem upscale
     expect(r.passthrough).toBe(true);
     expect(r.passthroughDim).toEqual([1600, 1000]);
+  });
+});
+
+/* ============================================================
+ * Correcoes de uso do fit (Etapa 57, 2026-07-29)
+ * Feedback do Tiago: mapa continuava cortado (o toggle estava
+ * escondido e desligado por padrao) e a grade "vinha atrasada"
+ * ao arrastar o mapa.
+ * ============================================================ */
+test.describe("Fit: descoberta e fluidez (Etapa 57)", () => {
+
+  const seedMapaAtivo = (iw, ih) => {
+    mesaMapState.isMaster = true;
+    window.isMaster = () => true;
+    mesaMapState._imgW = iw;
+    mesaMapState._imgH = ih;
+    mesaMapState.activeMapUrl = "blob:teste";
+    mesaMapState.activeMapId = "map-teste";
+    document.getElementById("mesaMapLayer").removeAttribute("hidden");
+    applyMapTransform();
+  };
+
+  test("botao da barra alterna o fit e fica em sincronia com o checkbox do painel", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const r = await page.evaluate((seedSrc) => {
+      const btn = document.getElementById("mesaMapFitBtn");
+      const out = { semMapaOculto: btn.hidden };
+
+      eval(`(${seedSrc})`)(4000, 2400);
+      const inner = document.getElementById("mesaStageInner");
+      out.comMapa = { visivel: !btn.hidden, texto: btn.textContent.trim(),
+                      inner: [inner.clientWidth, inner.clientHeight] };
+
+      btn.click();
+      out.ligado = {
+        texto:     btn.textContent.trim(),
+        ativo:     btn.classList.contains("is-active"),
+        pressed:   btn.getAttribute("aria-pressed"),
+        inner:     [inner.clientWidth, inner.clientHeight],
+        travado:   isMapTransformLocked(),
+        checkbox:  document.getElementById("mesaMapFitToggle").checked
+      };
+
+      btn.click();
+      out.desligado = { texto: btn.textContent.trim(), ativo: btn.classList.contains("is-active"),
+                        checkbox: document.getElementById("mesaMapFitToggle").checked };
+      return out;
+    }, seedMapaAtivo.toString());
+
+    expect(r.semMapaOculto).toBe(true);          // sem mapa nao ha o que ajustar
+    expect(r.comMapa.visivel).toBe(true);
+    expect(r.comMapa.texto).toBe("Ajustar");
+
+    // Proporcao 4000x2400 = 5/3 aplicada a caixa
+    expect(r.ligado.inner[0] / r.ligado.inner[1]).toBeCloseTo(4000 / 2400, 2);
+    expect(r.ligado.texto).toBe("Ajustado");
+    expect(r.ligado.ativo).toBe(true);
+    expect(r.ligado.pressed).toBe("true");
+    expect(r.ligado.travado).toBe(true);
+    // Os dois controles mexem no MESMO estado
+    expect(r.ligado.checkbox).toBe(true);
+
+    expect(r.desligado.texto).toBe("Ajustar");
+    expect(r.desligado.ativo).toBe(false);
+    expect(r.desligado.checkbox).toBe(false);
+  });
+
+  test("mapa novo escolhido pelo mestre ja nasce ajustado", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const r = await page.evaluate((seedSrc) => {
+      eval(`(${seedSrc})`)(4000, 1000);
+      setStageFitToMap(false);            // estado de quem acabou de abrir a Mesa
+      const antes = isStageFitToMap();
+
+      _fitDefaultForNewMap();             // o que roda ao escolher um mapa
+      const depois = isStageFitToMap();
+      // Ler a UI AGORA: o bloco do jogador abaixo re-sincroniza os controles,
+      // e um classList lido no return refletiria AQUELE estado, nao este.
+      const botaoAtivo = document.getElementById("mesaMapFitBtn").classList.contains("is-active");
+
+      // Jogador NAO decide o proprio fit — quem manda e o mestre
+      window.isMaster = () => false;
+      mesaMapState.isMaster = false;
+      setStageFitToMap(false);
+      _fitDefaultForNewMap();
+      const jogador = isStageFitToMap();
+
+      return { antes, depois, botaoAtivo, jogador };
+    }, seedMapaAtivo.toString());
+
+    expect(r.antes).toBe(false);
+    expect(r.depois).toBe(true);        // mapa novo nasce ajustado
+    expect(r.botaoAtivo).toBe(true);    // e a barra reflete isso
+    expect(r.jogador).toBe(false);      // jogador nao liga sozinho
+  });
+
+  test("arrastar o mapa coalesce o redesenho de grade e nevoa em um por frame", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const r = await page.evaluate(async (seedSrc) => {
+      eval(`(${seedSrc})`)(4000, 2400);
+      setStageFitToMap(false);          // destravado, para panMap valer
+
+      let grade = 0, nevoa = 0;
+      const origG = window.renderMesaGrid, origF = window.renderMesaFog;
+      window.renderMesaGrid = () => { grade++; };
+      window.renderMesaFog  = () => { nevoa++; };
+
+      const frame = () => new Promise(res => requestAnimationFrame(res));
+      await frame(); await frame();
+      grade = 0; nevoa = 0;
+
+      // Simula um arrasto: 60 mousemove dentro do mesmo frame
+      for (let k = 0; k < 60; k++) panMap(1, 1);
+      const durante = { grade, nevoa };
+
+      await frame(); await frame();
+      const apos = { grade, nevoa };
+
+      window.renderMesaGrid = origG;
+      window.renderMesaFog  = origF;
+      return { durante, apos };
+    }, seedMapaAtivo.toString());
+
+    // Antes da Etapa 57 eram 60 redesenhos sincronos — a causa do atraso
+    expect(r.durante.grade).toBe(0);
+    expect(r.durante.nevoa).toBe(0);
+    // ...e o redesenho NAO se perde: acontece uma vez quando o frame chega
+    expect(r.apos.grade).toBe(1);
+    expect(r.apos.nevoa).toBe(1);
+  });
+});
+
+/* ============================================================
+ * Nitidez no zoom (Etapa 58, 2026-07-29)
+ * Feedback do Tiago: a 300% a grade e o mapa saem borrados.
+ * Causa: canvas com buffer fixo em offsetWidth x dpr (o
+ * compositor estica o bitmap) e will-change permanente no
+ * inner (camada rasterizada uma vez na escala base).
+ * ============================================================ */
+test.describe("Nitidez no zoom (Etapa 58)", () => {
+
+  test("os canvas do palco rasterizam na escala EXIBIDA, nao na escala base", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const r = await page.evaluate(async () => {
+      const frame = () => new Promise(res => requestAnimationFrame(res));
+      const inner = document.getElementById("mesaStageInner");
+      const grid  = document.getElementById("mesaGridCanvas");
+      const fog   = document.getElementById("mesaFogCanvas");
+      const draw  = document.getElementById("mesaDrawCanvas");
+      const dpr   = window.devicePixelRatio || 1;
+
+      // A grade precisa estar ligada para o render valer alguma coisa
+      updateMesaGrid({ enabled: true });
+
+      setStageZoom(1);
+      rescaleStageCanvases();
+      await frame(); await frame();
+      const cssW = inner.offsetWidth;
+      const em100 = { grid: grid.width, fog: fog.width, draw: draw.width };
+
+      setStageZoom(3);
+      rescaleStageCanvases();
+      await frame(); await frame();
+      const em300 = { grid: grid.width, fog: fog.width, draw: draw.width };
+
+      // Teto de memoria: um zoom absurdo nao pode alocar sem limite
+      const escalaNoTeto = getMesaRenderScale(4000, 4000);
+
+      setStageZoom(1);
+      rescaleStageCanvases();
+      await frame(); await frame();
+      const voltou = { grid: grid.width };
+
+      return { dpr, cssW, em100, em300, escalaNoTeto, voltou };
+    });
+
+    const base = Math.round(r.cssW * r.dpr);
+    // A 100% o buffer e a densidade da tela — comportamento de sempre
+    expect(r.em100.grid).toBe(base);
+    expect(r.em100.fog).toBe(base);
+    expect(r.em100.draw).toBe(base);
+
+    // A 300% o buffer TRIPLICA: e isso que mantem a linha fina nitida.
+    // Antes da Etapa 58 ficava em `base` e o compositor esticava 3x.
+    expect(r.em300.grid).toBe(Math.round(r.cssW * r.dpr * 3));
+    expect(r.em300.fog).toBe(r.em300.grid);
+    expect(r.em300.draw).toBe(r.em300.grid);
+    expect(r.em300.grid).toBeGreaterThan(r.em100.grid);
+
+    // Teto de 24 MP respeitado (4000x4000 = 16 MP de area base)
+    expect(4000 * 4000 * r.escalaNoTeto * r.escalaNoTeto).toBeLessThanOrEqual(24e6 + 1);
+
+    // Voltar o zoom devolve o buffer ao tamanho normal (nao fica inflado)
+    expect(r.voltou.grid).toBe(base);
+  });
+
+  test("will-change so existe durante o movimento", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const inner = page.locator("#mesaStageInner");
+
+    // Parado: sem a classe -> o navegador re-rasteriza na escala exibida
+    await page.evaluate(() => setStageZoom(1));
+    await page.waitForFunction(
+      () => !document.getElementById("mesaStageInner").classList.contains("is-transforming")
+    );
+    expect(await inner.evaluate(el => getComputedStyle(el).willChange)).toBe("auto");
+
+    // Durante o movimento: com a classe -> camada promovida, movimento fluido
+    await page.evaluate(() => setStageZoom(2));
+    expect(await inner.evaluate(el => el.classList.contains("is-transforming"))).toBe(true);
+    expect(await inner.evaluate(el => getComputedStyle(el).willChange)).toBe("transform");
+
+    // E some sozinho ao parar
+    await page.waitForFunction(
+      () => !document.getElementById("mesaStageInner").classList.contains("is-transforming")
+    );
+    expect(await inner.evaluate(el => getComputedStyle(el).willChange)).toBe("auto");
   });
 });
