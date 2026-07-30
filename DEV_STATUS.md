@@ -30,7 +30,19 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-30 — Etapa 64: marcadores acessiveis pelo token)
+## Ultima Etapa Concluida (2026-07-30 — Etapa 65: token travava em 3x3 e saia da grade)
+
+Tiago mandou print: token grande com a caixa fora das linhas da grade e sem passar de 3x3. **Os dois sintomas tinham a MESMA causa** — o clamp de escala do token (0,25–4,0).
+
+- **Causa**: o teto de 4,0 era absoluto, mas o tamanho em CELULAS depende da celula. Com celula de ~126px e base do token de 88px, encaixar em 4 celulas exigiria escala ~5,7. O clamp cortava em 4,0 e o token parava em ~2,8 celulas: nao passava de 3x3 **e** o tamanho deixava de ser multiplo inteiro da celula, entao a caixa nao coincidia mais com as linhas da grade. Quem tem celula pequena nunca viu o bug — por isso os testes anteriores (sem mapa, celula de 46px) passavam.
+- **Correcao 1 — teto maior**: `MESA_TOKEN_SCALE_MIN/MAX` (0,25–12) em js/mesa-stage.js, espelhados no Worker. Com celula de 126px isso da ate 8x8; a formula e `floor(12 * 88 / celulaPx)`.
+- **Correcao 2 — nunca parar num tamanho quebrado**: `_gridFitCells()` em js/mesa-grid.js. Se N celulas nao couberem no teto, desce para o maior N que cabe, em vez de clampar no meio do caminho. Vale para `mesaFitTokenToGrid` e `mesaPreviewGridScale`. Sem isso, qualquer teto — 12, 20, 100 — teria o mesmo bug num mapa de celula grande o bastante.
+- **Worker** (cloudflare/src/mesa.js): `tokenScale` clampado em 0,25–12. **PRECISA DE DEPLOY** — sem ele o Worker corta em 4 ao salvar a cena e o token volta a 3x3 no proximo carregamento. Dry-run limpo (191,65 KiB / 37,09 KiB gzip); deploy nao executado, aguardando o Tiago.
+- **Arquivos**: js/mesa-stage.js, js/mesa-grid.js, cloudflare/src/mesa.js, mesa.html (`?v=2026-07-30-scale12-1`), tests/mesa-token-handles.spec.cjs, tests/mesa-audit.spec.cjs (assercao do clamp foi de 4 para 12).
+- **Validacoes**: `check:js` OK (46 arquivos), `audit:static` OK, `test:mesa` 5/5, `test:mesa:tokens` 7/7, `test:mesa:audit` 106/106. Teste novo reproduz o print (celula de 126px, maior que o token) e mede o resize em tres passos: 3, 6 e 8 celulas, sempre inteiras e sobre as linhas (desvio < 0,5px).
+- **Nota**: a "proporcao errada" nao era o circulo destoando da caixa — medido, token, avatar e caixa de selecao batem em 264px exatos. Era a caixa saindo das linhas da grade por causa do tamanho quebrado.
+
+## Etapa Anterior (2026-07-30 — Etapa 64: marcadores acessiveis pelo token)
 
 Pedido do Tiago: poder aplicar os marcadores **que ja existiam** clicando no token e abrindo as configuracoes dele. Nada de marcador novo.
 

@@ -279,10 +279,36 @@ function _gridTokenCells(diameterPx, cellPx) {
   return Math.max(1, Math.round(diameterPx / cellPx));
 }
 
+// Teto/piso de escala do contrato da cena (MESA_TOKEN_SCALE_* em mesa-stage.js,
+// carregado antes deste arquivo; o fallback cobre uso isolado do módulo).
+function _gridScaleMin() {
+  return typeof MESA_TOKEN_SCALE_MIN === "number" ? MESA_TOKEN_SCALE_MIN : 0.25;
+}
+function _gridScaleMax() {
+  return typeof MESA_TOKEN_SCALE_MAX === "number" ? MESA_TOKEN_SCALE_MAX : 12;
+}
+
+/**
+ * Escala para encaixar o token em NxN células, RESPEITANDO o teto do contrato.
+ * Se N não couber, desce para o maior N que cabe — nunca devolve um tamanho
+ * quebrado. Era esse o bug: com célula grande o clamp cortava no meio do
+ * caminho e o token parava fora das linhas da grade (ex.: 3,06 células).
+ * @returns {{scale:number, cells:number}}
+ */
+function _gridFitCells(cells, cellPx, basePx) {
+  const max = _gridScaleMax();
+  let n = Math.max(1, Math.round(cells));
+  while (n > 1 && (n * cellPx) / basePx > max) n -= 1;
+  const bruto = (n * cellPx) / basePx;
+  // Só o piso pode gerar tamanho não-inteiro (célula menor que o token mínimo).
+  const scale = Math.round(Math.max(_gridScaleMin(), Math.min(max, bruto)) * 100) / 100;
+  return { scale, cells: n };
+}
+
 /**
  * Quantiza o TAMANHO do token para N células (ajusta token.tokenScale).
- * O clamp 0.25-4 do contrato da cena limita N em células muito grandes ou
- * muito pequenas — nesse extremo o token fica no tamanho válido mais próximo.
+ * Se N não couber no teto do contrato, cai para o maior N que cabe — o token
+ * continua encaixado na grade em vez de parar num tamanho quebrado.
  * @returns {boolean} true se a escala mudou.
  */
 function mesaFitTokenToGrid(token, tokenElement) {
@@ -293,8 +319,8 @@ function mesaFitTokenToGrid(token, tokenElement) {
 
   const basePx = tokenElement?.offsetWidth || 88; // largura de layout (sem transform)
   const currentScale = Number(token.tokenScale) || 1;
-  const cells = _gridTokenCells(basePx * currentScale, cellPx);
-  const nextScale = Math.round(Math.max(0.25, Math.min(4, (cells * cellPx) / basePx)) * 100) / 100;
+  const alvo = _gridFitCells(_gridTokenCells(basePx * currentScale, cellPx), cellPx, basePx);
+  const nextScale = alvo.scale;
 
   if (Math.abs(nextScale - currentScale) < 0.005) return false;
   token.tokenScale = nextScale;
@@ -315,9 +341,7 @@ function mesaPreviewGridScale(basePx, desiredScale) {
   if (!_gridState.enabled || !_gridState.snap) return null;
   const cellPx = _gridCellStagePx();
   if (!(cellPx > 0) || !(basePx > 0)) return null;
-  const cells = _gridTokenCells(basePx * desiredScale, cellPx);
-  const scale = Math.round(Math.max(0.25, Math.min(4, (cells * cellPx) / basePx)) * 100) / 100;
-  return { scale, cells };
+  return _gridFitCells(_gridTokenCells(basePx * desiredScale, cellPx), cellPx, basePx);
 }
 
 /**

@@ -243,4 +243,59 @@ test.describe("Token: selecao e redimensionamento (Etapa 63)", () => {
       expect(Math.abs(m.desvioY), `centragem Y na escala ${m.escala}`).toBeLessThan(0.5);
     }
   });
+
+  test("com celula maior que o token, o resize passa de 3x3 e nunca para num tamanho quebrado", async ({ page }) => {
+    // Cenario do print do Tiago: celula (126px) MAIOR que a base do token
+    // (88px). Com o teto antigo de 4,0 o encaixe em 4 celulas exigiria escala
+    // ~5,7; o clamp cortava em 4,0 e o token travava em ~2,8 celulas — fora
+    // das linhas da grade e sem passar de 3x3.
+    await page.setViewportSize({ width: 1400, height: 900 });
+    const passos = await page.evaluate(async () => {
+      const esperar = ms => new Promise(r => setTimeout(r, ms));
+      updateMesaGrid({ enabled: true, snap: true, cellFrac: 0.12 });
+      await esperar(300);
+
+      const el = document.querySelector("#mesaStage .mesa-token");
+      const id = el.dataset.tokenId;
+      selectToken(id);
+
+      const fire = (tipo, x, y, alvo) => {
+        (alvo || document).dispatchEvent(new PointerEvent(tipo, {
+          bubbles: true, cancelable: true, clientX: x, clientY: y,
+          pointerId: 1, button: 0, isPrimary: true
+        }));
+      };
+      const palco = document.getElementById("mesaStage").getBoundingClientRect();
+      const cellPx = getMesaGridState().cellFrac * getMesaMapSurfaceFrac().width * palco.width;
+
+      const out = [];
+      for (const arrasto of [200, 400, 700]) {
+        const alvo = document.querySelector(`#mesaStage .mesa-token[data-token-id="${CSS.escape(id)}"]`);
+        const h = alvo.querySelector('[data-handle="se"]');
+        const hr = h.getBoundingClientRect();
+        fire("pointerdown", hr.left + hr.width / 2, hr.top + hr.height / 2, h);
+        fire("pointermove", hr.left + hr.width / 2 + arrasto, hr.top + hr.height / 2 + arrasto);
+        fire("pointerup", hr.left + hr.width / 2 + arrasto, hr.top + hr.height / 2 + arrasto);
+        await esperar(250);
+        const r = document.querySelector(`#mesaStage .mesa-token[data-token-id="${CSS.escape(id)}"]`).getBoundingClientRect();
+        const desvio = v => { const m = ((v % cellPx) + cellPx) % cellPx; return Math.min(m, cellPx - m); };
+        out.push({
+          celulas: r.width / cellPx,
+          desvioEsq: desvio(r.left - palco.left),
+          desvioBaixo: desvio(r.bottom - palco.top)
+        });
+      }
+      return { cellPx, out };
+    });
+
+    expect(passos.cellPx).toBeGreaterThan(88); // celula maior que a base do token
+    for (const p of passos.out) {
+      // Sempre um numero INTEIRO de celulas — nunca 3,06 como no bug.
+      expect(Math.abs(p.celulas - Math.round(p.celulas))).toBeLessThan(0.02);
+      expect(p.desvioEsq).toBeLessThan(0.5);
+      expect(p.desvioBaixo).toBeLessThan(0.5);
+    }
+    // E passa de 3x3, que era o teto imposto pelo clamp antigo.
+    expect(Math.round(passos.out[passos.out.length - 1].celulas)).toBeGreaterThan(3);
+  });
 });

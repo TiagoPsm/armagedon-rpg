@@ -138,7 +138,7 @@ test.describe("Contrato do Worker (bug 1)", () => {
     expect(byId.c.layer).toBe("tokens");     // ausente cai no default
     expect(byId.b.x).toBe(100);              // clamp 0-100
     expect(byId.b.y).toBe(0);
-    expect(byId.b.tokenScale).toBe(4);       // clamp 0.25-4
+    expect(byId.b.tokenScale).toBe(12);      // clamp 0.25-12 (teto subiu na Etapa 65)
     expect(scene.sceneVersion).toBe(7);
   });
 

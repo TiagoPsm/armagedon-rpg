@@ -182,7 +182,8 @@
       "Bash(perl -0pi -e 's/\\(moved\\(?:Left|Top|Right|Bottom\\): Math\\\\.round\\\\\\([^\\)]*\\\\\\)\\)\\(,\\)/$1 || 0$2/g' tests/mesa-token-handles.spec.cjs)",
       "Bash(perl -CSD -0pi -e 's/\\\\.replace\\\\\\(\\\\/\\\\[[^\\\\]]*\\\\]\\\\/g, \"\"\\\\\\);/.replace\\(\\\\/[\\\\\\\\u0300-\\\\\\\\u036f]\\\\/g, \"\"\\);/' js/mesa-markers.js)",
       "Bash(grep -n \"replace\\(/\\\\[\" js/mesa-markers.js)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(rm -f tests/tmp-dbg.spec.cjs)"
     ]
   }
 }

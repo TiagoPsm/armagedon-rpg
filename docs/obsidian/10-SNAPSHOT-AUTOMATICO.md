@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-30 15:30:37 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-30 18:16:21 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,18 +13,21 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `f920bcb 2026-07-30 feat(mesa): resize com 8 alcas, marcadores pelo token e hover simples (Etapas 63-64)`
+- Ultimo commit: `55a09ea 2026-07-30 fix(mesa): caixa de selecao alinhada a grade e botao de marcadores maior`
 
 ### Alteracoes Locais
 
 ```text
 M  .claude/settings.local.json
 M  DEV_STATUS.md
-M  VISUAL_RULES.md
-M  css/mesa-stage.css
+M  SYSTEM_RULES.md
+M  cloudflare/README.md
+M  cloudflare/src/mesa.js
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  js/mesa-grid.js
 M  js/mesa-stage.js
 M  mesa.html
+M  tests/mesa-audit.spec.cjs
 M  tests/mesa-token-handles.spec.cjs
 ```
 
@@ -39,11 +42,14 @@ M  tests/mesa-token-handles.spec.cjs
 ```text
 .claude/settings.local.json
 DEV_STATUS.md
-VISUAL_RULES.md
-css/mesa-stage.css
+SYSTEM_RULES.md
+cloudflare/README.md
+cloudflare/src/mesa.js
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+js/mesa-grid.js
 js/mesa-stage.js
 mesa.html
+tests/mesa-audit.spec.cjs
 tests/mesa-token-handles.spec.cjs
 ```
 

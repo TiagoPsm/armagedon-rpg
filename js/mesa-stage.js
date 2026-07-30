@@ -1606,6 +1606,14 @@ const MESA_HANDLE_CURSOR = {
 // Zona de ímã do snap, em px de tela.
 const MESA_RESIZE_SNAP_PX = 8;
 
+// Limites de escala do token — espelhados no Worker (cloudflare/src/mesa.js
+// normalizeSceneToken). O teto era 4,0 e amarrava o tamanho MAXIMO EM CELULAS
+// ao tamanho da celula: com celula grande, 4x88px nao chegava a 4 celulas, o
+// token travava em 3x3 E parava num tamanho quebrado (fora das linhas da
+// grade). Com 12 o encaixe em celulas manda, nao o teto.
+const MESA_TOKEN_SCALE_MIN = 0.25;
+const MESA_TOKEN_SCALE_MAX = 12;
+
 // Ícone do botão de marcadores. SVG em vez de caractere (◉): glifo depende da
 // fonte instalada e quase nunca fica opticamente centrado na caixa.
 const MESA_MARKERS_ICON = `<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/></svg>`;
@@ -1686,7 +1694,7 @@ function handleResizePointerMove(event) {
 
   const size = projectResizePointer(drag, event.clientX, event.clientY) - drag.grabOffset;
 
-  let scale = Math.max(0.25, Math.min(4, drag.startScale * (size / drag.startSize)));
+  let scale = Math.max(MESA_TOKEN_SCALE_MIN, Math.min(MESA_TOKEN_SCALE_MAX, drag.startScale * (size / drag.startSize)));
   let cells = 0;
 
   // Ímã da grade durante o arrasto: mostra onde vai encaixar antes de soltar
