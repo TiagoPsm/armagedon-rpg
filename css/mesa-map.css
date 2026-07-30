@@ -184,6 +184,14 @@
 #mesaGridCanvas {
   position: absolute;
   inset: 0;
+  /* OBRIGATORIO — nao remover (Etapa 59).
+     Canvas e elemento SUBSTITUIDO: com width:auto, a largura usada vem do
+     tamanho INTRINSECO (o atributo width=), nao das bordas do inset. Sem
+     estas duas linhas, aumentar o buffer para ganhar nitidez no zoom fazia o
+     elemento crescer junto — a grade transbordava o mapa e, exibida 1:1, nem
+     ficava mais nitida. Mesma protecao que #mesaFogCanvas ja tinha. */
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 7;
 }

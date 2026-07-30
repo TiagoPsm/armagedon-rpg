@@ -167,10 +167,25 @@ function renderMesaGrid() {
 
   const stageW = _gridStageEl.offsetWidth * dpr;
   const stageH = _gridStageEl.offsetHeight * dpr;
-  const surfLeft = surface.left * stageW;
-  const surfTop  = surface.top  * stageH;
-  const surfW    = surface.width  * stageW;
-  const surfH    = surface.height * stageH;
+  let surfLeft = surface.left * stageW;
+  let surfTop  = surface.top  * stageH;
+  let surfW    = surface.width  * stageW;
+  let surfH    = surface.height * stageH;
+
+  // BORDA RENTE AO PALCO — não remover (Etapa 61).
+  // No modo "ajustado" a caixa do palco é a própria imagem, mas os
+  // arredondamentos de applyStageFitBox() deixam a superfície uns milésimos
+  // fora do palco (left ≈ -0.0004). Em px de buffer isso vale -0,4 px a 100%
+  // e -1,2 px a 300%: a linha da borda caía DENTRO do canvas num zoom e FORA
+  // no seguinte, e a grade parecia pular uma célula inteira ao ampliar.
+  // Diferença abaixo de 1 px de LAYOUT = mesma borda: encosta e pronto. A
+  // tolerância acompanha `dpr` porque o resíduo nasce do arredondamento da
+  // caixa (px de layout) e vira mais px de buffer conforme o zoom sobe.
+  const FLUSH = Math.max(1, dpr);
+  if (Math.abs(surfLeft) < FLUSH)               { surfW += surfLeft; surfLeft = 0; }
+  if (Math.abs(surfTop)  < FLUSH)               { surfH += surfTop;  surfTop  = 0; }
+  if (Math.abs(surfLeft + surfW - cw) < FLUSH)  { surfW = cw - surfLeft; }
+  if (Math.abs(surfTop  + surfH - ch) < FLUSH)  { surfH = ch - surfTop; }
 
   // Célula quadrada em px: fração da LARGURA da superfície.
   const cellPx = Math.max(4 * dpr, _gridState.cellFrac * surfW);
@@ -188,9 +203,33 @@ function renderMesaGrid() {
   _gridCtx.rect(clipLeft, clipTop, clipRight - clipLeft, clipBottom - clipTop);
   _gridCtx.clip();
 
+  // ALINHAMENTO AO PIXEL DE DISPOSITIVO — não remover (Etapa 60).
+  // O canvas CENTRA o traço na coordenada. Com lineWidth fracionário (dpr =
+  // densidade x zoom) e coordenada fracionária, cada linha se espalhava por 2–3
+  // px com um alpha diferente: a grade saía manchada, e como o padrão do
+  // antialiasing varre junto com o zoom, ela CINTILAVA ao ampliar. Medido a
+  // 100%: alpha de pico entre 91 e 204 na mesma grade.
+  //
+  // A correção é a receita padrão: espessura inteira + coordenada meio-pixel
+  // para espessura ímpar (traço cobre 1 px cheio) e inteira para espessura par
+  // (traço cobre 2 px cheios). Custo: o espaçamento arredonda para px inteiro,
+  // variando até 1 px entre células — menos do que os 2 px que já variava.
+  //
+  // ESPESSURA EM PX DE DISPOSITIVO, NÃO DE BUFFER — não remover (Etapa 61).
+  // `dpr` aqui é a escala do buffer, que JÁ inclui o zoom de palco (Etapa 58).
+  // Usá-lo direto como espessura fazia a linha engordar junto com o zoom (1 px
+  // a 100%, 2 a 150%, 3 a 300%) e — pior — virava a PARIDADE da espessura, o
+  // que desloca todas as linhas meio pixel e derruba a linha da borda. Era
+  // isso que dava a impressão de a grade "andar" ao aplicar e tirar o zoom.
+  // Dividindo pelo zoom sobra a densidade da tela: espessura constante e
+  // paridade estável em qualquer nível de zoom.
+  const zoomEff = Math.max(1, typeof window.getStageZoom === "function" ? window.getStageZoom() : 1);
+  const lineW = Math.max(1, Math.round(dpr / zoomEff));
+  const snapToDevicePx = v => (lineW % 2 === 1 ? Math.round(v) + 0.5 : Math.round(v));
+
   _gridCtx.globalAlpha = _gridState.opacity;
   _gridCtx.strokeStyle = _gridState.color;
-  _gridCtx.lineWidth   = Math.max(1, dpr);
+  _gridCtx.lineWidth   = lineW;
   _gridCtx.beginPath();
 
   const offsetX = _gridState.offsetXFrac * cellPx;
@@ -198,13 +237,22 @@ function renderMesaGrid() {
   const startX = surfLeft + offsetX - Math.ceil((surfLeft + offsetX - clipLeft) / cellPx) * cellPx;
   const startY = surfTop  + offsetY - Math.ceil((surfTop  + offsetY - clipTop)  / cellPx) * cellPx;
 
+  // As extremidades também alinham: sem isso o traço fica meio-pixel curto nas
+  // pontas e as bordas da grade acendem mais fraco que o miolo.
+  const top    = snapToDevicePx(clipTop);
+  const bottom = snapToDevicePx(clipBottom);
+  const left   = snapToDevicePx(clipLeft);
+  const right  = snapToDevicePx(clipRight);
+
   for (let x = startX; x <= clipRight; x += cellPx) {
-    _gridCtx.moveTo(x, clipTop);
-    _gridCtx.lineTo(x, clipBottom);
+    const px = snapToDevicePx(x);
+    _gridCtx.moveTo(px, top);
+    _gridCtx.lineTo(px, bottom);
   }
   for (let y = startY; y <= clipBottom; y += cellPx) {
-    _gridCtx.moveTo(clipLeft, y);
-    _gridCtx.lineTo(clipRight, y);
+    const py = snapToDevicePx(y);
+    _gridCtx.moveTo(left, py);
+    _gridCtx.lineTo(right, py);
   }
   _gridCtx.stroke();
   _gridCtx.restore();

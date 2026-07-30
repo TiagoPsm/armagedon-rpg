@@ -3679,3 +3679,225 @@ test.describe("Nitidez no zoom (Etapa 58)", () => {
     expect(await inner.evaluate(el => getComputedStyle(el).willChange)).toBe("auto");
   });
 });
+
+/* ============================================================
+ * Grade transbordando o mapa (Etapa 59, 2026-07-29)
+ * Regressao introduzida na Etapa 58: ao aumentar o buffer do
+ * canvas para ganhar nitidez, o #mesaGridCanvas CRESCEU junto.
+ * Canvas e elemento substituido — com width:auto a largura vem
+ * do tamanho intrinseco (atributo width=), nao do inset:0.
+ * ============================================================ */
+test.describe("Grade nao transborda o mapa (Etapa 59)", () => {
+
+  test("todas as camadas do palco ocupam a MESMA caixa, em qualquer zoom", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const r = await page.evaluate(async () => {
+      const frame = () => new Promise(res => requestAnimationFrame(res));
+      mesaMapState.isMaster = true;
+      window.isMaster = () => true;
+      mesaMapState._imgW = 2048;
+      mesaMapState._imgH = 1400;
+      mesaMapState.activeMapUrl = "blob:teste";
+      mesaMapState.activeMapId = "m";
+      document.getElementById("mesaMapLayer").removeAttribute("hidden");
+      updateMesaGrid({ enabled: true });
+      setStageFitToMap(true);
+
+      const medir = async (z) => {
+        setStageZoom(z);
+        rescaleStageCanvases();
+        await frame(); await frame();
+        const cx = el => {
+          const b = document.getElementById(el).getBoundingClientRect();
+          return [Math.round(b.width), Math.round(b.height)];
+        };
+        const grid = document.getElementById("mesaGridCanvas");
+        return {
+          inner: cx("mesaStageInner"),
+          layer: cx("mesaMapLayer"),
+          grid:  cx("mesaGridCanvas"),
+          fog:   cx("mesaFogCanvas"),
+          draw:  cx("mesaDrawCanvas"),
+          gridBuffer: [grid.width, grid.height]
+        };
+      };
+
+      return { z100: await medir(1), z132: await medir(1.32), z300: await medir(3) };
+    });
+
+    for (const [nome, m] of Object.entries(r)) {
+      // O ponto da etapa: nenhuma camada pode ser maior que o palco. Antes do
+      // conserto, a 132% a grade media 1624x1110 contra 1230x841 do mapa.
+      expect(m.grid,  `grade fora da caixa em ${nome}`).toEqual(m.inner);
+      expect(m.layer, `mapa fora da caixa em ${nome}`).toEqual(m.inner);
+      expect(m.fog,   `nevoa fora da caixa em ${nome}`).toEqual(m.inner);
+      expect(m.draw,  `desenhos fora da caixa em ${nome}`).toEqual(m.inner);
+    }
+
+    // E a nitidez continua valendo: o buffer acompanha os pixels de TELA,
+    // entao o desenho sai 1:1 em vez de esticado pelo compositor.
+    expect(r.z132.gridBuffer).toEqual(r.z132.inner);
+    expect(r.z300.gridBuffer).toEqual(r.z300.inner);
+    expect(r.z300.gridBuffer[0]).toBeGreaterThan(r.z100.gridBuffer[0]);
+  });
+});
+
+/* ============================================================
+ * Grade cintilando no zoom (Etapa 60, 2026-07-29)
+ *
+ * Feedback do Tiago: "o grid fica oscilando quando dou zoom".
+ * Segunda regressao da Etapa 58, causa DIFERENTE da Etapa 59:
+ * o buffer passou a escalar com o zoom, entao lineWidth (= dpr
+ * = densidade x zoom) virou fracionario. O canvas centra o traco
+ * na coordenada, e traco fracionario em coordenada fracionaria
+ * se espalha por 2-3 px com alpha parcial — divisao diferente em
+ * cada linha, e o padrao varre junto com o zoom: cintilacao.
+ *
+ * O teste afirma o que o olho ve: o BRILHO da grade. Sondar o
+ * tamanho do buffer (Etapa 58) ou a caixa (Etapa 59) nao pegava
+ * isto — os dois estavam certos enquanto a grade piscava.
+ * ============================================================ */
+test.describe("Grade nao cintila no zoom (Etapa 60)", () => {
+
+  test("o brilho das linhas nao varia com o zoom", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const medidas = await page.evaluate(async () => {
+      const frame = () => new Promise(res => requestAnimationFrame(res));
+      mesaMapState.isMaster = true;
+      window.isMaster = () => true;
+      mesaMapState._imgW = 2048;
+      mesaMapState._imgH = 1400;
+      mesaMapState.activeMapUrl = "blob:teste";
+      mesaMapState.activeMapId = "m";
+      document.getElementById("mesaMapLayer").removeAttribute("hidden");
+      // Opacidade no maximo do contrato (0.8) para o alvo ser exato: 0.8 x 255.
+      updateMesaGrid({ enabled: true, opacity: 0.8, color: "#ffffff" });
+      setStageFitToMap(true);
+
+      const canvas = document.getElementById("mesaGridCanvas");
+      const ctx = canvas.getContext("2d");
+      const out = [];
+
+      // Varredura fina: a cintilacao aparece nos zooms em que lineWidth cai
+      // longe de um inteiro (1,2 – 1,4), nao nos extremos redondos.
+      for (let zi = 100; zi <= 200; zi += 10) {
+        setStageZoom(zi / 100);
+        rescaleStageCanvases();
+        await frame(); await frame();
+
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        let acesos = 0, soma = 0, fracos = 0;
+        for (let i = 3; i < data.length; i += 4) {
+          const a = data[i];
+          if (a <= 2) continue;              // fundo transparente
+          acesos++;
+          soma += a;
+          if (a < 184) fracos++;             // < 90% do alpha pedido (204)
+        }
+        out.push({ z: zi, media: soma / acesos, pctFracos: (100 * fracos) / acesos });
+      }
+      return out;
+    });
+
+    // ALVO = opacidade x 255 = 204. Uma grade bem alinhada acerta o alvo em
+    // TODO zoom; a versao com cintilacao media 103 a 100% e 152 a 200% —
+    // o brilho varria com o zoom, e era isso que se via oscilando.
+    for (const m of medidas) {
+      expect(m.media, `alpha medio fora do alvo em z${m.z}`).toBeGreaterThan(200);
+      expect(m.pctFracos, `linhas com alpha parcial em z${m.z}`).toBeLessThan(2);
+    }
+
+    // E o brilho e ESTAVEL entre zooms: e a variacao, nao o valor absoluto,
+    // que o olho le como oscilacao.
+    const medias = medidas.map(m => m.media);
+    expect(Math.max(...medias) - Math.min(...medias)).toBeLessThan(2);
+  });
+});
+
+/* ============================================================
+ * Grade estavel no zoom (Etapa 61, 2026-07-30)
+ * A Etapa 60 alinhou a grade ao pixel usando `dpr` — que JA
+ * carrega o zoom de palco (Etapa 58). Resultado: a espessura
+ * crescia com o zoom (1 -> 2 -> 3 px de buffer) e a troca de
+ * PARIDADE deslocava todas as linhas meio pixel, derrubando a
+ * linha da borda: 20 colunas a 100%, 19 a 150%. Era a grade
+ * "andando" ao aplicar e tirar o zoom.
+ * ============================================================ */
+test.describe("Grade mantem a proporcao em qualquer zoom (Etapa 61)", () => {
+
+  test("mesmo numero de linhas e mesmas posicoes relativas ao mapa", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const medidas = await page.evaluate(async () => {
+      const frame = () => new Promise(res => requestAnimationFrame(res));
+      mesaMapState.isMaster = true;
+      window.isMaster = () => true;
+      mesaMapState._imgW = 2048;
+      mesaMapState._imgH = 1400;
+      mesaMapState.activeMapUrl = "blob:teste";
+      mesaMapState.activeMapId = "m";
+      document.getElementById("mesaMapLayer").removeAttribute("hidden");
+      updateMesaGrid({ enabled: true, cellFrac: 0.05, opacity: 0.8, color: "#ffffff" });
+      setStageFitToMap(true);
+
+      const canvas = document.getElementById("mesaGridCanvas");
+      const ctx = canvas.getContext("2d");
+      const out = [];
+
+      for (const z of [1, 1.08, 1.5, 2, 2.5, 3, 1]) {
+        setStageZoom(z);
+        rescaleStageCanvases();
+        await frame(); await frame();
+
+        // Uma fatia horizontal no meio: cada traco vertical vira um "run".
+        const linha = ctx.getImageData(0, Math.floor(canvas.height / 2), canvas.width, 1).data;
+        const runs = [];
+        let atual = null;
+        for (let x = 0; x < canvas.width; x++) {
+          if (linha[x * 4 + 3] > 8) { if (!atual) { atual = [x, x]; runs.push(atual); } else atual[1] = x; }
+          else atual = null;
+        }
+
+        // Centro de cada traco em fracao da SUPERFICIE do mapa: e essa
+        // fracao que precisa ser identica em todo zoom.
+        const surf = window.getMesaMapSurfaceFrac();
+        const cell = window.getMesaGridState().cellFrac;
+        const erro = runs.map((r, i) => {
+          const meio = (r[0] + r[1] + 1) / 2;
+          return Math.abs((meio / canvas.width - surf.left) / surf.width - i * cell) / cell;
+        });
+
+        out.push({
+          z,
+          linhas: runs.length,
+          espessuras: runs.map(r => r[1] - r[0] + 1),
+          erroMax: erro.length ? Math.max(...erro) : 99,
+          maxEspessura: Math.max(1, Math.ceil(window.devicePixelRatio || 1))
+        });
+      }
+      return out;
+    });
+
+    const base = medidas[0];
+    for (const m of medidas) {
+      // Nenhuma linha some nem aparece ao ampliar — era o sintoma visivel.
+      expect(m.linhas, `numero de linhas mudou em z${m.z}`).toBe(base.linhas);
+      // Cada traco continua na MESMA celula do mapa (tolerancia: 1/10 de celula).
+      expect(m.erroMax, `linhas fora do lugar em z${m.z}`).toBeLessThan(0.1);
+      // Espessura em px de DISPOSITIVO: nao pode engordar junto com o zoom.
+      expect(Math.max(...m.espessuras), `traco engordou em z${m.z}`)
+        .toBeLessThanOrEqual(m.maxEspessura);
+    }
+  });
+});

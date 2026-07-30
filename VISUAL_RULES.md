@@ -261,6 +261,40 @@ Regra geral: dentro de um elemento com `transform: scale()`, qualquer bitmap
 de tamanho fixo vai borrar. Ou se re-rasteriza na escala exibida, ou se
 aceita o borrao.
 
+**Armadilha que ja custou uma regressao (Etapa 59):** todo `<canvas>` do palco
+precisa de `width: 100%; height: 100%` no CSS — `inset: 0` sozinho NAO basta.
+Canvas e elemento substituido: com `width: auto`, a largura usada vem do
+tamanho intrinseco (o atributo `width=`), nao das bordas do inset. Sem as duas
+linhas, aumentar o buffer faz o ELEMENTO crescer junto, transbordando o palco.
+Vale para `#mesaGridCanvas`, `#mesaFogCanvas` e `#mesaDrawCanvas` (este ultimo
+resolve por JS, setando `style.width/height`).
+
+**Segunda armadilha, que custou outra regressao (Etapa 60):** linha de canvas
+em escala variavel precisa de espessura INTEIRA e coordenada alinhada ao pixel
+de dispositivo. O canvas centra o traco na coordenada — traco fracionario
+(`lineWidth = dpr` com dpr = densidade x zoom) em coordenada fracionaria se
+espalha por 2–3 px com alpha parcial, e a divisao cai diferente em cada linha.
+A grade sai manchada, e como o padrao varre junto com o zoom, ela CINTILA.
+Receita: `lw = Math.max(1, Math.round(dpr))`, e coordenada `Math.round(v) + 0.5`
+para `lw` impar / `Math.round(v)` para par. Alinhar as extremidades tambem, ou
+as bordas acendem mais fraco que o miolo.
+
+**Terceira armadilha (Etapa 61):** espessura e alinhamento se medem em px de
+DISPOSITIVO, nunca em px do buffer. Quando o buffer escala com o zoom, `dpr`
+deixa de ser densidade e vira densidade x zoom: usa-lo como `lineWidth` engorda
+o traco a cada zoom e, ao virar a PARIDADE da espessura, escorrega a grade
+inteira meio pixel e derruba a linha da borda — a grade parece pular uma celula.
+Receita corrigida: `lw = Math.max(1, Math.round(dpr / Math.max(1, zoom)))`.
+E trate diferenca abaixo de 1 px de layout entre a superficie e o canvas como a
+MESMA borda; senao o residuo do arredondamento da caixa entra e sai do canvas
+conforme o zoom.
+
+Regra pratica que fecha as tres: **nitidez em elemento com `transform: scale()`
+tem quatro eixos independentes** — tamanho do buffer, caixa CSS do elemento,
+alinhamento do traco e posicao das linhas em relacao ao conteudo. Acertar tres e
+errar um ainda da defeito visivel, e cada eixo precisa da sua propria afirmacao
+em teste.
+
 Arquivos visuais atuais da Mesa:
 
 - `css/mesa-base.css`

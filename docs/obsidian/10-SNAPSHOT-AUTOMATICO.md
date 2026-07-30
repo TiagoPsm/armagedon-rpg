@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-29 15:42:05 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-30 00:45:48 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,27 +13,24 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `6f50cf2 2026-07-29 fix(mesa): fit descobrivel + grade fluida + nitidez no zoom (Etapas 57-58)`
+- Ultimo commit: `6860191 2026-07-30 @ fix(mesa): grade estavel no zoom ÔÇö caixa, traco e geometria (Etapas 59-61)`
 
 ### Alteracoes Locais
 
 ```text
- M .claude/settings.local.json
-M  docs/obsidian/05-DEPLOY.md
-M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+(nenhum)
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
-.claude/settings.local.json
+(nenhum)
 ```
 
 ### Arquivos Em Stage
 
 ```text
-docs/obsidian/05-DEPLOY.md
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+(nenhum)
 ```
 
 ## Paginas Principais
@@ -130,8 +127,8 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
     0,73 MB  debug.log
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js
     0,61 MB  node_modules\playwright-core\lib\vite\traceViewer\assets\defaultSettingsView-GTWI-W_B.js
+    0,47 MB  _site\js\mesa-page.bundle.js
     0,45 MB  node_modules\playwright-core\lib\utilsBundleImpl\index.js
-    0,41 MB  node_modules\@img\sharp-win32-x64\lib\sharp-win32-x64.node
 ```
 
 ## Comando De Atualizacao

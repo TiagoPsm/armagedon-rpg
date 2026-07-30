@@ -55,6 +55,86 @@ Pedido do Tiago: dois botoes distintos para cobrir o mapa inteiro e descobrir o 
 - Deploy do Worker: version `8b5a4914-7984-4400-825f-2e78364bb39f` (dry-run antes; health 200).
 - Validacao: test:mesa:audit 87/87, test:mesa 5/5, test:ficha 28/28, check:js OK, audit:static OK, build:pages OK. Prova visual: coberto, revelado e revelado-com-buraco.
 
+## Etapa Concluida (2026-07-30 — Etapa 61: Grade deslocada ao aplicar/tirar zoom)
+
+Feedback do Tiago: "o grid esta sendo deslocado quando aplico e retiro zoom no mapa; quero que ele mantenha a proporcao definida sempre, independente do zoom". **Regressao da Etapa 60** — a quarta da familia iniciada na Etapa 58.
+
+**Medido por sonda no Playwright** (mapa 1600x1000, fit ligado, celula 5% = 20 colunas; a sonda le uma fatia do buffer, agrupa cada traco e converte o centro para fracao da superficie do mapa):
+
+| zoom | colunas ANTES | espessura ANTES | erro ANTES | colunas DEPOIS | espessura DEPOIS | erro DEPOIS |
+|---|---|---|---|---|---|---|
+| 100% | 20 | 1 px | 0,02 cel | 20 | 1 px | 0,03 cel |
+| 108% | 20 | 1 px | 0,02 cel | 20 | 1 px | 0,02 cel |
+| 150% | **19** | **2 px** | **1,01 cel** | 20 | 1 px | 0,02 cel |
+| 200% | **19** | **2 px** | **1,01 cel** | 20 | 1 px | 0,02 cel |
+| 300% | 20 | **3 px** | 0,01 cel | 20 | 1 px | 0,01 cel |
+
+A 150% e 200% a grade perdia a linha da borda e todas as outras liam como deslocadas de UMA CELULA inteira em relacao ao mapa — exatamente o que se via ao aplicar e tirar o zoom.
+
+**Causa (duas, no mesmo ponto).** A Etapa 60 alinhou a grade ao pixel usando `dpr`, mas depois da Etapa 58 esse `dpr` e a escala do BUFFER, que ja carrega o zoom de palco. Consequencias:
+
+1. `lineWidth = Math.round(dpr)` engordava com o zoom (1 px a 100%, 2 a 150%, 3 a 300%) — e a espessura em px de buffer, nao de dispositivo, entao o traco crescia na tela junto com o mapa.
+2. Pior: a troca de PARIDADE da espessura vira a chave do alinhamento (`Math.round(v) + 0.5` para impar, `Math.round(v)` para par). Toda a grade escorrega meio pixel, e a linha da borda — que fica em `-0,4 px x dpr` por causa do arredondamento da caixa do fit (a "observacao menor" anotada na Etapa 59; ela nao era menor) — cai para fora do canvas em uns zooms e dentro em outros.
+
+- **js/mesa-grid.js** (`renderMesaGrid`):
+  - espessura passa a ser em px de DISPOSITIVO: `Math.round(dpr / zoomEff)`, com `zoomEff = max(1, getStageZoom())`. Constante e de paridade estavel em qualquer zoom — mantem a nitidez da Etapa 60 sem o efeito colateral.
+  - borda rente ao palco: diferenca abaixo de 1 px de layout entre a superficie e o canvas passa a ser tratada como a MESMA borda (tolerancia `Math.max(1, dpr)`, que acompanha o zoom). Mata o residuo de arredondamento do fit na raiz.
+- **js/mesa-map.js**: exporta `window.getStageZoom` — a grade precisa separar "escala do buffer" de "zoom de palco".
+- Cache-bust: `js/mesa-grid.js` e `js/mesa-map.js` -> `?v=2026-07-30-zoomstable-1`; `MESA_BUNDLE_VERSION` -> `2026-07-30-zoomstable-1`.
+- **Testes** (suite 103 -> 104, describe "Grade mantem a proporcao em qualquer zoom (Etapa 61)"): afirma o que faltava nos tres testes anteriores — a GEOMETRIA. Em 100/108/150/200/250/300% e na volta a 100%: mesmo numero de linhas, cada traco na mesma celula do mapa (tolerancia 1/10 de celula) e espessura que nao engorda com o zoom.
+- **Licao (a quarta da mesma familia)**: os testes das Etapas 58, 59 e 60 cobriam buffer, caixa e brilho — todos verdes enquanto a grade pulava uma celula. O quarto eixo e a POSICAO das linhas em relacao ao mapa; e o unico que responde ao pedido "manter a proporcao". Corolario pratico: quando um valor acumula significados (aqui `dpr` = densidade **x** zoom), todo uso antigo dele precisa ser reavaliado, nao so os novos.
+- Validacao: test:mesa:audit 104/104, test:mesa 5/5, check:js OK (45), audit:static OK.
+
+## Etapa Concluida (2026-07-29 — Etapa 60: Grade cintilando no zoom)
+
+Feedback do Tiago: "parece que o grid fica oscilando quando dou zoom, talvez esteja relacionado ao meu pedido para manter a resolucao". Estava — **terceira consequencia da Etapa 58**, causa diferente da Etapa 59.
+
+**Medido por sonda no Playwright** (grade branca, opacidade 0.8 -> alpha alvo 204, sweep de zoom, alpha de TODOS os pixels do buffer):
+
+| zoom | alpha medio ANTES | % px fracos ANTES | alpha medio DEPOIS |
+|---|---|---|---|
+| 100% | 103 | 89% | **204,0** |
+| 130% | 121 | 77% | **204,0** |
+| 160% | 133 | 67% | **204,0** |
+| 200% | 152 | 52% | **204,0** |
+
+O brilho da grade varria de 50% a 74% do pedido conforme o zoom — e era isso que se via oscilando. O numero de pixels acesos caiu quase a metade com o conserto: cada linha de 1 px estava borrada em 2–3.
+
+**Causa.** O canvas CENTRA o traco na coordenada. A Etapa 58 fez o buffer escalar com o zoom, entao `lineWidth = Math.max(1, dpr)` (dpr = densidade x zoom) virou fracionario — e as coordenadas (`startX + n * cellPx`) sempre foram. Traco fracionario em coordenada fracionaria se espalha por 2–3 px com alpha parcial, e a divisao cai diferente em cada linha: grade manchada. Como o padrao de antialiasing varre junto com o zoom, a mancha se move: cintilacao. Antes da Etapa 58 o `dpr` era fixo, o padrao era estavel e ninguem via.
+
+- **js/mesa-grid.js** (`renderMesaGrid`): espessura inteira (`Math.round(dpr)`) + coordenada alinhada ao pixel de dispositivo — meio-pixel para espessura impar, inteira para par. As extremidades (`clipTop/Bottom/Left/Right`) alinham tambem, senao as bordas da grade acendiam mais fraco que o miolo.
+- Custo aceito: o espacamento arredonda para px inteiro, variando ate 1 px entre celulas — **menos** do que os 2 px que ja variava antes.
+- Cache-bust: `js/mesa-grid.js?v=2026-07-29-crisp-1`; `MESA_BUNDLE_VERSION` -> `2026-07-29-crisp-1`.
+- **Testes** (suite 102 -> 103, describe "Grade nao cintila no zoom (Etapa 60)"): afirma o que o olho ve — o BRILHO. Alpha medio > 200 e < 2% de px fracos em cada zoom de 100% a 200%, e variacao de brilho < 2 entre zooms. **Validado contra a regressao**: sem o conserto falha com "alpha medio fora do alvo em z100 / Received: 102.9".
+- **Licao (a terceira da mesma familia)**: os testes das Etapas 58 e 59 sondavam o buffer e a caixa — ambos corretos enquanto a grade piscava. Nitidez tem tres eixos independentes (tamanho do buffer, caixa do elemento, alinhamento do traco) e cada um precisa da sua propria afirmacao.
+- **Armadilha de medicao anotada**: a primeira sonda amostrava UMA fileira de pixels e caiu numa fileira atipica, inventando um "degrau" 204/163 que nao existia. Histograma do canvas inteiro desmentiu. Medir a distribuicao, nao uma amostra.
+- Validacao: test:mesa:audit 103/103, test:mesa 5/5, test:ficha 28/28, perf:mesa 1/1, check:js OK (45), audit:static OK, build:pages OK. Prova visual: recorte da grade a 130% antes e depois.
+
+## Etapa Concluida (2026-07-29 — Etapa 59: Grade transbordando o mapa)
+
+Feedback do Tiago: "quando eu dou zoom a qualidade nao melhora e o grid sai da imagem". **Regressao que EU introduzi na Etapa 58** — os dois sintomas com a mesma causa.
+
+**Medido por sonda no Playwright** (mapa 2048x1400, fit ligado, zoom 132%):
+
+| Elemento | Caixa |
+|---|---|
+| `#mesaStageInner` | 1230x841 |
+| `#mesaMapLayer` | 1230x841 |
+| `#mesaFogCanvas` | 1230x841 |
+| **`#mesaGridCanvas`** | **1624x1110** |
+
+1624/1230 = 1,32 = exatamente o zoom.
+
+**Causa.** Canvas e elemento SUBSTITUIDO: com `width: auto`, a largura usada vem do tamanho INTRINSECO (o atributo `width=`), nao das bordas do `inset: 0` — a regra de "over-constrained" que vale para elementos normais nao se aplica. `#mesaFogCanvas` ja tinha `width/height: 100%` explicito e `#mesaDrawCanvas` recebe `style.width/height` no JS; o grid era o unico apoiado so no `inset: 0`, e passava porque o buffer coincidia com a caixa CSS (`w x dpr`, dpr 1). Quando a Etapa 58 mudou o buffer para `w x dpr x zoom`, o ELEMENTO cresceu junto: transbordava o mapa e, exibido 1:1, nem ganhava nitidez. Um conserto, dois sintomas.
+
+- **css/mesa-map.css**: `width: 100%; height: 100%` em `#mesaGridCanvas`, com comentario de "nao remover" explicando o porque.
+- Cache-bust: mesa-map.css -> `?v=2026-07-29-sharp-2`; `MESA_BUNDLE_VERSION` -> `2026-07-29-sharp-2`.
+- **Confirmado que a nitidez agora vale de fato**: a 132% o buffer da grade (1230x841) bate 1:1 com os pixels de TELA; antes eram 932x637 esticados pelo compositor para 1230.
+- **Licao sobre o teste da Etapa 58**: ele passou com a feature quebrada porque so afirmava o tamanho do BUFFER, nunca que a CAIXA do canvas continuava igual a do palco. Buffer certo + caixa errada passava batido.
+- **Testes** (suite 101 -> 102, describe "Grade nao transborda o mapa (Etapa 59)"): mapa, grade, nevoa e desenhos ocupam a MESMA caixa a 100%, 132% e 300%; e o buffer da grade acompanha os pixels de tela. **O teste foi validado contra a regressao**: revertendo o CSS ele falha com "grade fora da caixa em z132"; com o CSS, passa.
+- Validacao: test:mesa:audit 102/102, test:mesa 5/5, test:ficha 28/28, perf:mesa 1/1, check:js OK (45), audit:static OK, build OK.
+- Observacao menor, nao corrigida: a caixa do fit arredonda para px inteiro, entao a superficie do mapa fica em 1.00017 em vez de 1.0 (~0,1 px). Invisivel; anotado caso alguem persiga um fio de 1px no futuro.
+
 ## Etapa Concluida (2026-07-29 — Etapa 58: Nitidez no zoom)
 
 Pedido do Tiago: "e possivel melhorar a resolucao do grid e se possivel do mapa tbm" — print com o palco a 300%, grade e mapa borrados.

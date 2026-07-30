@@ -192,6 +192,9 @@ function getMesaRenderScale(w, h) {
   return Math.max(1, scale);
 }
 window.getMesaRenderScale = getMesaRenderScale;
+// A grade precisa separar "escala do buffer" de "zoom de palco" para manter a
+// espessura e o alinhamento em px de DISPOSITIVO (mesa-grid.js, Etapa 61).
+window.getStageZoom = getStageZoom;
 
 let _rescaleRaf = 0;
 
