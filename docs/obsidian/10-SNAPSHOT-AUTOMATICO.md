@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-30 01:37:35 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-30 14:55:23 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,18 +13,12 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `1fa0514 2026-07-30 fix(mesa): grade estavel no zoom ÔÇö caixa, traco e geometria (Etapas 59-61)`
+- Ultimo commit: `bcf387d 2026-07-30 @ feat(mesa): resize com 8 alcas, marcadores pelo token e hover simples (Etapas 63-64)`
 
 ### Alteracoes Locais
 
 ```text
-M  .claude/settings.local.json
-M  DEV_STATUS.md
-M  VISUAL_RULES.md
-M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  ficha.html
-M  js/ficha-sheet.js
-M  tests/ficha.spec.cjs
+(nenhum)
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -36,13 +30,7 @@ M  tests/ficha.spec.cjs
 ### Arquivos Em Stage
 
 ```text
-.claude/settings.local.json
-DEV_STATUS.md
-VISUAL_RULES.md
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-ficha.html
-js/ficha-sheet.js
-tests/ficha.spec.cjs
+(nenhum)
 ```
 
 ## Paginas Principais
@@ -56,7 +44,7 @@ tests/ficha.spec.cjs
 
 ## Contagem Rapida
 
-- JavaScript em `js/`: 36 arquivo(s)
+- JavaScript em `js/`: 37 arquivo(s)
 - CSS em `css/`: 13 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 

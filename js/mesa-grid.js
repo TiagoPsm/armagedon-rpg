@@ -305,6 +305,22 @@ function mesaFitTokenToGrid(token, tokenElement) {
 }
 
 /**
+ * Escala quantizada em N células, para PREVIEW durante o arrasto de resize.
+ * Função pura: não escreve no token nem no DOM (Etapa 63).
+ * @param {number} basePx      largura de layout do token (offsetWidth, sem transform)
+ * @param {number} desiredScale escala crua vinda do ponteiro
+ * @returns {{scale:number, cells:number}|null} null se o snap estiver desligado.
+ */
+function mesaPreviewGridScale(basePx, desiredScale) {
+  if (!_gridState.enabled || !_gridState.snap) return null;
+  const cellPx = _gridCellStagePx();
+  if (!(cellPx > 0) || !(basePx > 0)) return null;
+  const cells = _gridTokenCells(basePx * desiredScale, cellPx);
+  const scale = Math.round(Math.max(0.25, Math.min(4, (cells * cellPx) / basePx)) * 100) / 100;
+  return { scale, cells };
+}
+
+/**
  * Alinha o token ao quadrado de células mais próximo (posição). Mexe em
  * token.x/y (% do palco, canto superior esquerdo) usando o rect real do
  * elemento para achar o centro e o diâmetro.
@@ -485,5 +501,6 @@ window.updateMesaGrid                 = updateMesaGrid;
 window.adjustMesaGridCell             = adjustMesaGridCell;
 window.mesaSnapTokenToGrid            = mesaSnapTokenToGrid;
 window.mesaFitTokenToGrid             = mesaFitTokenToGrid;
+window.mesaPreviewGridScale           = mesaPreviewGridScale;
 window.mesaConformTokenToGrid         = mesaConformTokenToGrid;
 window.normalizeMesaGridState         = normalizeMesaGridState;

@@ -173,7 +173,15 @@
       "Bash(git commit -m '@ *)",
       "Bash(python -)",
       "Bash(sed -i 's|js/ficha-sheet.js?v=2026-06-14-echos-1|js/ficha-sheet.js?v=2026-07-30-avatar512-1|' ficha.html)",
-      "Bash(rm -f tests/tmp-token-res.spec.cjs)"
+      "Bash(rm -f tests/tmp-token-res.spec.cjs)",
+      "Bash(sed -i 's|css/mesa-stage.css?v=[^\"]*|css/mesa-stage.css?v=2026-07-30-token-handles-1|; s|js/mesa-stage.js?v=[^\"]*|js/mesa-stage.js?v=2026-07-30-token-handles-1|; s|js/mesa-map.js?v=[^\"]*|js/mesa-map.js?v=2026-07-30-token-handles-1|; s|js/mesa-grid.js?v=[^\"]*|js/mesa-grid.js?v=2026-07-30-token-handles-1|' mesa.html)",
+      "Bash(sed -i 's|const wait = \\(\\) => new Promise\\(r => requestAnimationFrame\\(\\(\\) => requestAnimationFrame\\(r\\)\\)\\);|const wait = \\(\\) => new Promise\\(r => setTimeout\\(r, 300\\)\\); // > que a transicao de 150ms|' tests/tmp-token-visual.spec.cjs)",
+      "Bash(cd \"C:/Users/tiago/AppData/Local/Temp/claude\" && ls -la token-antes-depois.png)",
+      "Bash(sed -i 's|\"../../../../AppData/Local/Temp/claude/token-antes-depois.png\"|\"C:/Users/tiago/AppData/Local/Temp/claude/C--Users-tiago-OneDrive-Desktop-Pr-xima-Campanha-FichaApp-rpg-campaign-git-sync/3df8fdf1-9290-46bd-bf3a-0ce193d4ebbf/scratchpad/token-selecao.png\"|' tests/tmp-token-shot.spec.cjs)",
+      "Bash(sed -i 's|\"test:mesa:audit\": \"playwright test tests/mesa-audit.spec.cjs\",|\"test:mesa:audit\": \"playwright test tests/mesa-audit.spec.cjs\",\\\\n    \"test:mesa:tokens\": \"playwright test tests/mesa-token-handles.spec.cjs\",|' package.json)",
+      "Bash(perl -0pi -e 's/\\(moved\\(?:Left|Top|Right|Bottom\\): Math\\\\.round\\\\\\([^\\)]*\\\\\\)\\)\\(,\\)/$1 || 0$2/g' tests/mesa-token-handles.spec.cjs)",
+      "Bash(perl -CSD -0pi -e 's/\\\\.replace\\\\\\(\\\\/\\\\[[^\\\\]]*\\\\]\\\\/g, \"\"\\\\\\);/.replace\\(\\\\/[\\\\\\\\u0300-\\\\\\\\u036f]\\\\/g, \"\"\\);/' js/mesa-markers.js)",
+      "Bash(grep -n \"replace\\(/\\\\[\" js/mesa-markers.js)"
     ]
   }
 }

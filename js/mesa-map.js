@@ -244,6 +244,9 @@ function _applyStageTransform() {
   const z = _stageZoom;
   inner.style.transform =
     (x === 0 && y === 0 && z === 1) ? "" : `translate(${x}px,${y}px) scale(${z})`;
+  // Exposto ao CSS: as alcas de selecao do token se contra-escalam por ele
+  // para manter tamanho constante em px de TELA em qualquer zoom (Etapa 63).
+  inner.style.setProperty("--stage-zoom", String(z));
   // Promove a camada só durante o movimento (fluidez) e devolve a
   // rasterização normal ao parar (nitidez). Ver _markStageTransforming.
   _markStageTransforming();

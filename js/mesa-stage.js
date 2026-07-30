@@ -244,11 +244,6 @@ function handleInspectorAction(event) {
     token.statsVisibleToPlayers = !token.statsVisibleToPlayers;
   }
 
-  if (action === "toggle-marker") {
-    // Marcadores de status (Etapa 46): whitelist + cap validados no helper.
-    if (!toggleMesaTokenStatusMarker(token, button.dataset.markerKey)) return;
-  }
-
   if (action === "center") {
     const centerPosition = getCenterStagePosition();
     token.x = centerPosition.x;
@@ -591,7 +586,7 @@ function handleTokenPointerDown(event) {
   // Bloqueia interação com tokens apenas quando a camada MAPA está ativa;
   // na camada MESTRE (dm) o mestre precisa arrastar/selecionar tokens secretos.
   if (typeof getMesaActiveLayer === "function" && getMesaActiveLayer() === "map") return;
-  if (event.target.classList?.contains("mesa-token-resize-handle")) {
+  if (event.target.classList?.contains("mesa-token-handle")) {
     handleResizePointerDown(event);
     return;
   }
@@ -623,7 +618,7 @@ function handleTokenMouseDown(event) {
   // Bloqueia interação com tokens apenas quando a camada MAPA está ativa;
   // na camada MESTRE (dm) o mestre precisa arrastar/selecionar tokens secretos.
   if (typeof getMesaActiveLayer === "function" && getMesaActiveLayer() === "map") return;
-  if (event.target.classList?.contains("mesa-token-resize-handle")) return; // handled by pointer
+  if (event.target.classList?.contains("mesa-token-handle")) return; // handled by pointer
   const target = resolveStagePointerTarget(event);
   if (!target) {
     // Espaço vazio: deselect acontece no evento 'click' (ver handleStageEmptyClick)
@@ -1587,64 +1582,170 @@ function getOwnerCopy(ownerUsername) {
 
 
 /* ── TOKEN RESIZE ────────────────────────────────────────────── */
+// Caixa de seleção com 8 alças (padrão Roll20). Cada alça guarda parado o
+// ponto OPOSTO a ela (a "âncora"): arrastar o canto NW cresce o token para
+// cima/esquerda sem que o canto SE saia do lugar. Como o token tem
+// transform-origin: top left, a posição (x/y) é recalculada junto com a
+// escala para manter essa âncora fixa (Etapa 63).
+
+const MESA_TOKEN_HANDLES = ["nw", "n", "ne", "w", "e", "sw", "s", "se"];
+
+// Âncora de cada alça em fração da caixa do token (0 = borda inicial, 1 = final).
+const MESA_HANDLE_ANCHOR = {
+  nw: [1, 1],   n: [0.5, 1],   ne: [0, 1],
+  w:  [1, 0.5],                e:  [0, 0.5],
+  sw: [1, 0],   s: [0.5, 0],   se: [0, 0]
+};
+
+// Eixo do cursor de cada alça, para o override global durante o arrasto.
+const MESA_HANDLE_CURSOR = {
+  nw: "nwse", se: "nwse", ne: "nesw", sw: "nesw",
+  n: "ns", s: "ns", w: "ew", e: "ew"
+};
+
+// Zona de ímã do snap, em px de tela.
+const MESA_RESIZE_SNAP_PX = 8;
+
+function renderTokenSelectionBox(token) {
+  const handles = MESA_TOKEN_HANDLES
+    .map(dir => `<span class="mesa-token-handle" data-handle="${dir}" data-token-id="${token.id}"></span>`)
+    .join("");
+  // Atalho para o painel de marcadores, direto no token selecionado (Etapa 64).
+  // So o mestre edita marcadores, entao so ele ve o botao.
+  const markerBtn = isMaster()
+    ? `<button type="button" class="mesa-token-markers-btn" data-token-id="${token.id}" title="Marcadores de status" aria-label="Marcadores de status">◉</button>`
+    : "";
+  return `<div class="mesa-token-selbox">${handles}<span class="mesa-token-sizetag" aria-hidden="true"></span>${markerBtn}</div>`;
+}
 
 function handleResizePointerDown(event) {
-  const handle = event.target.closest(".mesa-token-resize-handle");
+  const handle = event.target.closest(".mesa-token-handle");
   if (!handle) return;
   const tokenId = String(handle.dataset.tokenId || "");
   const token = findToken(tokenId);
   if (!token || !canResizeToken(token)) return;
 
+  const tokenEl = document.querySelector(`.mesa-token[data-token-id="${CSS.escape(tokenId)}"]`);
+  const stage = getMesaDomRef("stage");
+  if (!tokenEl || !stage) return;
+
   event.preventDefault();
   event.stopPropagation();
 
-  const tokenEl = document.querySelector(`.mesa-token[data-token-id="${CSS.escape(tokenId)}"]`);
+  const rect = tokenEl.getBoundingClientRect();
+  const dir = String(handle.dataset.handle || "se");
+  const [ax, ay] = MESA_HANDLE_ANCHOR[dir] || MESA_HANDLE_ANCHOR.se;
+
   _tokenResizeDrag = {
     tokenId,
-    startX: event.clientX,
-    startY: event.clientY,
+    tokenEl,
+    stageRect: stage.getBoundingClientRect(),
+    ax,
+    ay,
     startScale: token.tokenScale || 1,
-    tokenEl
+    startSize: rect.width || 1,
+    // Ponto fixo em coordenadas de TELA — não muda durante o arrasto.
+    anchorX: rect.left + ax * rect.width,
+    anchorY: rect.top + ay * rect.height,
+    // Largura de layout (sem transform): base para converter escala ↔ células.
+    basePx: tokenEl.offsetWidth || 88,
+    previewScale: token.tokenScale || 1,
+    previewX: token.x,
+    previewY: token.y,
+    // A alça fica alguns px FORA da borda do token (a caixa é circunscrita).
+    // Sem descontar esse offset, o token daria um pulo no instante do clique.
+    grabOffset: 0
   };
+  _tokenResizeDrag.grabOffset = projectResizePointer(_tokenResizeDrag, event.clientX, event.clientY) - _tokenResizeDrag.startSize;
+
   document.body.classList.add("mesa-resize-active");
+  document.body.dataset.resizeDir = MESA_HANDLE_CURSOR[dir] || "nwse";
+  tokenEl.classList.add("is-resizing");
+}
+
+/**
+ * Projeta o cursor no eixo da alça e devolve o tamanho do token (px de tela)
+ * que faz o canto arrastado cair exatamente sob o ponteiro. Como a razão é
+ * toda em px de tela, funciona em qualquer nível de zoom.
+ */
+function projectResizePointer(drag, clientX, clientY) {
+  // Direção da alça a partir da âncora: -1, 0 ou 1 em cada eixo.
+  const dirX = 1 - 2 * drag.ax;
+  const dirY = 1 - 2 * drag.ay;
+  const denom = Math.abs(dirX) + Math.abs(dirY);
+  return ((clientX - drag.anchorX) * dirX + (clientY - drag.anchorY) * dirY) / denom;
 }
 
 function handleResizePointerMove(event) {
-  if (!_tokenResizeDrag) return;
-  const dx = event.clientX - _tokenResizeDrag.startX;
-  const dy = event.clientY - _tokenResizeDrag.startY;
-  // Diagonal drag: down-right = bigger, up-left = smaller
-  const delta = (dx + dy) / 300;
-  const newScale = Math.max(0.25, Math.min(4.0, _tokenResizeDrag.startScale + delta));
-  if (_tokenResizeDrag.tokenEl?.isConnected) {
-    _tokenResizeDrag.tokenEl.style.setProperty("--token-scale", newScale.toFixed(3));
+  const drag = _tokenResizeDrag;
+  if (!drag) return;
+
+  const size = projectResizePointer(drag, event.clientX, event.clientY) - drag.grabOffset;
+
+  let scale = Math.max(0.25, Math.min(4, drag.startScale * (size / drag.startSize)));
+  let cells = 0;
+
+  // Ímã da grade durante o arrasto: mostra onde vai encaixar antes de soltar
+  // (Alt segurado ignora o snap). Antes isso só acontecia no pointerup e o
+  // token "pulava" de tamanho ao soltar.
+  if (!event.altKey && typeof window.mesaPreviewGridScale === "function") {
+    const snapped = window.mesaPreviewGridScale(drag.basePx, scale);
+    if (snapped) {
+      const pxPerScale = drag.startSize / drag.startScale; // px de tela por 1.0 de escala
+      if (Math.abs(snapped.scale - scale) * pxPerScale <= MESA_RESIZE_SNAP_PX) {
+        scale = snapped.scale;
+        cells = snapped.cells;
+      }
+    }
   }
+
+  applyResizePreview(drag, scale, cells);
+}
+
+/** Aplica escala + reposicionamento do preview mantendo a âncora parada. */
+function applyResizePreview(drag, scale, cells) {
+  const sizePx = drag.startSize * (scale / drag.startScale);
+  const leftPx = drag.anchorX - drag.ax * sizePx;
+  const topPx = drag.anchorY - drag.ay * sizePx;
+
+  drag.previewScale = scale;
+  drag.previewX = ((leftPx - drag.stageRect.left) / drag.stageRect.width) * 100;
+  drag.previewY = ((topPx - drag.stageRect.top) / drag.stageRect.height) * 100;
+
+  if (!drag.tokenEl?.isConnected) return;
+  drag.tokenEl.style.setProperty("--token-scale", scale.toFixed(3));
+  drag.tokenEl.style.left = `${drag.previewX}%`;
+  drag.tokenEl.style.top = `${drag.previewY}%`;
+
+  const tag = drag.tokenEl.querySelector(".mesa-token-sizetag");
+  if (tag) tag.textContent = cells > 0 ? `${cells}×${cells}` : `${Math.round(scale * 100)}%`;
 }
 
 function handleResizePointerUp() {
-  if (!_tokenResizeDrag) return;
-  const tokenEl = _tokenResizeDrag.tokenEl;
-  const tokenId = _tokenResizeDrag.tokenId;
-  const token = findToken(tokenId);
-
-  if (token && tokenEl?.isConnected) {
-    const scaleStr = tokenEl.style.getPropertyValue("--token-scale");
-    const scale = parseFloat(scaleStr);
-    if (scale > 0 && isFinite(scale)) {
-      token.tokenScale = parseFloat(scale.toFixed(2));
-    }
-    // Com grade+snap: quantiza o novo tamanho para NxN células e realinha
-    // (o jogador solta o resize e o token "completa" o quadrado da grade).
-    if (typeof window.mesaConformTokenToGrid === "function") {
-      window.mesaConformTokenToGrid(token, tokenEl);
-    }
-    bumpMesaSceneVersion();
-    persistState({ immediate: true });
-    scheduleMesaRender({ stage: true, inspector: true });
-  }
+  const drag = _tokenResizeDrag;
+  if (!drag) return;
 
   _tokenResizeDrag = null;
   document.body.classList.remove("mesa-resize-active");
+  delete document.body.dataset.resizeDir;
+  drag.tokenEl?.classList.remove("is-resizing");
+
+  const token = findToken(drag.tokenId);
+  if (!token || !drag.tokenEl?.isConnected) return;
+  if (!Number.isFinite(drag.previewScale)) return;
+
+  token.tokenScale = parseFloat(drag.previewScale.toFixed(2));
+  token.x = Math.max(0, Math.min(100, drag.previewX));
+  token.y = Math.max(0, Math.min(100, drag.previewY));
+
+  // Com grade+snap: garante o encaixe exato em NxN células (o ímã do arrasto
+  // já deixa o token no lugar certo; isto corrige arredondamentos).
+  if (typeof window.mesaConformTokenToGrid === "function") {
+    window.mesaConformTokenToGrid(token, drag.tokenEl);
+  }
+  bumpMesaSceneVersion();
+  persistState({ immediate: true });
+  scheduleMesaRender({ stage: true, inspector: true });
 }
 
 function canResizeToken(token) {
@@ -1727,9 +1828,7 @@ function renderTokenMinimal(token) {
   const hiddenClass = hiddenForMaster ? "is-hidden-master" : "";
   const layerClass = token.layer === "dm" ? "is-layer-dm" : "";
   const scale = token.tokenScale || 1;
-  const resizeHandle = canResizeToken(token)
-    ? `<div class="mesa-token-resize-handle" data-token-id="${token.id}" title="Redimensionar token"></div>`
-    : "";
+  const resizeHandle = canResizeToken(token) ? renderTokenSelectionBox(token) : "";
   const hiddenBadge = hiddenForMaster
     ? `<span class="mesa-token-minimal-badge is-hidden-badge">${getTokenSecretLabel(token)}</span>`
     : "";

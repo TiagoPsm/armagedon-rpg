@@ -2158,9 +2158,12 @@ test.describe("Marcadores de status nos tokens (Etapa 46)", () => {
       window.AUTH = Object.assign({}, window.AUTH, { isBackendEnabled: () => true });
       selectToken("ana");
     });
-    await page.waitForSelector('.inspector-marker-btn[data-marker-key="veneno"]');
-    await page.click('.inspector-marker-btn[data-marker-key="veneno"]');
-    await page.click('.inspector-marker-btn[data-marker-key="queimando"]');
+    // Etapa 64: a grade duplicada do inspetor virou um botao que abre o
+    // painel de marcadores (o mesmo do token).
+    await page.click('.mesa-token-markers-btn.is-inspector');
+    await page.waitForSelector('#mesaMarkerPanel .marker-icon[data-marker-key="veneno"]');
+    await page.click('#mesaMarkerPanel .marker-icon[data-marker-key="veneno"]');
+    await page.click('#mesaMarkerPanel .marker-icon[data-marker-key="queimando"]');
     // O render do palco e agendado via rAF — espera o segundo chip pintar.
     await page.waitForSelector('[data-token-id="ana"] .mesa-token-marker[data-marker="queimando"]');
 
@@ -2175,7 +2178,7 @@ test.describe("Marcadores de status nos tokens (Etapa 46)", () => {
         chips,
         upsertMarkers: upserts.length ? upserts[upserts.length - 1].token.statusMarkers : null,
         signatureMarkers: signature.tokens[0].statusMarkers,
-        activeButtons: document.querySelectorAll(".inspector-marker-btn.is-active").length
+        activeButtons: document.querySelectorAll("#mesaMarkerPanel .marker-icon.is-active").length
       };
     });
 
@@ -2231,6 +2234,72 @@ test.describe("Marcadores de status nos tokens (Etapa 46)", () => {
 
     expect(result.markers).toEqual(["morto", "amaldicoado"]); // whitelist aplicada
     expect(result.chips).toEqual(["morto", "amaldicoado"]);
+  });
+});
+
+test.describe("Painel de marcadores no token (Etapa 64)", () => {
+  async function abrirPainelDoToken(page) {
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+    await page.evaluate(() => selectToken("ana"));
+    // Botao no proprio token selecionado (nao o do inspetor).
+    await page.click('[data-token-id="ana"] .mesa-token-markers-btn');
+    await page.waitForSelector("#mesaMarkerPanel .marker-icon");
+  }
+
+  test("'Limpar tudo' remove todos os marcadores e transmite a mudanca", async ({ page }) => {
+    await abrirPainelDoToken(page);
+    await page.evaluate(() => {
+      window.__cleared = [];
+      window.APP = Object.assign({}, window.APP, {
+        sendRealtime: message => { window.__cleared.push(message); return true; }
+      });
+      window.AUTH = Object.assign({}, window.AUTH, { isBackendEnabled: () => true });
+    });
+
+    await page.click('#mesaMarkerPanel .marker-icon[data-marker-key="congelado"]');
+    await page.click('#mesaMarkerPanel .marker-icon[data-marker-key="veneno"]');
+    await page.waitForSelector('[data-token-id="ana"] .mesa-token-marker[data-marker="veneno"]');
+
+    await page.click("#mesaMarkerPanel .marker-clear-btn");
+    await page.waitForFunction(() =>
+      document.querySelectorAll('[data-token-id="ana"] .mesa-token-marker').length === 0);
+
+    const depois = await page.evaluate(() => {
+      const upserts = window.__cleared.filter(m => m.type === "mesa:token:upsert");
+      return {
+        markers: state.tokens.find(t => t.id === "ana").statusMarkers,
+        ultimoUpsert: upserts.length ? upserts[upserts.length - 1].token.statusMarkers : null,
+        botaoDesabilitado: document.querySelector("#mesaMarkerPanel .marker-clear-btn").disabled
+      };
+    });
+    expect(depois.markers).toEqual([]);
+    expect(depois.ultimoUpsert).toEqual([]);   // o esvaziamento viaja pela rede
+    expect(depois.botaoDesabilitado).toBe(true);
+  });
+
+  test("Esc fecha o painel e alcas/botao nao capturam clique fora da selecao", async ({ page }) => {
+    await abrirPainelDoToken(page);
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#mesaMarkerPanel")).toBeHidden();
+
+    // Token NAO selecionado: a caixa e invisivel, logo nada nela pode receber
+    // clique (senao viram alvos fantasma em volta do token).
+    const eventos = await page.evaluate(() => {
+      const token = document.querySelector('[data-token-id="ana"]');
+      token.classList.remove("is-selected");
+      const alca = token.querySelector(".mesa-token-handle");
+      const botao = token.querySelector(".mesa-token-markers-btn");
+      return {
+        alca: getComputedStyle(alca).pointerEvents,
+        botao: getComputedStyle(botao).pointerEvents
+      };
+    });
+    expect(eventos.alca).toBe("none");
+    expect(eventos.botao).toBe("none");
   });
 });
 

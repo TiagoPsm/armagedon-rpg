@@ -351,15 +351,30 @@
   align-items: center;
 }
 
+/* Hover sem deslocamento: o token nao "pula" debaixo do cursor. O destaque
+   e so o anel do proprio tipo ganhando presenca (Etapa 63). */
 .mesa-token.is-minimal:hover {
-  transform: scale(var(--token-scale, 1)) translateY(-2px);
+  transform: scale(var(--token-scale, 1));
 }
 
-.mesa-token.is-minimal.is-selected .mesa-token-avatar {
+.mesa-token.is-minimal:hover .mesa-token-avatar {
   box-shadow:
-    0 0 0 3px rgba(255, 248, 236, 0.85),
-    0 0 18px rgba(176, 47, 57, 0.55),
-    0 0 36px rgba(176, 47, 57, 0.25);
+    0 4px 18px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+/* No hover a cor do tipo vai a opacidade cheia — e so isso: sem branco. */
+.mesa-token.is-minimal[data-type="player"]:hover .mesa-token-avatar  { border-color: rgba(93, 114, 212, 1); }
+.mesa-token.is-minimal[data-type="npc"]:hover .mesa-token-avatar     { border-color: rgba(176, 143, 50, 1); }
+.mesa-token.is-minimal[data-type="monster"]:hover .mesa-token-avatar { border-color: rgba(214, 72, 82, 1); }
+
+/* Selecao: anel carmesim fino + a caixa de alcas. Sem halo branco grosso,
+   que antes comia a arte do avatar. */
+.mesa-token.is-minimal[data-type].is-selected .mesa-token-avatar,
+.mesa-token.is-minimal[data-type].is-selected:hover .mesa-token-avatar {
+  border-color: rgba(214, 92, 92, 0.95);
+  box-shadow:
+    0 4px 18px rgba(0, 0, 0, 0.65),
+    0 0 12px rgba(176, 47, 57, 0.35);
 }
 
 .mesa-token.is-minimal.is-hidden-master {
@@ -387,7 +402,7 @@
     border-color var(--transition);
 }
 
-/* Type-coloured ring on minimal tokens */
+/* Type-coloured ring on minimal tokens. */
 .mesa-token.is-minimal[data-type="player"] .mesa-token-avatar {
   border-color: rgba(93, 114, 212, 0.65);
 }
@@ -461,42 +476,111 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* ── RESIZE HANDLE ───────────────────────────────────────────── */
-.mesa-token-resize-handle {
+/* ── CAIXA DE SELECAO COM 8 ALCAS (Etapa 63) ─────────────────── */
+/* Quadrado circunscrito ao token, so visivel quando ele esta selecionado.
+   Tudo aqui e contra-escalado por --token-scale e --stage-zoom para manter
+   tamanho constante em px de TELA: sem isso as alcas somem no zoom afastado
+   e viram blocos no zoom proximo. */
+.mesa-token-selbox {
   position: absolute;
-  bottom: 6px;
-  right: 6px;
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
+  inset: -6px;
+  border: 1px solid rgba(214, 92, 92, 0.75);
+  border-radius: 3px;
   opacity: 0;
-  cursor: nwse-resize;
-  transition: opacity 0.15s ease;
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M9 1 L1 9 M9 5 L5 9 M9 9 L9 9' stroke='rgba(255,255,255,0.7)' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")
-    center / 10px 10px no-repeat;
-  z-index: 2;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  z-index: 3;
 }
 
-.mesa-token:hover .mesa-token-resize-handle,
-.mesa-token.is-selected .mesa-token-resize-handle {
+.mesa-token.is-selected .mesa-token-selbox,
+.mesa-token.is-resizing .mesa-token-selbox {
   opacity: 1;
 }
 
-.mesa-token.is-minimal .mesa-token-resize-handle {
-  /* Caixa do token agora e so o circulo: alca na borda inferior direita dele */
-  bottom: 2px;
-  right: 2px;
-  background-color: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+/* A caixa invisivel nao pode capturar clique: sem isto as alcas e o botao de
+   marcadores viram alvos fantasma em volta de TODO token nao selecionado. */
+.mesa-token-handle,
+.mesa-token-markers-btn:not(.is-inspector) {
+  pointer-events: none;
+}
+.mesa-token.is-selected .mesa-token-handle,
+.mesa-token.is-resizing .mesa-token-handle,
+.mesa-token.is-selected .mesa-token-markers-btn,
+.mesa-token.is-resizing .mesa-token-markers-btn {
+  pointer-events: auto;
 }
 
-/* Cursor override while resizing */
+.mesa-token-handle {
+  --handle-counter: calc(1 / (var(--token-scale, 1) * var(--stage-zoom, 1)));
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border-radius: 2px;
+  background: rgba(255, 248, 236, 0.95);
+  border: 1px solid rgba(120, 24, 30, 0.9);
+  transform: scale(var(--handle-counter));
+  z-index: 1;
+}
+
+/* Alvo de clique bem maior que o desenho: e o que faz a alca parecer facil
+   de pegar (o mesmo truque do Roll20). */
+.mesa-token-handle::before {
+  content: "";
+  position: absolute;
+  inset: -7px;
+}
+
+.mesa-token-handle[data-handle="nw"] { left: 0;    top: 0;    cursor: nwse-resize; }
+.mesa-token-handle[data-handle="n"]  { left: 50%;  top: 0;    cursor: ns-resize;   }
+.mesa-token-handle[data-handle="ne"] { left: 100%; top: 0;    cursor: nesw-resize; }
+.mesa-token-handle[data-handle="w"]  { left: 0;    top: 50%;  cursor: ew-resize;   }
+.mesa-token-handle[data-handle="e"]  { left: 100%; top: 50%;  cursor: ew-resize;   }
+.mesa-token-handle[data-handle="sw"] { left: 0;    top: 100%; cursor: nesw-resize; }
+.mesa-token-handle[data-handle="s"]  { left: 50%;  top: 100%; cursor: ns-resize;   }
+.mesa-token-handle[data-handle="se"] { left: 100%; top: 100%; cursor: nwse-resize; }
+
+/* Etiqueta de tamanho: so aparece enquanto o token esta sendo redimensionado. */
+.mesa-token-sizetag {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  margin-bottom: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: rgba(255, 248, 236, 0.95);
+  background: rgba(14, 8, 10, 0.88);
+  border: 1px solid rgba(214, 92, 92, 0.55);
+  transform: translateX(-50%) scale(calc(1 / (var(--token-scale, 1) * var(--stage-zoom, 1))));
+  transform-origin: bottom center;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mesa-token.is-resizing .mesa-token-sizetag {
+  opacity: 1;
+}
+
+/* Durante o resize a transicao do transform atrasaria o token em relacao ao
+   cursor: sem transicao, o canto gruda no ponteiro. */
+.mesa-token.is-resizing {
+  transition: none;
+}
+
+/* Cursor override while resizing — segue o eixo da alca em uso, nao mais
+   sempre a diagonal (a alca do meio agora existe). */
 body.mesa-resize-active,
 body.mesa-resize-active * {
-  cursor: nwse-resize !important;
   user-select: none !important;
 }
+body[data-resize-dir="nwse"] * { cursor: nwse-resize !important; }
+body[data-resize-dir="nesw"] * { cursor: nesw-resize !important; }
+body[data-resize-dir="ns"]   * { cursor: ns-resize !important;   }
+body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
 
 /* ── CSS-DRIVEN TOKEN STYLE SWITCH (data-token-style on stage) ── */
 /* These rules visually transform existing card tokens into minimal
@@ -848,22 +932,155 @@ body.mesa-resize-active * {
   border-radius: 50%;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
 }
-/* Grade de toggles no inspetor do mestre */
+/* Resumo dos marcadores no inspetor (Etapa 64): a grade duplicada virou
+   um resumo + botao que abre o MESMO painel do token. */
 .inspector-action-row.is-markers {
   align-items: flex-start;
 }
-.inspector-marker-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 5px;
-  max-width: 210px;
+.inspector-marker-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
-.inspector-marker-btn {
+.inspector-marker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: flex-end;
+  max-width: 150px;
+}
+.inspector-marker-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 5px 0;
-  font-size: 0.85rem;
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  line-height: 1;
+  border-radius: 50%;
+  background: rgba(10, 6, 8, 0.92);
+  border: 1px solid rgba(176, 48, 57, 0.55);
+}
+.inspector-marker-empty {
+  font-size: 0.8rem;
+  color: var(--text-secondary, rgba(255, 248, 236, 0.55));
+}
+
+/* ── PAINEL DE MARCADORES DE STATUS (Etapa 64) ───────────────
+ * Padrao Roll20: bolinhas de cor + condicoes com icone, busca e
+ * "Limpar tudo". Abre pelo botao do token selecionado ou pelo
+ * inspetor. Markup montado em js/mesa-markers.js. */
+
+/* Botao no canto do token selecionado (dentro da caixa de selecao). */
+.mesa-token-markers-btn {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin: 10px 0 0 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  line-height: 1;
+  color: rgba(255, 248, 236, 0.92);
+  background: rgba(14, 8, 10, 0.92);
+  border: 1px solid rgba(214, 92, 92, 0.7);
+  border-radius: 50%;
+  cursor: pointer;
+  /* Mesmo tamanho de tela em qualquer zoom, igual as alcas. */
+  transform: translateX(-50%) scale(calc(1 / (var(--token-scale, 1) * var(--stage-zoom, 1))));
+  transform-origin: top center;
+  transition: background var(--transition, 0.15s), border-color var(--transition, 0.15s);
+}
+.mesa-token-markers-btn:hover {
+  background: rgba(176, 48, 57, 0.55);
+  border-color: rgba(232, 130, 130, 0.95);
+}
+/* Alvo de clique maior que o desenho (mesmo truque das alcas). */
+.mesa-token-markers-btn::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+/* No inspetor o botao e um mini-btn normal: anula o posicionamento acima. */
+.mesa-token-markers-btn.is-inspector {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  border-radius: 8px;
+  transform: none;
+  font-size: inherit;
+}
+
+.mesa-marker-panel {
+  position: fixed;
+  z-index: 60;
+  width: 268px;
+  max-height: 70vh;
+  overflow-y: auto;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(12, 8, 10, 0.97);
+  border: 1px solid rgba(176, 48, 57, 0.45);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.66);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.mesa-marker-panel[hidden] {
+  display: none !important;
+}
+
+.marker-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.marker-panel-title {
+  font-family: var(--font-title);
+  font-size: 0.95rem;
+  color: var(--text-primary, rgba(255, 248, 236, 0.95));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.marker-clear-btn {
+  flex: none;
+  padding: 4px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: rgba(255, 248, 236, 0.9);
+  background: rgba(176, 48, 57, 0.28);
+  border: 1px solid rgba(176, 48, 57, 0.55);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.marker-clear-btn:hover:not(:disabled) {
+  background: rgba(176, 48, 57, 0.5);
+}
+.marker-clear-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.marker-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px;
+}
+.marker-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 0;
+  font-size: 0.9rem;
   line-height: 1;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(176, 48, 57, 0.3);
@@ -871,12 +1088,21 @@ body.mesa-resize-active * {
   cursor: pointer;
   transition: background var(--transition, 0.15s), border-color var(--transition, 0.15s);
 }
-.inspector-marker-btn:hover {
+.marker-icon:hover {
   background: rgba(176, 48, 57, 0.2);
   border-color: rgba(214, 69, 80, 0.7);
 }
-.inspector-marker-btn.is-active {
+.marker-icon.is-active {
   background: rgba(176, 48, 57, 0.35);
   border-color: rgba(214, 69, 80, 0.95);
   box-shadow: 0 0 6px rgba(176, 48, 57, 0.45);
+}
+
+.marker-panel-count {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-secondary, rgba(255, 248, 236, 0.55));
+}
+.marker-panel-count {
+  text-align: right;
 }

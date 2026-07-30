@@ -86,9 +86,7 @@ function renderInspector() {
 
         <div class="inspector-action-row is-markers">
           <span class="inspector-action-label">Marcadores</span>
-          <div class="inspector-marker-grid">
-            ${buildInspectorMarkerButtons(token)}
-          </div>
+          ${buildInspectorMarkerRow(token)}
         </div>
 
         <div class="inspector-action-row">
@@ -104,18 +102,28 @@ function renderInspector() {
   `;
 }
 
-// Marcadores de status (Etapa 46): grade de toggles do mestre. A whitelist
-// MESA_STATUS_MARKERS vive em mesa-stage.js (carregado antes deste arquivo).
-function buildInspectorMarkerButtons(token) {
-  const active = new Set(normalizeMesaStatusMarkers(token.statusMarkers));
-  return MESA_STATUS_MARKERS.map(marker => `
-    <button type="button"
-            class="inspector-marker-btn ${active.has(marker.key) ? "is-active" : ""}"
-            data-inspector-action="toggle-marker"
-            data-marker-key="${marker.key}"
-            title="${escapeAttribute(marker.label)}"
-            aria-pressed="${active.has(marker.key)}">${marker.icon}</button>
-  `).join("");
+// Marcadores de status (Etapa 46, refeito na 64): a grade de toggles duplicada
+// virou um resumo do que esta ligado + um botao que abre o MESMO painel do
+// token (js/mesa-markers.js). A whitelist MESA_STATUS_MARKERS vive em
+// mesa-stage.js, carregado antes deste arquivo.
+function buildInspectorMarkerRow(token) {
+  const active = normalizeMesaStatusMarkers(token.statusMarkers);
+  const chips = active.map(key => {
+    const marker = MESA_STATUS_MARKERS_BY_KEY.get(key);
+    if (!marker) return "";
+    return `<span class="inspector-marker-chip" title="${escapeAttribute(marker.label)}">${marker.icon}</span>`;
+  }).join("");
+
+  return `
+    <div class="inspector-marker-summary">
+      <div class="inspector-marker-chips">
+        ${chips || `<span class="inspector-marker-empty">Nenhum</span>`}
+      </div>
+      <button type="button"
+              class="mini-btn mesa-token-markers-btn is-inspector"
+              data-token-id="${escapeAttribute(token.id)}">Editar</button>
+    </div>
+  `;
 }
 
 function buildInspectorStatsSection(token, canEditCurrent, canEditAll, canViewStats) {

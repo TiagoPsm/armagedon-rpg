@@ -16,6 +16,28 @@ C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 
 A pasta antiga `rpg-campaign` nao deve ser usada para editar layout, CSS, HTML ou assets publicados.
 
+## Marcadores de status do token (2026-07-30, Etapa 64)
+
+- **Um painel so.** O botao `◉` no token selecionado e o botao "Editar" do inspetor abrem o MESMO popover, com as 12 condicoes que ja existiam. Nao duplicar grade de toggles em dois lugares — foi o que a Etapa 64 desfez.
+- **Popover ancorado, nao modal.** Abre embaixo do botao, vira para cima se nao couber, e sempre respeita 8px de margem da janela. Fecha com Esc ou clique fora.
+- **Chips ficam acima do circulo**, fora da caixa de layout do token (mesma regra do nome), para nao inflar a area de encaixe na grade.
+- **Todo controle dentro do palco precisa de contra-escala** (`calc(1 / (var(--token-scale) * var(--stage-zoom)))`) e de alvo de clique ampliado por `::before`. Vale para o botao de marcadores como valia para as alcas.
+- **Overlay invisivel nao pode capturar clique.** Se um controle so aparece em certo estado (`opacity: 0` fora dele), o `pointer-events` tem que seguir o mesmo estado — senao vira alvo-fantasma. Aconteceu com as 8 alcas na Etapa 63.
+
+## Token da Mesa: estados e selecao (2026-07-30, Etapa 63)
+
+Padrao de base: Roll20, adaptado ao dark fantasy. Regras em `css/mesa-stage.css` **e** no bloco `<style>` inline de `mesa.html` — os dois precisam andar juntos (o inline vence no empate de especificidade).
+
+- **Nada de branco no token.** O halo branco de 3px (`rgba(255,248,236,.85)`) na selecao foi removido: ele comia a arte do avatar. Branco puro fica reservado para as alcas de selecao, que sao elementos de UI e nao camada sobre a arte.
+- **Hover nao move o token.** Sem `translateY`, sem mudanca de escala — o token nao pode "pular" debaixo do cursor. O feedback de hover e so o anel do tipo indo a opacidade cheia (jogador azul, NPC dourado, monstro carmesim) mais uma sombra projetada um pouco mais funda.
+- **Selecao = anel carmesim fino + caixa de alcas.** `rgba(214,92,92,.95)` no anel, halo unico e discreto (`0 0 12px rgba(176,47,57,.35)`). A caixa ja comunica "selecionado"; o halo nao precisa gritar. Token selecionado continua carmesim mesmo sob o cursor.
+- **Cor de borda sempre literal**, nunca `var()`. As tres cores de tipo tem regra propria por estado (base, hover) — mais verboso, porem trivial de rastrear.
+- **Caixa de selecao**: quadrado circunscrito ao token (`inset: -6px`), borda de 1px carmesim, 8 alcas de 9px (4 cantos + 4 meios) em branco com contorno carmesim escuro.
+- **Alcas tem tamanho de TELA constante**: contra-escaladas por `calc(1 / (var(--token-scale) * var(--stage-zoom)))`. Qualquer overlay de UI dentro do palco precisa desse cuidado — o palco inteiro vive sob um `transform: scale()`.
+- **Alvo de clique maior que o desenho**: `::before` com `inset: -7px` amplia a area de pegada de 9px para ~23px. E o que faz a alca *parecer* facil de agarrar. Vale para qualquer controle pequeno da Mesa.
+- **Cursor segue o eixo da alca** (`ns`, `ew`, `nwse`, `nesw`), nunca sempre a diagonal.
+- **Feedback antes de confirmar**: durante o resize, o encaixe na grade aparece ao vivo (com ima de 8px) e uma etiqueta mostra o tamanho (`2×2` ou `%`). O usuario ve o resultado antes de soltar, em vez de o token pular ao confirmar.
+
 ## Palco da Mesa (2026-07-27)
 
 - O fundo do palco da Mesa e MAIS ESCURO que o resto da UI de proposito: base `rgba(2,3,5,.98)` com gradientes vermelhos/violeta bem sutis e glow central a 55% — o mapa (imagem clara) e o unico ponto de luz, e a Fog of War se funde com o fundo.

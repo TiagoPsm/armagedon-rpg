@@ -30,7 +30,39 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-28 — BUG: nao dava para DESLIGAR a nevoa)
+## Ultima Etapa Concluida (2026-07-30 — Etapa 64: marcadores acessiveis pelo token)
+
+Pedido do Tiago: poder aplicar os marcadores **que ja existiam** clicando no token e abrindo as configuracoes dele. Nada de marcador novo.
+
+- **Painel de marcadores** (js/mesa-markers.js, NOVO): popover com as 12 condicoes da Etapa 46, botao "Limpar tudo" e contador `N/8`. Abre pelo botao `◉` no token selecionado ou pelo "Editar" do inspetor — o mesmo painel nos dois casos. Fecha com Esc, clique fora ou resize da janela. Master-only, como sempre foi.
+- **Inspetor** (js/mesa-inspector.js): a grade de 12 toggles saiu; no lugar, um resumo dos marcadores ativos + o botao que abre o painel. Uma fonte de verdade so. A acao `toggle-marker` de `handleInspectorAction` virou codigo morto e foi removida.
+- **Worker e whitelist inalterados**: as mesmas 12 condicoes, mesmo cap de 8. **Nao precisa de deploy.**
+- **BUG corrigido da Etapa 63**: as 8 alcas ficavam com `pointer-events: auto` mesmo com a caixa de selecao invisivel (`opacity: 0`) — eram alvos-fantasma em volta de **todo** token nao selecionado, roubando clique de quem tentava selecionar ou arrastar. Agora `pointer-events` so liga em `.is-selected`/`.is-resizing`. O botao do inspetor e excecao (`:not(.is-inspector)`), porque vive fora do token.
+- **Escopo cortado a pedido do Tiago**: uma primeira versao desta etapa tinha adicionado 7 bolinhas de cor, campo de busca e a mudanca correspondente na whitelist do Worker (que exigiria deploy). Nada disso foi pedido — tudo revertido. **Licao**: pedido de "implementar X" a partir de uma referencia visual nao autoriza trazer todos os recursos que aparecem na referencia; confirmar o recorte antes de mexer no backend.
+- **Arquivos**: js/mesa-markers.js (novo), js/mesa-stage.js, js/mesa-inspector.js, css/mesa-stage.css, mesa.html (container do painel + `<script>` + `?v=2026-07-30-markers-1`), tests/mesa-audit.spec.cjs.
+- **Validacoes**: `check:js` OK (46 arquivos), `audit:static` OK, `test:mesa` 5/5, `test:mesa:tokens` 4/4, `test:mesa:audit` 106/106 (2 testes novos: "Limpar tudo" transmitindo o esvaziamento; Esc + alvos-fantasma). O teste da Etapa 46 que dirigia `.inspector-marker-btn` foi reescrito para o painel novo.
+- **Pendente**: barra circular de HP em volta do token segue nao feita.
+
+## Etapa Anterior (2026-07-30 — Etapa 63: interacao com o token — 8 alcas e hover sem brilho)
+
+Tiago apontou dois incomodos na Mesa: redimensionar token era pouco pratico e o brilho branco no hover atrapalhava. Referencia de base: Roll20.
+
+- **Resize (js/mesa-stage.js)**: a alca unica de 18px no canto inferior-direito virou uma **caixa de selecao com 8 alcas** (`.mesa-token-selbox` + `.mesa-token-handle[data-handle]`), renderizada so para quem tem permissao de redimensionar.
+  - A matematica antiga (`delta = (dx + dy) / 300`) era escala fixa por pixel de tela: **ignorava o zoom do palco** — afastado voce arrastava muito e o token quase nao crescia; proximo, explodia. Agora a escala vem da **geometria**: `projectResizePointer()` projeta o cursor no eixo da alca e o canto arrastado segue o ponteiro 1:1 em qualquer zoom.
+  - Cada alca tem um **ponto ancora** (`MESA_HANDLE_ANCHOR`): o canto/aresta oposto fica parado. Como o token usa `transform-origin: top left`, `applyResizePreview()` recalcula `token.x/y` junto com a escala para manter essa ancora fixa.
+  - `grabOffset` desconta a distancia entre a alca e a borda do token (a caixa e circunscrita, inset -6px): sem isso o token dava um pulo no instante do clique.
+  - **Ima da grade durante o arrasto** (`window.mesaPreviewGridScale` em js/mesa-grid.js, funcao pura): mostra o encaixe em NxN celulas ANTES de soltar, com zona de ima de 8px de tela. Antes so o `pointerup` quantizava e o token "pulava" de tamanho ao soltar. **Alt** segurado ignora o ima. `mesaConformTokenToGrid` continua no pointerup so para corrigir arredondamento.
+  - Etiqueta de tamanho (`.mesa-token-sizetag`) durante o arrasto: `2×2` com grade, `%` sem grade.
+  - Cursor do body agora segue o eixo da alca (`body[data-resize-dir]`), nao mais sempre a diagonal.
+- **Hover/selecao (css/mesa-stage.css)**: o hover perdeu o `translateY(-2px)` (o token nao "pula" mais debaixo do cursor) e o halo branco de 3px (`rgba(255,248,236,.85)`) saiu de vez. Hover = anel do tipo em opacidade cheia; selecao = anel carmesim fino + a caixa de alcas; halos carmesim de 18/36px viraram um so de 12px. Ver VISUAL_RULES.md.
+- **`--stage-zoom`** (js/mesa-map.js): `_applyStageTransform` passou a expor o zoom ao CSS. As alcas e a etiqueta se contra-escalam por `--token-scale × --stage-zoom` para manter tamanho constante em px de TELA — sem isso sumiriam no zoom afastado e virariam blocos no proximo.
+- **Atencao — bloco `<style>` inline em mesa.html**: ele DUPLICA regras de `css/mesa-stage.css` e, por vir depois do `<link>`, vence no empate de especificidade. Toda mudanca no visual do token precisa ser feita nos dois lugares.
+- **Arquivos**: js/mesa-stage.js, js/mesa-grid.js, js/mesa-map.js, css/mesa-stage.css, mesa.html (regras inline + `?v=2026-07-30-token-handles-1`), tests/mesa-token-handles.spec.cjs (novo), package.json (`test:mesa:tokens`).
+- **Validacoes**: `check:js` OK (45 arquivos), `audit:static` OK, `test:mesa` 5/5, `test:mesa:audit` 104/104, `test:mesa:tokens` 4/4 (novo). Verificacao visual no navegador: caixa de 8 alcas no token selecionado, anel do tipo em opacidade cheia no hover, zero branco.
+- **Nota de teste**: o anel tem transicao de 150ms — leitura de `border-color` logo apos trocar a classe pega cor interpolada, nao a final (custou uma investigacao). E `--token-scale` inline em teste dessincroniza o DOM do `token.tokenScale`, fazendo o resize partir de base errada.
+- **Pendente / nao feito**: os **marcadores de status** (bolinhas coloridas + icones sobre o token) da segunda referencia do Roll20 nao entraram nesta etapa — sistema a parte, encaixa no mesa-inspector depois, junto com uma barra circular de HP em volta do token.
+
+## Etapa Anterior (2026-07-28 — BUG: nao dava para DESLIGAR a nevoa)
 
 Tiago pediu para garantir que o liga/desliga da nevoa funcionava antes de commitar. Nao funcionava: **desligar a nevoa nunca funcionou desde a Etapa 47**.
 
