@@ -181,7 +181,8 @@
       "Bash(sed -i 's|\"test:mesa:audit\": \"playwright test tests/mesa-audit.spec.cjs\",|\"test:mesa:audit\": \"playwright test tests/mesa-audit.spec.cjs\",\\\\n    \"test:mesa:tokens\": \"playwright test tests/mesa-token-handles.spec.cjs\",|' package.json)",
       "Bash(perl -0pi -e 's/\\(moved\\(?:Left|Top|Right|Bottom\\): Math\\\\.round\\\\\\([^\\)]*\\\\\\)\\)\\(,\\)/$1 || 0$2/g' tests/mesa-token-handles.spec.cjs)",
       "Bash(perl -CSD -0pi -e 's/\\\\.replace\\\\\\(\\\\/\\\\[[^\\\\]]*\\\\]\\\\/g, \"\"\\\\\\);/.replace\\(\\\\/[\\\\\\\\u0300-\\\\\\\\u036f]\\\\/g, \"\"\\);/' js/mesa-markers.js)",
-      "Bash(grep -n \"replace\\(/\\\\[\" js/mesa-markers.js)"
+      "Bash(grep -n \"replace\\(/\\\\[\" js/mesa-markers.js)",
+      "Bash(git checkout *)"
     ]
   }
 }

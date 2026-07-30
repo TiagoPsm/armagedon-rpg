@@ -481,11 +481,16 @@
    Tudo aqui e contra-escalado por --token-scale e --stage-zoom para manter
    tamanho constante em px de TELA: sem isso as alcas somem no zoom afastado
    e viram blocos no zoom proximo. */
+/* inset 0: a caixa e EXATAMENTE a caixa do token. Uma folga fixa (era -6px)
+   seria multiplicada pela escala do token — a 3x virava 18px de sobra, a caixa
+   descolava do circulo e deixava de coincidir com as linhas da grade. Com
+   inset 0, token encaixado em NxN celulas tem a caixa em cima da grade. */
 .mesa-token-selbox {
   position: absolute;
-  inset: -6px;
-  border: 1px solid rgba(214, 92, 92, 0.75);
-  border-radius: 3px;
+  inset: 0;
+  border: solid rgba(214, 92, 92, 0.75);
+  /* Traco de 1px de TELA: sem contra-escala a linha engrossa junto do token. */
+  border-width: calc(1px / (var(--token-scale, 1) * var(--stage-zoom, 1)));
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.12s ease;
@@ -979,13 +984,13 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
   left: 50%;
   top: 100%;
   margin: 10px 0 0 0;
-  width: 22px;
-  height: 22px;
+  width: 30px;
+  height: 30px;
   padding: 0;
-  display: grid;
-  place-items: center;
-  font-size: 12px;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
   color: rgba(255, 248, 236, 0.92);
   background: rgba(14, 8, 10, 0.92);
   border: 1px solid rgba(214, 92, 92, 0.7);
@@ -1006,6 +1011,12 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
   position: absolute;
   inset: -6px;
 }
+/* O SVG e o unico filho: display block tira o espaco de linha-de-base, que
+   empurraria o icone alguns px para baixo dentro do circulo. */
+.mesa-token-markers-btn svg {
+  display: block;
+}
+
 /* No inspetor o botao e um mini-btn normal: anula o posicionamento acima. */
 .mesa-token-markers-btn.is-inspector {
   position: static;
@@ -1015,6 +1026,7 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
   border-radius: 8px;
   transform: none;
   font-size: inherit;
+  line-height: normal; /* anula o line-height: 0 usado pelo icone no token */
 }
 
 .mesa-marker-panel {

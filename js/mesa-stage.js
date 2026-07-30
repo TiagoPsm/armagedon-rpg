@@ -1606,6 +1606,10 @@ const MESA_HANDLE_CURSOR = {
 // Zona de ímã do snap, em px de tela.
 const MESA_RESIZE_SNAP_PX = 8;
 
+// Ícone do botão de marcadores. SVG em vez de caractere (◉): glifo depende da
+// fonte instalada e quase nunca fica opticamente centrado na caixa.
+const MESA_MARKERS_ICON = `<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/></svg>`;
+
 function renderTokenSelectionBox(token) {
   const handles = MESA_TOKEN_HANDLES
     .map(dir => `<span class="mesa-token-handle" data-handle="${dir}" data-token-id="${token.id}"></span>`)
@@ -1613,7 +1617,7 @@ function renderTokenSelectionBox(token) {
   // Atalho para o painel de marcadores, direto no token selecionado (Etapa 64).
   // So o mestre edita marcadores, entao so ele ve o botao.
   const markerBtn = isMaster()
-    ? `<button type="button" class="mesa-token-markers-btn" data-token-id="${token.id}" title="Marcadores de status" aria-label="Marcadores de status">◉</button>`
+    ? `<button type="button" class="mesa-token-markers-btn" data-token-id="${token.id}" title="Marcadores de status" aria-label="Marcadores de status">${MESA_MARKERS_ICON}</button>`
     : "";
   return `<div class="mesa-token-selbox">${handles}<span class="mesa-token-sizetag" aria-hidden="true"></span>${markerBtn}</div>`;
 }

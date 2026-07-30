@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-30 14:55:23 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-30 15:30:37 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,12 +13,19 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `bcf387d 2026-07-30 @ feat(mesa): resize com 8 alcas, marcadores pelo token e hover simples (Etapas 63-64)`
+- Ultimo commit: `f920bcb 2026-07-30 feat(mesa): resize com 8 alcas, marcadores pelo token e hover simples (Etapas 63-64)`
 
 ### Alteracoes Locais
 
 ```text
-(nenhum)
+M  .claude/settings.local.json
+M  DEV_STATUS.md
+M  VISUAL_RULES.md
+M  css/mesa-stage.css
+M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  js/mesa-stage.js
+M  mesa.html
+M  tests/mesa-token-handles.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -30,7 +37,14 @@
 ### Arquivos Em Stage
 
 ```text
-(nenhum)
+.claude/settings.local.json
+DEV_STATUS.md
+VISUAL_RULES.md
+css/mesa-stage.css
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+js/mesa-stage.js
+mesa.html
+tests/mesa-token-handles.spec.cjs
 ```
 
 ## Paginas Principais

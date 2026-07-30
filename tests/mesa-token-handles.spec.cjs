@@ -158,4 +158,89 @@ test.describe("Token: selecao e redimensionamento (Etapa 63)", () => {
     expect(se.tag).toMatch(/^(\d+×\d+|\d+%)$/);
     expect(se.cursorCleared).toBe(true);
   });
+
+  test("apos o resize com snap a caixa do token cai sobre as linhas da grade", async ({ page }) => {
+    const medida = await page.evaluate(() => {
+      updateMesaGrid({ enabled: true, snap: true });
+      const el = document.querySelector("#mesaStage .mesa-token");
+      const id = el.dataset.tokenId;
+      selectToken(id);
+
+      const fire = (tipo, x, y, alvo) => {
+        (alvo || document).dispatchEvent(new PointerEvent(tipo, {
+          bubbles: true, cancelable: true, clientX: x, clientY: y,
+          pointerId: 1, button: 0, isPrimary: true
+        }));
+      };
+      const handle = el.querySelector('[data-handle="se"]');
+      const hr = handle.getBoundingClientRect();
+      const px = hr.left + hr.width / 2;
+      const py = hr.top + hr.height / 2;
+      fire("pointerdown", px, py, handle);
+      fire("pointermove", px + 150, py + 150);
+      fire("pointerup", px + 150, py + 150);
+
+      const alvo = document.querySelector(`#mesaStage .mesa-token[data-token-id="${CSS.escape(id)}"]`);
+      const r = alvo.getBoundingClientRect();
+      const caixa = alvo.querySelector(".mesa-token-selbox").getBoundingClientRect();
+      const palco = document.getElementById("mesaStage").getBoundingClientRect();
+      const cellPx = getMesaGridState().cellFrac * getMesaMapSurfaceFrac().width * palco.width;
+      // Distancia de uma borda ate a linha de grade mais proxima.
+      const desvio = v => {
+        const m = ((v % cellPx) + cellPx) % cellPx;
+        return Math.min(m, cellPx - m);
+      };
+
+      return {
+        celulas: r.width / cellPx,
+        bordas: [
+          desvio(r.left - palco.left), desvio(r.top - palco.top),
+          desvio(r.right - palco.left), desvio(r.bottom - palco.top)
+        ],
+        // A caixa de selecao tem que ser a caixa do token, senao ela nao
+        // coincide com a grade (o inset -6px antigo era escalado pelo token).
+        folgaCaixa: [
+          Math.abs(caixa.left - r.left), Math.abs(caixa.top - r.top),
+          Math.abs(caixa.right - r.right), Math.abs(caixa.bottom - r.bottom)
+        ]
+      };
+    });
+
+    // Token ocupa um numero INTEIRO de celulas...
+    expect(Math.abs(medida.celulas - Math.round(medida.celulas))).toBeLessThan(0.02);
+    expect(Math.round(medida.celulas)).toBeGreaterThanOrEqual(2);
+    // ...e cada borda cai em cima de uma linha da grade.
+    for (const d of medida.bordas) expect(d).toBeLessThan(0.5);
+    // A caixa de selecao nao sobra por fora do token.
+    for (const f of medida.folgaCaixa) expect(f).toBeLessThan(0.5);
+  });
+
+  test("botao de marcadores tem tamanho de tela constante e icone centrado", async ({ page }) => {
+    const medidas = await page.evaluate(async () => {
+      const assentar = () => new Promise(r => setTimeout(r, 300)); // > transicao de 150ms
+      const el = document.querySelector("#mesaStage .mesa-token");
+      selectToken(el.dataset.tokenId);
+      const out = [];
+      for (const escala of [1, 2, 4]) {
+        el.style.setProperty("--token-scale", String(escala));
+        await assentar();
+        const botao = el.querySelector(".mesa-token-markers-btn").getBoundingClientRect();
+        const icone = el.querySelector(".mesa-token-markers-btn svg").getBoundingClientRect();
+        out.push({
+          escala,
+          largura: botao.width,
+          desvioX: (icone.left + icone.width / 2) - (botao.left + botao.width / 2),
+          desvioY: (icone.top + icone.height / 2) - (botao.top + botao.height / 2)
+        });
+      }
+      return out;
+    });
+
+    for (const m of medidas) {
+      // Nao encolhe nem cresce junto do token.
+      expect(m.largura, `escala ${m.escala}`).toBeCloseTo(medidas[0].largura, 0);
+      expect(Math.abs(m.desvioX), `centragem X na escala ${m.escala}`).toBeLessThan(0.5);
+      expect(Math.abs(m.desvioY), `centragem Y na escala ${m.escala}`).toBeLessThan(0.5);
+    }
+  });
 });
