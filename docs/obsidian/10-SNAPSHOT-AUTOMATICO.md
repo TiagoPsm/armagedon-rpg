@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-30 00:45:48 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-30 01:37:35 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,12 +13,18 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `6860191 2026-07-30 @ fix(mesa): grade estavel no zoom ÔÇö caixa, traco e geometria (Etapas 59-61)`
+- Ultimo commit: `1fa0514 2026-07-30 fix(mesa): grade estavel no zoom ÔÇö caixa, traco e geometria (Etapas 59-61)`
 
 ### Alteracoes Locais
 
 ```text
-(nenhum)
+M  .claude/settings.local.json
+M  DEV_STATUS.md
+M  VISUAL_RULES.md
+M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  ficha.html
+M  js/ficha-sheet.js
+M  tests/ficha.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -30,7 +36,13 @@
 ### Arquivos Em Stage
 
 ```text
-(nenhum)
+.claude/settings.local.json
+DEV_STATUS.md
+VISUAL_RULES.md
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+ficha.html
+js/ficha-sheet.js
+tests/ficha.spec.cjs
 ```
 
 ## Paginas Principais

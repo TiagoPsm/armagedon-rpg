@@ -708,6 +708,58 @@ test.describe("Fichas", () => {
     expect(sheets["monster:eco"].passives[0]).toMatchObject({ name: "Fome antiga", source: "Aberracao" });
   });
 
+  test("avatar e reduzido a 512 px — resolucao suficiente para o token no zoom (Etapa 62)", async ({ page }) => {
+    const baseUrl = await getMesaBaseUrl();
+
+    await page.addInitScript(() => {
+      window.ARMAGEDON_CONFIG = { apiBaseUrl: `${window.location.origin}/api`, realtimeEnabled: false };
+      localStorage.clear();
+      localStorage.setItem("tc_session", JSON.stringify({
+        username: "ana", role: "player", token: "", backend: false
+      }));
+      localStorage.setItem("tc_players", JSON.stringify([{ username: "ana", password: "123", charname: "Ana Rubra" }]));
+      localStorage.setItem("tc_sheets", JSON.stringify({ ana: { charName: "Ana Rubra" } }));
+    });
+
+    await page.goto(`${baseUrl}/ficha.html`);
+    await expect(page.locator("#sheetScreen")).toBeVisible();
+
+    // Passa uma foto 1200x1200 pelo caminho REAL: input file -> handleAvatar.
+    const medida = await page.evaluate(async () => {
+      const origem = document.createElement("canvas");
+      origem.width = origem.height = 1200;
+      const ctx = origem.getContext("2d");
+      // Xadrez fino: uma reducao agressiva demais apaga o padrao.
+      for (let y = 0; y < 1200; y += 8) {
+        for (let x = 0; x < 1200; x += 8) {
+          ctx.fillStyle = ((x + y) / 8) % 2 ? "#b02f39" : "#0b0c12";
+          ctx.fillRect(x, y, 8, 8);
+        }
+      }
+      const blob = await new Promise(res => origem.toBlob(res, "image/png"));
+      const input = document.getElementById("avatarFile");
+      const dt = new DataTransfer();
+      dt.items.add(new File([blob], "avatar.png", { type: "image/png" }));
+      input.files = dt.files;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+
+      const img = document.getElementById("avatarImg");
+      // handleAvatar e assincrono (FileReader + Image.onload).
+      for (let i = 0; i < 200 && !String(img.src).startsWith("data:"); i++) {
+        await new Promise(r => setTimeout(r, 25));
+      }
+      await img.decode().catch(() => {});
+      return { lado: img.naturalWidth, bytes: Math.round(String(img.src).length * 0.75) };
+    });
+
+    // O token de 1 celula ocupa ~93 px de tela a 100%; com zoom 300% em tela
+    // Retina isso vai a ~560 px de DISPOSITIVO. Com o teto antigo de 256 o
+    // avatar era a camada mais borrada da Mesa (0,46 px de fonte por px de tela).
+    expect(medida.lado).toBe(512);
+    // E continua leve: o R2 aceita 2 MB por avatar.
+    expect(medida.bytes).toBeLessThan(400 * 1024);
+  });
+
   test("nucleo do jogador e NPC mostra XP atributos e controles permitidos", async ({ page }) => {
     const baseUrl = await getMesaBaseUrl();
     await page.setViewportSize({ width: 1440, height: 820 });

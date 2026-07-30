@@ -212,12 +212,22 @@ function handleAvatar(event) {
     const avatarPlaceholder = document.getElementById("avatarPlaceholder");
     if (!avatarImg || !avatarPlaceholder) return;
 
-    // Compress before storing: resize to max 256×256 and export as JPEG.
-    // Reduces a 2 MB photo to ~20 KB, a ~100× storage saving with no
-    // visible quality loss at token size.
+    // Reduz a foto antes de guardar. O teto era 256 px, dimensionado para o
+    // token de 88 px sem zoom e para o avatar cabendo como base64 DENTRO do
+    // data_json no D1 ("~20 KB, 100x de economia"). Nada disso vale mais:
+    // o avatar vive no R2 desde a migracao (limite de 2 MB por arquivo), o
+    // palco da Mesa amplia ate 300% e a grade ja desenha em px de dispositivo.
+    //
+    // TETO DE 512 — nao baixar (Etapa 62). Medido no palco: um token de 1
+    // celula ocupa 93 px de tela a 100%; com zoom 300% em tela Retina isso vai
+    // a 560 px de DISPOSITIVO. Com 256 px de fonte o token ja esticava (0,46
+    // px de fonte por px de tela) e era a camada mais borrada da Mesa, agora
+    // que mapa e grade estao nitidos. 512 cobre ate ~2,7x o tamanho base.
+    // Custo medido no pior caso (xadrez fino de 8 px, adversarial para o WebP):
+    // 143 KB. Foto real fica bem abaixo, e o R2 aceita 2 MB por avatar.
     const tempImg = new Image();
     tempImg.onload = () => {
-      const MAX = 256;
+      const MAX = 512;
       const ratio = Math.min(MAX / tempImg.naturalWidth, MAX / tempImg.naturalHeight, 1);
       const w = Math.max(1, Math.round(tempImg.naturalWidth  * ratio));
       const h = Math.max(1, Math.round(tempImg.naturalHeight * ratio));

@@ -170,7 +170,10 @@
       "Bash(sed -i 's|js/mesa-grid.js?v=2026-07-29-sharp-1|js/mesa-grid.js?v=2026-07-29-crisp-1|' mesa.html)",
       "Bash(sed -i 's|const MESA_BUNDLE_VERSION  = \"2026-07-29-sharp-2\";|const MESA_BUNDLE_VERSION  = \"2026-07-29-crisp-1\";|' tools/build-pages.cjs)",
       "Bash(SHOT_DIR=\"C:/Users/tiago/AppData/Local/Temp/claude/C--Users-tiago-OneDrive-Desktop-Pr-xima-Campanha-FichaApp-rpg-campaign-git-sync/2b76bc0d-4a22-457e-8c1c-c5ba1ee19dc7/scratchpad\" SHOT_OUT=antes npx playwright test tests/__shot.spec.cjs --reporter=line)",
-      "Bash(git commit -m '@ *)"
+      "Bash(git commit -m '@ *)",
+      "Bash(python -)",
+      "Bash(sed -i 's|js/ficha-sheet.js?v=2026-06-14-echos-1|js/ficha-sheet.js?v=2026-07-30-avatar512-1|' ficha.html)",
+      "Bash(rm -f tests/tmp-token-res.spec.cjs)"
     ]
   }
 }

@@ -55,6 +55,29 @@ Pedido do Tiago: dois botoes distintos para cobrir o mapa inteiro e descobrir o 
 - Deploy do Worker: version `8b5a4914-7984-4400-825f-2e78364bb39f` (dry-run antes; health 200).
 - Validacao: test:mesa:audit 87/87, test:mesa 5/5, test:ficha 28/28, check:js OK, audit:static OK, build:pages OK. Prova visual: coberto, revelado e revelado-com-buraco.
 
+## Etapa Concluida (2026-07-30 — Etapa 62: Resolucao do token em relacao a grade)
+
+Pedido do Tiago: "garantir a qualidade da resolucao dos tokens em relacao ao grid". Com mapa (4096) e grade (px de dispositivo) nitidos, **o avatar virou a camada mais borrada da Mesa**.
+
+**Medido por sonda no Playwright** (token de estilo minimal, avatar de 256 px — o teto vigente; "fonte/tela" = px de fonte por px de DISPOSITIVO, abaixo de 1 a imagem esta esticada):
+
+| celula | token na tela (z=1) | fonte/tela z=100% | z=200% | z=300% |
+|---|---|---|---|---|
+| 10 colunas | 93 px (1 celula) | 2,74 | 1,37 | **0,91** |
+| 20 colunas | 93 px (2 celulas) | 2,74 | 1,37 | **0,91** |
+| 40 colunas | 93 px (4 celulas) | 2,74 | 1,37 | **0,91** |
+
+Isso com `devicePixelRatio` 1. **Em tela Retina (dpr 2) divide tudo por 2**: 1,37 a 100%, 0,69 a 200% e **0,46 a 300%** — o avatar esticado ao dobro. Confirmado tambem que `mesaFitTokenToGrid` esta correto: o token preserva o tamanho fisico e passa a ocupar 1, 2 ou 4 celulas conforme a grade, sem deformar (`tokenScale` 1,06 nos tres casos).
+
+**Causa.** O teto de 256x256 em `handleAvatar` foi dimensionado para dois mundos que nao existem mais: token de 88 px sem zoom, e avatar guardado como base64 DENTRO do `data_json` no D1 (o comentario original vendia "~20 KB, 100x de economia"). Desde a migracao para o R2 o avatar e um arquivo com limite proprio de 2 MB, e desde a Etapa 58 o palco amplia ate 300%.
+
+- **js/ficha-sheet.js** (`handleAvatar`): teto 256 -> **512**. Cobre ate ~2,7x o tamanho base do token; custo medido no pior caso (xadrez fino de 8 px, adversarial para o WebP) foi 143 KB — foto real fica bem abaixo, e o R2 aceita 2 MB.
+- Cache-bust: `js/ficha-sheet.js?v=2026-07-30-avatar512-1`.
+- **Testes** (ficha 28 -> 29): exercita o caminho REAL (`input[type=file]` -> `handleAvatar`) com uma foto 1200x1200 e afirma lado 512 e peso sob controle. **Validado contra a regressao**: com o teto em 256 falha com "Expected: 512 / Received: 256".
+- **Limitacao que exige acao do Tiago**: o teto novo so vale para uploads NOVOS. Os avatares ja no R2 continuam em 256 px — para ganhar nitidez, cada ficha precisa reenviar a imagem. Nao ha como recuperar pixels que nunca foram salvos.
+- **Nao mexido de proposito**: token grande (monstro com `tokenScale` 4) a 300% em Retina pede ~2100 px de fonte. Perseguir isso exigiria avatar de 2048 e nao paga o custo; 512 resolve o caso comum (token de 1-2 celulas).
+- Validacao: test:ficha 29/29, check:js OK (45), audit:static OK.
+
 ## Etapa Concluida (2026-07-30 — Etapa 61: Grade deslocada ao aplicar/tirar zoom)
 
 Feedback do Tiago: "o grid esta sendo deslocado quando aplico e retiro zoom no mapa; quero que ele mantenha a proporcao definida sempre, independente do zoom". **Regressao da Etapa 60** — a quarta da familia iniciada na Etapa 58.

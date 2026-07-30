@@ -289,11 +289,19 @@ E trate diferenca abaixo de 1 px de layout entre a superficie e o canvas como a
 MESMA borda; senao o residuo do arredondamento da caixa entra e sai do canvas
 conforme o zoom.
 
-Regra pratica que fecha as tres: **nitidez em elemento com `transform: scale()`
-tem quatro eixos independentes** — tamanho do buffer, caixa CSS do elemento,
-alinhamento do traco e posicao das linhas em relacao ao conteudo. Acertar tres e
-errar um ainda da defeito visivel, e cada eixo precisa da sua propria afirmacao
-em teste.
+**Quarta armadilha (Etapa 62):** bitmap de CONTEUDO tambem entra na conta. Os
+avatares dos tokens eram reduzidos a 256 px — teto herdado do token de 88 px
+sem zoom e do tempo em que o avatar ia como base64 no D1. Com mapa e grade
+nitidos, o avatar virou a camada borrada: a 300% em tela Retina sobrava 0,46 px
+de fonte por px de tela. Teto agora e 512. Regra: ao mexer no zoom maximo ou no
+tamanho dos tokens, refaca a conta `lado_fonte / (lado_css x zoom x dpr)` para
+TODA imagem do palco — o valor precisa ficar >= 1.
+
+Regra pratica que fecha as quatro: **nitidez em elemento com `transform: scale()`
+tem cinco eixos independentes** — tamanho do buffer, caixa CSS do elemento,
+alinhamento do traco, posicao das linhas em relacao ao conteudo e resolucao dos
+bitmaps de conteudo. Acertar quatro e errar um ainda da defeito visivel, e cada
+eixo precisa da sua propria afirmacao em teste.
 
 Arquivos visuais atuais da Mesa:
 
