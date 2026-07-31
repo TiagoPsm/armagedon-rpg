@@ -30,7 +30,19 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-31 — Etapa 67: botao de marcadores tampava o nome)
+## Ultima Etapa Concluida (2026-07-31 — Etapa 68: palco SEMPRE ajustado ao mapa)
+
+Tiago: "quando ativo um mapa ele vem na proporcao de origem mas a mesa continua na proporcao anterior e parte do mapa e cortada"; e "nem todos os mapas estao sendo ajustados". Duas coisas: o ajuste virou invariante e o bug que fazia alguns mapas nao ajustarem foi corrigido.
+
+- **Causa de "nem todo mapa ajusta"**: `setMapFromConnectedFolder()` (js/mesa-map.js) — o caminho dos mapas da **pasta conectada** — nunca media a imagem. `mesaMapState._imgW/_imgH` ficavam com as dimensoes do mapa ANTERIOR, entao o palco era ajustado a proporcao errada; no primeiro mapa depois de um F5 (dimensoes em 0) o ajuste nem acontecia. Os mapas da biblioteca IDB mediam (`applyActiveMap`) e por isso funcionavam — a diferenca que fazia parecer aleatorio.
+- **Correcao**: a medicao virou uma funcao unica, `_probeMapImage(url, onDone)`, usada nos QUATRO caminhos de ativacao (arquivo local, biblioteca IDB, pasta conectada, cena oficial/R2). Ela tambem trata `onerror` — antes uma imagem que falhava deixava as dimensoes em 0 para sempre e o ajuste morria em silencio.
+- **Ajuste agora e invariante**: `isStageFitToMap()` devolve `true` fixo. Sairam o botao "Ajustar/Ajustado" da barra (`#mesaMapFitBtn`), o checkbox do painel (`#mesaMapFitGroup`/`#mesaMapFitToggle`) e o estado `_fitToMap` com toda a sua sincronizacao (`setStageFitToMap`, `toggleStageFitToMap`, `_applyRemoteFit`, `_syncFitToggleUI`, `_bindFitToggle`, `_fitDefaultForNewMap`). Cena antiga gravada com `fit:false` nao desajusta mais nada: o campo e ignorado na leitura.
+- **Compatibilidade**: os payloads de cena e realtime continuam enviando `fit: true`; o Worker segue normalizando o campo (`cloudflare/src/mesa.js`), entao **nao precisou de deploy**.
+- **Arquivos**: js/mesa-map.js, mesa.html (`?v=2026-07-31-fit-sempre-1` em mesa-map.js e mesa-map.css), css/mesa-map.css, tests/mesa-audit.spec.cjs.
+- **Validacoes**: `check:js` OK (46 arquivos), `audit:static` OK, `build:pages` OK, `test:mesa` 5/5, `test:mesa:tokens` 8/8, `test:ficha` 29/29, `perf:mesa` 1/1, `test:mesa:audit` **110/110** (7 testes novos). Cobertura nova: mapa da pasta conectada mede as PROPRIAS dimensoes (o bug — verificado falhando com a correcao removida, devolvia `[4000, 1000]`); troca de mapa na biblioteca nao herda a proporcao anterior; grade, nevoa e desenhos seguem a caixa nova ao trocar de mapa; jogador com cena `fit:false` continua ajustado; falha ao medir nao deixa caixa errada; palco reajusta ao redimensionar a janela; cena sempre grava `fit: true` e os controles sumiram do DOM.
+- **Sem mudanca no Worker.**
+
+## Etapa Anterior (2026-07-31 — Etapa 67: botao de marcadores tampava o nome)
 
 Tiago mandou print: a bolinha de marcadores de status, embaixo do token, cobria o nome.
 

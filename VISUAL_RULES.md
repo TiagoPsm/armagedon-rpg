@@ -273,12 +273,13 @@ Comportamento visual consolidado:
 - O inspetor permite editar Vida/Integridade atuais tambem dos tokens de Echo (mestre em todos; jogador nos proprios Echos), reutilizando os mesmos editores de stat; o maximo do Echo fica somente leitura na Mesa (ajustado na pagina de Echos)
 - Visual deve seguir a mesma linguagem dark fantasy da ficha, mas com densidade maior por ser ferramenta de mesa
 
-### Palco ajustado ao mapa (Etapa 52)
+### Palco ajustado ao mapa (Etapa 52, invariante desde a Etapa 68)
 
-Com "Ajustar ao mapa" ligado, o `#mesaStageInner` recebe `left/top/width/height`
+Sempre que ha mapa medido, o `#mesaStageInner` recebe `left/top/width/height`
 inline (calculados em `js/mesa-map.js`) e passa a ter a proporcao exata da
-imagem. Sobra letterbox no wrap — e essa sobra precisa ler como "fora do
-territorio", nao como area jogavel vazia:
+imagem — **nao existe mais botao nem checkbox para desligar isso**. Mapa cortado
+nao e um estado que a Mesa ofereca. Sobra letterbox no wrap — e essa sobra
+precisa ler como "fora do territorio", nao como area jogavel vazia:
 
 - `#mesaStageWrap[data-fit-map]` escurece o fundo para `#050307` (mais escuro
   que o `#030205` do canvas, para o palco destacar por contraste)

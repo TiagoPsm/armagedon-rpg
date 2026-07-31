@@ -304,118 +304,33 @@ function bindZoomControl() {
   }
 }
 
-/* ── AJUSTE DO PALCO AO MAPA (Etapa 52) ─────────────────────── */
-// Por padrão o palco preenche o canvas inteiro e o mapa entra com "cover":
+/* ── PALCO SEMPRE AJUSTADO AO MAPA (Etapa 52 → 68) ──────────── */
+// Sem ajuste, o palco preenche o canvas inteiro e o mapa entra com "cover":
 // se a proporção da imagem não bate com a do painel, sobra corte nas bordas.
 //
-// Com o fit ligado, o #mesaStageInner deixa de ser inset:0 e passa a ter
+// Com o ajuste, o #mesaStageInner deixa de ser inset:0 e passa a ter
 // EXATAMENTE a proporção da imagem, centralizado no wrap (letterbox). Como a
 // caixa fica na proporção certa, o cover de applyMapTransform() vira encaixe
 // perfeito — a imagem aparece inteira, sem corte, e as camadas internas
 // (grade, névoa, desenhos, tokens) herdam a nova caixa por serem inset:0.
 //
-// A UI e a persistência por cena entram na Etapa 54; aqui o estado é local e
-// começa DESLIGADO, para não deslocar coordenadas de cenas já salvas.
+// Etapa 68: isto virou INVARIANTE. Era um toggle (Etapa 54) com botão na barra
+// (Etapa 57), mas não existe caso de uso para exibir o mapa cortado — o mestre
+// tinha de reajustar a cada mapa e qualquer cena antiga voltava desajustada.
+// Sem estado não há o que dessincronizar entre mestre, jogador e cena.
+//
+// O campo `fit` continua sendo enviado (sempre true) nos payloads de cena e
+// realtime: clientes e cenas de versões anteriores ainda o leem.
 
-let _fitToMap = false;
-
-/** O palco está ajustado à proporção do mapa? */
+/** O palco está ajustado à proporção do mapa? Invariante: sempre. */
 function isStageFitToMap() {
-  return _fitToMap;
-}
-
-/**
- * Liga/desliga o ajuste do palco à proporção do mapa.
- * @param {boolean} on
- */
-function setStageFitToMap(on) {
-  const next = !!on;
-  if (next === _fitToMap) return;
-  _fitToMap = next;
-  // applyMapTransform() já reaplica a caixa e redesenha grade e névoa.
-  applyMapTransform();
-}
-
-/**
- * Fit padrao quando o MESTRE escolhe um mapa (Etapa 57).
- *
- * A Etapa 54 deixou o ajuste desligado por padrao para nao deslocar as
- * coordenadas de cenas ja salvas. Na pratica isso escondeu o recurso: o mapa
- * continuava cortado e o botao ficava a dois cliques de distancia, num painel
- * que o mestre nao abre. Aqui a regra fica: MAPA NOVO NASCE AJUSTADO; cena
- * antiga que ja tem um mapa continua obedecendo o `fit` gravado nela.
- *
- * Chamado so nos caminhos em que o mestre ESCOLHE um mapa (abrir arquivo,
- * biblioteca, pasta conectada) — nunca no boot nem no recebimento pelo
- * jogador, onde a cena e o mestre respectivamente mandam.
- */
-function _fitDefaultForNewMap() {
-  if (!_isMasterRole()) return;
-  setStageFitToMap(true);
-  _syncFitToggleUI();
-  broadcastMapTransform();
-  _scheduleMapScenePersist();
-}
-
-/* ── UI DO FIT (mestre) — Etapa 54 ──────────────────────────── */
-
-/** Espelha o estado atual nos dois controles (barra + painel). */
-function _syncFitToggleUI() {
-  const visivel = !!(_isMasterRole() && mesaMapState.activeMapUrl);
-
-  const group  = document.getElementById("mesaMapFitGroup");
-  const toggle = document.getElementById("mesaMapFitToggle");
-  if (toggle) toggle.checked = _fitToMap;
-  if (group)  group.hidden = !visivel;
-
-  // Botão da barra (Etapa 57) — o caminho curto para o mesmo estado.
-  const btn = document.getElementById("mesaMapFitBtn");
-  if (btn) {
-    btn.hidden = !visivel;
-    btn.setAttribute("aria-pressed", String(_fitToMap));
-    btn.classList.toggle("is-active", _fitToMap);
-    btn.textContent = _fitToMap ? "Ajustado" : "Ajustar";
-  }
-}
-
-/** Alterna o fit pela barra. Mesmo efeito do checkbox do painel. */
-function toggleStageFitToMap() {
-  setStageFitToMap(!_fitToMap);
-  _syncFitToggleUI();
-  broadcastMapTransform();
-  _scheduleMapScenePersist();
-}
-window.toggleStageFitToMap = toggleStageFitToMap;
-
-/** Liga o checkbox: muda o fit, avisa os jogadores e grava na cena. */
-function _bindFitToggle() {
-  const toggle = document.getElementById("mesaMapFitToggle");
-  if (!toggle) return;
-  toggle.addEventListener("change", () => {
-    setStageFitToMap(toggle.checked);
-    // O fit muda o que está na tela: jogadores online recebem na hora e a
-    // cena oficial guarda para quem entrar depois (e para o F5 do mestre).
-    broadcastMapTransform();
-    _scheduleMapScenePersist();
-  });
-}
-
-/**
- * Aplica o fit vindo do mestre (realtime ou cena oficial). Etapa 54.
- * `undefined` = cliente/cena antigos, sem o campo: mantém o estado local em
- * vez de forçar false, para um payload legado não desligar o ajuste no meio
- * da sessão. O mestre ignora — a fonte de verdade do fit é ele.
- */
-function _applyRemoteFit(value) {
-  if (value === undefined || value === null) return;
-  if (_isMasterRole()) return;
-  setStageFitToMap(value === true);
+  return true;
 }
 
 /**
  * Calcula o maior retângulo com a proporção da imagem que cabe no wrap e
- * aplica ao #mesaStageInner. Sem fit (ou sem mapa/dimensões) devolve o inner
- * ao inset:0 do CSS.
+ * aplica ao #mesaStageInner. Sem mapa (ou sem dimensões medidas) devolve o
+ * inner ao inset:0 do CSS.
  */
 function applyStageFitBox() {
   const wrap  = document.getElementById("mesaStageWrap");
@@ -424,7 +339,7 @@ function applyStageFitBox() {
 
   const iw = mesaMapState._imgW;
   const ih = mesaMapState._imgH;
-  const active = !!(_fitToMap && mesaMapState.activeMapUrl && iw > 0 && ih > 0);
+  const active = !!(mesaMapState.activeMapUrl && iw > 0 && ih > 0);
 
   if (!active) {
     inner.style.left = inner.style.top = "";
@@ -454,28 +369,28 @@ function applyStageFitBox() {
 /**
  * Transform EFETIVO do mapa (Etapa 53).
  *
- * O pan/escala do mapa existe só para compensar o corte do "cover". Com o fit
- * ligado não há corte: a imagem já preenche a caixa exatamente. Manter o
- * controle ativo aí seria nocivo — mover a imagem dentro da caixa descola o
+ * O pan/escala do mapa existe só para compensar o corte do "cover". Com o
+ * palco ajustado não há corte: a imagem já preenche a caixa exatamente. Manter
+ * o controle ativo aí seria nocivo — mover a imagem dentro da caixa descola o
  * mapa dos tokens e dos desenhos, que usam fração do PALCO (ao contrário de
  * grade/névoa/régua/ping, que convertem para fração do MAPA).
  *
- * Travando em identidade no modo fit, fração-do-palco ≡ fração-do-mapa por
- * construção e TODAS as camadas ficam ancoradas na imagem — sem migrar
- * coordenada e sem mexer no protocolo de sync. Para aproximar, o mestre usa o
- * zoom de palco, que escala tudo junto e preserva o alinhamento.
+ * Travando em identidade, fração-do-palco ≡ fração-do-mapa por construção e
+ * TODAS as camadas ficam ancoradas na imagem — sem migrar coordenada e sem
+ * mexer no protocolo de sync. Para aproximar, o mestre usa o zoom de palco,
+ * que escala tudo junto e preserva o alinhamento.
  *
- * O transform guardado NÃO é zerado: sai intacto do localStorage e volta a
- * valer se o fit for desligado.
+ * Enquanto as dimensões da imagem não foram medidas não há caixa ajustada, e
+ * aí o transform guardado ainda vale (é o fallback do "cover").
  */
 function _getEffectiveMapTransform() {
-  if (_fitToMap && mesaMapState.activeMapUrl && mesaMapState._imgW && mesaMapState._imgH) {
+  if (mesaMapState.activeMapUrl && mesaMapState._imgW && mesaMapState._imgH) {
     return { x: 0, y: 0, scale: 1 };
   }
   return mesaMapState.mapTransform;
 }
 
-/** O pan/escala do mapa está travado (fit ligado)? */
+/** O pan/escala do mapa está travado (palco ajustado à imagem)? */
 function isMapTransformLocked() {
   return _getEffectiveMapTransform() !== mesaMapState.mapTransform;
 }
@@ -484,10 +399,41 @@ function isMapTransformLocked() {
 function _observeStageResize() {
   const wrap = document.getElementById("mesaStageWrap");
   if (!wrap || typeof ResizeObserver !== "function") return;
-  // Só reage quando o fit está ligado; caso contrário o inset:0 já resolve.
-  new ResizeObserver(() => {
-    if (_fitToMap) applyMapTransform();
-  }).observe(wrap);
+  new ResizeObserver(() => applyMapTransform()).observe(wrap);
+}
+
+/**
+ * Mede a imagem e reaplica o palco (Etapa 68).
+ *
+ * É o passo de que o ajuste depende: sem dimensões medidas, applyStageFitBox()
+ * não tem proporção a aplicar e o mapa sai cortado. Antes cada caminho de
+ * ativação repetia (ou esquecia) este bloco — setMapFromConnectedFolder não
+ * media nada e herdava as dimensões do mapa ANTERIOR, que era exatamente o
+ * caso dos mapas que "não ajustavam".
+ *
+ * @param {string} url
+ * @param {Function} [onDone] roda depois de medir (sucesso ou falha)
+ */
+function _probeMapImage(url, onDone) {
+  mesaMapState._imgW = 0;
+  mesaMapState._imgH = 0;
+  const probe = new Image();
+  const finish = () => {
+    applyMapTransform();   // reaplica a caixa com as dimensões corretas
+    if (typeof onDone === "function") onDone();
+  };
+  probe.onload = () => {
+    mesaMapState._imgW = probe.naturalWidth;
+    mesaMapState._imgH = probe.naturalHeight;
+    finish();
+  };
+  // Sem onerror as dimensões ficavam em 0 para sempre e o ajuste morria em
+  // silêncio: o mapa aparecia cortado sem nenhum aviso.
+  probe.onerror = () => {
+    console.warn("[mesa-map] Nao foi possivel medir a imagem do mapa:", url);
+    finish();
+  };
+  probe.src = url;
 }
 
 /* ── CAMADA ATIVA ───────────────────────────────────────────── */
@@ -559,7 +505,6 @@ async function initMesaMap() {
     bindMapInteractions();
     bindZoomControl();
     _observeStageResize();
-    _bindFitToggle();
 
     if (mesaMapState.isMaster) {
       document.body.classList.add("is-master");
@@ -848,7 +793,6 @@ async function openAndSetLocalMap() {
 
     await saveMesaMapToDB(mapEntry);
     await applyActiveMap(mapEntry);
-    _fitDefaultForNewMap();   // mapa novo nasce ajustado (Etapa 57)
 
     // Armazenar na memória para evitar re-comprimir
     mesaMapState.activeEntry = mapEntry;
@@ -884,20 +828,13 @@ async function applyActiveMap(mapEntry) {
 
   try { localStorage.setItem(MESA_MAP_ACTIVE_KEY, mapEntry.id); } catch {}
 
-  // Pré-carregar dimensões naturais da imagem para cálculo de cover correto
-  mesaMapState._imgW = 0;
-  mesaMapState._imgH = 0;
-  const probe = new Image();
-  probe.onload = function() {
-    mesaMapState._imgW = probe.naturalWidth;
-    mesaMapState._imgH = probe.naturalHeight;
-    applyMapTransform(); // re-aplica com dimensões corretas
+  // Medir a imagem: é o que ajusta o palco à proporção dela.
+  _probeMapImage(blobUrl, function () {
     // Jogador: aplica transform do mestre que chegou antes das dimensões.
     if (typeof _flushPendingRemoteTransform === "function") _flushPendingRemoteTransform();
     // Mestre: alinha os jogadores ao transform atual deste mapa.
     if (typeof broadcastMapTransform === "function") broadcastMapTransform();
-  };
-  probe.src = blobUrl;
+  });
 
   renderMesaMapLayer(blobUrl, mapEntry.name);
 }
@@ -986,18 +923,8 @@ async function _restoreCFActiveMap() {
       mesaMapState.mapTransform = savedTr ? JSON.parse(savedTr) : { x: 0, y: 0, scale: 1 };
     } catch { mesaMapState.mapTransform = { x: 0, y: 0, scale: 1 }; }
 
-    // Probe de dimensões (necessário para o cálculo cover e para o
-    // broadcast/persist do transform normalizado).
-    mesaMapState._imgW = 0;
-    mesaMapState._imgH = 0;
-    var probe = new Image();
-    probe.onload = function() {
-      mesaMapState._imgW = probe.naturalWidth;
-      mesaMapState._imgH = probe.naturalHeight;
-      applyMapTransform();
-      broadcastMapTransform();
-    };
-    probe.src = blobUrl;
+    // Medição da imagem: ajuste do palco + transform normalizado do broadcast.
+    _probeMapImage(blobUrl, function () { broadcastMapTransform(); });
     applyMapTransform();
   } catch (e) {
     console.warn("[mesa-map] _restoreCFActiveMap:", e);
@@ -1056,10 +983,8 @@ function renderMesaMapLayer(blobUrl, mapName) {
       emptyState.hidden = false;
     }
     // Mapa limpo: o palco volta a preencher o canvas e a grade e a névoa
-    // voltam a ancorar no palco inteiro. O toggle de fit some junto (sem
-    // mapa não há proporção a que ajustar).
+    // voltam a ancorar no palco inteiro (sem mapa não há proporção a ajustar).
     applyStageFitBox();
-    _syncFitToggleUI();
     if (typeof window.renderMesaGrid === "function") window.renderMesaGrid();
     if (typeof window.renderMesaFog === "function") window.renderMesaFog();
   }
@@ -1166,7 +1091,6 @@ function flushMapLayersRedraw() {
  * Só age quando há mapa ativo — sem mapa, renderMesaMapLayer() já os oculta.
  */
 function _syncMapTransformControls() {
-  _syncFitToggleUI();
   if (!mesaMapState.activeMapUrl) return;
   const locked     = isMapTransformLocked();
   const scaleGroup = document.getElementById("mesaMapScaleGroup");
@@ -1277,7 +1201,6 @@ function mesaMapFracToStageFrac(u, v) {
 
 window.isStageFitToMap        = isStageFitToMap;
 window.isMapTransformLocked   = isMapTransformLocked;
-window.setStageFitToMap       = setStageFitToMap;
 window.applyStageFitBox       = applyStageFitBox;
 window.getMesaMapSurfaceFrac  = getMesaMapSurfaceFrac;
 window.mesaStageFracToMapFrac = mesaStageFracToMapFrac;
@@ -1431,11 +1354,8 @@ function _applySceneMapRef(ref) {
     if (mesaMapState.activeMapId && mesaMapState.activeMapId === ref.id) {
       mesaMapState.activeMapPublicUrl = ref.url;
       mesaMapState._uploadedMapId = ref.id;
-      // O fit é do mestre, mas depois de um F5 quem tem a memória é a cena.
-      if (ref.fit !== undefined) {
-        setStageFitToMap(ref.fit === true);
-        _syncFitToggleUI();
-      }
+      // `ref.fit` é ignorado desde a Etapa 68: o palco é sempre ajustado, então
+      // uma cena antiga gravada com fit:false não desajusta mais nada.
       return;
     }
     // Mestre com outro mapa local ativo: o local manda (a cena converge no
@@ -1451,7 +1371,6 @@ function _applySceneMapRef(ref) {
   // Jogador: renderiza a URL da cena (dedupe por URL + id; se for o mesmo
   // mapa, só realinha o transform).
   if (mesaMapState._lastSceneMapUrl === ref.url && mesaMapState.activeMapId === ref.id) {
-    _applyRemoteFit(ref.fit);
     if (ref.transform) _applyRemoteMapTransform(ref.transform, ref.id);
     return;
   }
@@ -1468,19 +1387,9 @@ function _renderSceneMapFromUrl(ref) {
   mesaMapState.activeMapId = String(ref.id || "scene-map");
   mesaMapState.remoteMapId = String(ref.id || "");
   mesaMapState._lastSceneMapUrl = ref.url;
-  mesaMapState._imgW = 0;
-  mesaMapState._imgH = 0;
 
-  // Fit da cena antes do probe: troca de cena troca o fit junto com o mapa.
-  if (ref.fit !== undefined) {
-    if (_isMasterRole()) { setStageFitToMap(ref.fit === true); _syncFitToggleUI(); }
-    else _applyRemoteFit(ref.fit);
-  }
-
-  const probe = new Image();
-  probe.onload = function () {
-    mesaMapState._imgW = probe.naturalWidth;
-    mesaMapState._imgH = probe.naturalHeight;
+  // `ref.fit` é ignorado desde a Etapa 68 (o palco é sempre ajustado).
+  _probeMapImage(ref.url, function () {
     const t = ref.transform || { xFrac: 0, yFrac: 0, scale: 1 };
     mesaMapState.mapTransform.scale = Math.max(0.1, Math.min(8, Number(t.scale) || 1));
     const dims = _getMapCoverDims();
@@ -1490,8 +1399,7 @@ function _renderSceneMapFromUrl(ref) {
     applyMapTransform();
     // Transform realtime que chegou antes da imagem (jogador).
     _flushPendingRemoteTransform();
-  };
-  probe.src = ref.url;
+  });
   renderMesaMapLayer(ref.url, ref.id || "Mapa");
 }
 
@@ -1947,15 +1855,13 @@ function bindPlayerMapListeners() {
   window.APP.on(EV_MAP_SET, (msg) => {
     if (!isFromMaster(msg)) return;
     if (msg.transformOnly && msg.transform) {
-      // Fit antes do transform: ele decide se o transform recebido vale ou é
-      // sobreposto por identidade (ver _getEffectiveMapTransform).
-      _applyRemoteFit(msg.fit);
+      // `msg.fit` é ignorado desde a Etapa 68: com o palco sempre ajustado, o
+      // transform recebido já é sobreposto por identidade.
       _applyRemoteMapTransform(msg.transform, msg.mapId);
       return;
     }
     const { url, mapId } = msg;
     if (!url) return;
-    _applyRemoteFit(msg.fit);
     // Caminho completo (probe de dimensões + transform pendente), igual ao
     // boot pela cena oficial — antes só trocava o background e o transform
     // do mestre nunca era aplicado neste fallback.
@@ -2291,7 +2197,6 @@ async function setActiveMapFromLibrary(mapId) {
   setMesaMapLoading(true);
   try {
     await applyActiveMap(mapEntry);
-    _fitDefaultForNewMap();   // Etapa 57
     mesaMapState.activeEntry = mapEntry;
     if (mesaMapState.playersOnline) {
       announceMapToPlayers(mapEntry);
@@ -2964,7 +2869,11 @@ async function setMapFromConnectedFolder(path) {
 
     renderMesaMapLayer(blobUrl, entry.fullName);
     resetMapTransform();
-    _fitDefaultForNewMap();   // Etapa 57
+    // Medir a imagem (Etapa 68). Este caminho NUNCA media: as dimensões
+    // continuavam as do mapa anterior, então o palco era ajustado à proporção
+    // errada — e no primeiro mapa depois do F5 (dimensões em 0) não era
+    // ajustado de jeito nenhum. Era a causa de "nem todo mapa ajusta".
+    _probeMapImage(blobUrl, function () { broadcastMapTransform(); });
 
     if (mesaMapState.playersOnline) {
       announceMapToPlayers(cfEntry);

@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="css/mesa-stage.css?v=2026-07-31-markersbtn-top-1" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-06-16-fullbleed-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-06-16-master-vital-card-1" />
-  <link rel="stylesheet" href="css/mesa-map.css?v=2026-07-29-sharp-2" />
+  <link rel="stylesheet" href="css/mesa-map.css?v=2026-07-31-fit-sempre-1" />
   <link rel="stylesheet" href="css/mesa-drawing.css?v=2026-06-12-cache-fix-1" />
   <style>
     /* ── TOKEN SCALE ── */
@@ -462,11 +462,8 @@
           <span id="mesaMapLabel" class="mesa-map-label">Sem mapa</span>
           <button type="button" class="btn btn-ghost btn-small" id="mesaMapOpenBtn" onclick="openAndSetLocalMap()">Abrir mapa</button>
           <button type="button" class="btn btn-ghost btn-small" id="mesaMapClearBtn" onclick="clearActiveMap()" hidden>Limpar mapa</button>
-          <!-- Etapa 57: o toggle tambem vive aqui, na barra visivel. No painel
-               de engrenagem ele ficava a dois cliques e passava despercebido. -->
-          <button type="button" class="btn btn-ghost btn-small mesa-map-fit-btn" id="mesaMapFitBtn"
-                  onclick="toggleStageFitToMap()" aria-pressed="false"
-                  title="Mostra o mapa inteiro, sem corte. Use o zoom do palco para aproximar." hidden>Ajustar</button>
+          <!-- Etapa 68: o botao "Ajustar/Ajustado" saiu daqui. O palco agora
+               assume SEMPRE a proporcao do mapa; nao ha estado a alternar. -->
           <button type="button" class="mesa-map-settings-btn" id="mesaMapSettingsBtn" onclick="toggleMapSettings()" title="Configura&ccedil;&otilde;es da mesa" aria-controls="mesaMapTransform" aria-expanded="false" hidden>
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="8" cy="8" r="2.2"/>
@@ -478,14 +475,8 @@
 
       <!-- Painel de configurações do mapa — separado, abre abaixo do overlay -->
       <div class="mesa-map-settings-panel" id="mesaMapTransform" hidden>
-        <!-- Ajuste do palco a proporcao do mapa (Etapa 54) -->
-        <div class="mesa-map-transform-group" id="mesaMapFitGroup" hidden>
-          <span class="mesa-map-transform-label">Palco</span>
-          <label class="mesa-grid-check">
-            <input type="checkbox" id="mesaMapFitToggle"> Ajustar ao mapa
-          </label>
-          <p class="mesa-map-settings-hint">Mostra o mapa inteiro, sem corte.<br>Use o zoom do palco para aproximar.</p>
-        </div>
+        <!-- O grupo "Palco / Ajustar ao mapa" (Etapa 54) saiu na Etapa 68:
+             o ajuste virou invariante, sem controle. -->
 
         <div class="mesa-map-transform-group" id="mesaMapScaleGroup" hidden>
           <span class="mesa-map-transform-label">Escala</span>
@@ -707,7 +698,7 @@
   <script src="js/mesa-inspector.js?v=2026-07-30-markers-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
   <script src="js/mesa-core.js?v=2026-07-28-fog-base-1" defer></script>
-  <script src="js/mesa-map.js?v=2026-07-30-token-handles-1" defer></script>
+  <script src="js/mesa-map.js?v=2026-07-31-fit-sempre-1" defer></script>
   <script src="js/mesa-grid.js?v=2026-07-30-scale12-1" defer></script>
   <script src="js/mesa-fog.js?v=2026-07-29-sharp-1" defer></script>
   <script src="js/mesa-scenes.js?v=2026-07-27-scenes-1" defer></script>

@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-31 00:25:46 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-31 15:25:20 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,24 +13,39 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `a0759b0 2026-07-31 @ fix(mesa): botao de marcadores acima do token (Etapa 67)`
+- Ultimo commit: `b7e9977 2026-07-31 fix(mesa): botao de marcadores acima do token (Etapa 67)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
+M  DEV_STATUS.md
+M  SYSTEM_RULES.md
+M  VISUAL_RULES.md
+M  css/mesa-map.css
+ M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  js/mesa-map.js
+M  mesa.html
+M  tests/mesa-audit.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
 .claude/settings.local.json
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ```
 
 ### Arquivos Em Stage
 
 ```text
-(nenhum)
+DEV_STATUS.md
+SYSTEM_RULES.md
+VISUAL_RULES.md
+css/mesa-map.css
+js/mesa-map.js
+mesa.html
+tests/mesa-audit.spec.cjs
 ```
 
 ## Paginas Principais

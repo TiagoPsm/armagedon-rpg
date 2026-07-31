@@ -3309,7 +3309,7 @@ test.describe("Palco ajustado ao mapa + resolucao (Etapas 52-55)", () => {
     expect(normalizeMesaScene({ map: { fit: true } }).map).toBeNull();
   });
 
-  test("fit da ao palco a proporcao exata da imagem, centralizado e sem corte", async ({ page }) => {
+  test("palco assume a proporcao exata da imagem, centralizado e sem corte", async ({ page }) => {
     await installAppEmitHook(page);
     await seedMasterWithScene(page, BASE_TOKENS);
     await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
@@ -3322,96 +3322,102 @@ test.describe("Palco ajustado ao mapa + resolucao (Etapas 52-55)", () => {
       const layer = document.getElementById("mesaMapLayer");
       const wrapBox = [wrap.clientWidth, wrap.clientHeight];
 
-      setStageFitToMap(true);
-      const ligado = {
+      // Etapa 68: nada a ligar — o ajuste e invariante.
+      const ajustado = {
         inner:   [inner.clientWidth, inner.clientHeight],
         top:     inner.style.top,
         bgSize:  layer.style.backgroundSize,
-        temAttr: wrap.hasAttribute("data-fit-map")
+        temAttr: wrap.hasAttribute("data-fit-map"),
+        fit:     isStageFitToMap()
       };
-      setStageFitToMap(false);
-      const desligado = {
+
+      // Sem mapa nao ha proporcao a aplicar: o palco volta ao canvas inteiro.
+      mesaMapState.activeMapUrl = "";
+      mesaMapState._imgW = 0;
+      mesaMapState._imgH = 0;
+      applyStageFitBox();
+      const semMapa = {
         inner:      [inner.clientWidth, inner.clientHeight],
         leftInline: inner.style.left,
         temAttr:    wrap.hasAttribute("data-fit-map")
       };
-      return { wrapBox, ligado, desligado };
+      return { wrapBox, ajustado, semMapa };
     }, seedMapaAtivo.toString());
 
     const [cw, ch] = r.wrapBox;
     const esperadoH = Math.round(1000 * Math.min(cw / 4000, ch / 1000));
 
     // Proporcao exata da IMAGEM (4:1), nao a do painel
-    expect(r.ligado.inner[1]).toBe(esperadoH);
-    expect(r.ligado.inner[0] / r.ligado.inner[1]).toBeCloseTo(4, 2);
+    expect(r.ajustado.inner[1]).toBe(esperadoH);
+    expect(r.ajustado.inner[0] / r.ajustado.inner[1]).toBeCloseTo(4, 2);
     // Centralizado na sobra (letterbox)
-    expect(r.ligado.top).toBe(`${Math.round((ch - esperadoH) / 2)}px`);
+    expect(r.ajustado.top).toBe(`${Math.round((ch - esperadoH) / 2)}px`);
     // background-size == a caixa: a imagem cabe inteira, ZERO corte
-    expect(r.ligado.bgSize).toBe(`${r.ligado.inner[0]}px ${r.ligado.inner[1]}px`);
-    expect(r.ligado.temAttr).toBe(true);
+    expect(r.ajustado.bgSize).toBe(`${r.ajustado.inner[0]}px ${r.ajustado.inner[1]}px`);
+    expect(r.ajustado.temAttr).toBe(true);
+    expect(r.ajustado.fit).toBe(true);
 
-    // Desligar devolve o palco ao canvas inteiro e limpa os estilos inline
-    expect(r.desligado.inner).toEqual(r.wrapBox);
-    expect(r.desligado.leftInline).toBe("");
-    expect(r.desligado.temAttr).toBe(false);
+    // Sem mapa: palco inteiro e estilos inline limpos
+    expect(r.semMapa.inner).toEqual(r.wrapBox);
+    expect(r.semMapa.leftInline).toBe("");
+    expect(r.semMapa.temAttr).toBe(false);
   });
 
-  test("com fit, fracao do palco == fracao do mapa (tokens e desenhos alinhados)", async ({ page }) => {
+  test("fracao do palco == fracao do mapa (tokens e desenhos alinhados)", async ({ page }) => {
     await installAppEmitHook(page);
     await seedMasterWithScene(page, BASE_TOKENS);
     await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
     await waitForMesaSettled(page);
 
     const r = await page.evaluate((seedSrc) => {
-      eval(`(${seedSrc})`)(4000, 1000);
-      // Mestre havia compensado o corte na mao — o estado que causa o desvio
+      // Mapa ainda NAO medido: e o unico estado em que o pan/escala do mestre
+      // ainda vale (fallback do "cover" enquanto as dimensoes nao chegam).
+      eval(`(${seedSrc})`)(0, 0);
       mesaMapState.mapTransform = { x: 120, y: -40, scale: 1.8 };
       applyMapTransform();
-      const semFit = {
+      const semMedida = {
         surface: getMesaMapSurfaceFrac(),
-        token:   mesaStageFracToMapFrac(0.25, 0.75)
+        travado: isMapTransformLocked(),
+        bgPos:   document.getElementById("mesaMapLayer").style.backgroundPosition
       };
 
-      setStageFitToMap(true);
-      const comFit = {
-        surface:       getMesaMapSurfaceFrac(),
-        token:         mesaStageFracToMapFrac(0.25, 0.75),
-        travado:       isMapTransformLocked(),
-        escalaOculta:  document.getElementById("mesaMapScaleGroup").hidden,
-        toggleVisivel: !document.getElementById("mesaMapFitGroup").hidden
+      // Dimensoes chegam (probe): o palco se ajusta e o transform e ignorado.
+      mesaMapState._imgW = 4000;
+      mesaMapState._imgH = 1000;
+      applyMapTransform();
+      const medido = {
+        surface:      getMesaMapSurfaceFrac(),
+        token:        mesaStageFracToMapFrac(0.25, 0.75),
+        travado:      isMapTransformLocked(),
+        escalaOculta: document.getElementById("mesaMapScaleGroup").hidden
       };
       // Controles de mapa devem ser inertes enquanto travado
       adjustMapScale(0.5);
       panMap(999, 999);
-      comFit.aposMexer = {
+      medido.aposMexer = {
         guardado: { ...mesaMapState.mapTransform },
         surface:  getMesaMapSurfaceFrac()
       };
-
-      setStageFitToMap(false);
-      return { semFit, comFit, guardadoNoFim: { ...mesaMapState.mapTransform } };
+      return { semMedida, medido };
     }, seedMapaAtivo.toString());
 
-    // Sem fit, o token cai num ponto do mapa diferente de onde e desenhado
-    expect(r.semFit.token.u).not.toBeCloseTo(0.25, 2);
-    expect(r.semFit.surface.width).toBeGreaterThan(1);
+    // Sem medida nao ha ajuste: o pan guardado do mestre ainda e aplicado
+    expect(r.semMedida.travado).toBe(false);
+    expect(r.semMedida.bgPos).toBe("calc(50% + 120px) calc(50% - 40px)");
 
-    // Com fit a superficie do mapa COINCIDE com o palco: identidade
-    expect(r.comFit.surface).toMatchObject({ left: 0, top: 0, width: 1, height: 1, hasMap: true });
-    expect(r.comFit.token.u).toBeCloseTo(0.25, 6);
-    expect(r.comFit.token.v).toBeCloseTo(0.75, 6);
-    expect(r.comFit.travado).toBe(true);
-    expect(r.comFit.escalaOculta).toBe(true);
-    expect(r.comFit.toggleVisivel).toBe(true);
+    // Medido: a superficie do mapa COINCIDE com o palco (identidade)
+    expect(r.medido.surface).toMatchObject({ left: 0, top: 0, width: 1, height: 1, hasMap: true });
+    expect(r.medido.token.u).toBeCloseTo(0.25, 6);
+    expect(r.medido.token.v).toBeCloseTo(0.75, 6);
+    expect(r.medido.travado).toBe(true);
+    expect(r.medido.escalaOculta).toBe(true);
 
-    // Travado de verdade: pan/escala nao movem nada...
-    expect(r.comFit.aposMexer.guardado).toEqual({ x: 120, y: -40, scale: 1.8 });
-    expect(r.comFit.aposMexer.surface).toMatchObject({ left: 0, top: 0, width: 1, height: 1 });
-    // ...e o transform do mestre sobrevive intacto ao ciclo liga/desliga
-    expect(r.guardadoNoFim).toEqual({ x: 120, y: -40, scale: 1.8 });
+    // Travado de verdade: pan/escala nao movem nada
+    expect(r.medido.aposMexer.guardado).toEqual({ x: 120, y: -40, scale: 1.8 });
+    expect(r.medido.aposMexer.surface).toMatchObject({ left: 0, top: 0, width: 1, height: 1 });
   });
 
-  test("toggle do mestre grava na cena; jogador recebe e legado nao desliga", async ({ page }) => {
+  test("cena sempre grava fit ligado; cena antiga com fit:false nao desajusta (Etapa 68)", async ({ page }) => {
     await installAppEmitHook(page);
     await seedMasterWithScene(page, BASE_TOKENS);
     await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
@@ -3419,49 +3425,47 @@ test.describe("Palco ajustado ao mapa + resolucao (Etapas 52-55)", () => {
 
     const r = await page.evaluate((seedSrc) => {
       eval(`(${seedSrc})`)(4000, 1000);
-      const toggle = document.getElementById("mesaMapFitToggle");
       const out = {};
 
-      toggle.click();                       // clique REAL, passa pelo listener
-      out.ligado = { fit: isStageFitToMap(), payload: getMesaSceneMapPayload() };
-      toggle.click();
-      out.desligado = { fit: isStageFitToMap(), payload: getMesaSceneMapPayload() };
+      out.mestre = { fit: isStageFitToMap(), payload: getMesaSceneMapPayload() };
+      // Os controles do toggle nao existem mais em lugar nenhum da pagina
+      out.semBotao   = !document.getElementById("mesaMapFitBtn");
+      out.semCheckbox= !document.getElementById("mesaMapFitToggle");
+      out.semGrupo   = !document.getElementById("mesaMapFitGroup");
 
-      // Sem mapa o grupo some (nao ha proporcao a que ajustar)
-      mesaMapState.activeMapUrl = "";
-      renderMesaMapLayer("", "");
-      out.semMapaOculto = document.getElementById("mesaMapFitGroup").hidden;
+      // Cena ANTIGA, gravada com fit:false: o palco continua ajustado
+      applyMesaSceneMapFromSnapshot({
+        id: mesaMapState.activeMapId, url: "https://exemplo/r2/map-teste.webp",
+        fit: false, transform: { xFrac: 0.02, yFrac: -0.03, scale: 1.8 }
+      });
+      out.aposCenaAntiga = { fit: isStageFitToMap(), temAttr: document.getElementById("mesaStageWrap").hasAttribute("data-fit-map") };
 
-      // â”€â”€ Jogador â”€â”€
+      // Jogador: tambem nao ha como desajustar por payload remoto
       eval(`(${seedSrc})`)(4000, 1000);
       window.isMaster = () => false;
       mesaMapState.isMaster = false;
-      setStageFitToMap(false);
-      _applyRemoteFit(true);       out.jogadorLiga      = isStageFitToMap();
-      _applyRemoteFit(undefined);  out.legadoNaoDesliga = isStageFitToMap();
-      _applyRemoteFit(false);      out.jogadorDesliga   = isStageFitToMap();
-
-      // Mestre e a fonte de verdade: ignora fit remoto
-      window.isMaster = () => true;
-      mesaMapState.isMaster = true;
-      setStageFitToMap(true);
-      _applyRemoteFit(false);      out.mestreIgnoraRemoto = isStageFitToMap();
+      window.APP.__testEmit("mesa:map:set", {
+        from: "mestre", transformOnly: true, fit: false, mapId: mesaMapState.activeMapId,
+        transform: { xFrac: 0.4, yFrac: 0.4, scale: 2 }
+      });
+      out.jogador = { fit: isStageFitToMap(), surface: getMesaMapSurfaceFrac() };
       return out;
     }, seedMapaAtivo.toString());
 
-    expect(r.ligado.fit).toBe(true);
-    expect(r.ligado.payload.fit).toBe(true);
-    // Travado => a cena guarda identidade, nao o pan guardado
-    expect(r.ligado.payload.transform).toEqual({ xFrac: 0, yFrac: 0, scale: 1 });
-    expect(r.desligado.fit).toBe(false);
-    expect(r.desligado.payload.fit).toBe(false);
-    expect(r.semMapaOculto).toBe(true);
+    expect(r.mestre.fit).toBe(true);
+    expect(r.mestre.payload.fit).toBe(true);
+    // Ajustado => a cena guarda identidade, nao o pan guardado
+    expect(r.mestre.payload.transform).toEqual({ xFrac: 0, yFrac: 0, scale: 1 });
+    expect(r.semBotao).toBe(true);
+    expect(r.semCheckbox).toBe(true);
+    expect(r.semGrupo).toBe(true);
 
-    expect(r.jogadorLiga).toBe(true);
-    // Payload legado (sem o campo) NAO pode apagar o ajuste do mestre
-    expect(r.legadoNaoDesliga).toBe(true);
-    expect(r.jogadorDesliga).toBe(false);
-    expect(r.mestreIgnoraRemoto).toBe(true);
+    expect(r.aposCenaAntiga.fit).toBe(true);
+    expect(r.aposCenaAntiga.temAttr).toBe(true);
+
+    expect(r.jogador.fit).toBe(true);
+    // Transform remoto nao descola o mapa do palco
+    expect(r.jogador.surface).toMatchObject({ left: 0, top: 0, width: 1, height: 1 });
   });
 
   test("compressao: respeita o cap de 4096, nunca faz upscale e nao re-encoda WebP", async ({ page }) => {
@@ -3513,12 +3517,13 @@ test.describe("Palco ajustado ao mapa + resolucao (Etapas 52-55)", () => {
 });
 
 /* ============================================================
- * Correcoes de uso do fit (Etapa 57, 2026-07-29)
- * Feedback do Tiago: mapa continuava cortado (o toggle estava
- * escondido e desligado por padrao) e a grade "vinha atrasada"
- * ao arrastar o mapa.
+ * Ajuste do palco sempre ligado (Etapa 68, 2026-07-31)
+ * Feedback do Tiago: "nem todos os mapas estao sendo ajustados".
+ * Causa: setMapFromConnectedFolder NUNCA media a imagem — herdava
+ * as dimensoes do mapa anterior (ou 0 no primeiro apos F5), e o
+ * ajuste saia na proporcao errada ou nem acontecia.
  * ============================================================ */
-test.describe("Fit: descoberta e fluidez (Etapa 57)", () => {
+test.describe("Ajuste do palco sempre ligado (Etapa 68)", () => {
 
   const seedMapaAtivo = (iw, ih) => {
     mesaMapState.isMaster = true;
@@ -3531,86 +3536,249 @@ test.describe("Fit: descoberta e fluidez (Etapa 57)", () => {
     applyMapTransform();
   };
 
-  test("botao da barra alterna o fit e fica em sincronia com o checkbox do painel", async ({ page }) => {
+  test("mapa da pasta conectada mede as PROPRIAS dimensoes (o bug)", async ({ page }) => {
     await installAppEmitHook(page);
     await seedMasterWithScene(page, BASE_TOKENS);
     await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
     await waitForMesaSettled(page);
 
-    const r = await page.evaluate((seedSrc) => {
-      const btn = document.getElementById("mesaMapFitBtn");
-      const out = { semMapaOculto: btn.hidden };
+    const r = await page.evaluate(async (seedSrc) => {
+      eval(`(${seedSrc})`)(4000, 1000);   // "mapa anterior", bem largo (4:1)
+      const antes = [mesaMapState._imgW, mesaMapState._imgH];
 
-      eval(`(${seedSrc})`)(4000, 2400);
+      // Efeitos colaterais de rede/IDB fora do caminho medido
+      window._ensureActiveMapPersisted = () => {};
+      window._saveCFActiveMapToIDB     = () => Promise.resolve();
+      window.renderMapLibrary          = () => {};
+      window.renderConnectedFolderUI   = () => {};
+      window.broadcastMapTransform     = () => {};
+
+      // Arquivo de verdade na "pasta conectada": 900x300 (proporcao 3:1)
+      const c = document.createElement("canvas");
+      c.width = 600; c.height = 900;      // retrato, o oposto do anterior
+      const cx = c.getContext("2d");
+      cx.fillStyle = "#241a12"; cx.fillRect(0, 0, 600, 900);
+      const blob = await new Promise(res => c.toBlob(res, "image/png"));
+      const file = new File([blob], "mapa-retrato.png", { type: "image/png" });
+
+      connectedFolder.entries = [{
+        path: "pasta/mapa-retrato.png",
+        fullName: "mapa-retrato",
+        size: blob.size,
+        handle: { getFile: async () => file }
+      }];
+
+      await setMapFromConnectedFolder("pasta/mapa-retrato.png");
+      // O probe e assincrono: espera a medicao entrar
+      for (let i = 0; i < 100 && mesaMapState._imgW !== 600; i++) {
+        await new Promise(res => setTimeout(res, 20));
+      }
+
       const inner = document.getElementById("mesaStageInner");
-      out.comMapa = { visivel: !btn.hidden, texto: btn.textContent.trim(),
-                      inner: [inner.clientWidth, inner.clientHeight] };
-
-      btn.click();
-      out.ligado = {
-        texto:     btn.textContent.trim(),
-        ativo:     btn.classList.contains("is-active"),
-        pressed:   btn.getAttribute("aria-pressed"),
-        inner:     [inner.clientWidth, inner.clientHeight],
-        travado:   isMapTransformLocked(),
-        checkbox:  document.getElementById("mesaMapFitToggle").checked
+      return {
+        antes,
+        depois: [mesaMapState._imgW, mesaMapState._imgH],
+        proporcaoInner: inner.clientWidth / inner.clientHeight,
+        temAttr: document.getElementById("mesaStageWrap").hasAttribute("data-fit-map")
       };
-
-      btn.click();
-      out.desligado = { texto: btn.textContent.trim(), ativo: btn.classList.contains("is-active"),
-                        checkbox: document.getElementById("mesaMapFitToggle").checked };
-      return out;
     }, seedMapaAtivo.toString());
 
-    expect(r.semMapaOculto).toBe(true);          // sem mapa nao ha o que ajustar
-    expect(r.comMapa.visivel).toBe(true);
-    expect(r.comMapa.texto).toBe("Ajustar");
-
-    // Proporcao 4000x2400 = 5/3 aplicada a caixa
-    expect(r.ligado.inner[0] / r.ligado.inner[1]).toBeCloseTo(4000 / 2400, 2);
-    expect(r.ligado.texto).toBe("Ajustado");
-    expect(r.ligado.ativo).toBe(true);
-    expect(r.ligado.pressed).toBe("true");
-    expect(r.ligado.travado).toBe(true);
-    // Os dois controles mexem no MESMO estado
-    expect(r.ligado.checkbox).toBe(true);
-
-    expect(r.desligado.texto).toBe("Ajustar");
-    expect(r.desligado.ativo).toBe(false);
-    expect(r.desligado.checkbox).toBe(false);
+    expect(r.antes).toEqual([4000, 1000]);
+    // Antes da Etapa 68 isto continuava [4000, 1000]: o palco era ajustado a
+    // proporcao do mapa ANTERIOR e o novo aparecia cortado.
+    expect(r.depois).toEqual([600, 900]);
+    expect(r.proporcaoInner).toBeCloseTo(600 / 900, 2);
+    expect(r.temAttr).toBe(true);
   });
 
-  test("mapa novo escolhido pelo mestre ja nasce ajustado", async ({ page }) => {
+  test("falha ao medir a imagem nao deixa o palco num ajuste errado", async ({ page }) => {
     await installAppEmitHook(page);
     await seedMasterWithScene(page, BASE_TOKENS);
     await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
     await waitForMesaSettled(page);
 
-    const r = await page.evaluate((seedSrc) => {
+    const r = await page.evaluate(async (seedSrc) => {
       eval(`(${seedSrc})`)(4000, 1000);
-      setStageFitToMap(false);            // estado de quem acabou de abrir a Mesa
-      const antes = isStageFitToMap();
+      const wrap = document.getElementById("mesaStageWrap");
 
-      _fitDefaultForNewMap();             // o que roda ao escolher um mapa
-      const depois = isStageFitToMap();
-      // Ler a UI AGORA: o bloco do jogador abaixo re-sincroniza os controles,
-      // e um classList lido no return refletiria AQUELE estado, nao este.
-      const botaoAtivo = document.getElementById("mesaMapFitBtn").classList.contains("is-active");
-
-      // Jogador NAO decide o proprio fit — quem manda e o mestre
-      window.isMaster = () => false;
-      mesaMapState.isMaster = false;
-      setStageFitToMap(false);
-      _fitDefaultForNewMap();
-      const jogador = isStageFitToMap();
-
-      return { antes, depois, botaoAtivo, jogador };
+      _probeMapImage("data:image/png;base64,QUJD");   // imagem invalida
+      for (let i = 0; i < 100 && wrap.hasAttribute("data-fit-map"); i++) {
+        await new Promise(res => setTimeout(res, 20));
+      }
+      return {
+        dims: [mesaMapState._imgW, mesaMapState._imgH],
+        temAttr: wrap.hasAttribute("data-fit-map"),
+        inner: [document.getElementById("mesaStageInner").clientWidth,
+                document.getElementById("mesaStageInner").clientHeight],
+        wrap:  [wrap.clientWidth, wrap.clientHeight]
+      };
     }, seedMapaAtivo.toString());
 
-    expect(r.antes).toBe(false);
-    expect(r.depois).toBe(true);        // mapa novo nasce ajustado
-    expect(r.botaoAtivo).toBe(true);    // e a barra reflete isso
-    expect(r.jogador).toBe(false);      // jogador nao liga sozinho
+    // Sem medida nao ha ajuste — mas tambem nao fica a caixa do mapa anterior
+    expect(r.dims).toEqual([0, 0]);
+    expect(r.temAttr).toBe(false);
+    expect(r.inner).toEqual(r.wrap);
+  });
+
+  test("jogador: mapa da cena com fit:false gravado ainda ajusta o palco", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const r = await page.evaluate(async () => {
+      window.isMaster = () => false;
+      mesaMapState.isMaster = false;
+
+      const c = document.createElement("canvas");
+      c.width = 1600; c.height = 400;                    // 4:1
+      c.getContext("2d").fillRect(0, 0, 1600, 400);
+      const url = c.toDataURL("image/png");
+
+      // Cena gravada ANTES da Etapa 68: fit:false + pan/zoom do mestre
+      _renderSceneMapFromUrl({
+        id: "cena-antiga", url, fit: false,
+        transform: { xFrac: 0.12, yFrac: -0.08, scale: 1.6 }
+      });
+      for (let i = 0; i < 100 && mesaMapState._imgW !== 1600; i++) {
+        await new Promise(res => setTimeout(res, 20));
+      }
+
+      const inner = document.getElementById("mesaStageInner");
+      return {
+        dims:    [mesaMapState._imgW, mesaMapState._imgH],
+        prop:    inner.clientWidth / inner.clientHeight,
+        temAttr: document.getElementById("mesaStageWrap").hasAttribute("data-fit-map"),
+        surface: getMesaMapSurfaceFrac(),
+        travado: isMapTransformLocked()
+      };
+    });
+
+    expect(r.dims).toEqual([1600, 400]);
+    expect(r.prop).toBeCloseTo(4, 2);
+    expect(r.temAttr).toBe(true);
+    expect(r.travado).toBe(true);
+    // Transform da cena antiga nao descola o mapa das demais camadas
+    expect(r.surface).toMatchObject({ left: 0, top: 0, width: 1, height: 1, hasMap: true });
+  });
+
+  test("grade, nevoa e desenhos seguem a caixa nova ao TROCAR de mapa", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const r = await page.evaluate(async () => {
+      const frame = () => new Promise(res => requestAnimationFrame(res));
+      const png = (w, h) => {
+        const c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        c.getContext("2d").fillRect(0, 0, w, h);
+        return c.toDataURL("image/png");
+      };
+      const caixa = id => {
+        const b = document.getElementById(id).getBoundingClientRect();
+        return [Math.round(b.width), Math.round(b.height), Math.round(b.left), Math.round(b.top)];
+      };
+      const trocar = async (w, h) => {
+        const url = png(w, h);
+        mesaMapState.activeMapUrl = url;
+        mesaMapState.activeMapId  = `m-${w}x${h}`;
+        const layer = document.getElementById("mesaMapLayer");
+        layer.style.backgroundImage = `url("${url}")`;
+        layer.removeAttribute("hidden");
+        _probeMapImage(url);
+        for (let i = 0; i < 100 && mesaMapState._imgW !== w; i++) {
+          await new Promise(res => setTimeout(res, 20));
+        }
+        rescaleStageCanvases();
+        await frame(); await frame(); await frame();
+        return {
+          inner: caixa("mesaStageInner"),
+          camadas: ["mesaMapLayer", "mesaGridCanvas", "mesaFogCanvas", "mesaDrawCanvas", "mesaStage"]
+            .map(caixa)
+        };
+      };
+
+      updateMesaGrid({ enabled: true });
+      return { largo: await trocar(2400, 600), alto: await trocar(600, 1200) };
+    });
+
+    for (const [nome, medida] of Object.entries(r)) {
+      // Toda camada ocupa EXATAMENTE a caixa ajustada — inclusive o canvas de
+      // desenhos, que tem largura/altura inline em px.
+      for (const c of medida.camadas) expect(c, nome).toEqual(medida.inner);
+    }
+    expect(r.largo.inner[0] / r.largo.inner[1]).toBeCloseTo(4, 1);
+    expect(r.alto.inner[0] / r.alto.inner[1]).toBeCloseTo(0.5, 1);
+  });
+
+  test("palco reajusta sozinho quando a janela muda de tamanho", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const medir = () => page.evaluate(() => {
+      const inner = document.getElementById("mesaStageInner");
+      const wrap  = document.getElementById("mesaStageWrap");
+      return {
+        prop: inner.clientWidth / inner.clientHeight,
+        cabe: inner.clientWidth <= wrap.clientWidth + 1 && inner.clientHeight <= wrap.clientHeight + 1,
+        wrap: [wrap.clientWidth, wrap.clientHeight]
+      };
+    });
+
+    await page.evaluate((seedSrc) => { eval(`(${seedSrc})`)(2400, 800); }, seedMapaAtivo.toString());
+    const antes = await medir();
+
+    await page.setViewportSize({ width: 900, height: 1000 });
+    await page.waitForTimeout(300);   // ResizeObserver + reflow
+    const depois = await medir();
+
+    expect(antes.prop).toBeCloseTo(3, 2);
+    expect(antes.cabe).toBe(true);
+    // Proporcao da imagem preservada na nova janela, sem estourar o painel
+    expect(depois.prop).toBeCloseTo(3, 2);
+    expect(depois.cabe).toBe(true);
+    expect(depois.wrap).not.toEqual(antes.wrap);
+  });
+
+  test("trocar de mapa na biblioteca reajusta o palco (sem herdar o anterior)", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const r = await page.evaluate(async () => {
+      window._ensureActiveMapPersisted = () => {};
+      window.renderMapLibrary          = () => Promise.resolve();
+      window.broadcastMapTransform     = () => {};
+
+      const png = async (w, h) => {
+        const c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        c.getContext("2d").fillRect(0, 0, w, h);
+        return new Promise(res => c.toBlob(res, "image/png"));
+      };
+      const ativar = async (id, w, h) => {
+        await applyActiveMap({ id, name: id, blob: await png(w, h) });
+        for (let i = 0; i < 100 && mesaMapState._imgW !== w; i++) {
+          await new Promise(res => setTimeout(res, 20));
+        }
+        const inner = document.getElementById("mesaStageInner");
+        return { dims: [mesaMapState._imgW, mesaMapState._imgH],
+                 prop: +(inner.clientWidth / inner.clientHeight).toFixed(3) };
+      };
+
+      return { um: await ativar("m1", 1600, 400), dois: await ativar("m2", 500, 1000) };
+    });
+
+    expect(r.um.dims).toEqual([1600, 400]);
+    expect(r.um.prop).toBeCloseTo(4, 1);
+    // O segundo mapa nao pode herdar nada do primeiro
+    expect(r.dois.dims).toEqual([500, 1000]);
+    expect(r.dois.prop).toBeCloseTo(0.5, 1);
   });
 
   test("arrastar o mapa coalesce o redesenho de grade e nevoa em um por frame", async ({ page }) => {
@@ -3620,8 +3788,9 @@ test.describe("Fit: descoberta e fluidez (Etapa 57)", () => {
     await waitForMesaSettled(page);
 
     const r = await page.evaluate(async (seedSrc) => {
-      eval(`(${seedSrc})`)(4000, 2400);
-      setStageFitToMap(false);          // destravado, para panMap valer
+      // Sem dimensoes medidas o transform ainda vale — e o unico estado em que
+      // panMap tem efeito depois da Etapa 68.
+      eval(`(${seedSrc})`)(0, 0);
 
       let grade = 0, nevoa = 0;
       const origG = window.renderMesaGrid, origF = window.renderMesaFog;
@@ -3641,9 +3810,10 @@ test.describe("Fit: descoberta e fluidez (Etapa 57)", () => {
 
       window.renderMesaGrid = origG;
       window.renderMesaFog  = origF;
-      return { durante, apos };
+      return { durante, apos, moveu: mesaMapState.mapTransform.x };
     }, seedMapaAtivo.toString());
 
+    expect(r.moveu).toBe(60);
     // Antes da Etapa 57 eram 60 redesenhos sincronos — a causa do atraso
     expect(r.durante.grade).toBe(0);
     expect(r.durante.nevoa).toBe(0);
@@ -3774,7 +3944,7 @@ test.describe("Grade nao transborda o mapa (Etapa 59)", () => {
       mesaMapState.activeMapId = "m";
       document.getElementById("mesaMapLayer").removeAttribute("hidden");
       updateMesaGrid({ enabled: true });
-      setStageFitToMap(true);
+      applyMapTransform();   // palco ja nasce ajustado (Etapa 68)
 
       const medir = async (z) => {
         setStageZoom(z);
@@ -3849,7 +4019,7 @@ test.describe("Grade nao cintila no zoom (Etapa 60)", () => {
       document.getElementById("mesaMapLayer").removeAttribute("hidden");
       // Opacidade no maximo do contrato (0.8) para o alvo ser exato: 0.8 x 255.
       updateMesaGrid({ enabled: true, opacity: 0.8, color: "#ffffff" });
-      setStageFitToMap(true);
+      applyMapTransform();   // palco ja nasce ajustado (Etapa 68)
 
       const canvas = document.getElementById("mesaGridCanvas");
       const ctx = canvas.getContext("2d");
@@ -3918,7 +4088,7 @@ test.describe("Grade mantem a proporcao em qualquer zoom (Etapa 61)", () => {
       mesaMapState.activeMapId = "m";
       document.getElementById("mesaMapLayer").removeAttribute("hidden");
       updateMesaGrid({ enabled: true, cellFrac: 0.05, opacity: 0.8, color: "#ffffff" });
-      setStageFitToMap(true);
+      applyMapTransform();   // palco ja nasce ajustado (Etapa 68)
 
       const canvas = document.getElementById("mesaGridCanvas");
       const ctx = canvas.getContext("2d");
