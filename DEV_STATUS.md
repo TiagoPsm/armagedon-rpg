@@ -30,7 +30,18 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-31 — Etapa 69: tamanho do token em celulas)
+## Ultima Etapa Concluida (2026-07-31 — Etapa 70: token grande era cortado no sync)
+
+Tiago: "algo limita o token; quando aumento mais que isso e arrasto ele volta".
+
+- **Causa**: js/mesa-core.js tinha o intervalo de escala **0,25–4 escrito na mao em TRES lugares** — sobra do teto antigo, que a Etapa 65 subiu para 12 apenas em js/mesa-stage.js e no Worker. Efeitos: (1) `serializeMesaRealtimeToken` cortava em 4 → o mestre via o token grande e os JOGADORES recebiam menor; (2) `mergeTokenWithRoster` cortava no boot → depois do F5 o token voltava a 4; (3) a assinatura da cena cortava em 4 → persist so-de-escala podia cair no dedupe. Qualquer um desses "puxava o token de volta" depois de um arrasto.
+- **Correcao**: helper unico `clampMesaTokenScale()` em js/mesa-core.js, que le `MESA_TOKEN_SCALE_MIN/MAX` de js/mesa-stage.js (com fallback 0,1–12). Nenhum arquivo repete mais o intervalo.
+- **Arquivos**: js/mesa-core.js, mesa.html (`?v=2026-07-31-scaleclamp-1`), tests/mesa-audit.spec.cjs.
+- **Validacoes**: `check:js` OK, `audit:static` OK, suites completas **160/160** (1 teste novo). O teste cobre o ciclo inteiro — escala 9,5 sobrevive ao realtime, ao payload da cena, a assinatura do dedupe e a um F5 real; com o codigo antigo ele falha devolvendo 4.
+- **Sem mudanca no Worker** (o clamp de la ja era 0,1–12 desde a Etapa 69).
+- **Em aberto**: se o token ainda parar por volta de 800% COM a grade ligada, o limitador e o teto em celulas da Etapa 69 (`_gridMaxCells` = metade do menor lado do mapa) — e decisao de regra, nao bug.
+
+## Etapa Anterior (2026-07-31 — Etapa 69: tamanho do token em celulas)
 
 Tiago: "quero que os tamanhos sejam mais dinamicos e que sempre fiquem encaixados nas celulas do grid".
 

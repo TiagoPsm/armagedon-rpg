@@ -1879,6 +1879,22 @@ function createRosterEntryFromSavedToken(savedToken) {
   });
 }
 
+/**
+ * Guarda-corpo do tamanho do token (Etapa 70).
+ *
+ * Fonte unica: MESA_TOKEN_SCALE_MIN/MAX de js/mesa-stage.js (espelhados no
+ * Worker). Este arquivo tinha o intervalo 0,25-4 escrito na mao em TRES
+ * lugares — sobra do teto antigo, que a Etapa 65 subiu para 12 so no
+ * mesa-stage.js. Resultado: o mestre via o token grande, mas o valor que ia
+ * pelo realtime (serializeMesaRealtimeToken) e o que voltava do snapshot
+ * local eram cortados em 4. Nunca mais duplicar o intervalo aqui.
+ */
+function clampMesaTokenScale(value) {
+  const min = typeof MESA_TOKEN_SCALE_MIN === "number" ? MESA_TOKEN_SCALE_MIN : 0.1;
+  const max = typeof MESA_TOKEN_SCALE_MAX === "number" ? MESA_TOKEN_SCALE_MAX : 12;
+  return Math.max(min, Math.min(max, Number(value) || 1));
+}
+
 function mergeTokenWithRoster(savedToken, rosterEntry) {
   const entry = rosterEntry || createRosterEntryFromSavedToken(savedToken);
   if (!entry) return null;
@@ -1894,7 +1910,7 @@ function mergeTokenWithRoster(savedToken, rosterEntry) {
     x: clamp(Number(savedToken?.x), 3, 82),
     y: clamp(Number(savedToken?.y), 3, 78),
     order: asPositiveInt(savedToken?.order, 1),
-    tokenScale: Math.max(0.25, Math.min(4, Number(savedToken?.tokenScale) || 1)),
+    tokenScale: clampMesaTokenScale(savedToken?.tokenScale),
     statusMarkers: normalizeMesaStatusMarkers(savedToken?.statusMarkers)
   };
 }
@@ -2103,7 +2119,7 @@ function serializeMesaRealtimeToken(token) {
     x: roundTo(token.x, 2),
     y: roundTo(token.y, 2),
     order: token.order || 1,
-    tokenScale: Math.max(0.25, Math.min(4, Number(token.tokenScale) || 1)),
+    tokenScale: clampMesaTokenScale(token.tokenScale),
     statusMarkers: normalizeMesaStatusMarkers(token.statusMarkers)
   };
 }
@@ -2303,7 +2319,7 @@ function normalizeMesaScenePayload(payload = {}) {
         layer: normalizeTokenLayer(token?.layer),
         statsVisibleToPlayers: token?.statsVisibleToPlayers === true,
         order: asPositiveInt(token?.order, 1),
-        tokenScale: roundTo(Math.max(0.25, Math.min(4, Number(token?.tokenScale) || 1)), 2),
+        tokenScale: roundTo(clampMesaTokenScale(token?.tokenScale), 2),
         // Marcadores na assinatura: persist só-de-marcador não pode cair no
         // dedupe (mesma lição da grade/iniciativa).
         statusMarkers: normalizeMesaStatusMarkers(token?.statusMarkers)

@@ -1864,6 +1864,40 @@ test.describe("Tamanho do token em celulas (Etapa 69)", () => {
     expect(Math.abs(r.rem - 0.5)).toBeLessThan(0.05);
   });
 
+  test("token grande sobrevive ao realtime, ao persist e ao F5 (Etapa 70)", async ({ page }) => {
+    // Bug do Tiago: "algo limita o token; aumento mais e ao arrastar volta".
+    // js/mesa-core.js tinha o intervalo 0,25-4 escrito na mao em tres lugares
+    // (sobra do teto antigo): o mestre via 12, mas o valor que ia pelo
+    // realtime e o que voltava do snapshot local eram cortados em 4.
+    await prepara(page, { enabled: false, snap: false, cellFrac: 0.1 });
+
+    const r = await page.evaluate(() => {
+      const token = state.tokens.find(t => t.id === "ana");
+      token.tokenScale = 9.5;                     // bem acima do teto antigo
+      persistState({ immediate: true });
+      return {
+        realtime:   serializeMesaRealtimeToken(token).tokenScale,
+        cena:       createMesaScenePayloadFromState().tokens.find(t => t.id === "ana").tokenScale,
+        assinatura: normalizeMesaScenePayload(createMesaScenePayloadFromState())
+                      .tokens.find(t => t.id === "ana").tokenScale,
+        clamp:      [clampMesaTokenScale(99), clampMesaTokenScale(0.001), clampMesaTokenScale(5.5)]
+      };
+    });
+
+    expect(r.realtime).toBe(9.5);     // era 4: o jogador via o token menor que o mestre
+    expect(r.cena).toBe(9.5);
+    expect(r.assinatura).toBe(9.5);   // era 4: persist so-de-escala caia no dedupe
+    expect(r.clamp).toEqual([12, 0.1, 5.5]);
+
+    // F5: o merge com o roster nao pode encolher o token de volta
+    await page.reload();
+    await waitForMesaSettled(page);
+    const aposReload = await page.evaluate(
+      () => state.tokens.find(t => t.id === "ana")?.tokenScale
+    );
+    expect(aposReload).toBe(9.5);     // era 4
+  });
+
   test("Worker: guarda-corpo do tokenScale e 0,1 a 12", async () => {
     const { normalizeMesaScene } = await import("../cloudflare/src/mesa.js");
     const cena = normalizeMesaScene({
