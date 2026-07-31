@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-30 23:30:36 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-31 00:08:33 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,26 +13,24 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `a7db94f 2026-07-30 fix(mesa): token travava em 3x3 e saia das linhas da grade`
+- Ultimo commit: `1971187 2026-07-31 @ fix(mesa): token acima da grade e dos desenhos (Etapa 66)`
 
 ### Alteracoes Locais
 
 ```text
-M  DEV_STATUS.md
-M  cloudflare/README.md
+ M .claude/settings.local.json
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
-(nenhum)
+.claude/settings.local.json
 ```
 
 ### Arquivos Em Stage
 
 ```text
-DEV_STATUS.md
-cloudflare/README.md
+(nenhum)
 ```
 
 ## Paginas Principais

@@ -1086,7 +1086,9 @@ html {
   border: 1.5px dashed rgba(180, 100, 230, 0.85);
   background: rgba(168, 80, 220, 0.07);
   border-radius: 3px;
-  z-index: 9;
+  /* Acima dos tokens (10): o marquee precisa aparecer por cima do que ele
+     esta selecionando. Ver a pilha completa em css/mesa-stage.css. */
+  z-index: 12;
   box-shadow: 0 0 0 0.5px rgba(0,0,0,0.3);
 }
 #mesaRubberBand.is-active {

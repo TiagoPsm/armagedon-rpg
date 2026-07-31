@@ -298,4 +298,41 @@ test.describe("Token: selecao e redimensionamento (Etapa 63)", () => {
     // E passa de 3x3, que era o teto imposto pelo clamp antigo.
     expect(Math.round(passos.out[passos.out.length - 1].celulas)).toBeGreaterThan(3);
   });
+
+  test("token fica ACIMA da grade e dos desenhos, e abaixo da nevoa", async ({ page }) => {
+    const camadas = await page.evaluate(async () => {
+      const esperar = ms => new Promise(r => setTimeout(r, ms));
+      updateMesaGrid({ enabled: true, snap: true });
+      await esperar(300);
+
+      const z = sel => {
+        const el = document.querySelector(sel);
+        return el ? Number(getComputedStyle(el).zIndex) : NaN;
+      };
+      // Quem o mouse encontra no centro do token: tem que ser o token, nao
+      // a grade (era esse o bug — as linhas passavam por cima do token).
+      const tk = document.querySelector("#mesaStage .mesa-token");
+      const r = tk.getBoundingClientRect();
+      const topo = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+
+      return {
+        mapa: z("#mesaMapLayer"),
+        grade: z("#mesaGridCanvas"),
+        desenhos: z("#mesaDrawCanvas"),
+        tokens: z("#mesaStage"),
+        marquee: z("#mesaRubberBand"),
+        nevoa: z("#mesaFogCanvas"),
+        dentroDoToken: !!(topo && topo.closest(".mesa-token"))
+      };
+    });
+
+    expect(camadas.tokens).toBeGreaterThan(camadas.grade);
+    expect(camadas.tokens).toBeGreaterThan(camadas.desenhos);
+    expect(camadas.tokens).toBeGreaterThan(camadas.mapa);
+    // O marquee da selecao por area precisa aparecer por cima dos tokens...
+    expect(camadas.marquee).toBeGreaterThan(camadas.tokens);
+    // ...e a nevoa tambem, senao ela nao esconderia token nenhum.
+    expect(camadas.nevoa).toBeGreaterThan(camadas.tokens);
+    expect(camadas.dentroDoToken).toBe(true);
+  });
 });

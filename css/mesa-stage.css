@@ -43,8 +43,20 @@
     radial-gradient(circle at 50% 54%, rgba(255, 248, 236, 0.03), transparent 14%);
 }
 
+/* Pilha de camadas do palco (Etapa 66) — mudou uma, confira a lista toda:
+ *   0  #mesaMapLayer      mapa
+ *   7  #mesaGridCanvas    grade
+ *   8  #mesaDrawCanvas    desenhos
+ *  10  #mesaStage         TOKENS  <- aqui
+ *  12  #mesaRubberBand    marquee da selecao por area
+ *  15  #mesaSelectionBox  caixa da selecao multipla
+ *  26  #mesaFogCanvas     nevoa (cobre os tokens de proposito)
+ *  29  #mesaRulerOverlay  regua
+ *  30  ping
+ * Os tokens estavam em 2, ou seja, ABAIXO da grade e dos desenhos: as linhas
+ * da grade passavam por cima do token. */
 .mesa-stage {
-  z-index: 2;
+  z-index: 10;
   user-select: none;
   contain: layout paint;
 }

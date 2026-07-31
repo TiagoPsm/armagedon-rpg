@@ -30,7 +30,18 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-30 — Etapa 65: token travava em 3x3 e saia da grade)
+## Ultima Etapa Concluida (2026-07-31 — Etapa 66: tokens estavam abaixo da grade)
+
+Tiago mandou print: as linhas da grade passavam POR CIMA do token.
+
+- **Causa**: `.mesa-stage` (a camada dos tokens) estava em `z-index: 2`, abaixo da grade (7) e dos desenhos (8). O token era desenhado primeiro e tudo passava por cima dele.
+- **Correcao** (css/mesa-stage.css): tokens foram para `z-index: 10`. O marquee da selecao por area (`#mesaRubberBand`, css/mesa.css) subiu de 9 para 12 para continuar aparecendo por cima dos tokens que ele esta selecionando.
+- **Pilha completa documentada num comentario em css/mesa-stage.css** (era conhecimento espalhado por quatro arquivos): 0 mapa, 7 grade, 8 desenhos, 10 TOKENS, 12 marquee, 15 caixa da selecao multipla, 26 nevoa, 29 regua, 30 ping. A nevoa fica acima dos tokens de proposito — senao nao esconderia token nenhum.
+- **Arquivos**: css/mesa-stage.css, css/mesa.css, mesa.html (`?v=2026-07-30-zorder-1`), tests/mesa-token-handles.spec.cjs.
+- **Validacoes**: `check:js` OK (46 arquivos), `audit:static` OK, `test:mesa` 5/5, `test:mesa:tokens` 8/8, `test:mesa:audit` 106/106. Teste novo verifica a ordem relativa (token acima de mapa/grade/desenhos, abaixo de marquee/nevoa) e que `elementFromPoint` no centro do token devolve o token, nao a grade.
+- **Sem mudanca no Worker.**
+
+## Etapa Anterior (2026-07-30 — Etapa 65: token travava em 3x3 e saia da grade)
 
 Tiago mandou print: token grande com a caixa fora das linhas da grade e sem passar de 3x3. **Os dois sintomas tinham a MESMA causa** — o clamp de escala do token (0,25–4,0).
 

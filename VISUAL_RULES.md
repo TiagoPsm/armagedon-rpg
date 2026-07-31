@@ -16,6 +16,26 @@ C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 
 A pasta antiga `rpg-campaign` nao deve ser usada para editar layout, CSS, HTML ou assets publicados.
 
+## Pilha de camadas do palco da Mesa (2026-07-31, Etapa 66)
+
+Ordem oficial, com o comentario-fonte em `css/mesa-stage.css` (regra `.mesa-stage`). Mexeu numa, confira a lista toda — os valores vivem em quatro arquivos diferentes:
+
+| z-index | Camada |
+|---|---|
+| 0 | `#mesaMapLayer` — mapa |
+| 7 | `#mesaGridCanvas` — grade |
+| 8 | `#mesaDrawCanvas` — desenhos |
+| 10 | `#mesaStage` — **tokens** |
+| 12 | `#mesaRubberBand` — marquee da selecao por area |
+| 15 | `#mesaSelectionBox` — caixa da selecao multipla |
+| 26 | `#mesaFogCanvas` — nevoa |
+| 29 | `#mesaRulerOverlay` — regua |
+| 30 | ping |
+
+- **Token sempre acima de mapa, grade e desenhos.** Ele e o objeto que a pessoa manipula; nada de cenario pode ser desenhado por cima. Os tokens ficaram em `z-index: 2` ate a Etapa 66 e as linhas da grade cortavam o retrato.
+- **Nevoa sempre acima dos tokens** — caso contrario ela nao esconderia ninguem.
+- **Marquee e caixa de selecao acima dos tokens** — precisam ser vistos por cima do que estao selecionando.
+
 ## Marcadores de status do token (2026-07-30, Etapa 64)
 
 - **Um painel so.** O botao `◉` no token selecionado e o botao "Editar" do inspetor abrem o MESMO popover, com as 12 condicoes que ja existiam. Nao duplicar grade de toggles em dois lugares — foi o que a Etapa 64 desfez.
