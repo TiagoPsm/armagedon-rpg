@@ -30,7 +30,16 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-31 — Etapa 66: tokens estavam abaixo da grade)
+## Ultima Etapa Concluida (2026-07-31 — Etapa 67: botao de marcadores tampava o nome)
+
+Tiago mandou print: a bolinha de marcadores de status, embaixo do token, cobria o nome.
+
+- **Correcao** (css/mesa-stage.css): `.mesa-token-markers-btn` passou de `top: 100%` para `bottom: 100%` (`margin-bottom: 10px`, `transform-origin: bottom center`). O botao agora fica ACIMA do circulo; o nome embaixo fica livre.
+- Quando o token ja tem chips de condicao (que tambem ficam acima), uma regra `:has(.mesa-token-markers)` sobe o botao para `margin-bottom: 34px` para nao cobrir a fileira de chips.
+- **Arquivos**: css/mesa-stage.css, mesa.html (`?v=2026-07-31-markersbtn-top-1`).
+- **Sem mudanca no Worker.**
+
+## Etapa Anterior (2026-07-31 — Etapa 66: tokens estavam abaixo da grade)
 
 Tiago mandou print: as linhas da grade passavam POR CIMA do token.
 

@@ -990,12 +990,12 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
  * "Limpar tudo". Abre pelo botao do token selecionado ou pelo
  * inspetor. Markup montado em js/mesa-markers.js. */
 
-/* Botao no canto do token selecionado (dentro da caixa de selecao). */
+/* Botao ACIMA do token selecionado (Etapa 67): embaixo ele tampava o nome. */
 .mesa-token-markers-btn {
   position: absolute;
   left: 50%;
-  top: 100%;
-  margin: 10px 0 0 0;
+  bottom: 100%;
+  margin: 0 0 10px 0;
   width: 30px;
   height: 30px;
   padding: 0;
@@ -1010,8 +1010,13 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
   cursor: pointer;
   /* Mesmo tamanho de tela em qualquer zoom, igual as alcas. */
   transform: translateX(-50%) scale(calc(1 / (var(--token-scale, 1) * var(--stage-zoom, 1))));
-  transform-origin: top center;
+  transform-origin: bottom center;
   transition: background var(--transition, 0.15s), border-color var(--transition, 0.15s);
+}
+/* Quando o token ja tem chips de condicao acima, o botao sobe mais um pouco
+   para nao cobrir a fileira de chips. */
+.mesa-token:has(.mesa-token-markers) .mesa-token-markers-btn:not(.is-inspector) {
+  margin-bottom: 34px;
 }
 .mesa-token-markers-btn:hover {
   background: rgba(176, 48, 57, 0.55);

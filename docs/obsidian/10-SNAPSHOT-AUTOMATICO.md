@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-31 00:08:33 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-31 00:25:46 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `1971187 2026-07-31 @ fix(mesa): token acima da grade e dos desenhos (Etapa 66)`
+- Ultimo commit: `a0759b0 2026-07-31 @ fix(mesa): botao de marcadores acima do token (Etapa 67)`
 
 ### Alteracoes Locais
 

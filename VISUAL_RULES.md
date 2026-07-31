@@ -16,6 +16,10 @@ C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 
 A pasta antiga `rpg-campaign` nao deve ser usada para editar layout, CSS, HTML ou assets publicados.
 
+## Espaco abaixo do token e do nome (2026-07-31, Etapa 67)
+
+O nome do token fica logo abaixo do circulo e **nada de UI pode ocupar esse espaco**. Por isso o botao de marcadores de status (`.mesa-token-markers-btn`) fica ACIMA do token, nao embaixo. Acessorios do token selecionado vao para cima; se ja houver chips de condicao la, o acessorio sobe mais (`:has(.mesa-token-markers)`).
+
 ## Pilha de camadas do palco da Mesa (2026-07-31, Etapa 66)
 
 Ordem oficial, com o comentario-fonte em `css/mesa-stage.css` (regra `.mesa-stage`). Mexeu numa, confira a lista toda — os valores vivem em quatro arquivos diferentes:
