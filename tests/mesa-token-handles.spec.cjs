@@ -244,11 +244,13 @@ test.describe("Token: selecao e redimensionamento (Etapa 63)", () => {
     }
   });
 
-  test("com celula maior que o token, o resize passa de 3x3 e nunca para num tamanho quebrado", async ({ page }) => {
+  test("com celula maior que o token, o resize vai ate o teto em celulas e nunca para num tamanho quebrado", async ({ page }) => {
     // Cenario do print do Tiago: celula (126px) MAIOR que a base do token
     // (88px). Com o teto antigo de 4,0 o encaixe em 4 celulas exigiria escala
     // ~5,7; o clamp cortava em 4,0 e o token travava em ~2,8 celulas — fora
-    // das linhas da grade e sem passar de 3x3.
+    // das linhas da grade. Etapa 69: o limite deixou de ser a escala e passou
+    // a ser o mapa (metade do menor lado, em celulas), entao o teste cobra o
+    // TETO EM CELULAS — arrastar sem parar leva ate ele, sempre inteiro.
     await page.setViewportSize({ width: 1400, height: 900 });
     const passos = await page.evaluate(async () => {
       const esperar = ms => new Promise(r => setTimeout(r, ms));
@@ -285,7 +287,7 @@ test.describe("Token: selecao e redimensionamento (Etapa 63)", () => {
           desvioBaixo: desvio(r.bottom - palco.top)
         });
       }
-      return { cellPx, out };
+      return { cellPx, out, maxCells: window.mesaGridMaxCells() };
     });
 
     expect(passos.cellPx).toBeGreaterThan(88); // celula maior que a base do token
@@ -295,8 +297,10 @@ test.describe("Token: selecao e redimensionamento (Etapa 63)", () => {
       expect(p.desvioEsq).toBeLessThan(0.5);
       expect(p.desvioBaixo).toBeLessThan(0.5);
     }
-    // E passa de 3x3, que era o teto imposto pelo clamp antigo.
-    expect(Math.round(passos.out[passos.out.length - 1].celulas)).toBeGreaterThan(3);
+    // Cresce ate o teto em celulas do mapa (e nao para antes, num valor
+    // quebrado). Com o clamp antigo de 4,0 travaria em ~2,8 celulas.
+    expect(passos.maxCells).toBeGreaterThan(1);
+    expect(Math.round(passos.out[passos.out.length - 1].celulas)).toBe(passos.maxCells);
   });
 
   test("token fica ACIMA da grade e dos desenhos, e abaixo da nevoa", async ({ page }) => {

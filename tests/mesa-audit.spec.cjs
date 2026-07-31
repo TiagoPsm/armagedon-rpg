@@ -1730,6 +1730,156 @@ test.describe("Token em NxN celulas (Etapa 42c)", () => {
   });
 });
 
+/* ============================================================
+ * Tamanho do token em celulas (Etapa 69, 2026-07-31)
+ * Pedido do Tiago: tamanhos "mais dinamicos" e SEMPRE encaixados
+ * na grade. O tamanho deixou de depender do checkbox e o teto
+ * virou em CELULAS (metade do menor lado do mapa).
+ * ============================================================ */
+test.describe("Tamanho do token em celulas (Etapa 69)", () => {
+
+  const prepara = async (page, grid) => {
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+    await page.evaluate(g => window.updateMesaGrid(g), grid);
+  };
+
+  test("com a grade ligada o tamanho encaixa mesmo SEM 'Encaixar ao mover'", async ({ page }) => {
+    // snap:false e o estado do print do Tiago — antes disso o tamanho ficava
+    // solto e o token montava por cima das linhas.
+    await prepara(page, { enabled: true, snap: false, cellFrac: 0.1, offsetXFrac: 0, offsetYFrac: 0 });
+
+    const r = await page.evaluate(() => {
+      const stage = document.getElementById("mesaStageInner");
+      const el    = document.querySelector('#mesaStage [data-token-id="ana"]');
+      const token = state.tokens.find(t => t.id === "ana");
+      const cellPx = 0.1 * stage.offsetWidth;
+      const base   = el.offsetWidth;
+
+      const celulas = () => (token.tokenScale * base) / cellPx;
+      token.tokenScale = 1.62 * (cellPx / base);          // tamanho "quebrado"
+      const mudou = window.mesaFitTokenToGrid(token, el);
+      const depois = celulas();
+
+      // Preview do arrasto tambem responde sem o checkbox
+      const preview = window.mesaPreviewGridScale(base, 2.4 * (cellPx / base));
+      return { mudou, depois, previewCells: preview?.cells ?? null, snap: getMesaGridState().snap };
+    });
+
+    expect(r.snap).toBe(false);
+    expect(r.mudou).toBe(true);
+    expect(Math.abs(r.depois - Math.round(r.depois))).toBeLessThan(0.02);
+    expect(Math.round(r.depois)).toBe(2);
+    expect(r.previewCells).toBe(2);
+  });
+
+  test("teto e piso vem da GRADE: 1x1 no minimo, metade do menor lado no maximo", async ({ page }) => {
+    await prepara(page, { enabled: true, snap: false, cellFrac: 0.05, offsetXFrac: 0, offsetYFrac: 0 });
+
+    const r = await page.evaluate(() => {
+      const stage = document.getElementById("mesaStageInner");
+      const el    = document.querySelector('#mesaStage [data-token-id="ana"]');
+      const cellPx = 0.05 * stage.offsetWidth;
+      const base   = el.offsetWidth;
+
+      const menorLado = Math.min(stage.offsetWidth, stage.offsetHeight);
+      const esperadoMax = Math.max(1, Math.floor(menorLado / cellPx / 2));
+
+      return {
+        maxCells:  window.mesaGridMaxCells(),
+        esperadoMax,
+        // Muito maior que o mapa: trava no teto, e num numero INTEIRO
+        gigante:   window.mesaPreviewGridScale(base, 99),
+        // Menor que uma celula: nunca desce de 1x1
+        minusculo: window.mesaPreviewGridScale(base, 0.01),
+        cellScale: cellPx / base
+      };
+    });
+
+    expect(r.maxCells).toBe(r.esperadoMax);
+    expect(r.maxCells).toBeGreaterThan(1);
+    expect(r.gigante.cells).toBe(r.maxCells);
+    expect(r.gigante.scale).toBeCloseTo(r.maxCells * r.cellScale, 1);
+    expect(r.minusculo.cells).toBe(1);
+    expect(r.minusculo.scale).toBeCloseTo(r.cellScale, 1);
+  });
+
+  test("teto acompanha a grade: celula menor => mais celulas disponiveis", async ({ page }) => {
+    await prepara(page, { enabled: true, snap: false, cellFrac: 0.1, offsetXFrac: 0, offsetYFrac: 0 });
+
+    const r = await page.evaluate(() => {
+      const grossa = window.mesaGridMaxCells();
+      window.updateMesaGrid({ cellFrac: 0.04 });
+      const fina = window.mesaGridMaxCells();
+      return { grossa, fina };
+    });
+
+    // Celula 2,5x menor => teto em celulas cresce na mesma ordem
+    expect(r.fina).toBeGreaterThan(r.grossa);
+  });
+
+  test("sem grade o resize e livre (a limitacao em celulas some)", async ({ page }) => {
+    await prepara(page, { enabled: false, snap: false, cellFrac: 0.1 });
+
+    const r = await page.evaluate(() => {
+      const el    = document.querySelector('#mesaStage [data-token-id="ana"]');
+      const token = state.tokens.find(t => t.id === "ana");
+      token.tokenScale = 1.37;
+      return {
+        preview: window.mesaPreviewGridScale(el.offsetWidth, 1.37),
+        conformou: window.mesaFitTokenToGrid(token, el),
+        escala: token.tokenScale
+      };
+    });
+
+    expect(r.preview).toBeNull();     // nada a encaixar
+    expect(r.conformou).toBe(false);
+    expect(r.escala).toBe(1.37);      // tamanho livre preservado
+  });
+
+  test("resize alinha o quadrado as linhas mesmo com 'Encaixar ao mover' desligado", async ({ page }) => {
+    await prepara(page, { enabled: true, snap: false, cellFrac: 0.1, offsetXFrac: 0, offsetYFrac: 0 });
+
+    const r = await page.evaluate(() => {
+      const stage = document.getElementById("mesaStageInner");
+      const el    = document.querySelector('#mesaStage [data-token-id="ana"]');
+      const token = state.tokens.find(t => t.id === "ana");
+      token.x = 23.7; token.y = 31.2;                  // posicao solta
+
+      // Mover (sem forceAlign) NAO pode encaixar: o checkbox esta desligado
+      const moveu = window.mesaConformTokenToGrid(token, el);
+      const xAposMover = token.x;
+
+      // Resize (forceAlign) encaixa
+      window.mesaConformTokenToGrid(token, el, { forceAlign: true });
+      const diam = (token.tokenScale * el.offsetWidth) / stage.offsetWidth;
+      const centro = token.x / 100 + diam / 2;
+      return { moveu, xAposMover, rem: ((centro / 0.1) % 1 + 1) % 1 };
+    });
+
+    expect(r.xAposMover).toBe(23.7);                   // mover ficou livre
+    // Depois do resize o quadrado 1x1 cai no centro da celula
+    expect(Math.abs(r.rem - 0.5)).toBeLessThan(0.05);
+  });
+
+  test("Worker: guarda-corpo do tokenScale e 0,1 a 12", async () => {
+    const { normalizeMesaScene } = await import("../cloudflare/src/mesa.js");
+    const cena = normalizeMesaScene({
+      tokens: [
+        { id: "a", characterKey: "ana", x: 1, y: 1, tokenScale: 0.02 },
+        { id: "b", characterKey: "bruno", x: 1, y: 1, tokenScale: 99 },
+        { id: "c", characterKey: "caio", x: 1, y: 1, tokenScale: 0.15 }
+      ]
+    });
+    const by = Object.fromEntries(cena.tokens.map(t => [t.id, t.tokenScale]));
+    expect(by.a).toBe(0.1);    // piso novo (era 0,25 e impedia 1 celula em grade fina)
+    expect(by.b).toBe(12);
+    expect(by.c).toBe(0.15);   // valor valido passa intacto
+  });
+});
+
 test.describe("Ping no mapa (Etapa 43)", () => {
   test("DO rules: mesa:ping e retransmitido e NAO e master-only (jogador pinga)", async () => {
     const { PING_TYPE, MASTER_ONLY_TYPES, RELAY_TYPES } =

@@ -101,9 +101,10 @@ function normalizeSceneToken(token) {
     statsVisibleToPlayers: token?.statsVisibleToPlayers === true,
     layer: token?.layer === "dm" ? "dm" : "tokens",
     order: normalizeOrder(token?.order),
-    // Teto espelhado de MESA_TOKEN_SCALE_MAX em js/mesa-stage.js — mudou la,
-    // mude aqui. Era 4 e travava o token em 3x3 quando a celula era grande.
-    tokenScale: Math.round(clamp(token?.tokenScale, 0.25, 12) * 100) / 100 || 1,
+    // Guarda-corpo espelhado de MESA_TOKEN_SCALE_MIN/MAX em js/mesa-stage.js —
+    // mudou la, mude aqui. O tamanho real vem do encaixe em celulas (grade);
+    // o piso caiu para 0,1 na Etapa 69 para caber 1 celula em grades finas.
+    tokenScale: Math.round(clamp(token?.tokenScale, 0.1, 12) * 100) / 100 || 1,
     statusMarkers: normalizeSceneStatusMarkers(token?.statusMarkers),
     // Dados de exibição embutidos: permitem que jogadores (que não recebem
     // NPCs/monstros no /api/directory) renderizem qualquer token da cena.

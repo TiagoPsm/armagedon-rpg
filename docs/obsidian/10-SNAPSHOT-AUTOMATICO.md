@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-31 15:25:20 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-31 18:19:30 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `b7e9977 2026-07-31 fix(mesa): botao de marcadores acima do token (Etapa 67)`
+- Ultimo commit: `32999e6 2026-07-31 feat(mesa): palco sempre ajustado ao mapa (Etapa 68)`
 
 ### Alteracoes Locais
 
@@ -21,12 +21,14 @@
  M .claude/settings.local.json
 M  DEV_STATUS.md
 M  SYSTEM_RULES.md
-M  VISUAL_RULES.md
-M  css/mesa-map.css
+M  cloudflare/README.md
+M  cloudflare/src/mesa.js
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-map.js
+M  js/mesa-grid.js
+M  js/mesa-stage.js
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
+M  tests/mesa-token-handles.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -41,11 +43,13 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ```text
 DEV_STATUS.md
 SYSTEM_RULES.md
-VISUAL_RULES.md
-css/mesa-map.css
-js/mesa-map.js
+cloudflare/README.md
+cloudflare/src/mesa.js
+js/mesa-grid.js
+js/mesa-stage.js
 mesa.html
 tests/mesa-audit.spec.cjs
+tests/mesa-token-handles.spec.cjs
 ```
 
 ## Paginas Principais

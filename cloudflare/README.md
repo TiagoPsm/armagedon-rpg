@@ -162,6 +162,7 @@ Proximos passos tecnicos:
 
 ## Registro de deploy 2026-05-04
 
+- `wrangler deploy` (2026-07-31, Etapa 69): Worker `armagedon-api` publicado com version ID `ab2d6bf0-2387-4466-8d8d-d86f6bb1a139` — `src/mesa.js` `normalizeSceneToken` passou a clampar `tokenScale` em **0,1–12** (era 0,25–12), espelhando o novo `MESA_TOKEN_SCALE_MIN` de js/mesa-stage.js. Motivo: o tamanho do token agora e definido pelo encaixe em CELULAS (1x1 ate metade do menor lado do mapa) e uma grade fina pode ter celula menor que 0,25x88px — o piso antigo impedia o token de caber em 1 celula. Sem mudanca no DO (sincroniza pelo `mesa:token:upsert` existente). Dry-run limpo antes; health 200 pos-deploy.
 - `wrangler deploy` (2026-07-30, Etapa 65): Worker `armagedon-api` publicado com version ID `bb8ca24c-91d5-4e42-8bdd-7de00e4bef48` — `src/mesa.js` `normalizeSceneToken` passou a clampar `tokenScale` em 0,25–12 (era 0,25–4), espelhando `MESA_TOKEN_SCALE_MAX` de js/mesa-stage.js. Motivo: o teto de 4 era absoluto, mas o tamanho em celulas depende do tamanho da celula — com celula de ~126px, 4x88px nao chega a 4 celulas, entao o token travava em 3x3 E parava num tamanho quebrado, fora das linhas da grade. Sem mudanca no DO (sincroniza pelo `mesa:token:upsert` existente). Dry-run limpo antes; health 200 pos-deploy.
 - `wrangler d1 execute armagedon --remote --file d1/schema.sql`: aplicado com sucesso no D1 remoto.
 - Tabela confirmada: `mesa_scenes`.

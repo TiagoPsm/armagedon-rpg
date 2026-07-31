@@ -30,7 +30,18 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-31 — Etapa 68: palco SEMPRE ajustado ao mapa)
+## Ultima Etapa Concluida (2026-07-31 — Etapa 69: tamanho do token em celulas)
+
+Tiago: "quero que os tamanhos sejam mais dinamicos e que sempre fiquem encaixados nas celulas do grid".
+
+- **Tamanho encaixa sozinho**: com a GRADE ligada, o tamanho do token e sempre um multiplo inteiro de celula — deixou de depender do checkbox "Encaixar tokens" (`mesaFitTokenToGrid`/`mesaPreviewGridScale` em js/mesa-grid.js agora exigem so `enabled`). O checkbox virou **"Encaixar ao mover"** e manda apenas na POSICAO ao arrastar; o RESIZE alinha o quadrado as linhas de qualquer jeito (`mesaConformTokenToGrid(..., { forceAlign: true })`).
+- **Limites dinamicos**: o teto saiu da escala e foi para CELULAS — `_gridMaxCells()` = metade do menor lado da superficie do mapa (mapa de 20x14 celulas → ate 7x7), piso de 1x1. Celula menor, mais celulas disponiveis. `MESA_TOKEN_SCALE_MIN/MAX` viraram guarda-corpo do contrato: o piso caiu de 0,25 para **0,1** para caber 1 celula em grades finas.
+- **Arrasto sem tamanho intermediario**: o ima de 8px (`MESA_RESIZE_SNAP_PX`) saiu — durante o resize o token pula de NxN para (N+1)x(N+1). Antes dava para soltar no meio e o token ficava por cima das linhas. **Alt** segurado continua liberando tamanho livre; **sem grade** o resize e continuo.
+- **Worker**: `normalizeSceneToken` clampa `tokenScale` em 0,1–12 (era 0,25–12). **Deploy feito** em 2026-07-31, version ID `ab2d6bf0-2387-4466-8d8d-d86f6bb1a139` (dry-run limpo antes; health 200 depois). Sem o deploy, token menor que 0,25 voltaria aumentado no proximo carregamento da cena.
+- **Arquivos**: js/mesa-grid.js, js/mesa-stage.js, cloudflare/src/mesa.js, mesa.html (`?v=2026-07-31-cells-1` em mesa-grid.js e mesa-stage.js), tests/mesa-audit.spec.cjs, tests/mesa-token-handles.spec.cjs.
+- **Validacoes**: `check:js` OK, `audit:static` OK, `test:mesa:audit` 116/116 (6 novos), `test:mesa:tokens` 8/8, `test:mesa` 5/5, `test:ficha` 29/29, `perf:mesa` 1/1. No navegador, com "Encaixar ao mover" DESLIGADO: 1x1 → 2x2 → 4x4 (teto do mapa), sempre inteiro e com desvio das linhas < 0,2px; grade desligada devolve escalas continuas (3,58 / 4,10 / 3,28).
+
+## Etapa Anterior (2026-07-31 — Etapa 68: palco SEMPRE ajustado ao mapa)
 
 Tiago: "quando ativo um mapa ele vem na proporcao de origem mas a mesa continua na proporcao anterior e parte do mapa e cortada"; e "nem todos os mapas estao sendo ajustados". Duas coisas: o ajuste virou invariante e o bug que fazia alguns mapas nao ajustarem foi corrigido.
 

@@ -495,14 +495,17 @@
           <label class="mesa-grid-check">
             <input type="checkbox" id="mesaGridToggle"> Exibir grade
           </label>
-          <label class="mesa-grid-check">
-            <input type="checkbox" id="mesaGridSnapToggle"> Encaixar tokens
+          <!-- Etapa 69: o TAMANHO ja encaixa sozinho com a grade ligada; este
+               toggle manda so na posicao ao mover o token. -->
+          <label class="mesa-grid-check" title="Ao soltar, o token pula para o quadrado de c&eacute;lulas mais pr&oacute;ximo.">
+            <input type="checkbox" id="mesaGridSnapToggle"> Encaixar ao mover
           </label>
           <div class="mesa-map-transform-row">
             <button type="button" class="mesa-transform-btn" onclick="adjustMesaGridCell(-1)" title="C&eacute;lulas maiores">&#8722;</button>
             <span id="mesaGridSizeLabel" class="mesa-map-scale-val" title="Colunas na largura do mapa">20</span>
             <button type="button" class="mesa-transform-btn" onclick="adjustMesaGridCell(1)" title="C&eacute;lulas menores">+</button>
           </div>
+          <p class="mesa-map-settings-hint">Com a grade ligada o token sempre ocupa c&eacute;lulas inteiras (1&times;1, 2&times;2&hellip;).<br>Segure Alt ao redimensionar para um tamanho livre.</p>
         </div>
 
         <!-- Fog of War (Etapa 47) — controles do mestre -->
@@ -693,13 +696,13 @@
   <script src="js/ui.js?v=2026-06-11-soul-notify-1" defer></script>
   <script src="js/auth.js?v=2026-06-13-login-form-1" defer></script>
   <!-- Ordem importante: dependências antes de mesa-core -->
-  <script src="js/mesa-stage.js?v=2026-07-30-scale12-1" defer></script>
+  <script src="js/mesa-stage.js?v=2026-07-31-cells-1" defer></script>
   <script src="js/mesa-roster.js?v=2026-06-16-no-dup-inspector-1" defer></script>
   <script src="js/mesa-inspector.js?v=2026-07-30-markers-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
   <script src="js/mesa-core.js?v=2026-07-28-fog-base-1" defer></script>
   <script src="js/mesa-map.js?v=2026-07-31-fit-sempre-1" defer></script>
-  <script src="js/mesa-grid.js?v=2026-07-30-scale12-1" defer></script>
+  <script src="js/mesa-grid.js?v=2026-07-31-cells-1" defer></script>
   <script src="js/mesa-fog.js?v=2026-07-29-sharp-1" defer></script>
   <script src="js/mesa-scenes.js?v=2026-07-27-scenes-1" defer></script>
   <script src="js/mesa-ping.js?v=2026-07-27-ping-1" defer></script>

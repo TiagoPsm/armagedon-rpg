@@ -259,10 +259,16 @@ function renderMesaGrid() {
 }
 
 /* ── SNAP-TO-GRID + TAMANHO EM CÉLULAS ──────────────────────── */
-// Com "Encaixar tokens" ligado o token vive em múltiplos inteiros de célula
-// (1x1, 2x2, 3x3...): o diâmetro é quantizado para N células e o quadrado
-// NxN alinha nas linhas da grade (N ímpar centra na célula; N par centra
-// numa interseção). Evita token vazando da grade ou com tamanho "quebrado".
+// Com a GRADE LIGADA o token vive em múltiplos inteiros de célula (1x1, 2x2,
+// 3x3...): o diâmetro é quantizado para N células e o quadrado NxN alinha nas
+// linhas da grade (N ímpar centra na célula; N par centra numa interseção).
+//
+// Etapa 69: o tamanho deixou de depender do checkbox "Encaixar tokens" — com
+// grade, tamanho fora da célula não é um estado válido, e o limite passou a
+// ser em CÉLULAS (1x1 até metade do menor lado do mapa) em vez de um teto de
+// escala fixo. O checkbox continua mandando só na POSIÇÃO ao mover o token.
+// Sem grade não há em que encaixar: o resize é contínuo, com o guarda-corpo
+// do contrato (MESA_TOKEN_SCALE_MIN/MAX).
 
 // Lado da célula em px do palco (espaço sem zoom — mesmo dos token.x/y %).
 function _gridCellStagePx() {
@@ -279,6 +285,28 @@ function _gridTokenCells(diameterPx, cellPx) {
   return Math.max(1, Math.round(diameterPx / cellPx));
 }
 
+/**
+ * Teto de tamanho do token, em CÉLULAS (Etapa 69).
+ *
+ * Derivado do mapa, não fixo: metade do menor lado da superfície. Um mapa de
+ * 20x14 células deixa o token chegar a 7x7. Assim o limite acompanha a grade
+ * — célula menor, mais células disponíveis — e nenhum token pode virar maior
+ * que o próprio território.
+ */
+function _gridMaxCells() {
+  const cellPx = _gridCellStagePx();
+  if (!(cellPx > 0) || !_gridStageEl) return 1;
+  const surface = typeof window.getMesaMapSurfaceFrac === "function"
+    ? window.getMesaMapSurfaceFrac()
+    : { width: 1, height: 1 };
+  const wPx = surface.width  * (_gridStageEl.offsetWidth  || 0);
+  const hPx = surface.height * (_gridStageEl.offsetHeight || 0);
+  const menorLado = Math.min(wPx, hPx);
+  if (!(menorLado > 0)) return 1;
+  return Math.max(1, Math.floor(menorLado / cellPx / 2));
+}
+window.mesaGridMaxCells = _gridMaxCells;
+
 // Teto/piso de escala do contrato da cena (MESA_TOKEN_SCALE_* em mesa-stage.js,
 // carregado antes deste arquivo; o fallback cobre uso isolado do módulo).
 function _gridScaleMin() {
@@ -289,15 +317,18 @@ function _gridScaleMax() {
 }
 
 /**
- * Escala para encaixar o token em NxN células, RESPEITANDO o teto do contrato.
- * Se N não couber, desce para o maior N que cabe — nunca devolve um tamanho
- * quebrado. Era esse o bug: com célula grande o clamp cortava no meio do
- * caminho e o token parava fora das linhas da grade (ex.: 3,06 células).
+ * Escala para encaixar o token em NxN células.
+ *
+ * N é limitado pelo teto EM CÉLULAS do mapa (_gridMaxCells) e, por segurança,
+ * pelo teto de escala do contrato — se N não couber, desce para o maior N que
+ * cabe, nunca devolve um tamanho quebrado. Era esse o bug da Etapa 65: com
+ * célula grande o clamp cortava no meio do caminho e o token parava fora das
+ * linhas da grade (ex.: 3,06 células).
  * @returns {{scale:number, cells:number}}
  */
 function _gridFitCells(cells, cellPx, basePx) {
   const max = _gridScaleMax();
-  let n = Math.max(1, Math.round(cells));
+  let n = Math.max(1, Math.min(_gridMaxCells(), Math.round(cells)));
   while (n > 1 && (n * cellPx) / basePx > max) n -= 1;
   const bruto = (n * cellPx) / basePx;
   // Só o piso pode gerar tamanho não-inteiro (célula menor que o token mínimo).
@@ -312,7 +343,9 @@ function _gridFitCells(cells, cellPx, basePx) {
  * @returns {boolean} true se a escala mudou.
  */
 function mesaFitTokenToGrid(token, tokenElement) {
-  if (!_gridState.enabled || !_gridState.snap) return false;
+  // Etapa 69: basta a grade estar ligada — tamanho fora da célula deixou de
+  // ser um estado possível, com ou sem "Encaixar tokens".
+  if (!_gridState.enabled) return false;
   if (!token) return false;
   const cellPx = _gridCellStagePx();
   if (!(cellPx > 0)) return false;
@@ -335,10 +368,10 @@ function mesaFitTokenToGrid(token, tokenElement) {
  * Função pura: não escreve no token nem no DOM (Etapa 63).
  * @param {number} basePx      largura de layout do token (offsetWidth, sem transform)
  * @param {number} desiredScale escala crua vinda do ponteiro
- * @returns {{scale:number, cells:number}|null} null se o snap estiver desligado.
+ * @returns {{scale:number, cells:number}|null} null se a grade estiver desligada.
  */
 function mesaPreviewGridScale(basePx, desiredScale) {
-  if (!_gridState.enabled || !_gridState.snap) return null;
+  if (!_gridState.enabled) return null;
   const cellPx = _gridCellStagePx();
   if (!(cellPx > 0) || !(basePx > 0)) return null;
   return _gridFitCells(_gridTokenCells(basePx * desiredScale, cellPx), cellPx, basePx);
@@ -348,10 +381,14 @@ function mesaPreviewGridScale(basePx, desiredScale) {
  * Alinha o token ao quadrado de células mais próximo (posição). Mexe em
  * token.x/y (% do palco, canto superior esquerdo) usando o rect real do
  * elemento para achar o centro e o diâmetro.
+ * @param {boolean} [force] ignora o checkbox "Encaixar tokens". Usado pelo
+ *   RESIZE (Etapa 69): o quadrado NxN tem de cair sobre as linhas, senão o
+ *   token fica com tamanho de célula mas montado por cima delas. Mover o
+ *   token continua livre quando o checkbox está desligado.
  * @returns {boolean} true se a posição mudou.
  */
-function mesaSnapTokenToGrid(token, tokenElement) {
-  if (!_gridState.enabled || !_gridState.snap) return false;
+function mesaSnapTokenToGrid(token, tokenElement, force) {
+  if (!_gridState.enabled || (!_gridState.snap && !force)) return false;
   if (!token || !_gridStageEl) return false;
   if (typeof window.mesaStageFracToMapFrac !== "function") return false;
 
@@ -410,19 +447,23 @@ function mesaSnapTokenToGrid(token, tokenElement) {
 /**
  * Conformidade completa (tamanho + posição) — usada no soltar do arrasto,
  * no fim do redimensionamento e na re-conformidade em massa do mestre.
+ * @param {{forceAlign?: boolean}} [opts] forceAlign alinha a posição mesmo com
+ *   "Encaixar tokens" desligado (o resize usa isso — ver mesaSnapTokenToGrid).
  * @returns {boolean} true se algo mudou.
  */
-function mesaConformTokenToGrid(token, tokenElement) {
+function mesaConformTokenToGrid(token, tokenElement, opts) {
   const resized = mesaFitTokenToGrid(token, tokenElement);
-  const moved = mesaSnapTokenToGrid(token, tokenElement);
+  const moved = mesaSnapTokenToGrid(token, tokenElement, opts?.forceAlign === true);
   return resized || moved;
 }
 
-// Mestre: re-conforma TODOS os tokens quando a grade muda (ligar snap,
-// trocar tamanho da célula). Mantém a mesa uniforme sem arrastar um a um.
+// Mestre: re-conforma TODOS os tokens quando a grade muda (ligar a grade,
+// ligar o snap, trocar o tamanho da célula). Mantém a mesa uniforme sem
+// arrastar um a um. Etapa 69: basta a grade estar ligada — o TAMANHO conforma
+// sempre; a posição só se "Encaixar tokens" estiver ligado.
 function _conformAllTokensToGrid() {
   if (!_isGridMaster()) return;
-  if (!_gridState.enabled || !_gridState.snap) return;
+  if (!_gridState.enabled) return;
   if (typeof state !== "object" || !Array.isArray(state.tokens)) return;
 
   let changedAny = false;

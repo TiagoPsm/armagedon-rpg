@@ -1603,15 +1603,13 @@ const MESA_HANDLE_CURSOR = {
   n: "ns", s: "ns", w: "ew", e: "ew"
 };
 
-// Zona de ímã do snap, em px de tela.
-const MESA_RESIZE_SNAP_PX = 8;
-
 // Limites de escala do token — espelhados no Worker (cloudflare/src/mesa.js
-// normalizeSceneToken). O teto era 4,0 e amarrava o tamanho MAXIMO EM CELULAS
-// ao tamanho da celula: com celula grande, 4x88px nao chegava a 4 celulas, o
-// token travava em 3x3 E parava num tamanho quebrado (fora das linhas da
-// grade). Com 12 o encaixe em celulas manda, nao o teto.
-const MESA_TOKEN_SCALE_MIN = 0.25;
+// normalizeSceneToken). Sao GUARDA-CORPO do contrato, nao a regra de tamanho:
+// com a grade ligada quem manda e o tamanho em CELULAS (1x1 ate metade do
+// menor lado do mapa, ver _gridMaxCells em mesa-grid.js). O piso baixou de
+// 0,25 para 0,1 na Etapa 69 para caber 1 celula mesmo em grades muito finas
+// (celula de ~10px do palco).
+const MESA_TOKEN_SCALE_MIN = 0.1;
 const MESA_TOKEN_SCALE_MAX = 12;
 
 // Ícone do botão de marcadores. SVG em vez de caractere (◉): glifo depende da
@@ -1697,17 +1695,16 @@ function handleResizePointerMove(event) {
   let scale = Math.max(MESA_TOKEN_SCALE_MIN, Math.min(MESA_TOKEN_SCALE_MAX, drag.startScale * (size / drag.startSize)));
   let cells = 0;
 
-  // Ímã da grade durante o arrasto: mostra onde vai encaixar antes de soltar
-  // (Alt segurado ignora o snap). Antes isso só acontecia no pointerup e o
-  // token "pulava" de tamanho ao soltar.
+  // Com a grade ligada o tamanho é SEMPRE um múltiplo inteiro de célula
+  // (Etapa 69): o token passa de 1x1 para 2x2 para 3x3 conforme o ponteiro,
+  // sem tamanho intermediário. Antes era um ímã de 8px, então dava para parar
+  // no meio e o token ficava por cima das linhas. Alt segurado continua sendo
+  // a saída consciente para um tamanho livre. Sem grade, resize contínuo.
   if (!event.altKey && typeof window.mesaPreviewGridScale === "function") {
     const snapped = window.mesaPreviewGridScale(drag.basePx, scale);
     if (snapped) {
-      const pxPerScale = drag.startSize / drag.startScale; // px de tela por 1.0 de escala
-      if (Math.abs(snapped.scale - scale) * pxPerScale <= MESA_RESIZE_SNAP_PX) {
-        scale = snapped.scale;
-        cells = snapped.cells;
-      }
+      scale = snapped.scale;
+      cells = snapped.cells;
     }
   }
 
@@ -1750,10 +1747,12 @@ function handleResizePointerUp() {
   token.x = Math.max(0, Math.min(100, drag.previewX));
   token.y = Math.max(0, Math.min(100, drag.previewY));
 
-  // Com grade+snap: garante o encaixe exato em NxN células (o ímã do arrasto
-  // já deixa o token no lugar certo; isto corrige arredondamentos).
+  // Com a grade ligada: encaixe exato em NxN células E quadrado alinhado às
+  // linhas (forceAlign) — um token do tamanho da célula montado por cima das
+  // linhas não estaria "encaixado". Mover o token continua obedecendo o
+  // checkbox "Encaixar tokens".
   if (typeof window.mesaConformTokenToGrid === "function") {
-    window.mesaConformTokenToGrid(token, drag.tokenEl);
+    window.mesaConformTokenToGrid(token, drag.tokenEl, { forceAlign: true });
   }
   bumpMesaSceneVersion();
   persistState({ immediate: true });
