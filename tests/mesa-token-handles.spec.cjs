@@ -371,8 +371,11 @@ test.describe("Token: selecao e redimensionamento (Etapa 63)", () => {
           escala,
           btnFolga:  c.top - btn.bottom,
           btnDesvio: Math.abs(btn.left + btn.width / 2 - (c.left + c.right) / 2),
-          tagFolga:  c.top - tag.bottom,
-          tagDesvio: Math.abs(tag.left + tag.width / 2 - (c.left + c.right) / 2)
+          // A etiqueta mora ABAIXO da caixa desde a Etapa 72.
+          tagFolga:  tag.top - c.bottom,
+          tagDesvio: Math.abs(tag.left + tag.width / 2 - (c.left + c.right) / 2),
+          tagAbaixo: tag.top >= c.bottom,
+          tagLongeDoBtn: tag.top > btn.bottom
         });
       }
       el.style.removeProperty("--token-scale");
@@ -387,6 +390,9 @@ test.describe("Token: selecao e redimensionamento (Etapa 63)", () => {
       // ...e centrados no token.
       expect(m.btnDesvio).toBeLessThan(0.5);
       expect(m.tagDesvio).toBeLessThan(0.5);
+      // Etapa 72: a etiqueta saiu de cima do botao de marcadores.
+      expect(m.tagAbaixo, `etiqueta abaixo do token na escala ${m.escala}`).toBe(true);
+      expect(m.tagLongeDoBtn, `etiqueta longe do botao na escala ${m.escala}`).toBe(true);
     }
   });
 

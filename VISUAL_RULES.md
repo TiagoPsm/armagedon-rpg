@@ -37,9 +37,13 @@ etiqueta de tamanho, contorno da caixa de selecao) seguem duas regras:
 
 Regressao coberta em `tests/mesa-token-handles.spec.cjs` (escalas 1/2/5/8/12).
 
-## Espaco abaixo do token e do nome (2026-07-31, Etapa 67)
+## Espaco abaixo do token e do nome (2026-07-31, Etapa 67; revisto na Etapa 72)
 
-O nome do token fica logo abaixo do circulo e **nada de UI pode ocupar esse espaco**. Por isso o botao de marcadores de status (`.mesa-token-markers-btn`) fica ACIMA do token, nao embaixo. Acessorios do token selecionado vao para cima; se ja houver chips de condicao la, o acessorio sobe mais (`:has(.mesa-token-markers)`).
+O nome do token fica logo abaixo do circulo e **nada de UI permanente pode ocupar esse espaco**. Por isso o botao de marcadores de status (`.mesa-token-markers-btn`) fica ACIMA do token, nao embaixo. Acessorios permanentes do token selecionado vao para cima; se ja houver chips de condicao la, o acessorio sobe mais (`:has(.mesa-token-markers)`).
+
+**Excecao momentanea (Etapa 72)**: acessorio que so existe durante um gesto pode usar o espaco de baixo, desde que esconda o nome enquanto durar. E o caso da etiqueta de tamanho (`.mesa-token-sizetag`), que aparece so com `is-resizing` — em cima ela caia atras do botao de marcadores, que ocupa o mesmo ponto central.
+
+Regra pratica: **um ponto de ancoragem, um acessorio.** Centro-acima e do botao de marcadores; centro-abaixo e do nome (ou de quem o substitui temporariamente).
 
 ## Pilha de camadas do palco da Mesa (2026-07-31, Etapa 66)
 

@@ -582,8 +582,11 @@
 .mesa-token-sizetag {
   position: absolute;
   left: 50%;
-  bottom: 100%;
-  margin-bottom: 0;   /* folga no transform, ver .mesa-token-markers-btn */
+  /* ABAIXO do token (Etapa 72): acima ela dividia o mesmo ponto central com o
+     botao de marcadores e ficava tampada por ele. */
+  top: 100%;
+  bottom: auto;
+  margin: 0;   /* folga no transform, ver .mesa-token-markers-btn */
   padding: 1px 7px;
   border-radius: 999px;
   font-size: 0.68rem;
@@ -595,14 +598,21 @@
   border: 1px solid rgba(214, 92, 92, 0.55);
   transform: translateX(-50%)
              scale(calc(1 / (var(--token-scale, 1) * var(--stage-zoom, 1))))
-             translateY(-6px);
-  transform-origin: bottom center;
+             translateY(6px);
+  transform-origin: top center;
   opacity: 0;
   pointer-events: none;
 }
 
 .mesa-token.is-resizing .mesa-token-sizetag {
   opacity: 1;
+}
+
+/* O nome tambem mora embaixo do token: some enquanto a etiqueta esta la
+   (o redimensionamento e momentaneo e o token segue selecionado). */
+.mesa-token.is-resizing .mesa-token-name,
+.mesa-token.is-minimal.is-resizing .mesa-token-name {
+  opacity: 0;
 }
 
 /* Durante o resize a transicao do transform atrasaria o token em relacao ao

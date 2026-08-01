@@ -30,7 +30,17 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-31 — Etapa 71: alcas de resize fora do canto)
+## Ultima Etapa Concluida (2026-08-01 — Etapa 72: etiqueta de tamanho tampada pelo botao)
+
+Tiago mandou print: o valor mostrado enquanto o token e redimensionado ficava atras do botao de efeitos de status.
+
+- **Causa**: `.mesa-token-sizetag` e `.mesa-token-markers-btn` dividiam exatamente o mesmo ponto — `left: 50%` + `bottom: 100%`, ou seja, centro acima do token. Como o botao vem depois no DOM e e opaco, ele cobria a etiqueta.
+- **Correcao** (css/mesa-stage.css): a etiqueta desceu para `top: 100%` (folga de 6px no `translateY`, antes do `scale`, para continuar em px de TELA — regra da Etapa 71). O nome do token, que tambem mora embaixo, some enquanto `is-resizing` esta ativo: o redimensionamento e momentaneo e o token segue identificado pela selecao.
+- **Arquivos**: css/mesa-stage.css, mesa.html (`?v=2026-08-01-sizetag-1`), tests/mesa-token-handles.spec.cjs.
+- **Validacoes**: `check:js` OK, `audit:static` OK, `test:mesa:tokens` 10/10, `test:mesa` 5/5, `test:mesa:audit` 117/117. O teste da Etapa 71 passou a exigir tambem que a etiqueta fique **abaixo da caixa** e **abaixo do botao** nas escalas 1/3/8 — com o CSS antigo ele falha.
+- **Sem mudanca no Worker.**
+
+## Etapa Anterior (2026-07-31 — Etapa 71: alcas de resize fora do canto)
 
 Tiago mandou print: com o token grande, os quadradinhos de redimensionar apareciam empurrados para dentro da caixa, desalinhados.
 

@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-01 15:33:45 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-01 15:46:12 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `95026c7 2026-07-31 fix(mesa): token grande era cortado no sync e no boot (Etapa 70)`
+- Ultimo commit: `c26019c 2026-08-01 fix(mesa): alcas de resize fora do canto em token grande (Etapa 71)`
 
 ### Alteracoes Locais
 
