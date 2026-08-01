@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-07-31 18:32:03 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-01 15:33:45 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,18 +13,18 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `c8411f8 2026-07-31 feat(mesa): tamanho do token sempre em celulas da grade (Etapa 69)`
+- Ultimo commit: `95026c7 2026-07-31 fix(mesa): token grande era cortado no sync e no boot (Etapa 70)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
 M  DEV_STATUS.md
-M  SYSTEM_RULES.md
+M  VISUAL_RULES.md
+M  css/mesa-stage.css
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-core.js
 M  mesa.html
-M  tests/mesa-audit.spec.cjs
+M  tests/mesa-token-handles.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -38,10 +38,10 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 
 ```text
 DEV_STATUS.md
-SYSTEM_RULES.md
-js/mesa-core.js
+VISUAL_RULES.md
+css/mesa-stage.css
 mesa.html
-tests/mesa-audit.spec.cjs
+tests/mesa-token-handles.spec.cjs
 ```
 
 ## Paginas Principais

@@ -303,6 +303,93 @@ test.describe("Token: selecao e redimensionamento (Etapa 63)", () => {
     expect(Math.round(passos.out[passos.out.length - 1].celulas)).toBe(passos.maxCells);
   });
 
+  test("as 8 alcas ficam EXATAMENTE nos cantos e meios, em qualquer escala (Etapa 71)", async ({ page }) => {
+    // Print do Tiago: com o token grande as alcas apareciam empurradas para
+    // dentro da caixa. Causa: a caixa de selecao usava `border` com largura
+    // sub-pixel (contra-escalada); o Blink arredonda toda borda visivel para
+    // 1px de LAYOUT e o transform do token multiplicava isso — as alcas, que
+    // sao filhas da caixa, ancoram no PADDING box. Medido antes do fix: 1px de
+    // desvio na escala 1, 3px na 3, 8px na 8.
+    const medidas = await page.evaluate(async () => {
+      const assentar = () => new Promise(r => setTimeout(r, 300));
+      const el = document.querySelector("#mesaStage .mesa-token");
+      selectToken(el.dataset.tokenId);
+      await assentar();
+
+      const out = [];
+      for (const escala of [1, 2, 5, 8, 12]) {
+        el.style.setProperty("--token-scale", String(escala));
+        await assentar();
+        const c = el.querySelector(".mesa-token-selbox").getBoundingClientRect();
+        const meioX = (c.left + c.right) / 2;
+        const meioY = (c.top + c.bottom) / 2;
+        const alvos = {
+          nw: [c.left, c.top],  n: [meioX, c.top],    ne: [c.right, c.top],
+          w:  [c.left, meioY],                        e:  [c.right, meioY],
+          sw: [c.left, c.bottom], s: [meioX, c.bottom], se: [c.right, c.bottom]
+        };
+        let pior = 0, tamanho = 0;
+        for (const [dir, [px, py]] of Object.entries(alvos)) {
+          const b = el.querySelector(`[data-handle="${dir}"]`).getBoundingClientRect();
+          pior = Math.max(pior,
+            Math.abs(b.left + b.width / 2 - px),
+            Math.abs(b.top + b.height / 2 - py));
+          tamanho = b.width;
+        }
+        out.push({ escala, pior, tamanho, caixa: c.width });
+      }
+      el.style.removeProperty("--token-scale");
+      return out;
+    });
+
+    for (const m of medidas) {
+      // Centro da alca EM CIMA do ponto da caixa — sem folga que cresca com a escala.
+      expect(m.pior, `escala ${m.escala}`).toBeLessThan(0.5);
+      // E a alca continua do mesmo tamanho de tela (contra-escala intacta).
+      expect(m.tamanho, `escala ${m.escala}`).toBeCloseTo(medidas[0].tamanho, 1);
+      // Sanidade: a caixa realmente cresceu (senao o teste nao provaria nada).
+      expect(m.caixa).toBeCloseTo(medidas[0].caixa * m.escala, 0);
+    }
+  });
+
+  test("botao de marcadores e etiqueta ficam a distancia fixa do token (Etapa 71)", async ({ page }) => {
+    const medidas = await page.evaluate(async () => {
+      const assentar = () => new Promise(r => setTimeout(r, 300));
+      const el = document.querySelector("#mesaStage .mesa-token");
+      selectToken(el.dataset.tokenId);
+      el.classList.add("is-resizing");   // revela a etiqueta de tamanho
+      await assentar();
+
+      const out = [];
+      for (const escala of [1, 3, 8]) {
+        el.style.setProperty("--token-scale", String(escala));
+        await assentar();
+        const c   = el.querySelector(".mesa-token-selbox").getBoundingClientRect();
+        const btn = el.querySelector(".mesa-token-markers-btn").getBoundingClientRect();
+        const tag = el.querySelector(".mesa-token-sizetag").getBoundingClientRect();
+        out.push({
+          escala,
+          btnFolga:  c.top - btn.bottom,
+          btnDesvio: Math.abs(btn.left + btn.width / 2 - (c.left + c.right) / 2),
+          tagFolga:  c.top - tag.bottom,
+          tagDesvio: Math.abs(tag.left + tag.width / 2 - (c.left + c.right) / 2)
+        });
+      }
+      el.style.removeProperty("--token-scale");
+      el.classList.remove("is-resizing");
+      return out;
+    });
+
+    for (const m of medidas) {
+      // Folga em px de TELA, nao de layout: antes ia a 80px com o token em 8x.
+      expect(m.btnFolga, `botao na escala ${m.escala}`).toBeCloseTo(medidas[0].btnFolga, 0);
+      expect(m.tagFolga, `etiqueta na escala ${m.escala}`).toBeCloseTo(medidas[0].tagFolga, 0);
+      // ...e centrados no token.
+      expect(m.btnDesvio).toBeLessThan(0.5);
+      expect(m.tagDesvio).toBeLessThan(0.5);
+    }
+  });
+
   test("token fica ACIMA da grade e dos desenhos, e abaixo da nevoa", async ({ page }) => {
     const camadas = await page.evaluate(async () => {
       const esperar = ms => new Promise(r => setTimeout(r, ms));

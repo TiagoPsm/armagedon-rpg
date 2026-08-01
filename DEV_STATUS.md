@@ -30,7 +30,18 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-07-31 — Etapa 70: token grande era cortado no sync)
+## Ultima Etapa Concluida (2026-07-31 — Etapa 71: alcas de resize fora do canto)
+
+Tiago mandou print: com o token grande, os quadradinhos de redimensionar apareciam empurrados para dentro da caixa, desalinhados.
+
+- **Causa**: a caixa de selecao (`.mesa-token-selbox`) desenhava o contorno com `border` de largura contra-escalada (`calc(1px / (token-scale * zoom))`). Toda borda visivel abaixo de 1px e arredondada para **1px de LAYOUT** pelo Blink — e o transform do token multiplica isso de volta. Como as alcas sao filhas da caixa e o posicionamento absoluto ancora no PADDING box, elas entravam esse 1px de layout: medido **1px de desvio na escala 1, 3px na 3 e 8px na 8**.
+- **Correcao** (css/mesa-stage.css + o `<style>` anti-FOUC de mesa.html): o contorno passou a ser `box-shadow: inset` — pintura, nao layout: nao mexe no padding box e aceita espessura fracionaria. As alcas tambem ganharam centragem dentro do proprio transform (`scale() translate(-50%, -50%)` com origem no canto) em vez da `margin: -4.5px`, que era px de layout pelo mesmo motivo.
+- **De quebra**: o botao de marcadores e a etiqueta de tamanho usavam `margin` para a folga acima do token — a distancia crescia com a escala (10px viravam **80px** com o token em 8x). A folga foi para dentro do transform (`translateY` aplicado antes do `scale`), ficando constante em px de tela.
+- **Arquivos**: css/mesa-stage.css, mesa.html (`?v=2026-07-31-handles-1`), tests/mesa-token-handles.spec.cjs.
+- **Validacoes**: `check:js` OK, `audit:static` OK, `test:mesa:tokens` 10/10 (2 testes novos), demais suites 152/152. Os testes novos varrem as escalas 1/2/5/8/12 e exigem desvio < 0,5px em todas as 8 alcas, tamanho de tela constante e folga fixa do botao/etiqueta; com o CSS antigo eles falham (8px de desvio na escala 8).
+- **Sem mudanca no Worker.**
+
+## Etapa Anterior (2026-07-31 — Etapa 70: token grande era cortado no sync)
 
 Tiago: "algo limita o token; quando aumento mais que isso e arrasto ele volta".
 

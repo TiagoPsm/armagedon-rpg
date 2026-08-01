@@ -16,6 +16,27 @@ C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 
 A pasta antiga `rpg-campaign` nao deve ser usada para editar layout, CSS, HTML ou assets publicados.
 
+## Acessorios do token escalado: px de TELA, nunca de layout (2026-07-31, Etapa 71)
+
+O token inteiro vive dentro de um `transform: scale(var(--token-scale))`, entao
+**toda medida em px de layout e multiplicada pela escala**. Acessorios que devem
+ter tamanho/posicao constantes na tela (alcas de resize, botao de marcadores,
+etiqueta de tamanho, contorno da caixa de selecao) seguem duas regras:
+
+- **Centragem e folga vao DENTRO do transform**, nunca em `margin`/`inset`. A
+  ordem importa: `scale(k) translate(...)` — o transform aplica da direita para
+  a esquerda, entao o deslocamento e escalado junto e vale px de tela. Com
+  `margin: -4.5px` a alca saia do canto e a folga do botao ia de 10px para 80px
+  num token 8x.
+- **Contorno fino usa `box-shadow: inset`, nao `border`.** Uma borda
+  contra-escalada pede largura sub-pixel, e o Blink arredonda qualquer borda
+  visivel para 1px de LAYOUT — que a escala do token multiplica de volta. Pior:
+  `border` empurra o padding box, e filhos posicionados por `left/top` (as
+  alcas) ancoram nele. `box-shadow` e pintura: nao mexe no layout e aceita
+  espessura fracionaria.
+
+Regressao coberta em `tests/mesa-token-handles.spec.cjs` (escalas 1/2/5/8/12).
+
 ## Espaco abaixo do token e do nome (2026-07-31, Etapa 67)
 
 O nome do token fica logo abaixo do circulo e **nada de UI pode ocupar esse espaco**. Por isso o botao de marcadores de status (`.mesa-token-markers-btn`) fica ACIMA do token, nao embaixo. Acessorios do token selecionado vao para cima; se ja houver chips de condicao la, o acessorio sobe mais (`:has(.mesa-token-markers)`).

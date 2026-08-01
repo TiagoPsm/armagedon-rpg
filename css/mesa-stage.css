@@ -500,9 +500,18 @@
 .mesa-token-selbox {
   position: absolute;
   inset: 0;
-  border: solid rgba(214, 92, 92, 0.75);
-  /* Traco de 1px de TELA: sem contra-escala a linha engrossa junto do token. */
-  border-width: calc(1px / (var(--token-scale, 1) * var(--stage-zoom, 1)));
+  /* Traco de 1px de TELA desenhado por box-shadow, NAO por border (Etapa 71).
+   *
+   * Com border, a contra-escala pede uma largura sub-pixel (1/8 px com o token
+   * em 8x) e o Blink arredonda toda borda visivel para 1px de LAYOUT — que o
+   * transform do token multiplica de volta. Pior: as alcas sao filhas desta
+   * caixa e ancoram no PADDING box, entao esse 1px as empurrava para dentro
+   * (medido: 8px de tela na escala 8, e o print do Tiago mostrando as alcas
+   * desalinhadas). box-shadow e pintura, nao layout: nao mexe no padding box e
+   * aceita espessura fracionaria. */
+  box-shadow: inset 0 0 0
+    calc(1px / (var(--token-scale, 1) * var(--stage-zoom, 1)))
+    rgba(214, 92, 92, 0.75);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.12s ease;
@@ -527,16 +536,28 @@
   pointer-events: auto;
 }
 
+/* Centragem da alca no ponto (Etapa 71).
+ *
+ * A alca e desenhada em tamanho de TELA constante (contra-escala), mas era
+ * centrada por `margin: -4.5px`, que e px de LAYOUT — o transform do token
+ * multiplicava essa margem pela escala. Resultado: quanto maior o token, mais
+ * as alcas entravam para dentro da caixa (medido: 1px na escala 1, 8px na 8).
+ *
+ * A centragem passou para dentro do proprio transform: `scale()` DEPOIS do
+ * `translate()` (a composicao aplica da direita para a esquerda), com origem
+ * no canto. Assim o deslocamento de -50% e escalado junto com o desenho e vale
+ * sempre 4,5px de TELA, em qualquer escala e zoom. */
 .mesa-token-handle {
   --handle-counter: calc(1 / (var(--token-scale, 1) * var(--stage-zoom, 1)));
   position: absolute;
   width: 9px;
   height: 9px;
-  margin: -4.5px 0 0 -4.5px;
+  box-sizing: border-box;
   border-radius: 2px;
   background: rgba(255, 248, 236, 0.95);
   border: 1px solid rgba(120, 24, 30, 0.9);
-  transform: scale(var(--handle-counter));
+  transform-origin: 0 0;
+  transform: scale(var(--handle-counter)) translate(-50%, -50%);
   z-index: 1;
 }
 
@@ -562,7 +583,7 @@
   position: absolute;
   left: 50%;
   bottom: 100%;
-  margin-bottom: 6px;
+  margin-bottom: 0;   /* folga no transform, ver .mesa-token-markers-btn */
   padding: 1px 7px;
   border-radius: 999px;
   font-size: 0.68rem;
@@ -572,7 +593,9 @@
   color: rgba(255, 248, 236, 0.95);
   background: rgba(14, 8, 10, 0.88);
   border: 1px solid rgba(214, 92, 92, 0.55);
-  transform: translateX(-50%) scale(calc(1 / (var(--token-scale, 1) * var(--stage-zoom, 1))));
+  transform: translateX(-50%)
+             scale(calc(1 / (var(--token-scale, 1) * var(--stage-zoom, 1))))
+             translateY(-6px);
   transform-origin: bottom center;
   opacity: 0;
   pointer-events: none;
@@ -995,7 +1018,10 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
   position: absolute;
   left: 50%;
   bottom: 100%;
-  margin: 0 0 10px 0;
+  /* A folga vai no transform (translateY mais a direita = aplicado primeiro),
+     nao em margin: margem e px de LAYOUT e o token multiplicava a distancia
+     pela escala — o botao ia parar a 80px do token em 8x (Etapa 71). */
+  margin: 0;
   width: 30px;
   height: 30px;
   padding: 0;
@@ -1009,7 +1035,9 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
   border-radius: 50%;
   cursor: pointer;
   /* Mesmo tamanho de tela em qualquer zoom, igual as alcas. */
-  transform: translateX(-50%) scale(calc(1 / (var(--token-scale, 1) * var(--stage-zoom, 1))));
+  transform: translateX(-50%)
+             scale(calc(1 / (var(--token-scale, 1) * var(--stage-zoom, 1))))
+             translateY(-10px);
   transform-origin: bottom center;
   transition: background var(--transition, 0.15s), border-color var(--transition, 0.15s);
 }

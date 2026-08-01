@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="css/reset.css?v=2026-06-12-cache-fix-1" />
   <link rel="stylesheet" href="css/components.css?v=2026-06-12-modal-stack-1" />
   <link rel="stylesheet" href="css/mesa.css?v=2026-07-30-zorder-1" />
-  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-07-31-markersbtn-top-1" />
+  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-07-31-handles-1" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-06-16-fullbleed-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-06-16-master-vital-card-1" />
   <link rel="stylesheet" href="css/mesa-map.css?v=2026-07-31-fit-sempre-1" />
@@ -93,7 +93,8 @@
     /* ── CAIXA DE SELECAO COM 8 ALCAS ── */
     /* Regras completas em css/mesa-stage.css; aqui so o essencial anti-FOUC. */
     /* inset 0: a caixa e exatamente a caixa do token, para coincidir com a grade. */
-    .mesa-token-selbox { position: absolute; inset: 0; border: solid rgba(214,92,92,0.75); border-width: calc(1px / (var(--token-scale,1) * var(--stage-zoom,1))); opacity: 0; pointer-events: none; z-index: 3; }
+    /* box-shadow, nao border: border sub-pixel vira 1px de LAYOUT e empurra as alcas para dentro (Etapa 71). */
+    .mesa-token-selbox { position: absolute; inset: 0; box-shadow: inset 0 0 0 calc(1px / (var(--token-scale,1) * var(--stage-zoom,1))) rgba(214,92,92,0.75); opacity: 0; pointer-events: none; z-index: 3; }
     .mesa-token.is-selected .mesa-token-selbox,
     .mesa-token.is-resizing .mesa-token-selbox { opacity: 1; }
     .mesa-token.is-resizing { transition: none; }
