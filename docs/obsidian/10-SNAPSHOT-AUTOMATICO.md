@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-02 18:59:36 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-02 19:19:41 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,24 +13,14 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `5a6221b 2026-08-02 fix(permissoes): separa papeis na Mesa e na Ficha (Etapas 75-76)`
+- Ultimo commit: `314478e 2026-08-02 feat(mesa): refaz o sistema de iniciativa do zero (Etapa 77)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-M  DEV_STATUS.md
-M  SYSTEM_RULES.md
-M  VISUAL_RULES.md
-M  cloudflare/README.md
-M  cloudflare/src/mesa.js
-M  css/mesa.css
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-core.js
-M  js/mesa-initiative.js
-M  mesa.html
-M  tests/mesa-audit.spec.cjs
-M  tests/mesa-permissions.spec.cjs
+M  tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -42,18 +32,8 @@ M  tests/mesa-permissions.spec.cjs
 ### Arquivos Em Stage
 
 ```text
-DEV_STATUS.md
-SYSTEM_RULES.md
-VISUAL_RULES.md
-cloudflare/README.md
-cloudflare/src/mesa.js
-css/mesa.css
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/mesa-core.js
-js/mesa-initiative.js
-mesa.html
-tests/mesa-audit.spec.cjs
-tests/mesa-permissions.spec.cjs
+tools/build-pages.cjs
 ```
 
 ## Paginas Principais
@@ -150,7 +130,7 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
     0,73 MB  debug.log
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js
     0,61 MB  node_modules\playwright-core\lib\vite\traceViewer\assets\defaultSettingsView-GTWI-W_B.js
-    0,47 MB  _site\js\mesa-page.bundle.js
+    0,48 MB  _site\js\mesa-page.bundle.js
     0,45 MB  node_modules\playwright-core\lib\utilsBundleImpl\index.js
 ```
 
