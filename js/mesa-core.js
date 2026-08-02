@@ -657,7 +657,8 @@ async function applyMesaRealtimeDelta(payload) {
 
   if (type === "mesa:initiative:update") {
     // Estado completo de iniciativa (mestre → todos). O módulo de iniciativa
-    // renderiza painel/banner; o cache local preserva o estado no F5.
+    // decide o que mostrar pela fase (modal de rolagem ou ordem de turno);
+    // o cache local preserva o estado no F5.
     if (typeof applyInitiativeState === "function") {
       applyInitiativeState(payload?.initiative || null);
       cacheMesaSceneSnapshotLocally();
@@ -1796,9 +1797,20 @@ function applyMesaSceneSnapshot(saved) {
   state.sceneVersion = asPositiveInt(saved?.sceneVersion, state.sceneVersion);
   state.selectedTokenId = pickInitialSelectedToken(saved?.selectedTokenId);
 
-  // Restaura estado de iniciativa
-  if (saved?.initiative && typeof applyInitiativeState === 'function') {
-    applyInitiativeState(saved.initiative);
+  // Restaura estado de iniciativa.
+  // ATENCAO (Etapa 77): quando o navegador serve os scripts do cache, o
+  // mesa-core.js pode executar com document.readyState ja em "interactive" —
+  // ai bootMesaPage() roda NA HORA, antes de o mesa-initiative.js (script
+  // defer seguinte) existir. Era exatamente isso que fazia o F5 no meio do
+  // combate perder a iniciativa em silencio: o `typeof === 'function'`
+  // falhava e a cena salva era descartada. Agora o estado fica em espera e
+  // o proprio modulo o consome quando carrega.
+  if (saved?.initiative) {
+    if (typeof applyInitiativeState === 'function') {
+      applyInitiativeState(saved.initiative);
+    } else {
+      window._mesaPendingInitiative = saved.initiative;
+    }
   }
 
   // Token da Mesa e sempre o estilo redondo (minimal). O estilo "card" grande
@@ -2263,8 +2275,10 @@ function createMesaScenePayloadFromState() {
     ),
     initiative: (() => {
       const s = typeof getInitiativeState === 'function' ? getInitiativeState() : null;
-      if (!s || !s.active) return { active: false, round: 1, currentIndex: -1, order: [] };
-      return { active: true, round: s.round, currentIndex: s.currentIndex, order: s.order };
+      if (!s || !s.active) return { active: false, phase: 'rolling', round: 1, currentIndex: -1, order: [] };
+      // `phase` viaja junto (Etapa 77): sem ela, o F5 no meio da rolagem
+      // reabriria a cena direto na ordem de turno.
+      return { active: true, phase: s.phase === 'order' ? 'order' : 'rolling', round: s.round, currentIndex: s.currentIndex, order: s.order };
     })()
   };
 }
@@ -2359,17 +2373,25 @@ function normalizeMesaScenePayload(payload = {}) {
     initiative: (() => {
       const init = payload?.initiative;
       if (!init || init.active !== true) {
-        return { active: false, round: 1, currentIndex: -1, order: [] };
+        return { active: false, phase: "rolling", round: 1, currentIndex: -1, order: [] };
       }
       const rawOrder = Array.isArray(init.order) ? init.order : [];
+      // Espelha normalizeMesaScene do Worker (cloudflare/src/mesa.js): fase e
+      // campos novos da Etapa 77 entram na assinatura, senao um persist que só
+      // troca a fase (rolagem → ordem) cairia no dedupe e nunca chegaria ao D1.
       return {
         active: true,
+        phase: init.phase === "order" ? "order" : "rolling",
         round: asPositiveInt(init.round, 1),
         currentIndex: Number.isFinite(Number(init.currentIndex)) ? Math.trunc(Number(init.currentIndex)) : -1,
         order: rawOrder.slice(0, 50).map(entry => ({
           id: String(entry?.id || ""),
           characterKey: String(entry?.characterKey || ""),
+          ownerUsername: String(entry?.ownerUsername || ""),
+          type: String(entry?.type || ""),
           name: String(entry?.name || ""),
+          secret: entry?.secret === true,
+          auto: entry?.auto === true,
           roll: Number(entry?.roll) || 0,
           modifier: Number(entry?.modifier) || 0,
           total: Number(entry?.total) || 0,

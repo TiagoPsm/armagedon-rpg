@@ -30,7 +30,71 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-02 — Etapa 76: decisoes de permissao pos-auditoria)
+## Ultima Etapa Concluida (2026-08-02 — Etapa 77: iniciativa refeita do zero)
+
+O sistema de iniciativa foi **reescrito por completo**. O modelo antigo (banner para o jogador + popup individual + painel na sidebar) saiu inteiro.
+
+### Como funciona agora
+
+1. **O mestre abre o combate** (botao INIC. da barra): todo token em cena vira participante, menos o Echo.
+2. **Modal central de rolagem** (`#initiativeOverlay`) abre para **mestre E jogadores**, listando os participantes com retrato, nome, tipo e o modificador de quem tem direito de ver.
+3. **Cada jogador rola pelo proprio token** — 1d20 + modificador de Agilidade. A linha dele mostra o atributo, o modificador e o resultado.
+4. **NPCs e monstros rolam sozinhos** no cliente do mestre assim que o ultimo jogador termina. Depois de uma pausa de 1,2s (para todos verem os numeros), a fase muda.
+5. **Ordem de turno** (`#initiativeTracker`): painel flutuante no topo do palco, visivel para **todos**, ordenado por maior total. O nome da vez **brilha**. So o mestre ve **◀ Voltar / Passar ▶ / ✕ Encerrar** (e o ✕ de remover entrada).
+
+### Decisoes de projeto
+
+- **Duas fases num estado so**: `initiative.phase` = `"rolling"` | `"order"`. Cena antiga (sem `phase`) reabre em `"order"` se todo mundo ja tinha rolado — senao em `"rolling"`.
+- **Cada entrada e um TOKEN, nao um personagem**: o mesmo monstro duas vezes no palco tem duas iniciativas. O alvo da rolagem viaja em `tokenId`; `characterKey` continua sendo a IDENTIDADE que o DO confere contra o socket.
+- **Avatar nao viaja na entrada**: cada cliente resolve o retrato pelo token da cena. Avatar pode ser data URI de dezenas de KB e estouraria o cap de 32KB por mensagem do realtime.
+- **Token secreto (camada dm / invisivel)** entra como `secret`: existe na ordem do mestre e some inteiro para o jogador — inclusive da contagem ("0 de 2", nao "0 de 4") e da numeracao (a lista visivel e renumerada), que denunciariam o escondido.
+- **Escape hatch do mestre**: "Rolar pelos ausentes" fecha a rolagem quando um jogador nao esta online. Sem isso, um ausente travaria o combate para sempre.
+- **Colapsar** o modal/painel e preferencia LOCAL de cada pessoa — nunca sincroniza.
+
+### Bug de boot corrigido junto
+
+Com os scripts vindo do cache, o `mesa-core.js` pode executar com `document.readyState` ja em `"interactive"` — ai `bootMesaPage()` roda na hora, **antes** de o `mesa-initiative.js` (script defer seguinte) existir. O `typeof applyInitiativeState === 'function'` falhava e **a iniciativa salva era descartada em silencio no F5**. Agora `applyMesaSceneSnapshot` deixa o estado em `window._mesaPendingInitiative` e o proprio modulo o consome ao carregar (`drainPendingInitiative`).
+
+### Regras de jogo (confirmadas por Tiago em 2026-08-02)
+
+As quatro decisoes que faltavam foram fechadas — as tres primeiras confirmaram o que ja estava implementado; a do Echo mudou o codigo.
+
+| Regra | Decisao |
+|---|---|
+| Modificador | **`1d20 + MODIFICADOR de Agilidade`** — o modificador da ficha, nao o valor cru. Escala do sistema: **+1 a cada 3 pontos** (Agilidade 5 → +1, 6 → +2, 9 → +3). A ficha nao tem "Destreza"; o equivalente e Agilidade. `initiativeModScale()` espelha `modScale()` de `js/ficha-sheet.js` |
+| Empate no total | Passa quem tirou o **maior dado bruto** (`14+5=19` perde para `16+3=19`); depois maior Agilidade; depois nome |
+| Echo | **Nao entra na ordem** — age no mesmo turno do dono. `buildInitiativeParticipants` filtra `type === "echo"`, senao o jogador agiria duas vezes por rodada |
+| Nova rodada | **Mantem a mesma ordem** — rola uma vez so, no inicio do combate |
+
+Para mudar a formula depois, mexer so em `INITIATIVE_ATTR` / `INITIATIVE_ATTR_LABEL` / `INITIATIVE_FORMULA` e `initiativeModifierFor()` no topo de `js/mesa-initiative.js`. As quatro regras tem teste dedicado em `tests/mesa-audit.spec.cjs`.
+
+### Arquivos principais alterados
+
+- `js/mesa-initiative.js` — reescrito do zero (fases, participantes por token, auto-roll, ordem, colapso)
+- `mesa.html` — `#initiativeBanner`, `#initiativeRollPopup` e `#vttInitiativeBlock` REMOVIDOS; entraram `#initiativeOverlay` e `#initiativeTracker`; botao INIC. chama `toggleInitiative()`; `showPanel` inline perdeu o bloco de iniciativa; cache-bust de mesa.css / mesa-core.js / mesa-initiative.js
+- `css/mesa.css` — bloco de iniciativa reescrito (modal central, painel flutuante, brilho da vez com `prefers-reduced-motion`)
+- `js/mesa-core.js` — `phase` no payload e na assinatura de dedupe da cena; iniciativa em espera no boot
+- `cloudflare/src/mesa.js` — `normalizeMesaScene` preserva `phase` e os campos novos da entrada (`ownerUsername`, `type`, `secret`, `auto`)
+- `tests/mesa-audit.spec.cjs` — bloco "Iniciativa fim-a-fim" reescrito (14 casos, incluindo as regras de Echo e de desempate)
+- `tests/mesa-permissions.spec.cjs` — alvos atualizados para a UI nova
+
+### Validacoes
+
+- `npm run check:js`: OK (47 arquivos)
+- `npm run audit:static`: OK
+- `npm run test:mesa:audit`: 132 passed · `test:mesa:permissoes`: 15 · `test:mesa`: 5 · `test:mesa:tokens`: 10 · `test:ficha`: 29
+- **Armadilha de teste anotada**: um servidor de preview proprio rodando na porta 8000 (`npx serve`) durante a suite causa `ERR_SOCKET_NOT_CONNECTED` intermitente e triplica o tempo — os testes falham por disputa de socket, nao por regressao. Parar o preview antes de rodar a suite.
+- Fluxo completo exercitado no navegador (mestre e jogador): abrir combate → rolagens → auto-roll de NPC/monstro → ordem → Voltar/Passar com virada de rodada nos dois sentidos
+
+### Deploy
+
+- **Worker publicado** em 2026-08-02, version ID `b55adbb0-319b-4b5a-89d7-4d997cd7eb16` (dry-run limpo antes; health 200 pos-deploy). Detalhes em `cloudflare/README.md`.
+
+### Pendencias
+
+- Nenhuma aberta nesta etapa. As quatro regras de jogo estao fechadas e cobertas por teste; o Worker ja esta no ar com o formato novo da cena.
+
+## Etapa Anterior (2026-08-02 — Etapa 76: decisoes de permissao pos-auditoria)
 
 Duas regras que a auditoria da Etapa 75 levantou como **decisao do mestre**, nao como bug, e que o Tiago decidiu:
 

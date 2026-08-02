@@ -90,7 +90,7 @@ test.describe("Permissoes da Mesa (Etapa 75)", () => {
     await expect(page.locator("#mesaMapSettingsBtn")).toBeHidden();              // engrenagem
     await expect(page.locator("#moveLockBtn")).toBeHidden();                     // TRAVAR MOVIMENTO
     await expect(page.locator("#resetMesaBtn")).toBeHidden();                    // LIMPAR CENA
-    await expect(page.locator("#initMasterControls")).toBeHidden();              // Proximo/Reiniciar/Encerrar
+    await expect(page.locator("#initMasterControls")).toBeHidden();              // Voltar/Passar/Encerrar
     await expect(page.locator("#vttInspectorBlock")).toBeHidden();               // inspetor
   });
 
@@ -113,13 +113,14 @@ test.describe("Permissoes da Mesa (Etapa 75)", () => {
     await page.goto(`${baseUrl}/mesa.html`);
     await waitForMesaSettled(page);
 
-    // Delta que o mestre transmitiria ao iniciar o combate.
+    // Delta que o mestre transmitiria com a ordem de turno pronta.
     await page.evaluate(() => applyInitiativeState({
-      active: true, round: 1, currentIndex: 0,
-      order: [{ id: "bruno", characterKey: "bruno", name: "Bruno Cinza", roll: 15, modifier: 0, total: 15, rolled: true }]
+      active: true, phase: "order", round: 1, currentIndex: 0,
+      order: [{ id: "bruno", characterKey: "bruno", ownerUsername: "bruno", type: "player",
+        name: "Bruno Cinza", secret: false, auto: false, roll: 15, modifier: 0, total: 15, rolled: true }]
     }));
 
-    await expect(page.locator("#vttInitiativeBlock")).toBeVisible();
+    await expect(page.locator("#initiativeTracker")).toBeVisible();
     await expect(page.locator("#initMasterControls")).toBeHidden();
     expect(await listMasterOnlyLeaks(page)).toEqual([]);
   });
@@ -190,7 +191,7 @@ test.describe("Permissoes da Mesa (Etapa 75)", () => {
     await expect(page.locator("#rosterSearchField")).toBeVisible();
   });
 
-  test("mestre: iniciar combate mostra a ordem e os controles de conducao", async ({ page }) => {
+  test("mestre: iniciar combate abre a rolagem e, depois dela, os controles de conducao", async ({ page }) => {
     const baseUrl = await getMesaBaseUrl();
     await seedSession(page, "mestre", "master");
     await page.goto(`${baseUrl}/mesa.html`);
@@ -198,8 +199,15 @@ test.describe("Permissoes da Mesa (Etapa 75)", () => {
 
     await page.locator("#mesaInitiativeBtn").click();
 
+    // Fase 1: modal central de rolagem, com o escape hatch do mestre.
     expect(await page.evaluate(() => getInitiativeState().active)).toBe(true);
-    await expect(page.locator("#vttInitiativeBlock")).toBeVisible();
+    await expect(page.locator("#initiativeOverlay")).toBeVisible();
+    await expect(page.locator("#initForceRollsBtn")).toBeVisible();
+
+    // Fase 2: fechada a rolagem, entra a ordem de turno com Voltar/Passar.
+    await page.locator("#initForceRollsBtn").click();
+    await page.waitForFunction(() => getInitiativeState().phase === "order");
+    await expect(page.locator("#initiativeTracker")).toBeVisible();
     await expect(page.locator("#initMasterControls")).toBeVisible();
   });
 

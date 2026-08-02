@@ -257,21 +257,42 @@ function normalizeMesaScene(payload) {
     ? source.tokens.map(normalizeSceneToken).filter(Boolean).slice(0, MAX_TOKENS)
     : [];
 
+  // Iniciativa (Etapa 77): duas fases — "rolling" (todos rolam no modal
+  // central) e "order" (lista de ordem de turno com Voltar/Passar). Cada
+  // entrada e um TOKEN da cena, nao um personagem: o mesmo monstro pode estar
+  // duas vezes no palco e tem duas iniciativas. Cena antiga (sem `phase`)
+  // reabre em "order" quando todo mundo ja tinha rolado.
   const rawInit = source?.initiative;
-  const initiative = rawInit && rawInit.active ? {
-    active:       true,
-    round:        (Number.isFinite(rawInit.round) && rawInit.round > 0) ? Math.floor(rawInit.round) : 1,
-    currentIndex: Number.isFinite(rawInit.currentIndex) ? Math.floor(rawInit.currentIndex) : -1,
-    order: Array.isArray(rawInit.order) ? rawInit.order.slice(0, 50).map(e => ({
-      id:           String(e?.id || e?.characterKey || "").slice(0, 64),
-      characterKey: String(e?.characterKey || e?.id || "").slice(0, 64),
-      name:         String(e?.name || "?").slice(0, 64),
-      roll:         Number.isFinite(e?.roll) ? e.roll : 0,
-      modifier:     Number.isFinite(e?.modifier) ? e.modifier : 0,
-      total:        Number.isFinite(e?.total) ? e.total : 0,
-      rolled:       Boolean(e?.rolled)
-    })) : []
-  } : { active: false, round: 1, currentIndex: -1, order: [] };
+  const initiative = rawInit && rawInit.active ? (() => {
+    const order = Array.isArray(rawInit.order) ? rawInit.order.slice(0, 50).map(e => {
+      const type = TOKEN_TYPES.has(String(e?.type)) ? String(e.type) : "npc";
+      return {
+        id:            String(e?.id || e?.characterKey || "").slice(0, 64),
+        characterKey:  String(e?.characterKey || e?.id || "").slice(0, 64),
+        ownerUsername: normalizeText(e?.ownerUsername).toLowerCase().slice(0, 64),
+        type,
+        name:          String(e?.name || "?").slice(0, 64),
+        secret:        e?.secret === true,
+        // Quem nao e jogador rola sozinho quando os jogadores terminam.
+        auto:          e?.auto === undefined ? type !== "player" : e.auto === true,
+        roll:          Number.isFinite(e?.roll) ? e.roll : 0,
+        modifier:      Number.isFinite(e?.modifier) ? e.modifier : 0,
+        total:         Number.isFinite(e?.total) ? e.total : 0,
+        rolled:        Boolean(e?.rolled)
+      };
+    }) : [];
+    const declaredPhase = String(rawInit.phase || "");
+    const phase = declaredPhase === "rolling" || declaredPhase === "order"
+      ? declaredPhase
+      : (order.length && order.every(entry => entry.rolled) ? "order" : "rolling");
+    return {
+      active:       true,
+      phase,
+      round:        (Number.isFinite(rawInit.round) && rawInit.round > 0) ? Math.floor(rawInit.round) : 1,
+      currentIndex: Number.isFinite(rawInit.currentIndex) ? Math.floor(rawInit.currentIndex) : -1,
+      order
+    };
+  })() : { active: false, phase: "rolling", round: 1, currentIndex: -1, order: [] };
 
   const drawings = Array.isArray(source?.drawings)
     ? source.drawings.map(normalizeSceneDrawing).filter(Boolean).slice(0, MAX_DRAWINGS)

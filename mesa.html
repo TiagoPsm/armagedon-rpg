@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="css/tokens.css?v=2026-06-14-echos-1" />
   <link rel="stylesheet" href="css/reset.css?v=2026-06-12-cache-fix-1" />
   <link rel="stylesheet" href="css/components.css?v=2026-06-12-modal-stack-1" />
-  <link rel="stylesheet" href="css/mesa.css?v=2026-07-30-zorder-1" />
+  <link rel="stylesheet" href="css/mesa.css?v=2026-08-02-iniciativa-2" />
   <link rel="stylesheet" href="css/mesa-stage.css?v=2026-08-02-desenho-1" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-06-16-fullbleed-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-06-16-master-vital-card-1" />
@@ -242,11 +242,11 @@
           </svg>
           <span>ESCAL.</span>
         </button>
-        <!-- Combate e conduzido pelo mestre: ativar/encerrar o tracker e
-             master-only. O jogador entra pelo banner "Rolar iniciativa". -->
+        <!-- Combate e conduzido pelo mestre: abrir/encerrar a iniciativa e
+             master-only. O jogador entra pelo modal central de rolagem. -->
         <button class="vtt-tb-btn" id="mesaInitiativeBtn"
-          title="Ativar tracker de iniciativa" aria-pressed="false" data-mesa-master-only
-          onclick="if(getInitiativeState().active){deactivateInitiative()}else{activateInitiative()}">
+          title="Iniciar combate (iniciativa)" aria-pressed="false" data-mesa-master-only
+          onclick="toggleInitiative()">
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
             <path d="M10 2L12.4 7.6H18L13.3 11.1L15.1 17L10 13.5L4.9 17L6.7 11.1L2 7.6H7.6L10 2Z" stroke-linejoin="round"/>
           </svg>
@@ -276,13 +276,6 @@
     </nav>
 
     <!-- ── CANVAS CENTRAL ────────────────────────────────────── -->
-    <!-- Banner de combate para jogadores -->
-    <div id="initiativeBanner" class="initiative-banner" hidden>
-      <span class="initiative-banner-icon">⚔</span>
-      <span class="initiative-banner-text">Combate iniciado! Role sua iniciativa.</span>
-      <button type="button" id="initiativeBannerRollBtn" class="btn btn-primary btn-sm">🎲 Rolar</button>
-    </div>
-
     <div class="vtt-canvas" id="mesaPanelStage">
 
       <!-- O palco propriamente dito -->
@@ -662,45 +655,49 @@
         </div>
       </div>
 
-      <!-- Tracker de Iniciativa -->
-      <div class="vtt-sidebar-block" id="vttInitiativeBlock" hidden>
-        <div class="vtt-sidebar-block-head">
-          <div class="vtt-sidebar-block-title">
-            <p class="vtt-kicker">Combate</p>
-            <h2>Iniciativa</h2>
-          </div>
-          <span class="init-round-badge">Rodada <strong class="init-round-num">1</strong></span>
-        </div>
-        <p class="init-status"></p>
-        <!-- Conduzir o combate e do mestre; o jogador so ve a ordem -->
-        <div class="init-master-controls" id="initMasterControls" data-mesa-master-only>
-          <button type="button" class="btn btn-primary btn-sm" onclick="nextInitiativeTurn()">&#9654; Próximo</button>
-          <button type="button" class="btn btn-sm"             onclick="resetInitiativeRound()">&#8635; Reiniciar</button>
-          <button type="button" class="btn btn-sm btn-danger"  onclick="deactivateInitiative()">&#10005; Encerrar</button>
-        </div>
-        <ol class="init-order-list" aria-live="polite"></ol>
-      </div>
-
     </aside>
   </div><!-- /vtt-body -->
 
-  <!-- Popup de rolagem de iniciativa (jogador) -->
-  <div id="initiativeRollPopup" class="initiative-popup-overlay" hidden role="dialog" aria-modal="true" aria-label="Rolar Iniciativa">
-    <div class="initiative-popup">
-      <button type="button" id="initiativeRollPopupClose" class="initiative-popup-close" aria-label="Fechar">✕</button>
-      <h3 class="initiative-popup-title">⚔ Rolar Iniciativa</h3>
-      <p class="initiative-popup-hero"><strong class="init-popup-char"></strong></p>
-      <div class="initiative-popup-formula">
-        1d20
-        <span class="initiative-popup-mod-wrap">+ <strong class="init-popup-mod">+0</strong> (Agilidade <span class="init-popup-agil">0</span>)</span>
-      </div>
-      <div class="initiative-popup-result-row">
-        <span class="initiative-popup-result-label">Dado</span>
-        <strong class="init-popup-result initiative-popup-big">—</strong>
-        <span class="initiative-popup-result-label">Total</span>
-        <strong class="init-popup-total initiative-popup-big">—</strong>
-      </div>
-      <button type="button" class="btn btn-primary init-popup-roll-btn">🎲 Rolar 1d20</button>
+  <!-- ── INICIATIVA (Etapa 77) ───────────────────────────────────────
+       Fase 1 — modal central de rolagem: aparece para MESTRE E JOGADORES
+       com todos os tokens em cena. Cada jogador rola pelo proprio token;
+       NPCs/monstros rolam sozinhos quando o ultimo jogador terminar.
+       As linhas sao montadas por js/mesa-initiative.js. -->
+  <div id="initiativeOverlay" class="init-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="initOverlayTitle">
+    <div class="init-modal">
+      <button type="button" class="init-collapse-btn" data-init-collapse
+              title="Encolher / expandir" aria-label="Encolher ou expandir a iniciativa">&#9472;</button>
+      <header class="init-modal-head">
+        <p class="init-kicker">Combate</p>
+        <h2 class="init-modal-title" id="initOverlayTitle">&#9876; Rolagem de Iniciativa</h2>
+        <p class="init-modal-sub"></p>
+      </header>
+      <ul class="init-roll-list" id="initRollList" aria-live="polite"></ul>
+      <footer class="init-modal-foot">
+        <p class="init-progress" id="initRollProgress" aria-live="polite"></p>
+        <!-- Escape hatch do mestre: jogador ausente nao pode travar o combate -->
+        <button type="button" class="btn btn-sm" id="initForceRollsBtn" data-mesa-master-only hidden>
+          &#127922; Rolar pelos ausentes
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Fase 2 — ordem de turno: painel flutuante sobre o palco, visivel para
+       TODOS (jogador e mestre) para que se saiba de quem e a vez. O nome da
+       vez brilha (.init-entry.is-current). So o mestre ve Voltar/Passar. -->
+  <div id="initiativeTracker" class="init-tracker" hidden aria-live="polite">
+    <header class="init-tracker-head">
+      <span class="init-round-badge">Rodada <strong class="init-round-num">1</strong></span>
+      <p class="init-status"></p>
+      <button type="button" class="init-collapse-btn" data-init-collapse
+              title="Encolher / expandir" aria-label="Encolher ou expandir a ordem de turno">&#9472;</button>
+    </header>
+    <ol class="init-order-list"></ol>
+    <div class="init-master-controls" id="initMasterControls" data-mesa-master-only>
+      <button type="button" class="btn btn-sm"          id="initPrevTurnBtn">&#9664; Voltar</button>
+      <button type="button" class="btn btn-primary btn-sm" id="initNextTurnBtn">Passar &#9654;</button>
+      <button type="button" class="btn btn-sm btn-danger"  id="initEndBtn">&#10005; Encerrar</button>
     </div>
   </div>
 
@@ -720,7 +717,7 @@
   <script src="js/mesa-roster.js?v=2026-08-02-permissoes-1" defer></script>
   <script src="js/mesa-inspector.js?v=2026-08-02-permissoes-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
-  <script src="js/mesa-core.js?v=2026-08-02-autoria-1" defer></script>
+  <script src="js/mesa-core.js?v=2026-08-02-iniciativa-2" defer></script>
   <script src="js/mesa-map.js?v=2026-08-02-permissoes-1" defer></script>
   <script src="js/mesa-grid.js?v=2026-07-31-cells-1" defer></script>
   <script src="js/mesa-fog.js?v=2026-07-29-sharp-1" defer></script>
@@ -730,7 +727,7 @@
   <script src="js/mesa-dice.js?v=2026-07-27-dice-1" defer></script>
   <script src="js/mesa-drawing.js?v=2026-08-02-autoria-1" defer></script>
   <script src="js/mesa-select.js?v=2026-08-02-exclusivo-1" defer></script>
-  <script src="js/mesa-initiative.js?v=2026-08-02-permissoes-1" defer></script>
+  <script src="js/mesa-initiative.js?v=2026-08-02-iniciativa-2" defer></script>
   <!-- Depois de mesa-stage.js (whitelist/toggle) e mesa-inspector.js (linha do inspetor) -->
   <script src="js/mesa-markers.js?v=2026-07-30-markers-1" defer></script>
   <script>
@@ -738,20 +735,20 @@
   (function () {
     // Painéis associados a cada painel/layer
     // Blocos que este painel pode revelar diretamente.
-    // ATENCAO (Etapa 75): "vttInspectorBlock" e "vttInitiativeBlock" NAO
-    // entram aqui. Eles tem dono — renderInspector() e renderInitiative() —
-    // que decidem visibilidade por PAPEL e por ESTADO (combate ativo, token
-    // selecionado). Revela-los aqui era exatamente o bug que mostrava o
-    // tracker de iniciativa com "Proximo / Reiniciar / Encerrar" para o
-    // jogador, e o inspetor do mestre, a cada clique na barra.
+    // ATENCAO (Etapa 75): "vttInspectorBlock" NAO entra aqui. Ele tem dono —
+    // renderInspector() — que decide visibilidade por PAPEL e por ESTADO
+    // (token selecionado). Revela-lo aqui era exatamente o bug que mostrava
+    // o inspetor do mestre a cada clique na barra. A iniciativa (Etapa 77)
+    // saiu da sidebar: mora no modal #initiativeOverlay e no painel
+    // flutuante #initiativeTracker, ambos donos de si (renderInitiative()).
     var PANEL_BLOCKS = {
       scene:  ["vttRosterBlock"],
       map:    ["vttMapLibraryBlock"],
       roster: ["vttRosterBlock"],
     };
-    var ALL_BLOCKS = ["vttRosterBlock", "vttInspectorBlock", "vttMapLibraryBlock", "vttInitiativeBlock"];
+    var ALL_BLOCKS = ["vttRosterBlock", "vttInspectorBlock", "vttMapLibraryBlock"];
     // Blocos de dono proprio: showPanel so ESCONDE; quem revela e o modulo.
-    var OWNED_BLOCKS = { scene: ["vttInspectorBlock", "vttInitiativeBlock"] };
+    var OWNED_BLOCKS = { scene: ["vttInspectorBlock"] };
 
     function showPanel(panelName) {
       // Esconder todos

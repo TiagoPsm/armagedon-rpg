@@ -1151,220 +1151,357 @@ html {
   cursor: grabbing !important;
 }
 
-/* ── TRACKER DE INICIATIVA ──────────────────────────────────── */
+/* ── INICIATIVA (Etapa 77) ──────────────────────────────────────────
+ * Duas telas, um estado:
+ *   #initiativeOverlay — modal CENTRAL da fase de rolagem (todos veem);
+ *   #initiativeTracker — painel flutuante da ordem de turno (todos veem),
+ *                        com o nome da vez BRILHANDO (.is-current).
+ * Direcao visual: preto + carmesim (VISUAL_RULES.md). Sem animacao de
+ * fundo; o unico movimento e o pulso do turno atual e a entrada dos paineis.
+ * ------------------------------------------------------------------ */
 
-/* Botão toolbar ativo */
+/* Botão da barra com combate ativo */
 .vtt-tb-btn#mesaInitiativeBtn.is-active {
   color: var(--red-mid);
   background: hsla(0, 70%, 30%, 0.25);
 }
 
-/* Painel sidebar */
-.init-round-badge {
+/* ── Peças compartilhadas ─────────────────────────────────────────── */
+.init-kicker {
+  margin: 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--red-mid);
+}
+
+.init-avatar {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: hsla(0, 30%, 12%, 0.7);
+  border: 1px solid hsla(0, 45%, 40%, 0.35);
+}
+.init-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.init-avatar-fallback {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.init-collapse-btn {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.55rem;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid hsla(0, 40%, 45%, 0.28);
+  border-radius: 6px;
+  background: hsla(0, 25%, 10%, 0.6);
+  color: var(--text-secondary);
+  cursor: pointer;
+  line-height: 1;
+  font-size: 0.85rem;
+}
+.init-collapse-btn:hover { color: var(--text-primary); border-color: hsla(0, 55%, 50%, 0.5); }
+
+.init-empty {
+  padding: var(--sp-3);
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  list-style: none;
+}
+
+/* ── FASE 1 — modal central de rolagem ────────────────────────────── */
+.init-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2400;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+  background: hsla(0, 0%, 0%, 0.72);
+  backdrop-filter: blur(3px);
+}
+.init-overlay[hidden] { display: none; }
+
+.init-modal {
+  position: relative;
+  width: min(520px, 100%);
+  max-height: min(78vh, 720px);
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-4);
+  border-radius: 14px;
+  border: 1px solid hsla(0, 55%, 42%, 0.45);
+  background:
+    radial-gradient(120% 90% at 50% 0%, hsla(0, 60%, 22%, 0.35), transparent 60%),
+    hsl(0, 12%, 6%);
+  box-shadow: 0 24px 70px hsla(0, 0%, 0%, 0.75), 0 0 0 1px hsla(0, 0%, 100%, 0.03) inset;
+  animation: init-modal-in 0.28s ease;
+}
+@keyframes init-modal-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+.init-modal-head { margin-bottom: var(--sp-3); padding-right: 2rem; }
+.init-modal-title {
+  margin: 0.15rem 0 0.3rem;
+  font-size: 1.28rem;
+  color: var(--text-primary);
+}
+.init-modal-sub {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.init-roll-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.init-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0.5rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid hsla(0, 0%, 100%, 0.06);
+  background: hsla(0, 0%, 100%, 0.025);
+}
+.init-row.is-mine {
+  border-color: hsla(0, 60%, 50%, 0.5);
+  background: hsla(0, 55%, 26%, 0.18);
+}
+.init-row.is-rolled { opacity: 0.9; }
+.init-row.is-secret { border-style: dashed; }
+
+.init-row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.init-row-name {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.init-row-meta {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+
+.init-row-action { flex: 0 0 auto; }
+.init-row-wait {
   font-size: 0.7rem;
+  font-style: italic;
+  color: var(--text-secondary);
+}
+.init-row-total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.1;
+}
+.init-row-total strong {
+  font-size: 1.35rem;
+  color: var(--gold);
+}
+.init-row-total small {
+  font-size: 0.62rem;
+  color: var(--text-secondary);
+}
+
+.init-modal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-2);
+  border-top: 1px solid hsla(0, 0%, 100%, 0.07);
+}
+.init-progress {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+/* Encolhido: o modal vira uma pílula e libera a tela (preferência local) */
+.init-overlay.is-collapsed {
+  inset: auto auto var(--sp-3) 50%;
+  transform: translateX(-50%);
+  padding: 0;
+  background: none;
+  backdrop-filter: none;
+  display: block;
+}
+.init-overlay.is-collapsed .init-modal {
+  width: auto;
+  padding: 0.4rem 2.6rem 0.4rem 0.9rem;
+  animation: none;
+}
+.init-overlay.is-collapsed .init-modal-head { margin: 0; padding-right: 0; }
+.init-overlay.is-collapsed .init-modal-title { font-size: 0.85rem; margin: 0; }
+.init-overlay.is-collapsed .init-kicker,
+.init-overlay.is-collapsed .init-modal-sub,
+.init-overlay.is-collapsed .init-roll-list,
+.init-overlay.is-collapsed .init-modal-foot { display: none; }
+
+/* ── FASE 2 — painel flutuante da ordem de turno ──────────────────── */
+.init-tracker {
+  position: fixed;
+  top: calc(var(--sp-4) + 52px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2300;
+  width: min(340px, calc(100vw - 2rem));
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid hsla(0, 55%, 42%, 0.45);
+  background: hsla(0, 12%, 6%, 0.94);
+  box-shadow: 0 16px 44px hsla(0, 0%, 0%, 0.6);
+  animation: init-modal-in 0.28s ease;
+}
+.init-tracker[hidden] { display: none; }
+
+.init-tracker-head {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.55rem 2.4rem 0.55rem 0.75rem;
+  border-bottom: 1px solid hsla(0, 0%, 100%, 0.07);
+}
+.init-round-badge {
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--text-secondary);
   white-space: nowrap;
 }
 .init-round-num { color: var(--gold); }
-
 .init-status {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  margin: 0 0 var(--sp-2);
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-primary);
   min-height: 1.1em;
-}
-
-.init-master-controls {
-  display: flex;
-  gap: var(--sp-1);
-  flex-wrap: wrap;
-  margin-bottom: var(--sp-2);
 }
 
 .init-order-list {
   list-style: none;
-  padding: 0;
   margin: 0;
+  padding: var(--sp-1);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
 .init-entry {
-  display: grid;
-  grid-template-columns: 1.2rem 1fr auto auto;
+  display: flex;
   align-items: center;
-  gap: var(--sp-1);
-  padding: 5px var(--sp-2);
-  border-radius: 5px;
-  background: hsla(0,0%,100%,0.04);
-  font-size: 0.75rem;
-  transition: background 0.15s;
+  gap: 0.5rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
 }
+.init-entry.is-secret { opacity: 0.75; border-style: dashed; border-color: hsla(0, 0%, 100%, 0.12); }
 
-.init-entry.is-current {
-  background: hsla(0, 65%, 28%, 0.35);
-  outline: 1px solid hsla(0, 70%, 45%, 0.5);
-}
+.init-entry .init-avatar { width: 30px; height: 30px; }
 
 .init-pos {
+  flex: 0 0 auto;
+  width: 1.4rem;
+  text-align: center;
+  font-size: 0.7rem;
   color: var(--text-secondary);
-  font-size: 0.65rem;
-  text-align: right;
 }
-
 .init-name {
-  font-weight: 600;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.84rem;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.init-roll {
-  color: var(--text-secondary);
-  font-size: 0.7rem;
-  white-space: nowrap;
+.init-roll strong {
+  font-size: 0.92rem;
+  color: var(--gold);
 }
-.init-roll strong { color: var(--gold); }
+
+/* A VEZ: linha destacada e nome brilhando */
+.init-entry.is-current {
+  border-color: hsla(0, 65%, 50%, 0.6);
+  background: linear-gradient(90deg, hsla(0, 60%, 30%, 0.4), transparent);
+}
+.init-entry.is-current .init-name {
+  color: hsl(0, 85%, 78%);
+  font-weight: 700;
+  text-shadow: 0 0 10px hsla(0, 90%, 60%, 0.75), 0 0 22px hsla(0, 90%, 50%, 0.45);
+  animation: init-turn-glow 1.8s ease-in-out infinite;
+}
+@keyframes init-turn-glow {
+  0%, 100% { text-shadow: 0 0 8px hsla(0, 90%, 60%, 0.55), 0 0 18px hsla(0, 90%, 50%, 0.3); }
+  50%      { text-shadow: 0 0 14px hsla(0, 95%, 65%, 0.95), 0 0 30px hsla(0, 90%, 55%, 0.6); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .init-entry.is-current .init-name { animation: none; }
+  .init-modal, .init-tracker { animation: none; }
+}
 
 .init-remove-btn {
+  flex: 0 0 auto;
   background: none;
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
-  font-size: 0.65rem;
-  padding: 2px 4px;
-  border-radius: 3px;
-  line-height: 1;
   opacity: 0.5;
-  transition: opacity 0.15s, color 0.15s;
+  font-size: 0.75rem;
+  padding: 0 0.15rem;
 }
 .init-remove-btn:hover { opacity: 1; color: var(--red-mid); }
 
-.init-empty {
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  padding: var(--sp-2) 0;
-  text-align: center;
-}
-
-/* Banner de combate para jogadores */
-.initiative-banner {
-  position: absolute;
-  top: var(--sp-3);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 60;
+.init-master-controls {
   display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  background: hsla(0, 60%, 15%, 0.95);
-  border: 1px solid hsla(0, 70%, 40%, 0.6);
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 0.82rem;
-  box-shadow: 0 4px 20px hsla(0,0%,0%,0.5);
-  backdrop-filter: blur(6px);
-  animation: init-banner-in 0.35s ease;
+  gap: var(--sp-1);
+  flex-wrap: wrap;
+  padding: var(--sp-2);
+  border-top: 1px solid hsla(0, 0%, 100%, 0.07);
 }
+.init-master-controls .btn { flex: 1 1 auto; }
+.init-master-controls .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-@keyframes init-banner-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-}
-
-.initiative-banner-icon { font-size: 1.1rem; }
-.initiative-banner-text { color: var(--text-primary); }
-
-/* Popup de rolagem */
-.initiative-popup-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: hsla(0,0%,0%,0.65);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(4px);
-}
-
-.initiative-popup {
-  position: relative;
-  background: var(--bg-card);
-  border: 1px solid hsla(0,0%,100%,0.1);
-  border-radius: 12px;
-  padding: var(--sp-5) var(--sp-5) var(--sp-4);
-  min-width: 280px;
-  max-width: 360px;
-  text-align: center;
-  box-shadow: 0 12px 48px hsla(0,0%,0%,0.6);
-  animation: popup-in 0.25s ease;
-}
-
-@keyframes popup-in {
-  from { opacity: 0; transform: scale(0.9); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
-.initiative-popup-close {
-  position: absolute;
-  top: var(--sp-2);
-  right: var(--sp-2);
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 0.9rem;
-  line-height: 1;
-  padding: 4px 6px;
-  border-radius: 4px;
-  transition: color 0.15s;
-}
-.initiative-popup-close:hover { color: var(--text-primary); }
-
-.initiative-popup-title {
-  font-size: 1rem;
-  font-weight: 700;
-  margin: 0 0 var(--sp-2);
-  color: var(--gold);
-}
-
-.initiative-popup-hero {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  margin: 0 0 var(--sp-3);
-}
-.initiative-popup-hero strong { color: var(--text-primary); }
-
-.initiative-popup-formula {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin-bottom: var(--sp-3);
-}
-.initiative-popup-mod-wrap strong { color: var(--gold); }
-
-.initiative-popup-result-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-2);
-  margin-bottom: var(--sp-4);
-}
-
-.initiative-popup-result-label {
-  font-size: 0.65rem;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.initiative-popup-big {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--gold);
-  min-width: 2.5ch;
-  display: inline-block;
-}
+/* Encolhido: sobra só o cabeçalho com a vez atual */
+.init-tracker.is-collapsed .init-order-list,
+.init-tracker.is-collapsed .init-master-controls { display: none; }
 
 /* Btn danger (encerrar combate) */
 .btn.btn-danger {

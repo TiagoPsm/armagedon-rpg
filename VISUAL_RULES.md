@@ -16,6 +16,20 @@ C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 
 A pasta antiga `rpg-campaign` nao deve ser usada para editar layout, CSS, HTML ou assets publicados.
 
+## Iniciativa: modal central para agir, painel flutuante para acompanhar (2026-08-02, Etapa 77)
+
+Padrao de duas telas para o mesmo estado, reutilizavel em qualquer momento "todo mundo faz uma coisa e depois todo mundo acompanha":
+
+- **Enquanto se AGE** (fase de rolagem) → **modal central com backdrop** (`#initiativeOverlay`, `z-index: 2400`). Ocupa o centro porque a acao e obrigatoria e de todos ao mesmo tempo. `place-items: center`, largura `min(520px, 100%)`, altura maxima `min(78vh, 720px)` com a lista rolando por dentro.
+- **Enquanto se ACOMPANHA** (ordem de turno) → **painel flutuante sem backdrop** (`#initiativeTracker`, `z-index: 2300`), ancorado no topo-centro do palco, `width: min(340px, calc(100vw - 2rem))`. Nunca bloqueia a mesa: quem esta acompanhando precisa ver o palco.
+- **Colapsar e obrigatorio nos dois.** Botao `[data-init-collapse]` no canto; o modal vira pilula no rodape e o painel guarda a lista, sobrando so o cabecalho com a vez. E preferencia LOCAL — nunca sincroniza.
+
+### Destaque da vez: brilho, nao so cor
+
+O item ativo (`.init-entry.is-current`) recebe tres camadas: borda carmesim, gradiente lateral esmaecendo para a direita e o **nome com `text-shadow` duplo pulsando** (`init-turn-glow`, 1,8s). Cor sozinha nao basta — a lista e densa e o item ativo tem de saltar de relance, do outro lado da sala.
+
+Todo movimento adicionado aqui esta dentro de `@media (prefers-reduced-motion: reduce)`: com movimento reduzido, o brilho fica **estatico** (a borda e o gradiente continuam marcando a vez) e os paineis entram sem animacao. Regra geral: destaque nunca pode depender SO da animacao.
+
 ## Acessorios do token escalado: px de TELA, nunca de layout (2026-07-31, Etapa 71)
 
 O token inteiro vive dentro de um `transform: scale(var(--token-scale))`, entao

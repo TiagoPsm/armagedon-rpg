@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-02 04:18:47 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-02 18:59:36 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,12 +13,24 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `91c368f 2026-08-02 @ fix(permissoes): separa papeis na Mesa e na Ficha (Etapas 75-76)`
+- Ultimo commit: `5a6221b 2026-08-02 fix(permissoes): separa papeis na Mesa e na Ficha (Etapas 75-76)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
+M  DEV_STATUS.md
+M  SYSTEM_RULES.md
+M  VISUAL_RULES.md
+M  cloudflare/README.md
+M  cloudflare/src/mesa.js
+M  css/mesa.css
+M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  js/mesa-core.js
+M  js/mesa-initiative.js
+M  mesa.html
+M  tests/mesa-audit.spec.cjs
+M  tests/mesa-permissions.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -30,7 +42,18 @@
 ### Arquivos Em Stage
 
 ```text
-(nenhum)
+DEV_STATUS.md
+SYSTEM_RULES.md
+VISUAL_RULES.md
+cloudflare/README.md
+cloudflare/src/mesa.js
+css/mesa.css
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+js/mesa-core.js
+js/mesa-initiative.js
+mesa.html
+tests/mesa-audit.spec.cjs
+tests/mesa-permissions.spec.cjs
 ```
 
 ## Paginas Principais

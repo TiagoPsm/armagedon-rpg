@@ -786,138 +786,443 @@ test.describe("Regressao da auditoria — jogador", () => {
 });
 
 /* ============================================================
- * Etapa 37 — Iniciativa fim-a-fim
- * Antes desta etapa os deltas mesa:initiative:* eram descartados
- * pelo roteador do cliente e pelo DO; o estado sumia no F5.
+ * Etapa 77 — Iniciativa refeita (modal central + ordem de turno)
+ * Fluxo: mestre abre → TODOS veem o modal com os tokens em cena →
+ * jogador rola pelo proprio token → NPC/monstro rolam sozinhos →
+ * lista de ordem com a vez brilhando, Voltar/Passar so do mestre.
+ * (A Etapa 37 ja garantia que o delta nao era descartado e que o
+ * estado sobrevivia ao F5; esses casos continuam aqui.)
  * ============================================================ */
-test.describe("Iniciativa fim-a-fim (Etapa 37)", () => {
-  test("Worker: normalizeMesaScene preserva iniciativa ativa e limita a 50 entradas", async () => {
+test.describe("Iniciativa fim-a-fim (Etapa 77)", () => {
+  const ROLLING_STATE = {
+    active: true, phase: "rolling", round: 1, currentIndex: -1,
+    order: [
+      { id: "ana", characterKey: "ana", ownerUsername: "ana", type: "player", name: "Ana Rubra",
+        secret: false, auto: false, roll: 0, modifier: 0, total: 0, rolled: false },
+      { id: "bruno", characterKey: "bruno", ownerUsername: "bruno", type: "player", name: "Bruno Cinza",
+        secret: false, auto: false, roll: 0, modifier: 0, total: 0, rolled: false }
+    ]
+  };
+
+  const ORDER_STATE = {
+    active: true, phase: "order", round: 2, currentIndex: 1,
+    order: [
+      { id: "bruno", characterKey: "bruno", ownerUsername: "bruno", type: "player", name: "Bruno Cinza",
+        secret: false, auto: false, roll: 15, modifier: 2, total: 17, rolled: true },
+      { id: "ana", characterKey: "ana", ownerUsername: "ana", type: "player", name: "Ana Rubra",
+        secret: false, auto: false, roll: 12, modifier: 1, total: 13, rolled: true }
+    ]
+  };
+
+  test("Worker: normalizeMesaScene preserva fase, campos novos e limita a 50 entradas", async () => {
     const { normalizeMesaScene } = await import("../cloudflare/src/mesa.js");
     const manyEntries = Array.from({ length: 60 }, (_, i) => ({
-      id: `p${i}`, characterKey: `p${i}`, name: `P${i}`, roll: 10, modifier: 1, total: 11, rolled: true
+      id: `p${i}`, characterKey: `p${i}`, ownerUsername: `p${i}`, type: "player", name: `P${i}`,
+      secret: false, auto: false, roll: 10, modifier: 1, total: 11, rolled: true
     }));
     const active = normalizeMesaScene({
       tokens: [],
-      initiative: { active: true, round: 3, currentIndex: 1, order: manyEntries }
+      initiative: { active: true, phase: "order", round: 3, currentIndex: 1, order: manyEntries }
     });
     expect(active.initiative.active).toBe(true);
+    expect(active.initiative.phase).toBe("order");
     expect(active.initiative.round).toBe(3);
     expect(active.initiative.currentIndex).toBe(1);
     expect(active.initiative.order.length).toBe(50);
     expect(active.initiative.order[0]).toEqual({
-      id: "p0", characterKey: "p0", name: "P0", roll: 10, modifier: 1, total: 11, rolled: true
+      id: "p0", characterKey: "p0", ownerUsername: "p0", type: "player", name: "P0",
+      secret: false, auto: false, roll: 10, modifier: 1, total: 11, rolled: true
     });
 
     const inactive = normalizeMesaScene({ tokens: [] });
-    expect(inactive.initiative).toEqual({ active: false, round: 1, currentIndex: -1, order: [] });
+    expect(inactive.initiative).toEqual({ active: false, phase: "rolling", round: 1, currentIndex: -1, order: [] });
   });
 
-  test("jogador recebe mesa:initiative:update: painel + banner; banner some apos rolar", async ({ page }) => {
+  test("Worker: cena antiga sem `phase` reabre na fase certa e monstro nasce automatico", async () => {
+    const { normalizeMesaScene } = await import("../cloudflare/src/mesa.js");
+    const todosRolaram = normalizeMesaScene({
+      tokens: [],
+      initiative: {
+        active: true, round: 1, currentIndex: 0,
+        order: [{ id: "ana", characterKey: "ana", name: "Ana Rubra", roll: 9, modifier: 1, total: 10, rolled: true }]
+      }
+    });
+    expect(todosRolaram.initiative.phase).toBe("order");
+
+    const faltaRolar = normalizeMesaScene({
+      tokens: [],
+      initiative: {
+        active: true, round: 1, currentIndex: -1,
+        order: [
+          { id: "ana", characterKey: "ana", type: "player", name: "Ana Rubra", rolled: false },
+          { id: "goblin", characterKey: "monster:goblin", type: "monster", name: "Goblin", rolled: false }
+        ]
+      }
+    });
+    expect(faltaRolar.initiative.phase).toBe("rolling");
+    // `auto` ausente: quem nao e jogador rola sozinho.
+    expect(faltaRolar.initiative.order.map(e => e.auto)).toEqual([false, true]);
+  });
+
+  test("jogador: modal central de rolagem aparece com botao so na propria linha", async ({ page }) => {
     await installAppEmitHook(page);
     await seedPlayerWithScene(page, BASE_TOKENS);
     const baseUrl = await getMesaBaseUrl();
     await page.goto(`${baseUrl}/mesa.html`);
     await waitForMesaSettled(page);
 
-    // Mestre ativa combate (ana ainda nao rolou) — vindo de OUTRO cliente.
-    await page.evaluate(async () => {
+    await page.evaluate(async initiative => {
       window.APP.__testEmit("mesa:initiative:update", {
-        type: "mesa:initiative:update",
-        clientId: "cliente-do-mestre",
-        initiative: {
-          active: true, round: 2, currentIndex: 0,
-          order: [{ id: "bruno", characterKey: "bruno", name: "Bruno Cinza", roll: 15, modifier: 2, total: 17, rolled: true }]
-        }
+        type: "mesa:initiative:update", clientId: "cliente-do-mestre", initiative
       });
       await new Promise(resolve => setTimeout(resolve, 80));
-    });
+    }, ROLLING_STATE);
 
-    await expect(page.locator("#vttInitiativeBlock")).toBeVisible();
-    await expect(page.locator("#vttInitiativeBlock .init-round-num")).toHaveText("2");
-    await expect(page.locator("#vttInitiativeBlock .init-entry")).toHaveCount(1);
-    await expect(page.locator("#initiativeBanner")).toBeVisible();
-    // Controles de mestre nunca aparecem para o jogador
-    await expect(page.locator("#vttInitiativeBlock .init-master-controls")).toBeHidden();
-
-    // Update seguinte inclui a rolagem da propria ana → banner some.
-    await page.evaluate(async () => {
-      window.APP.__testEmit("mesa:initiative:update", {
-        type: "mesa:initiative:update",
-        clientId: "cliente-do-mestre",
-        initiative: {
-          active: true, round: 2, currentIndex: 0,
-          order: [
-            { id: "bruno", characterKey: "bruno", name: "Bruno Cinza", roll: 15, modifier: 2, total: 17, rolled: true },
-            { id: "ana", characterKey: "ana", name: "Ana Rubra", roll: 12, modifier: 1, total: 13, rolled: true }
-          ]
-        }
-      });
-      await new Promise(resolve => setTimeout(resolve, 80));
-    });
-    await expect(page.locator("#initiativeBanner")).toBeHidden();
-    await expect(page.locator("#vttInitiativeBlock .init-entry")).toHaveCount(2);
+    await expect(page.locator("#initiativeOverlay")).toBeVisible();
+    await expect(page.locator("#initiativeTracker")).toBeHidden();
+    await expect(page.locator("#initRollList .init-row")).toHaveCount(2);
+    // A sessao e da ana: so a linha dela tem botao de rolar.
+    await expect(page.locator('#initRollList [data-init-roll="ana"]')).toBeVisible();
+    await expect(page.locator('#initRollList [data-init-roll="bruno"]')).toHaveCount(0);
+    // Escape hatch do mestre nunca aparece para jogador.
+    await expect(page.locator("#initForceRollsBtn")).toBeHidden();
   });
 
-  test("mestre consome mesa:initiative:roll, reordena, re-broadcasta e persiste; rolagem forjada e descartada", async ({ page }) => {
+  test("jogador: clicar em Rolar manda a propria identidade e o token alvo", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedPlayerWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.evaluate(async initiative => {
+      window.sentInitiativeDeltas = [];
+      sendMesaRealtimeDelta = (type, payload) => { window.sentInitiativeDeltas.push({ type, payload }); return true; };
+      window.APP.__testEmit("mesa:initiative:update", {
+        type: "mesa:initiative:update", clientId: "cliente-do-mestre", initiative
+      });
+      await new Promise(resolve => setTimeout(resolve, 80));
+    }, ROLLING_STATE);
+
+    await page.locator('#initRollList [data-init-roll="ana"]').click();
+
+    const enviado = await page.evaluate(() =>
+      window.sentInitiativeDeltas.find(d => d.type === "mesa:initiative:roll")?.payload
+    );
+    expect(enviado.characterKey).toBe("ana");   // identidade que o DO confere
+    expect(enviado.tokenId).toBe("ana");        // alvo da rolagem
+    expect(enviado.roll).toBeGreaterThanOrEqual(1);
+    expect(enviado.roll).toBeLessThanOrEqual(20);
+    expect(enviado.total).toBe(enviado.roll + enviado.modifier);
+    // A propria linha ja mostra o resultado sem esperar o mestre responder.
+    await expect(page.locator("#initRollList .init-row.is-mine .init-row-total strong")).toBeVisible();
+  });
+
+  test("jogador: na fase de ordem ve a lista com a vez brilhando, nunca os controles do mestre", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedPlayerWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.evaluate(async initiative => {
+      window.APP.__testEmit("mesa:initiative:update", {
+        type: "mesa:initiative:update", clientId: "cliente-do-mestre", initiative
+      });
+      await new Promise(resolve => setTimeout(resolve, 80));
+    }, ORDER_STATE);
+
+    await expect(page.locator("#initiativeOverlay")).toBeHidden();
+    await expect(page.locator("#initiativeTracker")).toBeVisible();
+    await expect(page.locator("#initiativeTracker .init-round-num")).toHaveText("2");
+    await expect(page.locator("#initiativeTracker .init-entry")).toHaveCount(2);
+    // currentIndex 1 = Ana: a linha dela e a que brilha.
+    await expect(page.locator("#initiativeTracker .init-entry.is-current .init-name")).toHaveText("Ana Rubra");
+    await expect(page.locator("#initiativeTracker .init-status")).toHaveText("Vez de Ana Rubra");
+    await expect(page.locator("#initMasterControls")).toBeHidden();
+    await expect(page.locator("#initiativeTracker .init-remove-btn")).toHaveCount(0);
+  });
+
+  test("mestre: abrir o combate monta os participantes da cena, transmite e persiste", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const resultado = await page.evaluate(() => {
+      const sent = [];
+      let persisted = 0;
+      sendMesaRealtimeDelta = (type, payload) => { sent.push({ type, payload }); return true; };
+      persistState = () => { persisted += 1; };
+      activateInitiative();
+      const s = getInitiativeState();
+      return {
+        fase: s.phase,
+        ids: s.order.map(e => e.id),
+        automaticos: s.order.map(e => e.auto),
+        broadcastTypes: sent.map(c => c.type),
+        persisted
+      };
+    });
+
+    expect(resultado.fase).toBe("rolling");
+    expect(resultado.ids.sort()).toEqual(["ana", "bruno"]);
+    expect(resultado.automaticos).toEqual([false, false]);   // dois jogadores
+    expect(resultado.broadcastTypes).toContain("mesa:initiative:update");
+    expect(resultado.persisted).toBe(1);
+    await expect(page.locator("#initiativeOverlay")).toBeVisible();
+    await expect(page.locator("#initRollList .init-row")).toHaveCount(2);
+  });
+
+  test("modificador e o da FICHA (+1 a cada 3 pontos), nao o valor cru do atributo", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const mods = await page.evaluate(async () => {
+      const sheets = JSON.parse(localStorage.getItem("tc_sheets"));
+      sheets.ana.attrAgilidade = "5";     // floor(5/3) = +1
+      sheets.bruno.attrAgilidade = "9";   // floor(9/3) = +3
+      localStorage.setItem("tc_sheets", JSON.stringify(sheets));
+
+      sendMesaRealtimeDelta = () => true;
+      persistState = () => {};
+      activateInitiative();
+      forcePendingInitiativeRolls();
+      await new Promise(resolve => setTimeout(resolve, 200));
+      return Object.fromEntries(
+        getInitiativeState().order.map(e => [e.id, { mod: e.modifier, ok: e.total === e.roll + e.modifier }])
+      );
+    });
+
+    // Se voltasse o valor cru, seria 5 e 9 — a escala do sistema e a da ficha.
+    expect(mods.ana.mod).toBe(1);
+    expect(mods.bruno.mod).toBe(3);
+    expect(mods.ana.ok).toBe(true);
+    expect(mods.bruno.ok).toBe(true);
+  });
+
+  test("Echo nao entra na ordem: ele age no turno do dono (regra de 2026-08-02)", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const ordem = await page.evaluate(() => {
+      sendMesaRealtimeDelta = () => true;
+      persistState = () => {};
+      // Echo da ana em cena: nao pode virar linha propria na iniciativa,
+      // senao a ana agiria duas vezes por rodada.
+      state.tokens = [...state.tokens, {
+        id: "echo:1", characterKey: "echo:1", type: "echo", ownerUsername: "ana",
+        name: "Echo da Ana", x: 50, y: 50, order: 9, tokenScale: 1,
+        layer: "tokens", visibleToPlayers: true, statsVisibleToPlayers: false
+      }];
+      activateInitiative();
+      return getInitiativeState().order.map(entry => entry.id);
+    });
+
+    expect(ordem.sort()).toEqual(["ana", "bruno"]);
+    await expect(page.locator("#initRollList .init-row")).toHaveCount(2);
+  });
+
+  test("desempate: maior dado bruto passa na frente com o mesmo total", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const resultado = await page.evaluate(async () => {
+      sendMesaRealtimeDelta = () => true;
+      persistState = () => {};
+      activateInitiative();
+      // Mesmo total 19: ana 14+5, bruno 16+3 → bruno passa na frente.
+      const s = getInitiativeState();
+      s.order.find(e => e.id === "ana").rolled = true;
+      Object.assign(s.order.find(e => e.id === "ana"), { roll: 14, modifier: 5, total: 19 });
+      Object.assign(s.order.find(e => e.id === "bruno"), { roll: 16, modifier: 3, total: 19, rolled: true });
+      forcePendingInitiativeRolls();
+      await new Promise(resolve => setTimeout(resolve, 200));
+      return getInitiativeState().order.map(e => `${e.id}:${e.roll}+${e.modifier}=${e.total}`);
+    });
+
+    expect(resultado).toEqual(["bruno:16+3=19", "ana:14+5=19"]);
+  });
+
+  test("mestre: aceita rolagem legitima, recusa forjada (por ator e por token de outro)", async ({ page }) => {
     await installAppEmitHook(page);
     await seedMasterWithScene(page, BASE_TOKENS);
     const baseUrl = await getMesaBaseUrl();
     await page.goto(`${baseUrl}/mesa.html`);
     await waitForMesaSettled(page);
 
-    const result = await page.evaluate(async () => {
+    const resultado = await page.evaluate(async () => {
       const sent = [];
       let persisted = 0;
       sendMesaRealtimeDelta = (type, payload) => { sent.push({ type, payload }); return true; };
       persistState = () => { persisted += 1; };
-
       activateInitiative();
-      const afterActivate = {
-        broadcastTypes: sent.map(call => call.type),
-        persisted
+
+      const emitir = async extra => {
+        window.APP.__testEmit("mesa:initiative:roll", {
+          type: "mesa:initiative:roll", clientId: "cliente-da-ana",
+          roll: 15, modifier: 2, total: 17, ...extra
+        });
+        await new Promise(resolve => setTimeout(resolve, 60));
       };
 
-      // Rolagem legitima: ator ana rolando pelo proprio personagem.
-      window.APP.__testEmit("mesa:initiative:roll", {
-        type: "mesa:initiative:roll",
-        clientId: "cliente-da-ana",
-        characterKey: "ana", name: "Ana Rubra", roll: 15, modifier: 2, total: 17,
-        actor: { username: "ana", role: "player" }
-      });
-      await new Promise(resolve => setTimeout(resolve, 80));
-      const afterRoll = {
-        order: getInitiativeState().order.map(entry => entry.characterKey),
-        anaTotal: getInitiativeState().order.find(entry => entry.characterKey === "ana")?.total,
-        broadcasts: sent.filter(call => call.type === "mesa:initiative:update").length,
-        persisted
-      };
+      // Legitima: ana rolando pelo token da ana.
+      await emitir({ characterKey: "ana", tokenId: "ana", name: "Ana Rubra",
+        actor: { username: "ana", role: "player" } });
+      const depoisDaLegitima = getInitiativeState().order.find(e => e.id === "ana");
 
-      // Rolagem forjada: ator ana declarando o personagem do bruno.
-      window.APP.__testEmit("mesa:initiative:roll", {
-        type: "mesa:initiative:roll",
-        clientId: "cliente-da-ana",
-        characterKey: "bruno", name: "Bruno Cinza", roll: 20, modifier: 5, total: 25,
-        actor: { username: "ana", role: "player" }
-      });
-      await new Promise(resolve => setTimeout(resolve, 80));
+      // Forjada 1: ator ana declarando a identidade do bruno (barrada no roteador).
+      await emitir({ characterKey: "bruno", tokenId: "bruno", name: "Bruno Cinza",
+        actor: { username: "ana", role: "player" } });
+      // Forjada 2: identidade certa, mas mirando o token do bruno (barrada aqui).
+      await emitir({ characterKey: "ana", tokenId: "bruno", name: "Bruno Cinza",
+        actor: { username: "ana", role: "player" } });
 
       return {
-        afterActivate,
-        afterRoll,
-        finalOrder: getInitiativeState().order.map(entry => entry.characterKey)
+        anaRolou: depoisDaLegitima?.rolled,
+        anaTotal: depoisDaLegitima?.total,
+        brunoRolou: getInitiativeState().order.find(e => e.id === "bruno")?.rolled,
+        fase: getInitiativeState().phase,
+        broadcasts: sent.filter(c => c.type === "mesa:initiative:update").length,
+        persisted
       };
     });
 
-    // Ativar combate ja broadcasta o estado E persiste a cena
-    expect(result.afterActivate.broadcastTypes).toContain("mesa:initiative:update");
-    expect(result.afterActivate.persisted).toBe(1);
-    // Rolagem legitima entrou na ordem, re-broadcastou e re-persistiu
-    expect(result.afterRoll.order).toEqual(["ana"]);
-    expect(result.afterRoll.anaTotal).toBe(17);
-    expect(result.afterRoll.broadcasts).toBe(2);
-    expect(result.afterRoll.persisted).toBe(2);
-    // Rolagem forjada (ator != characterKey) nao entrou
-    expect(result.finalOrder).toEqual(["ana"]);
+    expect(resultado.anaRolou).toBe(true);
+    expect(resultado.anaTotal).toBe(17);
+    expect(resultado.brunoRolou).toBe(false);      // nenhuma forjada entrou
+    expect(resultado.fase).toBe("rolling");        // ainda falta o bruno
+    expect(resultado.broadcasts).toBe(2);          // abrir + rolagem aceita
+    expect(resultado.persisted).toBe(2);
+  });
+
+  test("mestre: quando todos rolam, a fase vira ordem sozinha e os botoes de conducao aparecem", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.evaluate(() => {
+      sendMesaRealtimeDelta = () => true;
+      persistState = () => {};
+      activateInitiative();
+      // Ninguem online para rolar: o mestre usa o escape hatch.
+      forcePendingInitiativeRolls();
+    });
+
+    await page.waitForFunction(() => getInitiativeState().phase === "order");
+    await expect(page.locator("#initiativeOverlay")).toBeHidden();
+    await expect(page.locator("#initiativeTracker")).toBeVisible();
+    await expect(page.locator("#initMasterControls")).toBeVisible();
+
+    // Ordem decrescente por total.
+    const totais = await page.evaluate(() => getInitiativeState().order.map(e => e.total));
+    expect([...totais].sort((a, b) => b - a)).toEqual(totais);
+
+    // Voltar no primeiro turno da rodada 1 nao existe.
+    await expect(page.locator("#initPrevTurnBtn")).toBeDisabled();
+
+    await page.locator("#initNextTurnBtn").click();
+    expect(await page.evaluate(() => getInitiativeState().currentIndex)).toBe(1);
+    await page.locator("#initNextTurnBtn").click();   // volta ao topo e vira a rodada
+    expect(await page.evaluate(() => getInitiativeState().round)).toBe(2);
+    expect(await page.evaluate(() => getInitiativeState().currentIndex)).toBe(0);
+
+    await page.locator("#initPrevTurnBtn").click();   // volta a rodada anterior
+    expect(await page.evaluate(() => getInitiativeState().round)).toBe(1);
+    expect(await page.evaluate(() => getInitiativeState().currentIndex)).toBe(1);
+  });
+
+  test("mestre: monstro rola sozinho depois que o ultimo jogador rola", async ({ page }) => {
+    await installAppEmitHook(page);
+    await page.addInitScript(() => {
+      if (localStorage.getItem("__mesa_audit_seeded")) return;
+      localStorage.setItem("__mesa_audit_seeded", "1");
+      localStorage.clear();
+      localStorage.setItem("__mesa_audit_seeded", "1");
+      localStorage.setItem("tc_session", JSON.stringify({
+        username: "mestre", role: "master", token: "", backend: false
+      }));
+      localStorage.setItem("tc_players", JSON.stringify([{ username: "ana", charname: "Ana Rubra" }]));
+      localStorage.setItem("tc_sheets", JSON.stringify({
+        // Agilidade 6 → mod +2; Agilidade 7 → mod +2 (a escala e +1 a cada 3).
+        ana: { charName: "Ana Rubra", vidaAtual: "8", vidaMax: "12", attrAgilidade: "6" },
+        "monster:goblin": { charName: "Goblin", vidaAtual: "9", vidaMax: "9", attrAgilidade: "7" }
+      }));
+      localStorage.setItem("tc_virtual_mesa_mock_v1", JSON.stringify({
+        sceneVersion: 3,
+        selectedTokenId: "",
+        tokens: [
+          { id: "ana", characterKey: "ana", type: "player", ownerUsername: "ana", name: "Ana Rubra",
+            x: 20, y: 20, order: 1, tokenScale: 1, layer: "tokens", visibleToPlayers: true, statsVisibleToPlayers: true },
+          { id: "monster:goblin", characterKey: "monster:goblin", type: "monster", ownerUsername: "mestre", name: "Goblin",
+            x: 60, y: 40, order: 2, tokenScale: 1, layer: "tokens", visibleToPlayers: true, statsVisibleToPlayers: false }
+        ]
+      }));
+    });
+
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.evaluate(async () => {
+      sendMesaRealtimeDelta = () => true;
+      persistState = () => {};
+      activateInitiative();
+      window.APP.__testEmit("mesa:initiative:roll", {
+        type: "mesa:initiative:roll", clientId: "cliente-da-ana",
+        characterKey: "ana", tokenId: "ana", name: "Ana Rubra",
+        roll: 11, modifier: 6, total: 17,
+        actor: { username: "ana", role: "player" }
+      });
+      await new Promise(resolve => setTimeout(resolve, 80));
+    });
+
+    // O goblin rola sozinho na hora; a troca de fase espera a pausa de revelacao.
+    const goblin = await page.evaluate(() => getInitiativeState().order.find(e => e.characterKey === "monster:goblin"));
+    expect(goblin.rolled).toBe(true);
+    // MODIFICADOR do atributo, nao o valor cru: Agilidade 7 → floor(7/3) = +2.
+    expect(goblin.modifier).toBe(2);
+    expect(goblin.total).toBe(goblin.roll + 2);
+
+    await page.waitForFunction(() => getInitiativeState().phase === "order", null, { timeout: 5000 });
+    await expect(page.locator("#initiativeTracker .init-entry")).toHaveCount(2);
+  });
+
+  test("token secreto (camada dm) entra na ordem do mestre e some para o jogador", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedPlayerWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.evaluate(async () => {
+      window.APP.__testEmit("mesa:initiative:update", {
+        type: "mesa:initiative:update", clientId: "cliente-do-mestre",
+        initiative: {
+          active: true, phase: "order", round: 1, currentIndex: 0,
+          order: [
+            { id: "emboscada", characterKey: "monster:emboscada", type: "monster", name: "Emboscada",
+              secret: true, auto: true, roll: 19, modifier: 3, total: 22, rolled: true },
+            { id: "ana", characterKey: "ana", ownerUsername: "ana", type: "player", name: "Ana Rubra",
+              secret: false, auto: false, roll: 12, modifier: 1, total: 13, rolled: true }
+          ]
+        }
+      });
+      await new Promise(resolve => setTimeout(resolve, 80));
+    });
+
+    await expect(page.locator("#initiativeTracker .init-entry")).toHaveCount(1);
+    await expect(page.locator("#initiativeTracker .init-name")).toHaveText("Ana Rubra");
+    // A vez e do token secreto: o jogador sabe que e turno do mestre, nao quem e.
+    await expect(page.locator("#initiativeTracker .init-status")).toHaveText("Turno do mestre…");
+    await expect(page.locator("#initiativeTracker .init-entry.is-current")).toHaveCount(0);
   });
 
   test("iniciativa ativa sobrevive ao F5 do mestre (persistState + snapshot da cena)", async ({ page }) => {
@@ -933,12 +1238,14 @@ test.describe("Iniciativa fim-a-fim (Etapa 37)", () => {
       JSON.parse(localStorage.getItem("tc_virtual_mesa_mock_v1"))?.initiative
     );
     expect(savedInitiative?.active).toBe(true);
+    expect(savedInitiative?.phase).toBe("rolling");
 
     await page.reload();
     await waitForMesaSettled(page);
-    await expect(page.locator("#vttInitiativeBlock")).toBeVisible();
-    const restored = await page.evaluate(() => getInitiativeState().active);
-    expect(restored).toBe(true);
+    await expect(page.locator("#initiativeOverlay")).toBeVisible();
+    const restored = await page.evaluate(() => getInitiativeState());
+    expect(restored.active).toBe(true);
+    expect(restored.phase).toBe("rolling");
   });
 
   test("assinatura de dedupe da cena muda quando a iniciativa muda", async ({ page }) => {
@@ -953,10 +1260,13 @@ test.describe("Iniciativa fim-a-fim (Etapa 37)", () => {
       persistState = () => {};
       const before = getMesaSceneSignature(createMesaScenePayloadFromState());
       activateInitiative();
-      const after = getMesaSceneSignature(createMesaScenePayloadFromState());
-      return { changed: before !== after };
+      const afterActivate = getMesaSceneSignature(createMesaScenePayloadFromState());
+      forcePendingInitiativeRolls();
+      const afterRolls = getMesaSceneSignature(createMesaScenePayloadFromState());
+      return { abriu: before !== afterActivate, rolou: afterActivate !== afterRolls };
     });
-    expect(result.changed).toBe(true);
+    expect(result.abriu).toBe(true);
+    expect(result.rolou).toBe(true);
   });
 });
 
