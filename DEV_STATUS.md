@@ -38,7 +38,7 @@ Tiago: "nao deve ser possivel selecionar o desenho e outra forma de interagir co
 - **Teto de tracos**: 300 → **1500** tracos e 200 → **400** pontos por traco de lapis. O limitador real nao era a contagem e sim o corpo do `PUT /api/mesa/scene`, que subiu de 256KB para **1MB** — sem isso o teto novo era inalcancavel. `MAX_RELAY_DRAWINGS` do Durable Object acompanhou. Um traco de lapis CHEIO (400 pontos) da ~7KB, bem abaixo do cap de 32KB por mensagem, entao o delta de um traco continua cabendo sempre.
 - **Arquivos**: js/mesa-select.js, js/mesa-drawing.js, cloudflare/src/mesa.js, cloudflare/src/mesa-realtime-rules.js, cloudflare/src/index.js, mesa.html (`?v=2026-08-02-exclusivo-1`), tests/mesa-audit.spec.cjs.
 - **Validacoes**: `check:js` OK, `audit:static` OK, `test:mesa:audit` 123/123 (3 novos + 3 adaptados aos tetos), `test:mesa` 5/5, `test:mesa:tokens` 10/10, `test:ficha` 29/29, `perf:mesa` 1/1, `wrangler deploy --dry-run` limpo. Um dos testes novos compara o teto do cliente com o do Worker e com o do DO — os tres tem que bater.
-- **PRECISA DE DEPLOY DO WORKER**: sem ele, o Worker segue cortando em 300 tracos/200 pontos e recusando corpo acima de 256KB — o quadro ficaria maior na tela do que no banco.
+- **Deploy feito** em 2026-08-02, version ID `1d0cf43e-78d1-4178-ab00-a21d084ebb86` (dry-run limpo antes; health 200 depois). Sem ele, o Worker seguiria cortando em 300 tracos/200 pontos e recusando corpo acima de 256KB — o quadro ficaria maior na tela do que no banco.
 
 ## Etapa Anterior (2026-08-02 — Etapa 73: nao dava para desenhar no palco)
 
