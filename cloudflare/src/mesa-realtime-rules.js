@@ -104,7 +104,9 @@ const MASTER_ONLY_MAP_SIGNAL_TYPES = new Set([
 const MAX_WS_MESSAGE_CHARS = 32 * 1024;
 const MAX_MAP_CHUNK_MESSAGE_CHARS = 128 * 1024;
 const MAX_WS_MESSAGE_CHARS_HARD = 256 * 1024;
-const MAX_RELAY_DRAWINGS = 300;
+// Etapa 74: acompanha MAX_DRAWINGS de mesa.js (300 → 1500). O que segura o
+// full-state continua sendo o cap de 32KB por mensagem, checado antes daqui.
+const MAX_RELAY_DRAWINGS = 1500;
 
 /**
  * Valida o tamanho de uma mensagem WS crua ANTES do parse completo.

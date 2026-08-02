@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-01 15:46:12 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-02 03:20:31 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,18 +13,27 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `c26019c 2026-08-01 fix(mesa): alcas de resize fora do canto em token grande (Etapa 71)`
+- Ultimo commit: `e0f56aa 2026-08-01 fix(mesa): etiqueta de tamanho tampada pelo botao de status (Etapa 72)`
 
 ### Alteracoes Locais
 
 ```text
+M  .claude/SKILL_IMPROVEMENTS.md
  M .claude/settings.local.json
 M  DEV_STATUS.md
+M  SYSTEM_RULES.md
 M  VISUAL_RULES.md
+M  cloudflare/README.md
+M  cloudflare/src/index.js
+M  cloudflare/src/mesa-realtime-rules.js
+M  cloudflare/src/mesa.js
+M  css/mesa-drawing.css
 M  css/mesa-stage.css
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  js/mesa-drawing.js
+M  js/mesa-select.js
 M  mesa.html
-M  tests/mesa-token-handles.spec.cjs
+M  tests/mesa-audit.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -37,11 +46,20 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ### Arquivos Em Stage
 
 ```text
+.claude/SKILL_IMPROVEMENTS.md
 DEV_STATUS.md
+SYSTEM_RULES.md
 VISUAL_RULES.md
+cloudflare/README.md
+cloudflare/src/index.js
+cloudflare/src/mesa-realtime-rules.js
+cloudflare/src/mesa.js
+css/mesa-drawing.css
 css/mesa-stage.css
+js/mesa-drawing.js
+js/mesa-select.js
 mesa.html
-tests/mesa-token-handles.spec.cjs
+tests/mesa-audit.spec.cjs
 ```
 
 ## Paginas Principais

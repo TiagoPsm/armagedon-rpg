@@ -45,10 +45,9 @@ function getInteractionMode()   { return _interactionMode; }
 function getSelectedTokenIds()  { return new Set(_selectedTokenIds); }
 function getSelectedStrokeIds() { return new Set(_selectedStrokeIds); }
 
-function setInteractionMode(mode) {
-  if (mode !== "select" && mode !== "move") return;
-  // Toggle: clicar no modo já ativo desativa
-  const next = (_interactionMode === mode) ? null : mode;
+// Só aplica o modo — não mexe na ferramenta de desenho. Separado para que
+// mesa-drawing.js possa desligar o modo sem cair em recursão (Etapa 74).
+function _applyInteractionMode(next) {
   _interactionMode = next;
   window._mesaInteractionMode = next;
 
@@ -61,11 +60,27 @@ function setInteractionMode(mode) {
   const wrap = document.getElementById("mesaStageWrap");
   if (wrap) wrap.dataset.interactionMode = next ?? "";
 
-  if (typeof setDrawTool === "function") setDrawTool(null);
-  if (typeof _closeFlyout === "function") _closeFlyout();
-
   clearMultiSelection();
 }
+
+function setInteractionMode(mode) {
+  if (mode !== "select" && mode !== "move") return;
+  // Toggle: clicar no modo já ativo desativa
+  const next = (_interactionMode === mode) ? null : mode;
+  _applyInteractionMode(next);
+
+  // Exclusão mútua: mão/seleção e desenho nunca ficam armados juntos.
+  if (typeof setDrawTool === "function") setDrawTool(null);
+  if (typeof _closeFlyout === "function") _closeFlyout();
+}
+
+// Chamado por setDrawTool: escolher uma ferramenta de desenho desarma a mão
+// e a seleção por área. O outro lado da exclusão mútua (Etapa 74).
+function clearMesaInteractionMode() {
+  if (_interactionMode === null) return;
+  _applyInteractionMode(null);
+}
+window.clearMesaInteractionMode = clearMesaInteractionMode;
 
 function clearMultiSelection() {
   _selectedTokenIds.clear();

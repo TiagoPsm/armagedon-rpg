@@ -34,6 +34,16 @@ Cada skill use é registrada assim:
 
 ## 📝 Log de Usos
 
+### [2026-08-02] - 01-code-review-frontend - ✅ APROPRIADA (bug de event handling / camadas)
+
+**Pedido:** "Faça uma verificação sobre o sistema de desenhos, não está sendo possível desenhar no board."
+
+**O que funcionou:**
+- A lente de *event handling* da skill levou direto à causa: hit-test de camadas, não lógica de desenho. O JS estava correto o tempo todo.
+- Medir antes de teorizar (`elementsFromPoint` via Playwright) evitou palpite: ficou provado que `#mesaStage` estava acima do canvas.
+
+**Aprendizado para a skill:** quando o sintoma for "o clique não faz nada", checar a PILHA de camadas (z-index + pointer-events) antes de ler o handler. Regressão clássica de mudança de z-index feita em outra etapa.
+
 ### [2026-06-16] - 03-page-architecture - ✅ APROPRIADA + SKILL APRIMORADA (faixa preta lateral)
 
 **Trigger:**

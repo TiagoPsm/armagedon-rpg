@@ -30,7 +30,29 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-01 — Etapa 72: etiqueta de tamanho tampada pelo botao)
+## Ultima Etapa Concluida (2026-08-02 — Etapa 74: uma ferramenta por vez + teto de tracos maior)
+
+Tiago: "nao deve ser possivel selecionar o desenho e outra forma de interagir com o quadro ao mesmo tempo" + "quero que o limite de traco seja grandemente aumentado".
+
+- **Exclusao mutua**: a metade que existia era so uma — `setInteractionMode` ja chamava `setDrawTool(null)`, mas escolher uma ferramenta de desenho NAO desligava a mao/selecao. Os dois botoes ficavam acesos e o mesmo arrasto disputava desenhar e arrastar o palco. Agora `setDrawTool` chama `clearMesaInteractionMode()`. Para nao virar recursao, o miolo de `setInteractionMode` saiu para `_applyInteractionMode(next)` (aplica estado + botoes + `data-interaction-mode` + limpa a selecao multipla) e as duas portas de entrada usam ele.
+- **Teto de tracos**: 300 → **1500** tracos e 200 → **400** pontos por traco de lapis. O limitador real nao era a contagem e sim o corpo do `PUT /api/mesa/scene`, que subiu de 256KB para **1MB** — sem isso o teto novo era inalcancavel. `MAX_RELAY_DRAWINGS` do Durable Object acompanhou. Um traco de lapis CHEIO (400 pontos) da ~7KB, bem abaixo do cap de 32KB por mensagem, entao o delta de um traco continua cabendo sempre.
+- **Arquivos**: js/mesa-select.js, js/mesa-drawing.js, cloudflare/src/mesa.js, cloudflare/src/mesa-realtime-rules.js, cloudflare/src/index.js, mesa.html (`?v=2026-08-02-exclusivo-1`), tests/mesa-audit.spec.cjs.
+- **Validacoes**: `check:js` OK, `audit:static` OK, `test:mesa:audit` 123/123 (3 novos + 3 adaptados aos tetos), `test:mesa` 5/5, `test:mesa:tokens` 10/10, `test:ficha` 29/29, `perf:mesa` 1/1, `wrangler deploy --dry-run` limpo. Um dos testes novos compara o teto do cliente com o do Worker e com o do DO — os tres tem que bater.
+- **PRECISA DE DEPLOY DO WORKER**: sem ele, o Worker segue cortando em 300 tracos/200 pontos e recusando corpo acima de 256KB — o quadro ficaria maior na tela do que no banco.
+
+## Etapa Anterior (2026-08-02 — Etapa 73: nao dava para desenhar no palco)
+
+Tiago: "nao esta sendo possivel desenhar no board; a ideia e desenhar na mesma camada dos tokens, todos compartilham".
+
+- **Causa (regressao da Etapa 66)**: `#mesaStage`, o container dos tokens, e `position: absolute; inset: 0` e cobre TODO o palco. A Etapa 66 subiu ele para `z-index: 10` (para a grade parar de passar por cima dos tokens), acima do `#mesaDrawCanvas` (z 8). Sem `pointer-events: none`, ele passou a engolir **todo** `mousedown` do palco: o canvas recebia `pointer-events: all` do `setDrawTool`, mas nunca era o alvo do hit-test. Medido com Playwright: com o lapis ativo, `elementsFromPoint` devolvia `#mesaStage` acima do canvas e o `mousedown` do canvas nunca disparava (0 tracos).
+- **Correcao (css/mesa-stage.css)**: `.mesa-stage { pointer-events: none }` + `.mesa-token { pointer-events: auto }` — quem precisa do ponteiro sao os tokens, nao o container. Seleção, arrasto, marquee e pan seguem iguais (todos escutam no `#mesaStageWrap`, ninguem escuta no `#mesaStage`).
+- **Ferramenta ativa sobe o canvas (css/mesa-drawing.css)**: `setDrawTool` agora marca `data-draw-active` no `#mesaStageWrap` e o CSS decide tudo (cursor, `z-index: 11` e `pointer-events`). Com ferramenta ativa o desenho fica ACIMA dos tokens — da para comecar um traco em cima de um token e apagar traco que passa por baixo; sem ferramenta ele volta para z 8, abaixo dos tokens. Sumiu o `pointer-events`/cursor inline, que nao resolvia nada.
+- **Camada unica (js/mesa-drawing.js)**: acabou a camada secreta de desenho. Todo traco nasce em `layer: "tokens"`, o render nao filtra mais por papel, Ctrl+Z desfaz o ultimo traco sem olhar camada e os tres caminhos de sync (add/remove/full-state) mandam tudo. Traco antigo `dm` e adotado como compartilhado na leitura (`_asSharedStrokes`), sem migracao de banco.
+- **Arquivos**: css/mesa-stage.css, css/mesa-drawing.css, js/mesa-drawing.js, mesa.html (`?v=2026-08-02-desenho-1` nos tres), tests/mesa-audit.spec.cjs.
+- **Validacoes**: `check:js` OK, `audit:static` OK, `test:mesa:audit` 120/120 (3 testes novos + 4 adaptados a camada unica), `test:mesa` 5/5, `test:mesa:tokens` 10/10, `test:ficha` 29/29, `perf:mesa` 1/1. O teste novo desenha com mouse de verdade e exige traco no palco E em cima de um token; antes da correcao o traco nao existia.
+- **Sem mudanca no Worker**: `normalizeSceneDrawing` ja default para `layer: "tokens"`; os filtros de `dm` do DO e do GET continuam la, so ficaram inertes.
+
+## Etapa Anterior (2026-08-01 — Etapa 72: etiqueta de tamanho tampada pelo botao)
 
 Tiago mandou print: o valor mostrado enquanto o token e redimensionado ficava atras do botao de efeitos de status.
 

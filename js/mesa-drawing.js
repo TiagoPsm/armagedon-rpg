@@ -34,8 +34,13 @@ const ERASE_RADIUS = 22;
  */
 const DRAW_COORD_DECIMALS = 4;
 const DRAW_MIN_POINT_DIST = 0.002;   // 0,2% do canvas entre pontos do lápis
-const DRAW_MAX_POINTS  = 200;        // = MAX_DRAW_POINTS do Worker
-const DRAW_MAX_STROKES = 300;        // = MAX_DRAWINGS do Worker
+// Etapa 74: os tetos subiram muito (300→1500 traços, 200→400 pontos). O que
+// segura de verdade não é a contagem, é o corpo do PUT /mesa/scene — que
+// passou de 256KB para 1MB junto. Um traço de lápis cheio (400 pontos) dá
+// ~7KB, bem abaixo do cap de 32KB por mensagem do DO, então o delta de UM
+// traço continua cabendo sempre.
+const DRAW_MAX_POINTS  = 400;        // = MAX_DRAW_POINTS do Worker
+const DRAW_MAX_STROKES = 1500;       // = MAX_DRAWINGS do Worker
 // Teto de segurança do full-state (só o reenvio a quem entra depois usa):
 // abaixo do cap de 32KB do DO, com folga para o envelope.
 const DRAW_FULL_STATE_MAX_CHARS = 30 * 1024;
@@ -43,6 +48,22 @@ const DRAW_FULL_STATE_MAX_CHARS = 30 * 1024;
 function _round4(value) {
   const factor = 10 ** DRAW_COORD_DECIMALS;
   return Math.round(value * factor) / factor;
+}
+
+/* ── Camada única (Etapa 73) ───────────────────────────────────────
+ * O desenho não tem mais camada secreta do mestre: mestre e jogadores
+ * dividem exatamente a MESMA camada, a dos tokens. Traços antigos
+ * gravados como "dm" (que nunca saíram do navegador do mestre) passam a
+ * valer como compartilhados na primeira leitura. O campo `layer`
+ * continua no payload porque o Worker o normaliza. */
+function _asSharedStroke(stroke) {
+  return stroke && stroke.layer !== "tokens" ? { ...stroke, layer: "tokens" } : stroke;
+}
+
+function _asSharedStrokes(list) {
+  return (Array.isArray(list) ? list : [])
+    .filter(s => s && typeof s === "object")
+    .map(_asSharedStroke);
 }
 
 const PALETTE = [
@@ -87,7 +108,7 @@ function _persistDrawings() {
 function _readLocalDrawings() {
   try {
     const saved = JSON.parse(localStorage.getItem(MESA_DRAWINGS_STORAGE_KEY) || "[]");
-    return Array.isArray(saved) ? saved : [];
+    return _asSharedStrokes(saved);
   } catch {
     return [];
   }
@@ -110,19 +131,9 @@ function applyMesaSceneDrawingsFromSnapshot(drawings) {
   if (!Array.isArray(drawings)) return;
   _sceneDrawingsApplied = true;
 
-  let next = drawings.filter(s => s && typeof s === "object");
-  if (typeof isMaster === "function" && isMaster()) {
-    // Mestre preserva traços secretos locais que a cena ainda não tem (ex.:
-    // desenhados offline antes do PUT) — mesmo merge dos tokens "dm" no boot.
-    const existing = _strokes.length ? _strokes : _readLocalDrawings();
-    const sceneIds = new Set(next.map(s => String(s.id)));
-    const localSecret = existing.filter(s => s.layer === "dm" && !sceneIds.has(String(s.id)));
-    next = [...next, ...localSecret];
-  } else {
-    next = next.filter(s => s.layer !== "dm");
-  }
-
-  _strokes = next;
+  // Camada única: a cena é a fonte de verdade para todo mundo, sem ramo
+  // separado para o mestre (Etapa 73).
+  _strokes = _asSharedStrokes(drawings);
   _persistDrawings();
   renderDrawings();
 }
@@ -177,6 +188,13 @@ function setDrawTool(tool) {
   // toggle: clicar na mesma ferramenta desativa
   _activeTool = (_activeTool === tool) ? null : tool;
 
+  // Exclusão mútua (Etapa 74): com uma ferramenta de desenho armada, a mão e a
+  // seleção por área saem do ar. Antes os dois ficavam acesos ao mesmo tempo e
+  // o mesmo arrasto queria desenhar E arrastar o palco.
+  if (_activeTool && typeof window.clearMesaInteractionMode === "function") {
+    window.clearMesaInteractionMode();
+  }
+
   // itens do flyout
   document.querySelectorAll("[data-draw-tool]").forEach(btn => {
     const active = btn.dataset.drawTool === _activeTool;
@@ -188,22 +206,18 @@ function setDrawTool(tool) {
   const toggleBtn = document.getElementById("mesaDrawToggleBtn");
   if (toggleBtn) toggleBtn.classList.toggle("has-active-tool", Boolean(_activeTool));
 
-  // canvas: captura eventos só quando ferramenta ativa
-  if (_drawCanvasEl) {
-    const on = Boolean(_activeTool);
-    _drawCanvasEl.style.pointerEvents = on ? "all" : "none";
-    _drawCanvasEl.style.cursor = on
-      ? (_activeTool === "eraser" ? "cell" : "crosshair")
-      : "";
-  }
-
   // painel de opções dentro do flyout: oculta para borracha e sem ferramenta
   const opts = document.getElementById("mesaDrawOptions");
   if (opts) opts.hidden = !_activeTool || _activeTool === "eraser";
 
-  // cursor do stage-wrap
+  // Uma marca só no wrap manda em tudo (cursor, z-index e captura do ponteiro
+  // do canvas) — ver css/mesa-drawing.css. Antes o pointer-events ia inline no
+  // canvas e não adiantava nada: o container dos tokens ficava por cima.
   const wrap = document.getElementById("mesaStageWrap");
-  if (wrap) wrap.style.cursor = _activeTool ? "crosshair" : "";
+  if (wrap) {
+    if (_activeTool) wrap.setAttribute("data-draw-active", _activeTool === "eraser" ? "eraser" : "true");
+    else wrap.removeAttribute("data-draw-active");
+  }
 }
 
 function getDrawTool() { return _activeTool; }
@@ -260,19 +274,11 @@ function _bindDrawEvents() {
       }
       _closeFlyout();
     }
-    // Ctrl+Z: desfaz o último traço DA CAMADA ATIVA (nunca cruza tokens <-> dm,
-    // pra nao apagar um traço secreto do mestre por acidente ao desfazer na camada normal).
-    if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
-      const activeLayer = (typeof getMesaActiveLayer === "function" && getMesaActiveLayer() === "dm") ? "dm" : "tokens";
-      for (let i = _strokes.length - 1; i >= 0; i--) {
-        const strokeLayer = _strokes[i].layer === "dm" ? "dm" : "tokens";
-        if (strokeLayer === activeLayer) {
-          const [undone] = _strokes.splice(i, 1);
-          renderDrawings();
-          _commitStrokeRemove([undone]);
-          break;
-        }
-      }
+    // Ctrl+Z: desfaz o último traço. Camada única — não há mais o que separar.
+    if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey && _strokes.length) {
+      const [undone] = _strokes.splice(_strokes.length - 1, 1);
+      renderDrawings();
+      _commitStrokeRemove([undone]);
     }
   });
 }
@@ -296,8 +302,8 @@ function _onDrawStart(e) {
     tool:   _activeTool,
     color:  _drawColor,
     width:  _drawWidth,
-    // Camada do traço: "dm" (secreto, só o mestre) quando a camada ativa é a do mestre.
-    layer:  (typeof getMesaActiveLayer === "function" && getMesaActiveLayer() === "dm") ? "dm" : "tokens",
+    // Camada única, compartilhada por mestre e jogadores (Etapa 73).
+    layer:  "tokens",
     x1: px, y1: py,
     x2: px, y2: py,
     points: _activeTool === "pencil" ? [[px, py]] : null
@@ -396,9 +402,8 @@ function renderDrawings() {
   const h = _drawCanvasEl.offsetHeight;
   _drawCtx.clearRect(0, 0, w, h);
 
-  const isMasterView = typeof isMaster !== "function" || isMaster();
-  const base = isMasterView ? _strokes : _strokes.filter(s => s.layer !== "dm");
-  const all = _activeStroke ? [...base, _activeStroke] : base;
+  // Camada única: todo mundo vê os mesmos traços (Etapa 73).
+  const all = _activeStroke ? [..._strokes, _activeStroke] : _strokes;
   all.forEach(_renderStroke);
 }
 
@@ -413,8 +418,7 @@ function _renderStroke(s) {
   ctx.lineWidth   = s.width;
   ctx.lineCap     = "round";
   ctx.lineJoin    = "round";
-  // Traço da camada secreta aparece mais translúcido para o mestre se distinguir.
-  ctx.globalAlpha = s.layer === "dm" ? 0.5 : 0.88;
+  ctx.globalAlpha = 0.88;
 
   switch (s.tool) {
 
@@ -493,15 +497,8 @@ function deleteDrawingsById(ids) {
 
 // ── Sync externo ───────────────────────────────────────────────────
 function setDrawingsFromRemote(strokes) {
-  const incoming = Array.isArray(strokes) ? strokes : [];
-  // O mestre preserva os PRÓPRIOS traços secretos (camada "dm"), que nunca
-  // trafegam pela rede — só o restante é substituído pelo estado remoto.
-  if (typeof isMaster === "function" && isMaster()) {
-    const secret = _strokes.filter(s => s.layer === "dm");
-    _strokes = [...incoming.filter(s => s.layer !== "dm"), ...secret];
-  } else {
-    _strokes = incoming;
-  }
+  // Camada única: o estado remoto vale para mestre e jogador do mesmo jeito.
+  _strokes = _asSharedStrokes(strokes);
   _persistDrawings();
   renderDrawings();
 }
@@ -510,22 +507,20 @@ function setDrawingsFromRemote(strokes) {
 // id já conhecido é ignorado, então reenvio/duplicata não desenha duas vezes.
 function applyMesaDrawingAddFromRemote(stroke) {
   if (!stroke || typeof stroke !== "object") return;
-  if (stroke.layer === "dm") return;   // traço secreto nunca vem pela rede
   const id = String(stroke.id || "");
   if (!id || _strokes.some(s => String(s.id) === id)) return;
   if (_strokes.length >= DRAW_MAX_STROKES) return;
-  _strokes.push(stroke);
+  _strokes.push(_asSharedStroke(stroke));
   _persistDrawings();
   renderDrawings();
 }
 
-// Chega uma remoção de outro cliente (mesa:drawings:remove). O mestre nunca
-// deixa a rede apagar um traço da camada secreta dele.
+// Chega uma remoção de outro cliente (mesa:drawings:remove).
 function applyMesaDrawingRemoveFromRemote(ids) {
   if (!Array.isArray(ids) || !ids.length) return;
   const idSet = new Set(ids.map(String));
   const before = _strokes.length;
-  _strokes = _strokes.filter(s => !(idSet.has(String(s.id)) && s.layer !== "dm"));
+  _strokes = _strokes.filter(s => !idSet.has(String(s.id)));
   if (_strokes.length === before) return;
   _persistDrawings();
   renderDrawings();
@@ -544,19 +539,18 @@ function _persistDrawingsAndScene() {
   if (typeof persistState === "function") persistState();
 }
 
-// Traço recém-fechado → viaja sozinho. Traço "dm" (secreto do mestre) NUNCA sai
-// pelo realtime; ele só chega ao backend pelo PUT /mesa/scene do mestre.
+// Traço recém-fechado → viaja sozinho para todo mundo (camada única).
 function _commitStrokeAdd(stroke) {
-  if (stroke && stroke.layer !== "dm" && typeof sendMesaRealtimeDelta === "function") {
+  if (stroke && typeof sendMesaRealtimeDelta === "function") {
     sendMesaRealtimeDelta("mesa:drawings:add", { stroke });
   }
   _persistDrawingsAndScene();
 }
 
-// Borracha/desfazer/deleção → só os ids. Mesma regra da camada secreta.
+// Borracha/desfazer/deleção → só os ids.
 function _commitStrokeRemove(strokes) {
   const ids = (Array.isArray(strokes) ? strokes : [])
-    .filter(s => s && s.layer !== "dm")
+    .filter(Boolean)
     .map(s => String(s.id || ""))
     .filter(Boolean);
   if (ids.length && typeof sendMesaRealtimeDelta === "function") {
@@ -572,7 +566,7 @@ function _commitStrokeRemove(strokes) {
 function _broadcastDrawings() {
   _persistDrawings();
   if (typeof sendMesaRealtimeDelta === "function") {
-    const drawings = _strokes.filter(s => s.layer !== "dm");
+    const drawings = _strokes;
     if (JSON.stringify(drawings).length <= DRAW_FULL_STATE_MAX_CHARS) {
       sendMesaRealtimeDelta("mesa:drawings:update", { drawings });
     }

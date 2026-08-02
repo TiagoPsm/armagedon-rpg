@@ -12,6 +12,15 @@
   touch-action: none;
 }
 
+/* Com uma ferramenta ativa o canvas sobe ACIMA dos tokens (z 10) e passa a
+ * receber o ponteiro: assim da para comecar um traco em cima de um token e
+ * apagar um traco que passa por baixo dele. Sem ferramenta ele volta para
+ * baixo dos tokens, que e onde o desenho deve ficar em repouso (Etapa 73). */
+.mesa-stage-wrap[data-draw-active] #mesaDrawCanvas {
+  z-index: 11;
+  pointer-events: auto;
+}
+
 /* ─── Botão toggle na toolbar — destaque quando flyout aberto ── */
 
 #mesaDrawToggleBtn.is-open,

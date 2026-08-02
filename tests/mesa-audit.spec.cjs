@@ -967,7 +967,7 @@ test.describe("Desenhos fim-a-fim (Etapa 38)", () => {
 
   test("Worker: normalizeMesaScene normaliza desenhos (caps, whitelist de ferramenta, lapis)", async () => {
     const { normalizeMesaScene } = await import("../cloudflare/src/mesa.js");
-    const many = Array.from({ length: 350 }, (_, i) => ({
+    const many = Array.from({ length: 1600 }, (_, i) => ({
       id: `d${i}`, tool: "line", color: "#40c860", width: 3,
       x1: 0.1, y1: 0.1, x2: 0.9, y2: 0.9, layer: "tokens"
     }));
@@ -976,7 +976,7 @@ test.describe("Desenhos fim-a-fim (Etapa 38)", () => {
       drawings: [
         { id: "ok1", tool: "line", color: "#e84040", width: 3, x1: 0.1, y1: 0.2, x2: 1.7, y2: -0.4, layer: "dm" },
         { id: "ok2", tool: "pencil", color: "lixo", width: 99,
-          points: Array.from({ length: 260 }, (_, i) => [i / 260, i / 260]), x1: 0, y1: 0, x2: 1, y2: 1 },
+          points: Array.from({ length: 460 }, (_, i) => [i / 460, i / 460]), x1: 0, y1: 0, x2: 1, y2: 1 },
         { id: "ruim1", tool: "spray", x1: 0, y1: 0, x2: 1, y2: 1 },          // ferramenta invalida
         { id: "ruim2", tool: "pencil", points: [[0.5, 0.5]], x1: 0, y1: 0, x2: 1, y2: 1 }, // lapis com 1 ponto
         { tool: "line", x1: 0, y1: 0, x2: 1, y2: 1 },                        // sem id
@@ -984,7 +984,7 @@ test.describe("Desenhos fim-a-fim (Etapa 38)", () => {
       ]
     });
 
-    expect(scene.drawings.length).toBe(300);                       // cap de 300 tracos
+    expect(scene.drawings.length).toBe(1500);                      // cap de 1500 tracos (Etapa 74)
     const ok1 = scene.drawings.find(d => d.id === "ok1");
     const ok2 = scene.drawings.find(d => d.id === "ok2");
     expect(ok1.layer).toBe("dm");                                  // camada dm preservada no armazenamento
@@ -992,7 +992,7 @@ test.describe("Desenhos fim-a-fim (Etapa 38)", () => {
     expect(ok1.y2).toBe(0);
     expect(ok2.color).toBe("#e84040");                             // cor invalida cai no default
     expect(ok2.width).toBe(12);                                    // clamp 1-12
-    expect(ok2.points.length).toBe(200);                           // cap de pontos do lapis
+    expect(ok2.points.length).toBe(400);                           // cap de pontos do lapis (Etapa 74)
     expect(scene.drawings.some(d => d.id === "ruim1")).toBe(false);
     expect(scene.drawings.some(d => d.id === "ruim2")).toBe(false);
   });
@@ -1035,11 +1035,11 @@ test.describe("Desenhos fim-a-fim (Etapa 38)", () => {
       { id: "pub", tool: "line", layer: "tokens" },
       { id: "sec", tool: "rect", layer: "dm" },
       "lixo",
-      ...Array.from({ length: 350 }, (_, i) => ({ id: `d${i}`, tool: "line", layer: "tokens" }))
+      ...Array.from({ length: 1600 }, (_, i) => ({ id: `d${i}`, tool: "line", layer: "tokens" }))
     ]);
     expect(sanitized.some(s => s.id === "sec")).toBe(false);
     expect(sanitized.some(s => s.id === "pub")).toBe(true);
-    expect(sanitized.length).toBe(300);
+    expect(sanitized.length).toBe(1500);   // cap ampliado na Etapa 74
     expect(sanitizeRelayDrawings("nao-e-array")).toBeNull();
     expect(sanitizeRelayDrawings(undefined)).toBeNull();
   });
@@ -1071,7 +1071,7 @@ test.describe("Desenhos fim-a-fim (Etapa 38)", () => {
     expect(result.signatureChanges).toBe(true);
   });
 
-  test("jogador aplica desenhos da cena no boot (sem mestre online) e nunca ve camada dm", async ({ page }) => {
+  test("jogador aplica desenhos da cena no boot (sem mestre online); traco legado dm vira compartilhado (Etapa 73)", async ({ page }) => {
     await seedPlayerWithScene(page, BASE_TOKENS);
     const baseUrl = await getMesaBaseUrl();
     await page.goto(`${baseUrl}/mesa.html`);
@@ -1084,23 +1084,26 @@ test.describe("Desenhos fim-a-fim (Etapa 38)", () => {
         tokens: [],
         drawings: [
           { id: "pub", tool: "line", color: "#e84040", width: 3, x1: 0.1, y1: 0.1, x2: 0.5, y2: 0.5, points: null, layer: "tokens" },
-          // Um traco dm forjado que tivesse passado nao pode aparecer no jogador
+          // Traco antigo gravado como "dm": camada unica agora, entao ele vale
+          // como compartilhado em vez de sumir da tela do jogador.
           { id: "sec", tool: "rect", color: "#40b8e8", width: 3, x1: 0.2, y1: 0.2, x2: 0.7, y2: 0.7, points: null, layer: "dm" }
         ]
       });
-      return { ids: getDrawingsSnapshot().map(d => d.id) };
+      const snap = getDrawingsSnapshot();
+      return { ids: snap.map(d => d.id), camadas: [...new Set(snap.map(d => d.layer))] };
     });
-    expect(result.ids).toEqual(["pub"]);
+    expect(result.ids).toEqual(["pub", "sec"]);
+    expect(result.camadas).toEqual(["tokens"]);
 
     // Cena SEM o campo drawings (legado) nao apaga o que ja esta na tela
     const legacy = await page.evaluate(() => {
       applyMesaSceneSnapshot({ sceneVersion: 10, selectedTokenId: "", tokens: [] });
       return { ids: getDrawingsSnapshot().map(d => d.id) };
     });
-    expect(legacy.ids).toEqual(["pub"]);
+    expect(legacy.ids).toEqual(["pub", "sec"]);
   });
 
-  test("mestre recebe desenho de jogador via delta, persiste a cena e preserva traco dm local", async ({ page }) => {
+  test("mestre recebe desenho de jogador via delta e persiste a cena (camada unica, Etapa 73)", async ({ page }) => {
     await seedMasterWithScene(page, BASE_TOKENS);
     const baseUrl = await getMesaBaseUrl();
     await page.goto(`${baseUrl}/mesa.html`);
@@ -1133,7 +1136,9 @@ test.describe("Desenhos fim-a-fim (Etapa 38)", () => {
       };
     });
 
-    expect(result.ids).toEqual(["ana1", "sec"]); // traco do jogador entra; dm local sobrevive
+    // Estado completo remoto manda em todo mundo: nao ha mais camada local
+    // separada para o mestre preservar.
+    expect(result.ids).toEqual(["ana1"]);
     expect(result.persistCalls).toBe(1);         // mestre torna o desenho oficial
     expect(result.snapshotHasDrawing).toBe(true); // F5 preserva via snapshot local
   });
@@ -2981,7 +2986,7 @@ test.describe("Auditoria multi-frente + performance (Etapa 50)", () => {
     expect(result.addBytes).toBeLessThan(8 * 1024);             // o delta cabe folgado
   });
 
-  test("borracha e desfazer mandam so os ids; traco secreto nunca sai pela rede", async ({ page }) => {
+  test("borracha e desfazer mandam so os ids; camada unica remove tudo pela rede (Etapa 73)", async ({ page }) => {
     await installAppEmitHook(page);
     await seedMasterWithScene(page, BASE_TOKENS);
     const baseUrl = await getMesaBaseUrl();
@@ -2993,27 +2998,27 @@ test.describe("Auditoria multi-frente + performance (Etapa 50)", () => {
       sendMesaRealtimeDelta = (type, payload) => { calls.push({ type, payload }); return true; };
       _strokes = [
         { id: "a", tool: "line", layer: "tokens", x1: 0, y1: 0, x2: 1, y2: 1, points: null },
-        { id: "segredo", tool: "line", layer: "dm", x1: 0, y1: 0, x2: 1, y2: 1, points: null },
+        { id: "legado", tool: "line", layer: "dm", x1: 0, y1: 0, x2: 1, y2: 1, points: null },
         { id: "b", tool: "line", layer: "tokens", x1: 0, y1: 0, x2: 1, y2: 1, points: null }
       ];
       deleteDrawingsById(["a", "b"]);
       const removeCall = calls.find(c => c.type === "mesa:drawings:remove");
 
-      // Traco secreto: some da tela do mestre, mas nao vira mensagem de rede
+      // Traco legado "dm" tambem e compartilhado agora: apagar avisa a rede.
       calls.length = 0;
-      deleteDrawingsById(["segredo"]);
+      deleteDrawingsById(["legado"]);
       return {
         ids: removeCall?.payload?.ids,
         payloadRemove: JSON.stringify(removeCall?.payload || {}),
         restantes: _strokes.map(s => s.id),
-        tiposAposSegredo: calls.map(c => c.type)
+        tiposAposLegado: calls.map(c => c.type)
       };
     });
 
     expect(result.ids).toEqual(["a", "b"]);
     expect(result.payloadRemove).not.toContain("points");   // so ids, sem geometria
     expect(result.restantes).toEqual([]);
-    expect(result.tiposAposSegredo).not.toContain("mesa:drawings:remove");
+    expect(result.tiposAposLegado).toContain("mesa:drawings:remove");
   });
 
   test("coordenadas sao arredondadas na captura e add remoto e idempotente", async ({ page }) => {
@@ -3036,17 +3041,19 @@ test.describe("Auditoria multi-frente + performance (Etapa 50)", () => {
       applyMesaDrawingAddFromRemote(stroke);
       const aposDuplicata = _strokes.length;
 
-      // Traco secreto vindo da rede e ignorado (ninguem injeta na camada dm)
+      // Camada unica (Etapa 73): traco marcado "dm" vindo da rede entra como
+      // compartilhado em vez de ser descartado.
       applyMesaDrawingAddFromRemote({ id: "x", layer: "dm" });
       const aposDm = _strokes.length;
+      const camadaDoX = _strokes.find(s => s.id === "x")?.layer;
 
-      // Remocao remota nao apaga traco secreto do mestre
-      _strokes.push({ id: "meu-segredo", layer: "dm" });
-      applyMesaDrawingRemoveFromRemote(["r1", "meu-segredo"]);
+      // Remocao remota apaga qualquer traco — nao ha mais camada protegida.
+      _strokes.push({ id: "legado", layer: "dm" });
+      applyMesaDrawingRemoveFromRemote(["r1", "legado"]);
 
       return {
         casasX: casas(p.px), casasY: casas(p.py),
-        aposDuplicata, aposDm,
+        aposDuplicata, aposDm, camadaDoX,
         finais: _strokes.map(s => s.id)
       };
     });
@@ -3054,8 +3061,9 @@ test.describe("Auditoria multi-frente + performance (Etapa 50)", () => {
     expect(result.casasX).toBeLessThanOrEqual(4);
     expect(result.casasY).toBeLessThanOrEqual(4);
     expect(result.aposDuplicata).toBe(1);
-    expect(result.aposDm).toBe(1);
-    expect(result.finais).toEqual(["meu-segredo"]);
+    expect(result.aposDm).toBe(2);
+    expect(result.camadaDoX).toBe("tokens");
+    expect(result.finais).toEqual(["x"]);
   });
 
   test("recusa do backend vira aviso na tela (antes sumia em silencio)", async ({ page }) => {
@@ -4322,5 +4330,204 @@ test.describe("Grade mantem a proporcao em qualquer zoom (Etapa 61)", () => {
       expect(Math.max(...m.espessuras), `traco engordou em z${m.z}`)
         .toBeLessThanOrEqual(m.maxEspessura);
     }
+  });
+});
+
+/* ── Etapa 73: desenho voltou a funcionar e a camada e unica ──────────
+ * A Etapa 66 subiu os tokens para z-index 10, acima do canvas de desenho
+ * (z 8). Como #mesaStage cobre TODO o palco e capturava o ponteiro, todo
+ * mousedown morria nele e nenhum traco comecava. */
+test.describe("Desenho no palco (Etapa 73)", () => {
+  test.beforeEach(async ({ page }) => {
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await page.locator("#mesaStage .mesa-token").first().waitFor();
+  });
+
+  test("o lapis desenha de verdade no palco, inclusive por cima de um token", async ({ page }) => {
+    await page.evaluate(() => { setDrawTool("pencil"); });
+
+    const camadas = await page.evaluate(() => ({
+      canvasPE: getComputedStyle(document.getElementById("mesaDrawCanvas")).pointerEvents,
+      canvasZ:  Number(getComputedStyle(document.getElementById("mesaDrawCanvas")).zIndex),
+      stageZ:   Number(getComputedStyle(document.getElementById("mesaStage")).zIndex),
+      stagePE:  getComputedStyle(document.getElementById("mesaStage")).pointerEvents
+    }));
+    // O container dos tokens nao pode roubar o ponteiro...
+    expect(camadas.stagePE).toBe("none");
+    // ...e com ferramenta ativa o canvas fica ACIMA dos tokens e recebe eventos.
+    expect(camadas.canvasPE).toBe("auto");
+    expect(camadas.canvasZ).toBeGreaterThan(camadas.stageZ);
+
+    const caixa = await page.locator("#mesaStageInner").boundingBox();
+    await page.mouse.move(caixa.x + caixa.width * 0.35, caixa.y + caixa.height * 0.5);
+    await page.mouse.down();
+    await page.mouse.move(caixa.x + caixa.width * 0.5, caixa.y + caixa.height * 0.6, { steps: 8 });
+    await page.mouse.move(caixa.x + caixa.width * 0.62, caixa.y + caixa.height * 0.5, { steps: 8 });
+    await page.mouse.up();
+
+    const primeiro = await page.evaluate(() => {
+      const s = getDrawingsSnapshot();
+      return { total: s.length, pontos: s[0]?.points?.length || 0, camada: s[0]?.layer };
+    });
+    expect(primeiro.total).toBe(1);
+    expect(primeiro.pontos).toBeGreaterThan(2);
+    expect(primeiro.camada).toBe("tokens");
+
+    // Comecar o traco EM CIMA de um token tambem tem que valer.
+    const tk = await page.locator("#mesaStage .mesa-token").first().boundingBox();
+    await page.mouse.move(tk.x + tk.width / 2, tk.y + tk.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(tk.x + tk.width / 2 + 40, tk.y + tk.height / 2 + 30, { steps: 6 });
+    await page.mouse.up();
+    expect(await page.evaluate(() => getDrawingsSnapshot().length)).toBe(2);
+  });
+
+  test("sem ferramenta o canvas devolve o palco aos tokens", async ({ page }) => {
+    const estado = await page.evaluate(() => {
+      setDrawTool("pencil");
+      setDrawTool("pencil");   // toggle: desliga
+      return {
+        ferramenta: getDrawTool(),
+        marca: document.getElementById("mesaStageWrap").hasAttribute("data-draw-active"),
+        canvasPE: getComputedStyle(document.getElementById("mesaDrawCanvas")).pointerEvents,
+        canvasZ: Number(getComputedStyle(document.getElementById("mesaDrawCanvas")).zIndex),
+        stageZ: Number(getComputedStyle(document.getElementById("mesaStage")).zIndex)
+      };
+    });
+    expect(estado.ferramenta).toBeNull();
+    expect(estado.marca).toBe(false);
+    expect(estado.canvasPE).toBe("none");
+    // Em repouso o desenho volta para BAIXO dos tokens.
+    expect(estado.canvasZ).toBeLessThan(estado.stageZ);
+
+    // E o token continua selecionavel (o pointer-events: none e so do container).
+    // Fixa por id: a Mesa re-renderiza ao selecionar e um .first() reaponta.
+    const id = await page.locator("#mesaStage .mesa-token").first().getAttribute("data-token-id");
+    const token = page.locator(`#mesaStage .mesa-token[data-token-id="${id}"]`);
+    await token.click();
+    await expect(token).toHaveClass(/is-selected/);
+  });
+
+  test("traco novo nasce na camada compartilhada e vai para a rede", async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const calls = [];
+      sendMesaRealtimeDelta = (type, payload) => { calls.push({ type, payload }); return true; };
+      _strokes = [];
+      setDrawTool("line");
+      const canvas = document.getElementById("mesaDrawCanvas");
+      const r = canvas.getBoundingClientRect();
+      const ev = (tipo, x, y) => new MouseEvent(tipo, { clientX: x, clientY: y, bubbles: true, button: 0 });
+      canvas.dispatchEvent(ev("mousedown", r.left + 40, r.top + 40));
+      window.dispatchEvent(ev("mousemove", r.left + 160, r.top + 120));
+      window.dispatchEvent(ev("mouseup", r.left + 160, r.top + 120));
+      setDrawTool(null);
+      const add = calls.find(c => c.type === "mesa:drawings:add");
+      return { total: _strokes.length, camada: _strokes[0]?.layer, enviou: Boolean(add), camadaEnviada: add?.payload?.stroke?.layer };
+    });
+    expect(result.total).toBe(1);
+    expect(result.camada).toBe("tokens");
+    expect(result.enviou).toBe(true);
+    expect(result.camadaEnviada).toBe("tokens");
+  });
+});
+
+/* ── Etapa 74: uma ferramenta armada por vez + teto de tracos ─────── */
+test.describe("Ferramentas exclusivas e teto de tracos (Etapa 74)", () => {
+  test.beforeEach(async ({ page }) => {
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await page.locator("#mesaStage .mesa-token").first().waitFor();
+  });
+
+  test("escolher desenho desarma a mao; escolher a mao desarma o desenho", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const botao = tool => document.querySelector(`[data-interaction-tool="${tool}"]`);
+      const lapis = () => document.querySelector('[data-draw-tool="pencil"]');
+
+      // Mao ativa, depois o lapis: a mao tem que apagar.
+      setInteractionMode("move");
+      const antes = {
+        modo: getInteractionMode(),
+        maoAcesa: botao("move").classList.contains("is-active")
+      };
+      setDrawTool("pencil");
+      const depoisDoLapis = {
+        modo: getInteractionMode(),
+        ferramenta: getDrawTool(),
+        maoAcesa: botao("move").classList.contains("is-active"),
+        lapisAceso: lapis().classList.contains("is-active"),
+        marcaModo: document.getElementById("mesaStageWrap").dataset.interactionMode,
+        marcaDesenho: document.getElementById("mesaStageWrap").getAttribute("data-draw-active")
+      };
+
+      // E o caminho inverso: voltar para a selecao apaga o lapis.
+      setInteractionMode("select");
+      const depoisDaSelecao = {
+        modo: getInteractionMode(),
+        ferramenta: getDrawTool(),
+        lapisAceso: lapis().classList.contains("is-active"),
+        marcaDesenho: document.getElementById("mesaStageWrap").getAttribute("data-draw-active")
+      };
+
+      setInteractionMode("select");  // limpa
+      return { antes, depoisDoLapis, depoisDaSelecao };
+    });
+
+    expect(r.antes.modo).toBe("move");
+    expect(r.antes.maoAcesa).toBe(true);
+
+    // Lapis ligado: mao apagada, em estado E na marca do wrap.
+    expect(r.depoisDoLapis.ferramenta).toBe("pencil");
+    expect(r.depoisDoLapis.modo).toBeNull();
+    expect(r.depoisDoLapis.maoAcesa).toBe(false);
+    expect(r.depoisDoLapis.lapisAceso).toBe(true);
+    expect(r.depoisDoLapis.marcaModo).toBe("");
+    expect(r.depoisDoLapis.marcaDesenho).toBe("true");
+
+    // Selecao ligada: lapis apagado.
+    expect(r.depoisDaSelecao.modo).toBe("select");
+    expect(r.depoisDaSelecao.ferramenta).toBeNull();
+    expect(r.depoisDaSelecao.lapisAceso).toBe(false);
+    expect(r.depoisDaSelecao.marcaDesenho).toBeNull();
+  });
+
+  test("teto de tracos e de pontos subiu e bate com o do Worker", async ({ page }) => {
+    const cliente = await page.evaluate(() => ({
+      tracos: DRAW_MAX_STROKES,
+      pontos: DRAW_MAX_POINTS
+    }));
+    expect(cliente.tracos).toBe(1500);
+    expect(cliente.pontos).toBe(400);
+
+    // O Worker tem que concordar, senao a tela diverge do que e salvo.
+    const { normalizeMesaScene } = await import("../cloudflare/src/mesa.js");
+    const scene = normalizeMesaScene({
+      tokens: [],
+      drawings: Array.from({ length: cliente.tracos + 10 }, (_, i) => ({
+        id: `d${i}`, tool: "line", color: "#e84040", width: 3,
+        x1: 0.1, y1: 0.1, x2: 0.9, y2: 0.9, layer: "tokens"
+      }))
+    });
+    expect(scene.drawings.length).toBe(cliente.tracos);
+
+    const { MAX_RELAY_DRAWINGS } = await import("../cloudflare/src/mesa-realtime-rules.js");
+    expect(MAX_RELAY_DRAWINGS).toBe(cliente.tracos);
+  });
+
+  test("um traco de lapis cheio ainda cabe numa mensagem do realtime", async ({ page }) => {
+    const bytes = await page.evaluate(() => {
+      const stroke = {
+        id: "abcdefgh", tool: "pencil", color: "#e84040", width: 3, layer: "tokens",
+        x1: 0.1234, y1: 0.5678, x2: 0.4321, y2: 0.8765,
+        points: Array.from({ length: DRAW_MAX_POINTS }, (_, i) => [
+          Math.round((i / DRAW_MAX_POINTS) * 10000) / 10000,
+          Math.round((1 - i / DRAW_MAX_POINTS) * 10000) / 10000
+        ])
+      };
+      return JSON.stringify({ type: "mesa:drawings:add", stroke }).length;
+    });
+    // Cap do Durable Object por mensagem: 32KB.
+    expect(bytes).toBeLessThan(32 * 1024);
   });
 });

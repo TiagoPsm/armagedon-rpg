@@ -45,6 +45,12 @@ O nome do token fica logo abaixo do circulo e **nada de UI permanente pode ocupa
 
 Regra pratica: **um ponto de ancoragem, um acessorio.** Centro-acima e do botao de marcadores; centro-abaixo e do nome (ou de quem o substitui temporariamente).
 
+## Camada que cobre o palco nao captura o ponteiro (2026-08-02, Etapa 73)
+
+Toda camada do palco que ocupa `inset: 0` e **transparente ao ponteiro por padrao** (`pointer-events: none`); quem captura sao os elementos de dentro (`.mesa-token`, alcas, botoes). Sem isso, subir uma camada na pilha derruba em silencio tudo que estiver abaixo: `#mesaStage` foi para `z-index: 10` na Etapa 66 e matou o desenho, porque passou a engolir todo `mousedown` do palco antes do `#mesaDrawCanvas` (z 8).
+
+Quando uma camada de baixo precisa do ponteiro por um tempo (ferramenta de desenho ativa), ela **sobe acima da pilha enquanto durar** e volta ao lugar depois — controlado por um atributo unico no wrap (`data-draw-active`), nunca por estilo inline espalhado pelo JS.
+
 ## Pilha de camadas do palco da Mesa (2026-07-31, Etapa 66)
 
 Ordem oficial, com o comentario-fonte em `css/mesa-stage.css` (regra `.mesa-stage`). Mexeu numa, confira a lista toda — os valores vivem em quatro arquivos diferentes:
@@ -53,8 +59,8 @@ Ordem oficial, com o comentario-fonte em `css/mesa-stage.css` (regra `.mesa-stag
 |---|---|
 | 0 | `#mesaMapLayer` — mapa |
 | 7 | `#mesaGridCanvas` — grade |
-| 8 | `#mesaDrawCanvas` — desenhos |
-| 10 | `#mesaStage` — **tokens** |
+| 8 | `#mesaDrawCanvas` — desenhos (sobe para **11** enquanto uma ferramenta de desenho estiver ativa, Etapa 73) |
+| 10 | `#mesaStage` — **tokens** (container `pointer-events: none`, Etapa 73) |
 | 12 | `#mesaRubberBand` — marquee da selecao por area |
 | 15 | `#mesaSelectionBox` — caixa da selecao multipla |
 | 26 | `#mesaFogCanvas` — nevoa |

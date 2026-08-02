@@ -59,10 +59,16 @@
   z-index: 10;
   user-select: none;
   contain: layout paint;
+  /* O container dos tokens cobre TODO o palco e, desde a Etapa 66, fica ACIMA
+   * do canvas de desenho (10 > 8). Com pointer-events auto ele engolia todo
+   * mousedown do palco e o desenho nunca comecava (Etapa 73). Quem precisa do
+   * ponteiro sao os tokens, nao o container. */
+  pointer-events: none;
 }
 
 .mesa-token {
   position: absolute;
+  pointer-events: auto;
   width: clamp(210px, 18vw, 238px);
   padding: 0.8rem;
   border-radius: 26px;

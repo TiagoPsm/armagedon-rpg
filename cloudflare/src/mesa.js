@@ -157,8 +157,11 @@ function normalizeSceneFog(fog) {
 // mesa-drawing.js. Caps evitam inflar o D1; a camada "dm" é filtrada no GET
 // para não-mestres (mesmo contrato dos tokens secretos).
 const DRAW_TOOLS = new Set(["pencil", "line", "rect", "circle"]);
-const MAX_DRAWINGS = 300;
-const MAX_DRAW_POINTS = 200;
+// Etapa 74: tetos ampliados (300→1500 traços, 200→400 pontos), junto com o
+// corpo do PUT /mesa/scene (256KB→1MB em index.js). Devem seguir iguais aos do
+// cliente (js/mesa-drawing.js), senão o que fica na tela diverge do que salva.
+const MAX_DRAWINGS = 1500;
+const MAX_DRAW_POINTS = 400;
 
 function normalizeDrawFraction(value) {
   return Math.round(clamp(value, 0, 1) * 10000) / 10000;

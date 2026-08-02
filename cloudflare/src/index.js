@@ -666,8 +666,10 @@ export default {
 
       if (path === "/api/mesa/scene" && request.method === "PUT") {
         const session = await requireAuth(request, env);
-        // Cena carrega tokens + desenhos + iniciativa: cap proprio de 256KB
-        const body = await readJson(request, 256 * 1024);
+        // Cena carrega tokens + desenhos + iniciativa. Cap de 1MB desde a
+        // Etapa 74: com 1500 tracos o corpo antigo de 256KB estourava antes de
+        // chegar perto do teto de desenhos.
+        const body = await readJson(request, 1024 * 1024);
         const saved = await saveMesaScene(env, session, body, url.searchParams.get("id"));
         // So a cena ATIVA e transmitida — salvar uma cena em preparo (?id=)
         // nao pode sobrescrever a mesa que os jogadores estao vendo.
