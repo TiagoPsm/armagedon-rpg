@@ -92,6 +92,10 @@ function renderControls() {
     const anyVisible = (resetMesaBtn && !resetMesaBtn.hidden) || (moveBtn && !moveBtn.hidden);
     overlayBr.hidden = !anyVisible;
   }
+
+  // Ultima palavra do render: reforca as permissoes de papel no DOM
+  // (Etapa 75). Barato — so varre [data-mesa-master-only] e so esconde.
+  if (typeof applyMesaRolePermissions === "function") applyMesaRolePermissions();
 }
 
 function renderRoster() {

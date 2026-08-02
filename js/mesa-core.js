@@ -172,6 +172,12 @@ function preFillMesaPage() {
       ? "Organiza tokens e transmite a cena para jogadores conectados."
       : "Ve a cena compartilhada e edita apenas o proprio estado.";
     if (resetMesaBtn) resetMesaBtn.hidden = !isMaster;
+    // Papel provisorio (vem do cache de sessao) so para evitar piscar o
+    // chrome do mestre no boot. A palavra final e de initMesaPage, depois
+    // de resolveInitialRole(). Fail-closed: na duvida, aplica "player".
+    if (typeof applyMesaRolePermissions === "function") {
+      applyMesaRolePermissions(isMaster ? "master" : "player");
+    }
   } catch (e) {}
 }
 
@@ -191,6 +197,11 @@ async function initMesaPage() {
 
   state.session = session;
   state.role = resolveInitialRole(session);
+  // Fonte unica de verdade das permissoes (Etapa 75): a partir daqui todo
+  // modulo consulta mesaCan()/isMesaMasterRole(), que leem state.role.
+  if (typeof applyMesaRolePermissions === "function") {
+    applyMesaRolePermissions(state.role);
+  }
 
   // Paraleliza as 3 requests independentes: diretorio, ficha propria e cena da mesa.
   // Cada uma e independente das outras — rodando em paralelo economiza ~300-400ms.
@@ -565,7 +576,10 @@ async function applyMesaRealtimeDelta(payload) {
 
   if (type === "mesa:drawings:update") {
     if (typeof setDrawingsFromRemote === "function") {
-      setDrawingsFromRemote(payload.drawings);
+      // O ator segue junto (Etapa 76): estado COMPLETO de desenho só vale
+      // vindo do mestre — de jogador seria uma forma de apagar o quadro
+      // de todos, contornando a regra "cada um apaga só o seu".
+      setDrawingsFromRemote(payload.drawings, payload.actor);
       // Snapshot local ganha os traços novos (F5 preserva) e o mestre persiste
       // a cena oficial — desenho de jogador vira estado autoritativo, já que
       // só o mestre pode dar PUT /mesa/scene.
@@ -587,7 +601,8 @@ async function applyMesaRealtimeDelta(payload) {
   }
 
   if (type === "mesa:drawings:remove" && typeof applyMesaDrawingRemoveFromRemote === "function") {
-    applyMesaDrawingRemoveFromRemote(payload.ids);
+    // Ator junto: a remoção só alcança traço que ELE podia apagar.
+    applyMesaDrawingRemoveFromRemote(payload.ids, payload.actor);
     cacheMesaSceneSnapshotLocally();
     if (isMaster() && typeof persistState === "function") persistState();
     return;

@@ -1,0 +1,26 @@
+/* ============================================================
+ * mesa-permissions.css — camada declarativa de permissao da Mesa
+ * (Etapa 75, 2026-08-02). Par de js/mesa-permissions.js.
+ *
+ * Regra unica: o que e marcado com `data-mesa-master-only` no HTML
+ * so existe visualmente quando o <body> esta com data-role="master".
+ *
+ * O padrao e FECHADO: mesa.html ja nasce com
+ * `<body class="mesa-page" data-role="player">`. Se o JS falhar,
+ * atrasar ou for bloqueado, o jogador continua sem os controles do
+ * mestre — o inverso (revelar por engano) nao acontece.
+ *
+ * Nao use `display: none` fixo + `display: <algo>` para o mestre:
+ * cada controle tem seu proprio display (flex, grid, inline-flex).
+ * O seletor negativo abaixo preserva o display original de cada um.
+ * ============================================================ */
+
+body:not([data-role="master"]) [data-mesa-master-only] {
+  display: none !important;
+}
+
+/* Reforco: mesmo com data-role="master", `hidden` continua mandando
+   (o modulo dono decide quando o controle aparece). */
+[data-mesa-master-only][hidden] {
+  display: none !important;
+}

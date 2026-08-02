@@ -14,6 +14,11 @@ function renderInspector() {
     return;
   }
 
+  // Mestre: quem revela o bloco e este render (Etapa 75). Antes quem revelava
+  // era o showPanel() do mesa.html, que nao olhava papel nenhum e por isso
+  // tambem entregava o inspetor ao jogador a cada clique na barra.
+  if (inspectorBlock) inspectorBlock.hidden = false;
+
   if (!token) {
     inspector.innerHTML = `
       <div class="token-inspector-empty">

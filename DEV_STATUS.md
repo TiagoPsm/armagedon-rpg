@@ -30,7 +30,87 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-02 — Etapa 74: uma ferramenta por vez + teto de tracos maior)
+## Ultima Etapa Concluida (2026-08-02 — Etapa 76: decisoes de permissao pos-auditoria)
+
+Duas regras que a auditoria da Etapa 75 levantou como **decisao do mestre**, nao como bug, e que o Tiago decidiu:
+
+### Desenho: cada um apaga so o seu
+
+O quadro continua UNICO e compartilhado (todos desenham no mesmo lugar, Etapa 73). O que mudou foi o APAGAR — antes a borracha e o Ctrl+Z de um jogador levavam junto o desenho tatico do mestre no meio do combate.
+
+- **Autoria no traco**: todo traco novo nasce com `author` (= username). O Worker preserva o campo em `normalizeSceneDrawing` — sem isso todo traco voltaria do banco orfao depois de um F5 e o jogador perderia o direito de apagar o proprio desenho.
+- **Autoria vem do socket, nao do payload**: o Durable Object sobrescreve `stroke.author` com o username autenticado no relay de `mesa:drawings:add`. Sem isso um jogador assinava o proprio traco como "mestre" e o tornava intocavel para os outros. Mesmo principio do `from` em `handleMapSignal`.
+- **Borracha**: jogador alcanca so os proprios tracos; **mestre alcanca todos** (precisa poder limpar rabisco alheio sem zerar o quadro). Traco alheio sob o cursor e ignorado — a borracha passa por cima sem efeito.
+- **Ctrl+Z**: desfaz o PROPRIO ultimo traco, procurando de tras para frente. Antes desfazia o ultimo do quadro, fosse de quem fosse.
+- **"Limpar tudo"**: master-only (`data-mesa-master-only` + `requireMesaMaster("draw.clearAll")`). E a unica acao de desenho que apaga traco dos outros.
+- **Traco antigo (sem `author`) e ORFAO**: so o mestre apaga. Ninguem perde acesso ao que ja desenhou e nenhum jogador ganha poder sobre traco alheio. Zero migracao de banco.
+- **Validacao de posse no CONSUMIDOR** (o DO nao conhece a cena, mesmo padrao do movimento de token alheio): `mesa:drawings:remove` vindo de jogador so remove os tracos dele; `mesa:drawings:update` (estado COMPLETO) vindo de jogador e **ignorado por inteiro** — era o caminho pelo qual um jogador zerava o quadro de todos pelo socket, contornando a regra.
+
+### Sugestoes: o autor pode retirar a propria
+
+`DELETE /api/suggestions/:id` deixou de ser master-only: o mestre apaga qualquer uma e o **autor apaga a propria** (checagem por `created_by_user_id`). **Editar continua master-only** no Worker e no cliente — o texto ja enviado e registro da campanha; quem mandou pode se arrepender e retirar, mas nao reescrever. Jogador que nao e o autor nao ve botao nenhum.
+
+### Decisoes que ficaram como estao
+
+- **`/api/directory`**: jogador continua vendo nome, avatar e uso de invent&aacute;rio dos outros jogadores (NPCs e monstros ja eram filtrados). E informacao de grupo e a Mesa precisa de nome/avatar para montar os tokens.
+- **Suite E2E com dois logins reais contra o Worker publicado**: nao sera feita agora. Ficam as 15 checagens de `test:mesa:permissoes` (UI nos dois papeis + regras de desenho + contrato do backend lido do fonte).
+
+- **Arquivos**: js/mesa-drawing.js, js/mesa-core.js, js/mesa-permissions.js, js/sugestoes.js, mesa.html (`?v=2026-08-02-autoria-1`), sugestoes.html (`?v=2026-08-02-autor-delete-1`), cloudflare/src/mesa.js, cloudflare/src/mesa-realtime.js, cloudflare/src/index.js, tests/mesa-permissions.spec.cjs, tests/mesa-audit.spec.cjs, tests/ficha.spec.cjs.
+- **Validacoes**: `check:js` OK, `audit:static` OK, `test:mesa:permissoes` 15/15, `test:mesa:audit` 123/123, `test:mesa` 5/5, `test:mesa:tokens` 10/10, `test:ficha` 29/29, `perf:mesa` 1/1, `wrangler deploy --dry-run` limpo.
+- **Dois testes antigos foram REESCRITOS, nao remendados**, porque cobriam o comportamento que o Tiago decidiu remover: o de `mesa-audit` afirmava que o estado completo de um jogador sobrescrevia o quadro do mestre; o de `ficha` afirmava que so o mestre excluia sugestao.
+- **Deploy feito** em 2026-08-02, version ID `2d1e0217-5f75-485d-9f8a-f1be95027743` (dry-run limpo antes; health 200 depois; `GET /api/mesa/scene` e `DELETE /api/suggestions/:id` sem sessao respondem 401, confirmando rotas ativas e protegidas). Sem ele o `author` seria descartado no save da cena — todo traco voltaria orfao no F5 e a regra "cada um apaga so o seu" morreria no primeiro reload — e o autor continuaria levando 403 ao excluir a propria sugestao.
+
+## Etapa Anterior (2026-08-02 — Etapa 75: permissoes da Mesa separadas de verdade)
+
+Tiago mandou tres prints: "os players estao com permissoes que nao deveriam, como ver essas opcoes e interagir com algumas delas" — barra lateral com MESTRE/MAPA/ESCAL., a faixa "SEM MAPA / ABRIR MAPA / engrenagem" e os botoes "TRAVAR MOVIMENTO / LIMPAR CENA".
+
+- **Causa-raiz (arquitetural, nao um bug pontual)**: a permissao da Mesa estava espalhada em quatro lugares que nao se conversavam — atributo `hidden` no HTML (em alguns elementos), regra de CSS `.is-master` (mesa-map.css), `hidden = !isMaster()` dentro de cada modulo, e um **`showPanel()` inline no fim do mesa.html que dava `el.hidden = false` em blocos inteiros sem olhar papel nenhum**, desfazendo as travas dos modulos a cada clique na barra. Era o showPanel que entregava ao jogador o tracker de iniciativa com "Proximo / Reiniciar / Encerrar" e o inspetor do mestre.
+- **Vazamentos confirmados na visao do jogador** (medidos com a app rodando, sessao `role: "player"`): botao **ESCAL.** (escalacao — proibido por SYSTEM_RULES), botao **INIC.** (ativar/encerrar combate), bloco de iniciativa com os **controles de conducao do mestre**, e o chrome de mapa **"Sem mapa"** (o "Abrir mapa" dependia so de CSS `.is-master`, sem `hidden` e sem trava na funcao).
+- **Fonte unica de verdade (js/mesa-permissions.js, novo)**: `mesaCan(cap)`, `isMesaMasterRole()`, `requireMesaMaster(cap, acao)` e `applyMesaRolePermissions(role)`. Capacidade desconhecida e **negada** (fail-closed). `applyMesaRolePermissions` so desfaz o que ela mesma escondeu (marca `data-mesa-perm-hidden`), entao nao atropela o `hidden` legitimo dos modulos (mapa ativo, combate ativo, backend online, painel aberto).
+- **Camada declarativa (css/mesa-permissions.css, novo)**: `body:not([data-role="master"]) [data-mesa-master-only] { display: none !important }`. O `mesa.html` nasce com `<body data-role="player">` — **o padrao e fechado**: se o JS falhar, atrasar ou for bloqueado, o jogador continua sem os controles do mestre. Foram marcados 15 elementos com `data-mesa-master-only`.
+- **Trava tambem nas funcoes**: esconder botao nao protege nada, porque as funcoes da Mesa sao globais (`onclick` inline chamavel pelo console). Ganharam guarda: `activateInitiative`, `nextInitiativeTurn`, `resetInitiativeRound`, `deactivateInitiative`, `removeFromInitiative`, `openAndSetLocalMap`, `clearActiveMap`, `importMapToLibrary`, `connectLocalFolder`, `toggleMapSettings`, `adjustMapScale`.
+- **Segunda verdade eliminada**: `mesaMapState.isMaster` lia `tc_session` cru do localStorage e divergia de `state.role` (o unico que respeita AUTH, a sessao sintetica de localhost e `mesaRolePreview`). Agora deriva de `isMesaMasterRole()`.
+- **showPanel corrigido**: `vttInspectorBlock` e `vttInitiativeBlock` sairam da lista de blocos que ele revela — quem manda neles e `renderInspector()` / `renderInitiative()`, que olham papel E estado. O showPanel so esconde, e fecha chamando `applyMesaRolePermissions()`. O listener de clique tambem barra clique em `[data-mesa-master-only]` quando o papel nao e mestre.
+- **Backend auditado, sem mudanca**: `PUT /api/mesa/scene`, `/api/mesa/scenes/*`, upload/delete de mapa no R2 e o Durable Object (`MASTER_ONLY_TYPES`, `MASTER_ONLY_MAP_SIGNAL_TYPES`) ja recusavam jogador corretamente. O problema era 100% de UI: a tela oferecia acoes que o servidor ia negar depois — inclusive a iniciativa, que "ligava" so no navegador do jogador enquanto o DO recusava o broadcast.
+- **Arquivos**: js/mesa-permissions.js (novo), css/mesa-permissions.css (novo), mesa.html (marcacoes + `<body data-role>` + showPanel + `?v=2026-08-02-permissoes-1`), js/mesa-core.js, js/mesa-map.js, js/mesa-initiative.js, js/mesa-inspector.js, js/mesa-roster.js, tests/mesa-permissions.spec.cjs (novo), package.json (`test:mesa:permissoes`).
+- **Validacoes**: `check:js` OK (47 arquivos), `audit:static` OK, `test:mesa:permissoes` 8/8 (novo), `test:mesa:audit` 123/123, `test:mesa` 5/5, `test:mesa:tokens` 10/10. Verificado tambem com a app rodando nos dois papeis: jogador com **zero** elementos master-only visiveis (inclusive apos clicar em toda a barra e com combate ativo) e mestre com todos os controles de volta.
+- **Regressao pega no meio do caminho**: a primeira versao do `applyMesaRolePermissions` so escondia, nunca revelava — o mestre perdia ESCAL., INIC., "Abrir mapa" e o inspetor. Dai a marca `data-mesa-perm-hidden` e o `renderInspector()` passar a revelar o proprio bloco (antes quem revelava era o showPanel).
+- **Sem deploy**: nenhuma mudanca funcional no Worker nesta etapa (so um comentario de seguranca).
+
+### Auditoria completa de permissoes (2026-08-02, complemento da Etapa 75)
+
+Varredura pedida depois da correcao: **todas as 49 rotas do Worker, todos os tipos do Durable Object e as 6 paginas do site**.
+
+**Backend — nenhuma falha encontrada.** Todas as rotas conferidas uma a uma:
+
+| Grupo | Situacao |
+|---|---|
+| `/api/directory/{players,npcs,monsters}` POST/DELETE | `role !== "master"` → 403 em todas |
+| `/api/characters/:key` GET/PUT | `assertCharacterAccess` — jogador so a propria ficha |
+| `/api/characters/:key/soul-*` | `assertSoulProgressionAccess` — jogador so o proprio nucleo |
+| `/api/mesa/scene` PUT / `scenes/*` | `requireMaster` em listar, criar, renomear, ativar, excluir e salvar |
+| `/api/mesa/scene` GET | filtra por papel: remove tokens/tracos `dm` e anula vitais de token com status oculto |
+| `/api/mesa/map` POST/DELETE | master-only; DELETE ainda exige prefixo `maps/<proprio-user>/` |
+| `/api/avatars/:key` POST | `assertCharacterAccess`; sem personagem, master-only |
+| `/api/avatars/echo/:id` POST | `setEchoAvatar` valida mestre-ou-dono |
+| `/api/maintenance/migrate-avatars` | master-only |
+| `/api/transfers/*` | rotas diretas jogador→jogador sao master-only; jogador so via proposta com aceite; aceitar/recusar/cancelar validam destinatario e remetente |
+| `/api/echos/*` | drop, concessao, XP e exclusao master-only; dono edita so apelido/anotacoes/imagem/vitais |
+| `/api/rules/*` POST/PUT/DELETE | master-only |
+| `/api/suggestions/*` PUT/DELETE | master-only (criar e livre) |
+
+**Durable Object — nenhuma falha encontrada.** `MASTER_ONLY_TYPES` cobre token move/upsert/remove, `scene:clear`, iniciativa, grade e nevoa; `MASTER_ONLY_MAP_SIGNAL_TYPES` cobre announce/set/clear/offer/ws:*. As duas excecoes do jogador sao estreitas e validadas contra o username autenticado (mover o proprio token com a trava aberta; invocar/retirar o proprio Echo). `mesa:dice:result` nasce so no DO (nao da para forjar resultado) e `mesa:sheet:patch` de jogador passa por `filterPlayerSheetPatch` + checagem de que a ficha e a dele.
+
+**Identidade do socket — checada de proposito.** O DO decide papel pelos headers `x-armagedon-username`/`x-armagedon-role`. O Worker copia os headers do cliente (o upgrade de WS precisa) e **sobrescreve os dois com o JWT verificado** usando `set()`. Um jogador mandando `x-armagedon-role: master` na mao e ignorado. Como e um ponto onde uma refatoracao inocente vira escalada de privilegio, ganhou comentario de aviso e um teste que falha se a ordem inverter ou se `set` virar `append`.
+
+**Frontend — 1 falha encontrada e corrigida.** `regras.html`, `sugestoes.html` e `echos.html` ja estavam corretas (verificado com sessao de jogador rodando). Na **ficha**, porem, `openMasterPanel()`, `backToMaster()` e `masterView()` eram globais sem trava: um jogador chamava `backToMaster()` pelo console e caia no painel do mestre, com os formularios de criar jogador/NPC/monstro. Nao vazava dado (o `/api/directory` nao devolve NPC nem monstro para jogador e toda acao dali volta 403), mas e a mesma classe de bug da Mesa. Corrigido com `isFichaMaster()` nas tres funcoes (js/ficha-master.js, `?v=2026-08-02-permissoes-1`).
+
+**Ponto de robustez (nao e falha de permissao, fica registrado)**: a chave de ficha de jogador e o proprio username (`buildCharacterKey`), sem prefixo, enquanto NPC e monstro usam `npc:`/`monster:`. Um jogador criado com username `npc:algo` colidiria com a chave de um NPC — `characters_sheet_key_uidx` barra no banco, mas o erro sai como 500 em vez de mensagem clara. So o mestre cria usuarios, entao nao e explorável por jogador.
+
+- **Testes novos**: `test:mesa:permissoes` foi de 8 para 10 (contrato do backend: identidade do socket e cobertura de `MASTER_ONLY_TYPES`).
+- **Validacoes do complemento**: `check:js` OK, `audit:static` OK, `test:mesa:permissoes` 10/10, `test:ficha` 29/29.
+
+## Etapa Anterior (2026-08-02 — Etapa 74: uma ferramenta por vez + teto de tracos maior)
 
 Tiago: "nao deve ser possivel selecionar o desenho e outra forma de interagir com o quadro ao mesmo tempo" + "quero que o limite de traco seja grandemente aumentado".
 

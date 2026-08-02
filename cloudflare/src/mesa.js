@@ -180,6 +180,12 @@ function normalizeSceneDrawing(stroke) {
     color,
     width,
     layer: stroke.layer === "dm" ? "dm" : "tokens",
+    // Autor do traço (Etapa 76): define quem pode apagá-lo. PRECISA
+    // sobreviver ao round-trip — se for descartado aqui, todo traço volta
+    // do banco como órfão e ninguém, além do mestre, apaga o próprio
+    // desenho depois de um F5. Traço antigo (sem o campo) fica "" e vira
+    // órfão de propósito: só o mestre alcança.
+    author: normalizeText(stroke.author).slice(0, 40).toLowerCase(),
     x1: normalizeDrawFraction(stroke.x1),
     y1: normalizeDrawFraction(stroke.y1),
     x2: normalizeDrawFraction(stroke.x2),

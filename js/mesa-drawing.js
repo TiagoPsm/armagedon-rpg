@@ -66,6 +66,33 @@ function _asSharedStrokes(list) {
     .map(_asSharedStroke);
 }
 
+/* ── Autoria do traço (Etapa 76) ───────────────────────────────────
+ * O quadro continua ÚNICO e compartilhado, mas apagar deixou de ser
+ * coletivo: cada traço carrega quem o desenhou (`author`, = username),
+ * e a borracha / Ctrl+Z do jogador só alcançam os próprios traços.
+ * Antes, a borracha de um jogador limpava o desenho tático do mestre
+ * no meio do combate — o quadro era compartilhado até para destruir.
+ *
+ * O mestre continua alcançando qualquer traço com a borracha (precisa
+ * poder limpar rabisco alheio sem apagar o quadro inteiro) e é o único
+ * com o "Limpar tudo".
+ *
+ * Traço antigo, gravado antes desta etapa, não tem `author`. Ele é
+ * tratado como ÓRFÃO: só o mestre apaga. Assim ninguém perde acesso ao
+ * que já desenhou e nenhum jogador ganha poder sobre traço alheio.
+ */
+function _drawAuthorKey() {
+  const session = window.AUTH?.getSession?.();
+  return String(session?.username || "").trim().toLowerCase();
+}
+
+function _canEraseStroke(stroke) {
+  if (typeof isMaster === "function" && isMaster()) return true;
+  const author = String(stroke?.author || "").trim().toLowerCase();
+  if (!author) return false;              // órfão: só o mestre
+  return author === _drawAuthorKey();
+}
+
 const PALETTE = [
   "#e84040", "#e86820", "#e8c020", "#40c860",
   "#40b8e8", "#4058e8", "#a040e8", "#e840a0",
@@ -274,9 +301,17 @@ function _bindDrawEvents() {
       }
       _closeFlyout();
     }
-    // Ctrl+Z: desfaz o último traço. Camada única — não há mais o que separar.
+    // Ctrl+Z: desfaz o PRÓPRIO último traço (Etapa 76). Antes desfazia o
+    // último do quadro, fosse de quem fosse — um jogador apagava o traço
+    // que o mestre acabou de fazer só apertando Ctrl+Z.
     if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey && _strokes.length) {
-      const [undone] = _strokes.splice(_strokes.length - 1, 1);
+      const me = _drawAuthorKey();
+      let index = -1;
+      for (let i = _strokes.length - 1; i >= 0; i -= 1) {
+        if (String(_strokes[i]?.author || "").trim().toLowerCase() === me) { index = i; break; }
+      }
+      if (index === -1) return;   // nada meu para desfazer
+      const [undone] = _strokes.splice(index, 1);
       renderDrawings();
       _commitStrokeRemove([undone]);
     }
@@ -304,6 +339,8 @@ function _onDrawStart(e) {
     width:  _drawWidth,
     // Camada única, compartilhada por mestre e jogadores (Etapa 73).
     layer:  "tokens",
+    // Autor do traço (Etapa 76): define quem pode apagá-lo.
+    author: _drawAuthorKey(),
     x1: px, y1: py,
     x2: px, y2: py,
     points: _activeTool === "pencil" ? [[px, py]] : null
@@ -368,10 +405,14 @@ function _onDrawEnd() {
 }
 
 // ── Borracha ───────────────────────────────────────────────────────
+// Só apaga o que o ator tem direito de apagar (Etapa 76): jogador alcança
+// os próprios traços, mestre alcança todos. Traço alheio sob o cursor é
+// simplesmente ignorado — a borracha passa por cima sem efeito.
 function _eraseAt(x, y) {
-  const erased = _strokes.filter(s => _hitTest(s, x, y));
+  const erased = _strokes.filter(s => _hitTest(s, x, y) && _canEraseStroke(s));
   if (!erased.length) return;
-  _strokes = _strokes.filter(s => !_hitTest(s, x, y));
+  const erasedIds = new Set(erased.map(s => String(s.id)));
+  _strokes = _strokes.filter(s => !erasedIds.has(String(s.id)));
   renderDrawings();
   _commitStrokeRemove(erased);
 }
@@ -479,7 +520,10 @@ function _renderStroke(s) {
 }
 
 // ── Limpar tudo ────────────────────────────────────────────────────
+// Master-only (Etapa 76): é a única ação que zera traço dos outros.
 function clearAllDrawings() {
+  if (typeof requireMesaMaster === "function"
+      && !requireMesaMaster("draw.clearAll", "limpar o quadro inteiro")) return;
   _strokes = [];
   renderDrawings();
   _broadcastDrawings();
@@ -488,16 +532,28 @@ function clearAllDrawings() {
 // ── Deletar strokes por ID ─────────────────────────────────────────
 function deleteDrawingsById(ids) {
   const idSet = new Set(ids.map(String));
-  const removed = _strokes.filter(s => idSet.has(String(s.id)));
+  const removed = _strokes.filter(s => idSet.has(String(s.id)) && _canEraseStroke(s));
   if (!removed.length) return;
-  _strokes = _strokes.filter(s => !idSet.has(String(s.id)));
+  const removedIds = new Set(removed.map(s => String(s.id)));
+  _strokes = _strokes.filter(s => !removedIds.has(String(s.id)));
   renderDrawings();
   _commitStrokeRemove(removed);
 }
 
 // ── Sync externo ───────────────────────────────────────────────────
-function setDrawingsFromRemote(strokes) {
-  // Camada única: o estado remoto vale para mestre e jogador do mesmo jeito.
+/**
+ * Estado COMPLETO vindo da rede. Só vale vindo do mestre (Etapa 76).
+ *
+ * O Durable Object não conhece a cena, então não consegue julgar traço a
+ * traço — a posse é validada no consumidor, mesmo padrão já usado para o
+ * movimento de token alheio. Sem esta checagem, um jogador que emitisse
+ * `mesa:drawings:update` com lista vazia apagava o quadro de todos, o que
+ * justamente a decisão desta etapa proíbe.
+ *
+ * `actor` ausente = origem local (boot, restore da cena), que é confiável.
+ */
+function setDrawingsFromRemote(strokes, actor) {
+  if (actor && String(actor.role || "") !== "master") return;
   _strokes = _asSharedStrokes(strokes);
   _persistDrawings();
   renderDrawings();
@@ -515,12 +571,29 @@ function applyMesaDrawingAddFromRemote(stroke) {
   renderDrawings();
 }
 
-// Chega uma remoção de outro cliente (mesa:drawings:remove).
-function applyMesaDrawingRemoveFromRemote(ids) {
+/**
+ * Chega uma remoção de outro cliente (mesa:drawings:remove).
+ *
+ * Etapa 76: a remoção é aplicada só aos traços que o AUTOR da mensagem
+ * podia mesmo apagar — mestre remove qualquer um; jogador, apenas os
+ * próprios. Validação de posse no consumidor porque o DO não conhece a
+ * cena (mesmo padrão do movimento de token alheio). Sem isto, a regra
+ * "cada um apaga só o seu" valeria só para quem usa a interface: bastava
+ * mandar os ids alheios na mão pelo socket.
+ */
+function applyMesaDrawingRemoveFromRemote(ids, actor) {
   if (!Array.isArray(ids) || !ids.length) return;
   const idSet = new Set(ids.map(String));
+  const actorIsMaster = !actor || String(actor.role || "") === "master";
+  const actorKey = String(actor?.username || "").trim().toLowerCase();
+
   const before = _strokes.length;
-  _strokes = _strokes.filter(s => !idSet.has(String(s.id)));
+  _strokes = _strokes.filter(s => {
+    if (!idSet.has(String(s.id))) return true;
+    if (actorIsMaster) return false;                        // mestre remove
+    const author = String(s.author || "").trim().toLowerCase();
+    return !(author && actorKey && author === actorKey);    // jogador: só o dele
+  });
   if (_strokes.length === before) return;
   _persistDrawings();
   renderDrawings();

@@ -41,8 +41,38 @@ Permissoes importantes:
 - apenas o mestre cria NPCs
 - apenas o mestre cria monstros
 - apenas o mestre publica, edita e exclui regras
+- sugestoes: qualquer um envia; **editar e so do mestre** (o texto enviado e registro da campanha), mas o **AUTOR pode excluir a propria** (2026-08-02) — quem mandou pode se arrepender e retirar. O Worker confere `created_by_user_id`; jogador que nao e o autor nao ve botao nem passa no `DELETE`
 - o jogador gerencia o nucleo da alma apenas da propria ficha (aplicar Essencia e concluir pesadelo); o mestre gerencia o nucleo de todas as fichas
 - todo ganho de Essencia ou conclusao de pesadelo gera auditoria no D1 (`soul_audit`); quando o ator e jogador, o mestre conectado recebe aviso em tempo real (toast) via eventos `soul:awarded` / `soul:nightmare`, entregues somente a sockets master
+
+### Modelo de permissao da Mesa (2026-08-02, Etapa 75) — ONDE MEXER
+
+Antes desta etapa a permissao da Mesa estava espalhada em quatro lugares que se atropelavam, e controles do mestre vazavam para o jogador. **Agora ha um so lugar.** Toda regra nova de permissao da Mesa entra aqui, nunca solta dentro de um modulo:
+
+- **`js/mesa-permissions.js` e a fonte unica de verdade.** Expoe `mesaCan(cap)`, `isMesaMasterRole()`, `requireMesaMaster(cap, acao)` e `applyMesaRolePermissions(role)`.
+- **O papel vem SEMPRE de `state.role`** (que ja respeita AUTH, a sessao sintetica de localhost e `localStorage.mesaRolePreview`). Nenhum modulo pode ler `tc_session` do localStorage para decidir papel — era assim que o `mesa-map.js` criava uma segunda verdade divergente.
+- **Fail-closed em toda parte**: capacidade que nao esta em `MESA_SHARED_CAPS` e negada para jogador, inclusive nome que ninguem cadastrou. O `mesa.html` nasce com `<body data-role="player">`; o JS so promove para `master` depois de resolver a sessao.
+- **Esconder na UI**: marque o elemento com `data-mesa-master-only` no HTML. O `css/mesa-permissions.css` cuida do resto (`body:not([data-role="master"]) [data-mesa-master-only] { display: none !important }`). Nao invente regra de CSS por id nem `hidden` manual espalhado.
+- **Travar a acao**: `requireMesaMaster("cap", "acao")` na PRIMEIRA linha da funcao. Esconder o botao nao protege — as funcoes da Mesa sao globais (`onclick` inline) e chamaveis pelo console.
+- **`applyMesaRolePermissions` so desfaz o que ela mesma escondeu** (marca `data-mesa-perm-hidden`). Ela nunca revela um elemento que ja nascia `hidden`: quem decide quando um controle do mestre aparece continua sendo o modulo dono (mapa ativo, combate ativo, backend online, painel aberto, token selecionado).
+- **Quem mexe em `hidden` de bloco inteiro chama `applyMesaRolePermissions()` no fim.** Foi exatamente o que faltava no `showPanel()` do mesa.html — ele revelava blocos sem olhar papel e desfazia as travas dos modulos a cada clique na barra.
+- **Blocos com dono proprio nao entram no `showPanel`**: `#vttInspectorBlock` e `#vttInitiativeBlock` sao revelados por `renderInspector()` / `renderInitiative()`, que olham papel E estado.
+- **A UI e conforto, nao seguranca.** A barreira real continua sendo o Worker (`role !== "master"` nas rotas de cena/cenas/mapa) e o Durable Object (`MASTER_ONLY_TYPES`, `MASTER_ONLY_MAP_SIGNAL_TYPES`). O que a Etapa 75 corrigiu foi a tela oferecer acao que o servidor ia negar depois.
+- **Regressao coberta por `tests/mesa-permissions.spec.cjs`** (`npm run test:mesa:permissoes`): jogador sem nenhum elemento master-only visivel no boot, apos clicar em toda a barra e com combate ativo; funcoes de mestre no-op para jogador; e o mestre com todos os controles.
+
+Exclusivo do mestre na Mesa (marcado com `data-mesa-master-only`): camadas MESTRE e MAPA, botao ESCAL. (escalacao), botao INIC. (ativar/encerrar combate), controles de conducao do combate, todo o chrome de mapa (rotulo, abrir, limpar, engrenagem, painel de escala/grade/nevoa/cenas), biblioteca de mapas, "Travar movimento", "Limpar cena", tabs e busca da escalacao, e o inspetor lateral.
+
+Compartilhado por design (jogador PODE): ver o palco, desenhar (camada unica, Etapa 73), pingar, usar a regua, rolar dados da Mesa, zoom/tela cheia, rolar a PROPRIA iniciativa, mover o proprio token com a trava aberta, editar Vida/Integridade atuais do proprio token, invocar/retirar o proprio Echo.
+
+### Painel do mestre na Ficha tambem e travado por funcao (2026-08-02)
+
+`openMasterPanel()`, `backToMaster()` e `masterView()` sao globais e eram chamaveis pelo console por qualquer jogador, caindo no painel do mestre (formularios de criar jogador/NPC/monstro). As tres passam por `isFichaMaster()` agora. Vale a mesma regra da Mesa: **funcao global exclusiva do mestre precisa de trava na primeira linha**, porque esconder o botao nao protege nada.
+
+### Identidade do socket do realtime (PONTO CRITICO)
+
+O Durable Object decide papel pelos headers `x-armagedon-username` / `x-armagedon-role`. Quem os define e o Worker em `handleMesaRealtime`: ele copia os headers do cliente (o upgrade de WebSocket precisa deles) e **em seguida sobrescreve os dois com o papel do JWT verificado**, usando `set()`.
+
+Nao inverta essa ordem, nao troque `set` por `append` e nao condicione o set. Qualquer uma das tres coisas transforma "jogador manda `x-armagedon-role: master` na mao" em escalada de privilegio completa no realtime. Ha teste que falha se isso mudar (`tests/mesa-permissions.spec.cjs`).
 
 ## Fichas
 
@@ -183,7 +213,8 @@ Regras importantes:
 - A Mesa tem 3 camadas no seletor: TOKENS (padrao), MESTRE (secreta) e MAPA. A camada ativa fica em `data-active-layer` no `#mesaStageWrap` e e persistida em `localStorage.mesaActiveLayer`
 - **Camada do Mestre (DM) e exclusiva do mestre**: o botao "MESTRE" so aparece para o mestre; o jogador nunca entra nela (cai em TOKENS). Tokens com `layer: "dm"` sao INVISIVEIS para os jogadores. **O DESENHO nao segue a camada ativa (2026-08-02, Etapa 73)**: todo traco nasce em `layer: "tokens"`, independente de quem desenha e de qual camada esta selecionada
 - Tokens secretos: filtrados no render do jogador (`getRenderedTokens`); o mestre os ve esmaecidos com a marca "Mestre". O mestre move um token entre Token<->Mestre pelo botao "Camada" do inspetor
-- **Desenho tem UMA camada so, compartilhada (2026-08-02, Etapa 73)**: mestre e jogadores desenham, apagam e desfazem no MESMO quadro, na camada dos tokens — nao existe mais traco secreto do mestre. Todo traco e transmitido, persistido na cena e visto por todos. Traco antigo gravado como `layer: "dm"` e adotado como compartilhado na primeira leitura (localStorage, cena ou realtime), sem migracao de banco. As defesas do backend que removem `dm` (`sanitizeRelayDrawings` no DO, filtro do GET `/api/mesa/scene`) continuam la e ficaram inertes — o cliente nao produz mais tracos `dm`
+- **Desenhar e coletivo; APAGAR nao (2026-08-02, Etapa 76)**: o quadro continua unico e compartilhado, mas cada traco carrega `author` (= username de quem desenhou) e isso decide quem pode remove-lo. **Jogador**: borracha e Ctrl+Z alcancam somente os PROPRIOS tracos; Ctrl+Z procura de tras para frente o ultimo traco dele, nao o ultimo do quadro. **Mestre**: borracha alcanca qualquer traco (precisa poder limpar rabisco alheio sem zerar o quadro) e e o unico com "Limpar tudo" (`draw.clearAll`). **Traco antigo, sem `author`, e ORFAO**: so o mestre apaga — ninguem perde o que ja desenhou e nenhum jogador ganha poder sobre traco alheio; zero migracao de banco. A autoria e carimbada pelo Durable Object com o username AUTENTICADO no relay de `mesa:drawings:add` (o cliente nao declara autor, senao assinaria o proprio traco como o mestre) e preservada pelo Worker em `normalizeSceneDrawing` (se for descartada no save, todo traco volta orfao no F5). Como o DO nao conhece a cena, a posse e validada no CONSUMIDOR, igual ao movimento de token alheio: `mesa:drawings:remove` de jogador so remove os tracos dele, e `mesa:drawings:update` (estado COMPLETO) vindo de jogador e IGNORADO — era por ali que um jogador zerava o quadro de todos pelo socket
+- **Desenho tem UMA camada so, compartilhada (2026-08-02, Etapa 73)**: mestre e jogadores desenham no MESMO quadro, na camada dos tokens — nao existe mais traco secreto do mestre. Todo traco e transmitido, persistido na cena e visto por todos. Traco antigo gravado como `layer: "dm"` e adotado como compartilhado na primeira leitura (localStorage, cena ou realtime), sem migracao de banco. As defesas do backend que removem `dm` (`sanitizeRelayDrawings` no DO, filtro do GET `/api/mesa/scene`) continuam la e ficaram inertes — o cliente nao produz mais tracos `dm`
 - Em repouso o desenho fica ABAIXO dos tokens; com uma ferramenta ativa o canvas sobe acima deles para receber o ponteiro, entao da para comecar um traco em cima de um token e apagar traco que passa por baixo
 - **Uma ferramenta armada por vez (2026-08-02, Etapa 74)**: as ferramentas de desenho e os modos de interacao (mao/mover e selecao por area) sao MUTUAMENTE EXCLUSIVOS. Escolher um lapis desarma a mao (`clearMesaInteractionMode`); escolher a mao ou a selecao desarma o desenho (`setDrawTool(null)`). Nunca ha dois botoes acesos, e nenhum arrasto e disputado por duas ferramentas
 - **Teto de desenhos (2026-08-02, Etapa 74)**: 1500 tracos por cena e 400 pontos por traco de lapis (era 300/200). Os tres pontos tem que continuar iguais: `DRAW_MAX_STROKES`/`DRAW_MAX_POINTS` em js/mesa-drawing.js, `MAX_DRAWINGS`/`MAX_DRAW_POINTS` em cloudflare/src/mesa.js e `MAX_RELAY_DRAWINGS` em cloudflare/src/mesa-realtime-rules.js — se divergirem, o que fica na tela deixa de ser o que e salvo. O corpo do `PUT /api/mesa/scene` subiu para 1MB pelo mesmo motivo (era 256KB, e estourava antes do teto de tracos)

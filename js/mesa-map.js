@@ -488,9 +488,14 @@ function restoreMesaActiveLayer() {
  */
 async function initMesaMap() {
   try {
-    // Detectar papel (mestre ou jogador)
+    // Papel: SEMPRE pela fonte unica (js/mesa-permissions.js → state.role).
+    // Antes da Etapa 75 isto lia `tc_session` cru do localStorage e virava
+    // uma segunda verdade, que divergia de state.role (o unico que respeita
+    // AUTH, a sessao sintetica de localhost e localStorage.mesaRolePreview).
     const session = _getSession();
-    mesaMapState.isMaster   = session?.role === "master";
+    mesaMapState.isMaster   = typeof isMesaMasterRole === "function"
+      ? isMesaMasterRole()
+      : session?.role === "master";
     mesaMapState.myUserId   = session?.username || session?.userId || `user-${Date.now()}`;
 
     mesaMapState.db = await openMesaMapDB();
@@ -507,7 +512,9 @@ async function initMesaMap() {
     _observeStageResize();
 
     if (mesaMapState.isMaster) {
-      document.body.classList.add("is-master");
+      // data-role="master" + classe .is-master (compat) num lugar so.
+      if (typeof applyMesaRolePermissions === "function") applyMesaRolePermissions("master");
+      else document.body.classList.add("is-master");
       // Mestre: botão de configurações sempre visível (token style disponível sem mapa)
       const settingsBtn = document.getElementById("mesaMapSettingsBtn");
       if (settingsBtn) settingsBtn.hidden = false;
@@ -519,6 +526,8 @@ async function initMesaMap() {
       bindMasterMapListeners();
     } else {
       bindPlayerMapListeners();
+      // Jogador: reforca o fechamento depois que o modulo de mapa mexeu no DOM.
+      if (typeof applyMesaRolePermissions === "function") applyMesaRolePermissions("player");
     }
 
     // Restaura a camada ativa salva (respeitando o papel).
@@ -769,6 +778,7 @@ function pickLocalMapFileFallback() {
  * e define como mapa ativo. Se há jogadores online, inicia entrega P2P.
  */
 async function openAndSetLocalMap() {
+  if (!_requireMapMaster("abrir um mapa")) return;
   const file = await pickLocalMapFile();
   if (!file) return;
 
@@ -840,6 +850,7 @@ async function applyActiveMap(mapEntry) {
 }
 
 function clearActiveMap() {
+  if (!_requireMapMaster("limpar o mapa")) return;
   if (mesaMapState.activeMapUrl) {
     URL.revokeObjectURL(mesaMapState.activeMapUrl);
   }
@@ -1100,6 +1111,7 @@ function _syncMapTransformControls() {
 }
 
 function adjustMapScale(delta) {
+  if (!_requireMapMaster("ajustar a escala do mapa")) return;
   if (!mesaMapState.activeMapUrl) return;
   // Fit ligado: escalar a imagem dentro da caixa a descolaria dos tokens.
   if (isMapTransformLocked()) return;
@@ -1278,8 +1290,20 @@ function _flushPendingRemoteTransform() {
 // sem depender do mestre online — o realtime (P2P/WS) vira otimização.
 
 function _isMasterRole() {
+  if (typeof isMesaMasterRole === "function") return isMesaMasterRole();
   if (typeof isMaster === "function") return isMaster();
   return mesaMapState.isMaster;
+}
+
+/**
+ * Trava das acoes de gestao de mapa (Etapa 75). Esconder o botao nao
+ * protege: estas funcoes sao globais e chamadas por onclick inline.
+ * O R2 e a cena ja recusam jogador no Worker — aqui a UI para de
+ * mentir ("abri um mapa" que so existia no navegador do jogador).
+ */
+function _requireMapMaster(acao) {
+  if (typeof requireMesaMaster === "function") return requireMesaMaster("map.manage", acao);
+  return _isMasterRole();
 }
 
 // Transform atual normalizado (frações do tamanho exibido da imagem).
@@ -2071,6 +2095,7 @@ function setMesaMapUploading(uploading) {
 }
 
 function toggleMapSettings() {
+  if (!_requireMapMaster("abrir as configuracoes da mesa")) return;
   const panel = document.getElementById("mesaMapTransform");
   const btn   = document.getElementById("mesaMapSettingsBtn");
   if (!panel) return;
@@ -2236,6 +2261,7 @@ async function deleteMapFromLibrary(mapId) {
 
 /** Importa um arquivo novo e adiciona à biblioteca (sem colocar na mesa automaticamente). */
 async function importMapToLibrary() {
+  if (!_requireMapMaster("importar mapas")) return;
   const file = await pickLocalMapFile();
   if (!file) return;
 
@@ -2472,6 +2498,7 @@ function _escAttr(str) {
  * o monitoramento em tempo real. Sem copiar nada para o banco.
  */
 async function connectLocalFolder() {
+  if (!_requireMapMaster("conectar uma pasta de mapas")) return;
   if (!window.showDirectoryPicker) {
     alert("Seu navegador nao suporta acesso a pastas locais. Use Chrome 86+ ou Edge.");
     return;

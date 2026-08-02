@@ -49,6 +49,18 @@ function getInitiativeState() {
   return window._mesaInitiativeState;
 }
 
+/**
+ * Trava local das acoes de mestre. Delega para requireMesaMaster()
+ * (js/mesa-permissions.js); se o modulo de permissoes nao carregou,
+ * cai no isMaster() do core — nunca em "liberado".
+ */
+function requireMesaMasterInit(acao) {
+  if (typeof requireMesaMaster === "function") {
+    return requireMesaMaster("initiative.control", acao);
+  }
+  return typeof isMaster === "function" && isMaster();
+}
+
 /** Aplica um novo estado de iniciativa recebido da rede ou local */
 function applyInitiativeState(data) {
   const s = getInitiativeState();
@@ -71,10 +83,17 @@ function normalizeEntry(e) {
   };
 }
 
-/* ── AÇÕES DO MESTRE ─────────────────────────────────────────── */
+/* ── AÇÕES DO MESTRE ─────────────────────────────────────────────
+ * Todas passam por requireMesaMaster("initiative.control"). Esconder
+ * o botao nao basta: estas funcoes sao globais (onclick inline), e
+ * antes da Etapa 75 um jogador chamava activateInitiative() e via o
+ * tracker "ligar" so na tela dele — o Durable Object recusava o
+ * mesa:initiative:update e a UI ficava mentindo.
+ */
 
 /** Ativa o tracker e avisa todos os jogadores */
 function activateInitiative() {
+  if (!requireMesaMasterInit("iniciar o combate")) return;
   const s = getInitiativeState();
   s.active       = true;
   s.round        = 1;
@@ -86,6 +105,7 @@ function activateInitiative() {
 
 /** Avança para o próximo turno */
 function nextInitiativeTurn() {
+  if (!requireMesaMasterInit("passar o turno")) return;
   const s = getInitiativeState();
   if (!s.active || !s.order.length) return;
   s.currentIndex = s.currentIndex + 1;
@@ -99,6 +119,7 @@ function nextInitiativeTurn() {
 
 /** Reinicia apenas a rodada (mantém ordem) */
 function resetInitiativeRound() {
+  if (!requireMesaMasterInit("reiniciar a rodada")) return;
   const s = getInitiativeState();
   s.round        = 1;
   s.currentIndex = s.order.length > 0 ? 0 : -1;
@@ -108,6 +129,7 @@ function resetInitiativeRound() {
 
 /** Encerra o combate */
 function deactivateInitiative() {
+  if (!requireMesaMasterInit("encerrar o combate")) return;
   const s = getInitiativeState();
   s.active       = false;
   s.round        = 1;
@@ -119,6 +141,7 @@ function deactivateInitiative() {
 
 /** Remove uma entrada da ordem (mestre pode expulsar NPC/monstro morto) */
 function removeFromInitiative(id) {
+  if (!requireMesaMasterInit("remover alguem da iniciativa")) return;
   const s = getInitiativeState();
   const idx = s.order.findIndex(e => e.id === id);
   if (idx === -1) return;

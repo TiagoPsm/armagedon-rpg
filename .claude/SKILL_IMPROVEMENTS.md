@@ -34,6 +34,18 @@ Cada skill use é registrada assim:
 
 ## 📝 Log de Usos
 
+### [2026-08-02] - 01-code-review-frontend - ✅ APROPRIADA (vazamento de permissao na UI)
+
+**Pedido:** "os players estão com permissões que não deveriam, como ver essas opções e interagir com algumas delas" (3 screenshots) + "documente e separe bem as permissões para que isso não volte a acontecer".
+
+**O que funcionou:**
+- A lente de *security / auth* da skill fez separar as duas perguntas certas na ordem certa: **(1) o backend vaza?** (não — Worker e Durable Object já recusavam jogador em todas as rotas de cena/mapa) e **(2) a UI oferece o que o backend vai negar?** (sim, em vários pontos). Sem essa separação daria para gastar a etapa inteira endurecendo um backend que já estava correto.
+- Rodar a app de verdade nos DOIS papéis e listar `[data-mesa-master-only]` visíveis foi o que provou o vazamento e, depois, o que pegou a regressão que a própria correção criou (o mestre perdeu ESCAL./INIC./"Abrir mapa" porque a primeira versão da função só escondia, nunca revelava).
+
+**Aprendizado para a skill:** em permissão de UI, procurar por **quem escreve `hidden = false` em bloco inteiro**. O vazamento raramente está na trava do módulo — está em código genérico de layout (aqui, um `showPanel()` inline no HTML) que desfaz a trava depois, sem saber que ela existia. Grep útil: `\.hidden\s*=\s*false` e `classList.remove` em arquivos que não são donos daquele estado.
+
+**Segundo aprendizado:** correção de permissão precisa de teste nos dois sentidos. "Jogador não vê" é metade; "mestre continua vendo" é a metade que quebra em silêncio e só aparece na próxima sessão de jogo.
+
 ### [2026-08-02] - 01-code-review-frontend - ✅ APROPRIADA (bug de event handling / camadas)
 
 **Pedido:** "Faça uma verificação sobre o sistema de desenhos, não está sendo possível desenhar no board."

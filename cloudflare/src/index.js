@@ -76,6 +76,17 @@ async function handleMesaRealtime(request, env, origin) {
     return errorJson("Realtime da Mesa indisponivel.", 503, origin);
   }
 
+  // PONTO CRITICO DE SEGURANCA — nao mexer sem entender.
+  // O Durable Object confia 100% nestes dois headers para decidir papel
+  // (normalizeSocketUser em mesa-realtime.js): eles sao a identidade do
+  // socket dali para a frente. Copiamos os headers do cliente porque o
+  // upgrade de WebSocket precisa deles, e logo em seguida SOBRESCREVEMOS
+  // os dois com o que veio do JWT verificado.
+  // `set()` (nunca `append()`) e obrigatorio: e o que apaga um
+  // "x-armagedon-role: master" enviado pelo cliente. Trocar por append,
+  // mover estas linhas para antes do `new Headers(request.headers)` ou
+  // condicionar o set = escalada de privilegio direta (qualquer jogador
+  // vira mestre no realtime).
   const headers = new Headers(request.headers);
   headers.set("x-armagedon-username", session.username || "usuario");
   headers.set("x-armagedon-role", session.role || "player");
@@ -1277,11 +1288,23 @@ export default {
         return withCors(json({ id: suggestionId, title, category, description, updatedAt: now }), origin);
       }
 
+      // Excluir sugestao: mestre apaga qualquer uma; o AUTOR apaga a propria
+      // (2026-08-02). Editar continua master-only — o texto da sugestao e
+      // registro da campanha, mas quem mandou pode se arrepender e retirar.
       if (suggestionMatch && request.method === "DELETE") {
         const session = await requireAuth(request, env);
-        if (session.role !== "master") return errorJson("Apenas o mestre pode excluir sugestoes.", 403, origin);
-
         const suggestionId = suggestionMatch[1];
+
+        if (session.role !== "master") {
+          const row = await env.DB.prepare(
+            "select created_by_user_id from suggestions where id = ? limit 1"
+          ).bind(suggestionId).first();
+          if (!row) return errorJson("Sugestao nao encontrada.", 404, origin);
+          if (row.created_by_user_id !== session.sub) {
+            return errorJson("Voce so pode excluir a propria sugestao.", 403, origin);
+          }
+        }
+
         const result = await env.DB.prepare("delete from suggestions where id = ?").bind(suggestionId).run();
         if (!result.meta.changes) return errorJson("Sugestao nao encontrada.", 404, origin);
         return withCors(json({ ok: true, id: suggestionId }), origin);

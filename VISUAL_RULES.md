@@ -45,6 +45,22 @@ O nome do token fica logo abaixo do circulo e **nada de UI permanente pode ocupa
 
 Regra pratica: **um ponto de ancoragem, um acessorio.** Centro-acima e do botao de marcadores; centro-abaixo e do nome (ou de quem o substitui temporariamente).
 
+## Controle exclusivo do mestre some por atributo, nunca por regra avulsa (2026-08-02, Etapa 75)
+
+Elemento que so o mestre pode ver leva **`data-mesa-master-only`** no HTML. Quem esconde e uma regra unica em `css/mesa-permissions.css`:
+
+```css
+body:not([data-role="master"]) [data-mesa-master-only] { display: none !important; }
+```
+
+Tres detalhes que fazem essa regra funcionar e que nao podem ser trocados por conveniencia:
+
+- **Seletor negativo, nao `display: none` fixo + override.** Cada controle tem seu proprio `display` (flex, grid, inline-flex); um `display: none` fixo obrigaria a redeclarar o valor certo para o mestre e quebraria layout no dia em que alguem mudasse o componente.
+- **`<body data-role="player">` ja vem no HTML.** O padrao e fechado: se o JS falhar, atrasar ou for bloqueado, o jogador continua sem o chrome do mestre. O caminho inverso (revelar por engano) nao existe.
+- **Nada de regra por id.** A `.is-master #mesaMapOpenBtn` do `css/mesa-map.css` era o unico obstaculo entre o jogador e o botao "Abrir mapa" — sem `hidden`, sem trava na funcao. A classe `.is-master` continua no body so por compatibilidade; a fonte oficial e `data-role`.
+
+Visualmente o efeito e que a barra lateral do jogador fica com **TOKENS + desenho + dados + zoom** e nada mais: sem MESTRE/MAPA/ESCAL./INIC., sem a faixa de mapa no canto superior direito e sem os botoes do canto inferior direito. E uma barra mais curta de proposito — o jogador nao deve nem saber que aquelas ferramentas existem.
+
 ## Camada que cobre o palco nao captura o ponteiro (2026-08-02, Etapa 73)
 
 Toda camada do palco que ocupa `inset: 0` e **transparente ao ponteiro por padrao** (`pointer-events: none`); quem captura sao os elementos de dentro (`.mesa-token`, alcas, botoes). Sem isso, subir uma camada na pilha derruba em silencio tudo que estiver abaixo: `#mesaStage` foi para `z-index: 10` na Etapa 66 e matou o desenho, porque passou a engolir todo `mousedown` do palco antes do `#mesaDrawCanvas` (z 8).

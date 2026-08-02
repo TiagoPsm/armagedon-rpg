@@ -385,6 +385,12 @@ class MesaRealtimeRoom extends DurableObject {
         });
         return;
       }
+      // Autoria vem do socket AUTENTICADO, nunca do payload (Etapa 76).
+      // O `author` decide quem pode apagar o traco; deixar o cliente
+      // declara-lo permitiria assinar o proprio traco como o mestre (e
+      // torna-lo intocavel para os outros jogadores). Mesmo principio do
+      // `from` em handleMapSignal e do characterKey do sheet:patch.
+      stroke.author = normalizeCharacterKey(attachment.username);
       payload = { ...payload, stroke };
     }
 

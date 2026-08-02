@@ -1103,7 +1103,11 @@ test.describe("Desenhos fim-a-fim (Etapa 38)", () => {
     expect(legacy.ids).toEqual(["pub", "sec"]);
   });
 
-  test("mestre recebe desenho de jogador via delta e persiste a cena (camada unica, Etapa 73)", async ({ page }) => {
+  // Etapa 76: o desenho do jogador chega ao mestre pelo DELTA (mesa:drawings:add),
+  // que e o que o cliente real manda desde a Etapa 50 — um traco por mensagem.
+  // O estado COMPLETO vindo de jogador passou a ser ignorado de proposito: era
+  // por ali que a borracha de um jogador apagava o desenho do mestre.
+  test("mestre recebe desenho de jogador via delta, soma ao quadro e persiste a cena", async ({ page }) => {
     await seedMasterWithScene(page, BASE_TOKENS);
     const baseUrl = await getMesaBaseUrl();
     await page.goto(`${baseUrl}/mesa.html`);
@@ -1113,34 +1117,45 @@ test.describe("Desenhos fim-a-fim (Etapa 38)", () => {
       let persistCalls = 0;
       persistState = () => { persistCalls += 1; };
       _strokes = [
-        { id: "sec", tool: "rect", color: "#40b8e8", width: 3, x1: 0.2, y1: 0.2, x2: 0.7, y2: 0.7, points: null, layer: "dm" }
+        { id: "mestre1", tool: "rect", color: "#40b8e8", width: 3, author: "mestre",
+          x1: 0.2, y1: 0.2, x2: 0.7, y2: 0.7, points: null, layer: "tokens" }
       ];
 
+      await applyMesaRealtimeDelta({
+        type: "mesa:drawings:add",
+        clientId: "cliente-remoto",
+        sceneVersion: 0,
+        actor: { username: "ana", role: "player" },
+        stroke: { id: "ana1", tool: "pencil", color: "#40c860", width: 3, author: "ana",
+          x1: 0.1, y1: 0.1, x2: 0.4, y2: 0.4, points: [[0.1, 0.1], [0.4, 0.4]], layer: "tokens" }
+      });
+
+      const idsAposDelta = getDrawingsSnapshot().map(d => d.id).sort();
+
+      // Estado completo VAZIO vindo do jogador: tem de ser ignorado, senao um
+      // jogador zera o quadro do mestre pelo socket.
       await applyMesaRealtimeDelta({
         type: "mesa:drawings:update",
         clientId: "cliente-remoto",
         sceneVersion: 0,
         actor: { username: "ana", role: "player" },
-        drawings: [
-          { id: "ana1", tool: "pencil", color: "#40c860", width: 3,
-            x1: 0.1, y1: 0.1, x2: 0.4, y2: 0.4, points: [[0.1, 0.1], [0.4, 0.4]], layer: "tokens" }
-        ]
+        drawings: []
       });
 
-      const ids = getDrawingsSnapshot().map(d => d.id).sort();
       const local = JSON.parse(localStorage.getItem("tc_virtual_mesa_mock_v1") || "{}");
       return {
-        ids,
+        idsAposDelta,
+        idsAposFullState: getDrawingsSnapshot().map(d => d.id).sort(),
         persistCalls,
         snapshotHasDrawing: (local.drawings || []).some(d => d.id === "ana1")
       };
     });
 
-    // Estado completo remoto manda em todo mundo: nao ha mais camada local
-    // separada para o mestre preservar.
-    expect(result.ids).toEqual(["ana1"]);
-    expect(result.persistCalls).toBe(1);         // mestre torna o desenho oficial
-    expect(result.snapshotHasDrawing).toBe(true); // F5 preserva via snapshot local
+    // O traco do jogador SOMA ao quadro; o do mestre continua la.
+    expect(result.idsAposDelta).toEqual(["ana1", "mestre1"]);
+    expect(result.idsAposFullState).toEqual(["ana1", "mestre1"]);
+    expect(result.persistCalls).toBeGreaterThanOrEqual(1); // mestre torna oficial
+    expect(result.snapshotHasDrawing).toBe(true);          // F5 preserva
   });
 });
 

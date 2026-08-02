@@ -1323,7 +1323,10 @@ test.describe("Sugestoes", () => {
     expect(d1Schema).toContain("create table if not exists suggestions");
   });
 
-  test("jogador cria sugestao e apenas mestre edita ou exclui no modo local", async ({ page }) => {
+  // 2026-08-02: o AUTOR passou a poder excluir a propria sugestao (quem mandou
+  // pode se arrepender e retirar). Editar continua so do mestre — o texto ja
+  // enviado e registro da campanha. Jogador que NAO e o autor nao ve botao.
+  test("jogador exclui a propria sugestao, nao edita; mestre edita e exclui qualquer uma", async ({ page }) => {
     const baseUrl = await getMesaBaseUrl();
 
     await page.addInitScript(() => {
@@ -1350,8 +1353,9 @@ test.describe("Sugestoes", () => {
     await page.getByRole("button", { name: "Enviar sugestao" }).click();
 
     await expect(page.locator("#suggestionsList")).toContainText("Melhorar mapa");
+    // Autora: pode retirar a propria, nao pode reescrever.
     await expect(page.getByRole("button", { name: "Editar" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Excluir" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Excluir" })).toHaveCount(1);
 
     const storedAfterPlayer = await page.evaluate(() => JSON.parse(localStorage.getItem("tc_suggestions_posts") || "[]"));
     expect(storedAfterPlayer).toHaveLength(1);
@@ -1360,6 +1364,21 @@ test.describe("Sugestoes", () => {
       category: "Mesa",
       author: "ana"
     });
+
+    // Outro JOGADOR (nao autor) nao ve acao nenhuma na sugestao da Ana.
+    await page.evaluate(() => {
+      localStorage.setItem("tc_session", JSON.stringify({
+        username: "bruno",
+        role: "player",
+        token: "",
+        backend: false
+      }));
+    });
+    await page.reload();
+
+    await expect(page.locator("#suggestionsList")).toContainText("Melhorar mapa");
+    await expect(page.getByRole("button", { name: "Editar" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Excluir" })).toHaveCount(0);
 
     await page.evaluate(() => {
       localStorage.setItem("tc_session", JSON.stringify({

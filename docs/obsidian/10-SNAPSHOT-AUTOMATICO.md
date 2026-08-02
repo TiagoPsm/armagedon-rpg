@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-02 03:21:48 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-02 04:18:47 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,14 +13,12 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `177e406 2026-08-02 fix(mesa): desenho no palco, camada unica e tetos maiores (Etapas 73-74)`
+- Ultimo commit: `91c368f 2026-08-02 @ fix(permissoes): separa papeis na Mesa e na Ficha (Etapas 75-76)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-M  DEV_STATUS.md
-M  cloudflare/README.md
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -32,8 +30,7 @@ M  cloudflare/README.md
 ### Arquivos Em Stage
 
 ```text
-DEV_STATUS.md
-cloudflare/README.md
+(nenhum)
 ```
 
 ## Paginas Principais
@@ -47,8 +44,8 @@ cloudflare/README.md
 
 ## Contagem Rapida
 
-- JavaScript em `js/`: 37 arquivo(s)
-- CSS em `css/`: 13 arquivo(s)
+- JavaScript em `js/`: 38 arquivo(s)
+- CSS em `css/`: 14 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
 ## Notas Do Vault

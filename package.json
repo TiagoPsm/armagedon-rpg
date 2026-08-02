@@ -9,6 +9,7 @@
     "build:pages": "node tools/build-pages.cjs",
     "test:mesa": "playwright test tests/mesa.spec.cjs",
     "test:mesa:audit": "playwright test tests/mesa-audit.spec.cjs",
+    "test:mesa:permissoes": "playwright test tests/mesa-permissions.spec.cjs",
     "test:mesa:tokens": "playwright test tests/mesa-token-handles.spec.cjs",
     "test:mesa:online": "playwright test tests/mesa-online.spec.cjs",
     "test:ficha": "playwright test tests/ficha.spec.cjs",

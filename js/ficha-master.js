@@ -1,4 +1,20 @@
+/**
+ * Trava do painel do mestre (Etapa 75).
+ *
+ * `openMasterPanel`, `backToMaster` e `masterView` sao globais (scripts
+ * classicos), entao um jogador chamava `backToMaster()` pelo console e
+ * caia no painel do mestre — com os formularios de criar jogador/NPC/
+ * monstro e os botoes de drop. Nao vazava dado (o `/api/directory` nao
+ * devolve NPC nem monstro para jogador, e toda acao dali volta 403),
+ * mas e a mesma classe de bug da Mesa: a tela oferecendo o que o
+ * servidor vai negar. O papel real vem de `currentRole` (ficha-init.js).
+ */
+function isFichaMaster() {
+  return String(currentRole || "").trim().toLowerCase() === "master";
+}
+
 async function openMasterPanel() {
+  if (!isFichaMaster()) return;
   currentSheetTarget = null;
   pendingRealtimeSheetKey = "";
   renderPlayers();
@@ -272,10 +288,12 @@ async function removePlayer(username) {
 }
 
 async function masterView(username) {
+  if (!isFichaMaster()) return;
   await openSheet(createPlayerTarget(username), true);
 }
 
 async function backToMaster() {
+  if (!isFichaMaster()) return;
   await saveSheet();
   await openMasterPanel();
 }

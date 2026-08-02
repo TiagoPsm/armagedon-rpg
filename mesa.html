@@ -23,6 +23,10 @@
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-06-16-master-vital-card-1" />
   <link rel="stylesheet" href="css/mesa-map.css?v=2026-07-31-fit-sempre-1" />
   <link rel="stylesheet" href="css/mesa-drawing.css?v=2026-08-02-desenho-1" />
+  <!-- Permissoes (Etapa 75): esconde tudo marcado com data-mesa-master-only
+       enquanto o body nao estiver com data-role="master". Carrega DEPOIS dos
+       demais para vencer por ordem em caso de especificidade empatada. -->
+  <link rel="stylesheet" href="css/mesa-permissions.css?v=2026-08-02-permissoes-1" />
   <style>
     /* ── TOKEN SCALE ── */
     .mesa-token { transform-origin: top left; transform: scale(var(--token-scale, 1)); }
@@ -101,7 +105,9 @@
     body.mesa-resize-active, body.mesa-resize-active * { user-select: none !important; }
   </style>
 </head>
-<body class="mesa-page">
+<!-- data-role: padrao FECHADO (Etapa 75). O JS promove para "master"
+     depois de resolver a sessao; sem JS, nada de mestre aparece. -->
+<body class="mesa-page" data-role="player">
   <div class="bg-layer bg-noise"></div>
   <div class="bg-layer bg-vignette"></div>
   <div class="bg-layer bg-scar"></div>
@@ -202,7 +208,7 @@
           <span>TOKENS</span>
         </button>
 
-        <button class="vtt-layer-btn" id="mesaLayerDmBtn" data-layer="dm" data-panel="scene" title="Camada do Mestre — tokens e desenhos secretos (só o mestre vê)" aria-pressed="false" hidden>
+        <button class="vtt-layer-btn" id="mesaLayerDmBtn" data-layer="dm" data-panel="scene" title="Camada do Mestre — tokens e desenhos secretos (só o mestre vê)" aria-pressed="false" data-mesa-master-only hidden>
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
             <path d="M3 7l3.5 2.5L10 4l3.5 5.5L17 7l-1.2 8.5H4.2L3 7z" stroke-linejoin="round"/>
             <circle cx="10" cy="12.5" r="1"/>
@@ -210,7 +216,7 @@
           <span>MESTRE</span>
         </button>
 
-        <button class="vtt-layer-btn" id="mesaLayerMapBtn" data-layer="map" data-panel="map" title="Camada de Mapa — mover e redimensionar o fundo (só o mestre)" aria-pressed="false" hidden>
+        <button class="vtt-layer-btn" id="mesaLayerMapBtn" data-layer="map" data-panel="map" title="Camada de Mapa — mover e redimensionar o fundo (só o mestre)" aria-pressed="false" data-mesa-master-only hidden>
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
             <polygon points="2,4 8,2 12,5 18,3 18,16 12,18 8,15 2,17" stroke-linejoin="round"/>
             <line x1="8" y1="2" x2="8" y2="15"/>
@@ -225,7 +231,9 @@
 
       <!-- Ferramentas -->
       <div class="vtt-tb-tools">
-        <button class="vtt-tb-btn" data-tool="roster" title="Escalação — adicionar personagens à cena" aria-pressed="false">
+        <!-- Escalacao e do mestre: o jogador nunca ve a lista de personagens
+             para colocar em cena (SYSTEM_RULES.md > Mesa Virtual). -->
+        <button class="vtt-tb-btn" data-tool="roster" title="Escalação — adicionar personagens à cena" aria-pressed="false" data-mesa-master-only>
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
             <circle cx="7" cy="6" r="2.5"/>
             <path d="M1.5 16.5c0-3 2.4-5.5 5.5-5.5s5.5 2.5 5.5 5.5" stroke-linecap="round"/>
@@ -234,8 +242,10 @@
           </svg>
           <span>ESCAL.</span>
         </button>
+        <!-- Combate e conduzido pelo mestre: ativar/encerrar o tracker e
+             master-only. O jogador entra pelo banner "Rolar iniciativa". -->
         <button class="vtt-tb-btn" id="mesaInitiativeBtn"
-          title="Ativar tracker de iniciativa" aria-pressed="false"
+          title="Ativar tracker de iniciativa" aria-pressed="false" data-mesa-master-only
           onclick="if(getInitiativeState().active){deactivateInitiative()}else{activateInitiative()}">
           <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
             <path d="M10 2L12.4 7.6H18L13.3 11.1L15.1 17L10 13.5L4.9 17L6.7 11.1L2 7.6H7.6L10 2Z" stroke-linejoin="round"/>
@@ -433,8 +443,10 @@
           <div class="draw-flyout-divider"></div>
         </div>
 
-        <!-- Limpar tudo -->
-        <button class="draw-flyout-item draw-flyout-item--danger" id="mesaDrawClearBtn" type="button">
+        <!-- Limpar tudo — master-only (Etapa 76): e a unica acao de desenho
+             que apaga traco dos outros. Jogador usa a borracha, que so
+             alcanca os proprios tracos. -->
+        <button class="draw-flyout-item draw-flyout-item--danger" id="mesaDrawClearBtn" type="button" data-mesa-master-only>
           <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor"
                stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polyline points="3,6 17,6"/><path d="M8 6V4h4v2"/>
@@ -457,8 +469,10 @@
         <p id="sceneStateCopy" class="vtt-hud-copy">A escalacao vem das fichas salvas e a cena sincroniza com jogadores conectados.</p>
       </div>
 
-      <!-- Overlay: topo direito — controles do mapa -->
-      <div class="vtt-overlay vtt-overlay-tr">
+      <!-- Overlay: topo direito — controles do mapa (MESTRE).
+           Todo o chrome de mapa (rotulo "Sem mapa", abrir, limpar, engrenagem)
+           e gestao: o jogador ve o mapa no palco, nunca os controles. -->
+      <div class="vtt-overlay vtt-overlay-tr" data-mesa-master-only>
         <div class="mesa-map-controls">
           <span id="mesaMapLabel" class="mesa-map-label">Sem mapa</span>
           <button type="button" class="btn btn-ghost btn-small" id="mesaMapOpenBtn" onclick="openAndSetLocalMap()">Abrir mapa</button>
@@ -475,7 +489,7 @@
       </div>
 
       <!-- Painel de configurações do mapa — separado, abre abaixo do overlay -->
-      <div class="mesa-map-settings-panel" id="mesaMapTransform" hidden>
+      <div class="mesa-map-settings-panel" id="mesaMapTransform" data-mesa-master-only hidden>
         <!-- O grupo "Palco / Ajustar ao mapa" (Etapa 54) saiu na Etapa 68:
              o ajuste virou invariante, sem controle. -->
 
@@ -542,9 +556,9 @@
       </div>
 
       <!-- Overlay: baixo direito — ações -->
-      <div class="vtt-overlay vtt-overlay-br">
-        <button type="button" class="btn btn-ghost btn-small" id="moveLockBtn" hidden aria-pressed="false">Travar movimento</button>
-        <button type="button" class="btn btn-ghost btn-small" id="resetMesaBtn" hidden>Limpar cena</button>
+      <div class="vtt-overlay vtt-overlay-br" data-mesa-master-only>
+        <button type="button" class="btn btn-ghost btn-small" id="moveLockBtn" data-mesa-master-only hidden aria-pressed="false">Travar movimento</button>
+        <button type="button" class="btn btn-ghost btn-small" id="resetMesaBtn" data-mesa-master-only hidden>Limpar cena</button>
       </div>
     </div>
 
@@ -573,15 +587,15 @@
           <span class="vtt-count-badge" id="rosterCountBadge">0 disponíveis</span>
         </div>
 
-        <!-- Tabs de filtro por tipo -->
-        <div class="vtt-roster-tabs" role="tablist" aria-label="Filtrar por tipo">
+        <!-- Tabs de filtro por tipo — chrome de escalacao (mestre) -->
+        <div class="vtt-roster-tabs" role="tablist" aria-label="Filtrar por tipo" data-mesa-master-only>
           <button class="vtt-rtab is-active" data-filter="all"    role="tab" aria-selected="true">Todos</button>
           <button class="vtt-rtab"           data-filter="player"  role="tab" aria-selected="false">Jogadores</button>
           <button class="vtt-rtab"           data-filter="npc"     role="tab" aria-selected="false">NPCs</button>
           <button class="vtt-rtab"           data-filter="monster" role="tab" aria-selected="false">Monstros</button>
         </div>
 
-        <label class="search-field" id="rosterSearchField" for="rosterSearch">
+        <label class="search-field" id="rosterSearchField" for="rosterSearch" data-mesa-master-only>
           <span>Buscar personagem</span>
           <input type="search" id="rosterSearch" placeholder="Nome, tipo ou dono..." autocomplete="off" />
         </label>
@@ -590,7 +604,7 @@
       </div>
 
       <!-- Biblioteca de mapas (visível quando tool=map) -->
-      <div class="vtt-sidebar-block" id="vttMapLibraryBlock" hidden>
+      <div class="vtt-sidebar-block" id="vttMapLibraryBlock" data-mesa-master-only hidden>
         <div class="vtt-sidebar-block-head">
           <div class="vtt-sidebar-block-title">
             <p class="vtt-kicker">Mapas locais</p>
@@ -628,10 +642,11 @@
         </div>
       </div>
 
-      <div class="vtt-sidebar-sep"></div>
+      <div class="vtt-sidebar-sep" data-mesa-master-only></div>
 
-      <!-- Inspetor de token -->
-      <div class="vtt-sidebar-block" id="vttInspectorBlock">
+      <!-- Inspetor de token — exclusivo do mestre (o jogador edita o proprio
+           token no painel "Meu Token"; ver SYSTEM_RULES.md > Mesa Virtual) -->
+      <div class="vtt-sidebar-block" id="vttInspectorBlock" data-mesa-master-only>
         <div class="vtt-sidebar-block-head">
           <div class="vtt-sidebar-block-title">
             <p class="vtt-kicker">Inspetor</p>
@@ -657,7 +672,8 @@
           <span class="init-round-badge">Rodada <strong class="init-round-num">1</strong></span>
         </div>
         <p class="init-status"></p>
-        <div class="init-master-controls" id="initMasterControls">
+        <!-- Conduzir o combate e do mestre; o jogador so ve a ordem -->
+        <div class="init-master-controls" id="initMasterControls" data-mesa-master-only>
           <button type="button" class="btn btn-primary btn-sm" onclick="nextInitiativeTurn()">&#9654; Próximo</button>
           <button type="button" class="btn btn-sm"             onclick="resetInitiativeRound()">&#8635; Reiniciar</button>
           <button type="button" class="btn btn-sm btn-danger"  onclick="deactivateInitiative()">&#10005; Encerrar</button>
@@ -696,34 +712,46 @@
   <script src="js/api.js?v=2026-07-27-scenes-1" defer></script>
   <script src="js/ui.js?v=2026-06-11-soul-notify-1" defer></script>
   <script src="js/auth.js?v=2026-06-13-login-form-1" defer></script>
+  <!-- Permissoes da Mesa (Etapa 75): precisa vir ANTES de todo modulo mesa-*,
+       porque eles chamam mesaCan()/requireMesaMaster()/applyMesaRolePermissions(). -->
+  <script src="js/mesa-permissions.js?v=2026-08-02-permissoes-1" defer></script>
   <!-- Ordem importante: dependências antes de mesa-core -->
   <script src="js/mesa-stage.js?v=2026-07-31-cells-1" defer></script>
-  <script src="js/mesa-roster.js?v=2026-06-16-no-dup-inspector-1" defer></script>
-  <script src="js/mesa-inspector.js?v=2026-07-30-markers-1" defer></script>
+  <script src="js/mesa-roster.js?v=2026-08-02-permissoes-1" defer></script>
+  <script src="js/mesa-inspector.js?v=2026-08-02-permissoes-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
-  <script src="js/mesa-core.js?v=2026-07-31-scaleclamp-1" defer></script>
-  <script src="js/mesa-map.js?v=2026-07-31-fit-sempre-1" defer></script>
+  <script src="js/mesa-core.js?v=2026-08-02-autoria-1" defer></script>
+  <script src="js/mesa-map.js?v=2026-08-02-permissoes-1" defer></script>
   <script src="js/mesa-grid.js?v=2026-07-31-cells-1" defer></script>
   <script src="js/mesa-fog.js?v=2026-07-29-sharp-1" defer></script>
   <script src="js/mesa-scenes.js?v=2026-07-27-scenes-1" defer></script>
   <script src="js/mesa-ping.js?v=2026-07-27-ping-1" defer></script>
   <script src="js/mesa-ruler.js?v=2026-07-27-ruler-1" defer></script>
   <script src="js/mesa-dice.js?v=2026-07-27-dice-1" defer></script>
-  <script src="js/mesa-drawing.js?v=2026-08-02-exclusivo-1" defer></script>
+  <script src="js/mesa-drawing.js?v=2026-08-02-autoria-1" defer></script>
   <script src="js/mesa-select.js?v=2026-08-02-exclusivo-1" defer></script>
-  <script src="js/mesa-initiative.js?v=2026-07-10-initiative-sync-1" defer></script>
+  <script src="js/mesa-initiative.js?v=2026-08-02-permissoes-1" defer></script>
   <!-- Depois de mesa-stage.js (whitelist/toggle) e mesa-inspector.js (linha do inspetor) -->
   <script src="js/mesa-markers.js?v=2026-07-30-markers-1" defer></script>
   <script>
   /* VTT Toolbar — camadas + painéis da sidebar */
   (function () {
     // Painéis associados a cada painel/layer
+    // Blocos que este painel pode revelar diretamente.
+    // ATENCAO (Etapa 75): "vttInspectorBlock" e "vttInitiativeBlock" NAO
+    // entram aqui. Eles tem dono — renderInspector() e renderInitiative() —
+    // que decidem visibilidade por PAPEL e por ESTADO (combate ativo, token
+    // selecionado). Revela-los aqui era exatamente o bug que mostrava o
+    // tracker de iniciativa com "Proximo / Reiniciar / Encerrar" para o
+    // jogador, e o inspetor do mestre, a cada clique na barra.
     var PANEL_BLOCKS = {
-      scene:  ["vttRosterBlock", "vttInspectorBlock", "vttInitiativeBlock"],
+      scene:  ["vttRosterBlock"],
       map:    ["vttMapLibraryBlock"],
       roster: ["vttRosterBlock"],
     };
     var ALL_BLOCKS = ["vttRosterBlock", "vttInspectorBlock", "vttMapLibraryBlock", "vttInitiativeBlock"];
+    // Blocos de dono proprio: showPanel so ESCONDE; quem revela e o modulo.
+    var OWNED_BLOCKS = { scene: ["vttInspectorBlock", "vttInitiativeBlock"] };
 
     function showPanel(panelName) {
       // Esconder todos
@@ -740,16 +768,32 @@
         var el = document.getElementById(id);
         if (el) el.hidden = false;
       });
+      // Devolve a palavra final aos donos dos blocos condicionais
+      if ((OWNED_BLOCKS[panelName] || []).length) {
+        if (typeof renderInspector === "function")  renderInspector();
+        if (typeof renderInitiative === "function") renderInitiative();
+      }
       // Callbacks de render
       if (panelName === "map") {
         if (typeof renderMapLibrary === "function")        renderMapLibrary();
         if (typeof renderConnectedFolderUI === "function") renderConnectedFolderUI();
         if (typeof _patchThumbsInDOM === "function")       _patchThumbsInDOM();
       }
+      // Ultima palavra: nada exclusivo do mestre pode sobrar visivel.
+      if (typeof applyMesaRolePermissions === "function") applyMesaRolePermissions();
     }
 
     // Clique em botão de CAMADA (altera a camada activa do canvas + painel)
     document.addEventListener("click", function (e) {
+      // Trava de papel: clique em controle marcado como do mestre nao passa
+      // daqui para o jogador (defesa extra caso algo revele o botao).
+      var masterOnly = e.target.closest("[data-mesa-master-only]");
+      if (masterOnly && typeof isMesaMasterRole === "function" && !isMesaMasterRole()) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+
       var layerBtn = e.target.closest(".vtt-layer-btn[data-layer]");
       if (layerBtn) {
         var layer = layerBtn.dataset.layer;

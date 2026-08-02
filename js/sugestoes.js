@@ -217,16 +217,7 @@ async function renderSuggestions(options = {}) {
                 <span>Atualizada em ${esc(formatSuggestionDateTime(suggestion.updatedAt))}</span>
               </div>
             </div>
-            ${
-              isMaster
-                ? `
-                  <div class="rule-actions">
-                    <button class="rule-btn" onclick="editSuggestion('${jsEsc(suggestion.id)}')">Editar</button>
-                    <button class="rule-btn rule-btn-danger" onclick="deleteSuggestion('${jsEsc(suggestion.id)}')">Excluir</button>
-                  </div>
-                `
-                : ""
-            }
+            ${renderSuggestionActions(suggestion, isMaster)}
           </div>
 
           <p class="rule-card-content">${esc(suggestion.description || "Sem descricao.")}</p>
@@ -234,6 +225,33 @@ async function renderSuggestions(options = {}) {
       `
     )
     .join("");
+}
+
+/**
+ * Acoes de um card de sugestao (2026-08-02).
+ *
+ * Mestre: editar + excluir qualquer uma. AUTOR: excluir a propria — quem
+ * mandou pode se arrepender e retirar, mas nao reescreve o texto depois
+ * de enviado (editar continua so do mestre, no cliente e no Worker).
+ * Quem nao e nenhum dos dois nao ve botao nenhum.
+ */
+function renderSuggestionActions(suggestion, isMaster) {
+  const author = String(suggestion?.author || "").trim().toLowerCase();
+  const me = String(currentSession?.username || "").trim().toLowerCase();
+  const isAuthor = Boolean(author && me && author === me);
+
+  if (!isMaster && !isAuthor) return "";
+
+  const editar = isMaster
+    ? `<button class="rule-btn" onclick="editSuggestion('${jsEsc(suggestion.id)}')">Editar</button>`
+    : "";
+
+  return `
+    <div class="rule-actions">
+      ${editar}
+      <button class="rule-btn rule-btn-danger" onclick="deleteSuggestion('${jsEsc(suggestion.id)}')">Excluir</button>
+    </div>
+  `;
 }
 
 function resetSuggestionForm() {
@@ -378,10 +396,16 @@ async function saveSuggestion() {
 }
 
 async function deleteSuggestion(suggestionId) {
-  if (currentSession.role !== "master") return;
-
   const suggestion = suggestionsCache.find(candidate => candidate.id === suggestionId);
   if (!suggestion) return;
+
+  // Mestre apaga qualquer uma; jogador so a propria (2026-08-02). Mesma
+  // regra do Worker — aqui e conforto, la e a barreira.
+  if (currentSession.role !== "master") {
+    const author = String(suggestion.author || "").trim().toLowerCase();
+    const me = String(currentSession?.username || "").trim().toLowerCase();
+    if (!author || !me || author !== me) return;
+  }
 
   const confirmed = await UI.confirm(`Excluir a sugestao "${suggestion.title || "Sugestao sem titulo"}"?`, {
     title: "Excluir sugestao",
