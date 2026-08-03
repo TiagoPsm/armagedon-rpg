@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-02 19:19:41 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-02 22:42:59 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,27 +13,37 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `314478e 2026-08-02 feat(mesa): refaz o sistema de iniciativa do zero (Etapa 77)`
+- Ultimo commit: `01ca1a3 2026-08-02 fix(build): bump do cache-bust dos bundles da Mesa (Etapa 77)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  tools/build-pages.cjs
+M  DEV_STATUS.md
+M  SYSTEM_RULES.md
+M  VISUAL_RULES.md
+M  css/mesa.css
+ M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  js/mesa-initiative.js
+M  mesa.html
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
 .claude/settings.local.json
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ```
 
 ### Arquivos Em Stage
 
 ```text
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-tools/build-pages.cjs
+DEV_STATUS.md
+SYSTEM_RULES.md
+VISUAL_RULES.md
+css/mesa.css
+js/mesa-initiative.js
+mesa.html
 ```
 
 ## Paginas Principais

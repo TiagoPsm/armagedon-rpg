@@ -157,6 +157,24 @@ function initiativeModifierFor(characterKey) {
   return Math.max(-MAX_INITIATIVE_MOD, Math.min(MAX_INITIATIVE_MOD, mod));
 }
 
+/**
+ * Igual a initiativeModifierFor(), mas devolve `null` quando a ficha do
+ * personagem NAO esta em cache nesta tela.
+ *
+ * Existe para o mestre conferir a rolagem que chega do jogador (Etapa 78):
+ * quando o mestre tem a ficha, o modificador que vale e o DELE — o numero do
+ * jogador vira palpite descartavel. Quando nao tem, `null` avisa "nao sei" e
+ * o mestre aceita o valor recebido (ja clampado); tratar ausencia como 0
+ * zeraria injustamente a iniciativa de quem tem Agilidade alta.
+ */
+function initiativeKnownModifierFor(characterKey) {
+  const sheets = typeof readMergedSheets === "function" ? readMergedSheets() : {};
+  const key    = initKey(characterKey);
+  const sheet  = sheets[key] || sheets[characterKey];
+  if (!sheet || sheet[INITIATIVE_ATTR] === undefined) return null;
+  return initiativeModifierFor(characterKey);
+}
+
 /** Token da cena correspondente a uma entrada (para avatar/iniciais). */
 function findInitiativeToken(entry) {
   const tokens = (typeof state === "object" && state && Array.isArray(state.tokens)) ? state.tokens : [];
@@ -429,7 +447,21 @@ function rollOwnInitiative(tokenId) {
 
   const entry = s.order.find(e => e.id === String(tokenId || ""));
   if (!entry || entry.rolled) return;
-  if (!isInitMaster() && !isOwnInitiativeEntry(entry)) return;
+
+  // TRAVA DE POSSE (Etapa 78). Esconder o botao nao basta: esta funcao e
+  // global e chamavel pelo console com qualquer id de token. A regra e uma
+  // so — jogador rola pelo PROPRIO personagem, mais nada. O mestre segue
+  // podendo rolar por quem ficou pendente (jogador ausente nao trava a mesa).
+  if (!isInitMaster()) {
+    if (typeof mesaCan === "function" && !mesaCan("initiative.roll")) return;
+    if (!isOwnInitiativeEntry(entry)) {
+      if (window.UI?.toast) window.UI.toast("Você só rola a iniciativa do seu personagem.", "warn");
+      return;
+    }
+  } else if (entry.auto) {
+    // NPC e monstro rolam sozinhos no fim da fase; nao ha botao para eles.
+    return;
+  }
 
   const roll     = rollD20();
   const modifier = initiativeModifierFor(entry.characterKey);
@@ -488,16 +520,24 @@ function _receivePlayerRoll(payload) {
   const actorName = initUser(payload?.actor?.username || payload?.characterKey);
 
   const tokenId = String(payload?.tokenId || "");
-  const entry = s.order.find(e => e.id === tokenId)
-    || s.order.find(e => e.characterKey === initKey(payload?.characterKey));
+  // O alvo e SEMPRE o tokenId declarado. O fallback por characterKey saiu na
+  // Etapa 78: com ele, um payload sem tokenId caia na primeira entrada de
+  // mesmo characterKey — e o jogador escolhe o characterKey que envia.
+  const entry = tokenId ? s.order.find(e => e.id === tokenId) : null;
   if (!entry || entry.rolled) return;
 
   if (actorRole !== "master") {
     if (!actorName) return;
     if (entry.ownerUsername !== actorName && entry.characterKey !== actorName) return;
+    // Automatico (NPC/monstro) nunca vem de jogador, mesmo que ele "possua"
+    // a entrada por coincidencia de nome: esses rolam no fecho da fase.
+    if (entry.auto) return;
   }
 
-  _applyRollToEntry(entry, payload?.roll, payload?.modifier);
+  // O modificador que vale e o da FICHA vista pelo mestre — o numero do
+  // cliente so entra quando esta tela ainda nao tem a ficha em cache.
+  const knownMod = initiativeKnownModifierFor(entry.characterKey);
+  _applyRollToEntry(entry, payload?.roll, knownMod === null ? payload?.modifier : knownMod);
   _broadcastInitiative();
   renderInitiative();
   _maybeCloseRollPhase();
@@ -650,12 +690,24 @@ function _renderRollOverlay() {
   const pending = counted.filter(entry => !entry.auto && !entry.rolled);
   const rolledCount = counted.filter(entry => entry.rolled).length;
 
+  // A MINHA linha primeiro (Etapa 78): o painel encolheu para caber na doca
+  // do canto, entao o que exige acao tem de estar no topo, sem rolagem de
+  // lista. Para o mestre a ordem original se mantem (ele nao rola por si).
+  const mine   = master ? [] : counted.filter(entry => isOwnInitiativeEntry(entry));
+  const others = counted.filter(entry => !mine.includes(entry));
+  const rows   = [...mine, ...others];
+
   const sub = overlay.querySelector(".init-modal-sub");
-  if (sub) sub.textContent = `Cada jogador rola ${INITIATIVE_FORMULA} (+1 a cada 3 pontos). NPCs e monstros rolam sozinhos no fim.`;
+  if (sub) {
+    const meuTurno = mine.some(entry => !entry.rolled);
+    sub.textContent = meuTurno
+      ? `Role a SUA iniciativa: ${INITIATIVE_FORMULA}.`
+      : `${INITIATIVE_FORMULA} · NPCs e monstros rolam sozinhos no fim.`;
+  }
 
   const list = overlay.querySelector("#initRollList");
   if (list) {
-    list.innerHTML = items.map(({ entry }) => _rollRowHtml(entry, master)).join("")
+    list.innerHTML = rows.map(entry => _rollRowHtml(entry, master)).join("")
       || `<li class="init-empty">Nenhum participante visivel.</li>`;
   }
 
@@ -665,8 +717,14 @@ function _renderRollOverlay() {
       ? "falta 1 jogador"
       : `faltam ${pending.length} jogadores`;
     progress.textContent = pending.length
-      ? `${rolledCount} de ${counted.length} já rolaram — ${quemFalta}.`
-      : "Todas as rolagens entraram. Montando a ordem de turno…";
+      ? `${rolledCount}/${counted.length} rolaram — ${quemFalta}.`
+      : "Todas as rolagens entraram. Montando a ordem…";
+  }
+
+  const bar = overlay.querySelector("#initRollProgressBar > i");
+  if (bar) {
+    const pct = counted.length ? Math.round((rolledCount / counted.length) * 100) : 0;
+    bar.style.width = `${pct}%`;
   }
 
   // O mestre so precisa do escape hatch enquanto houver rolagem manual pendente.
@@ -700,9 +758,15 @@ function _rollRowHtml(entry, master) {
 
   let action;
   if (entry.rolled) {
-    action = `<span class="init-row-total"><strong>${entry.total}</strong><small>${entry.roll} ${_formatMod(entry.modifier)}</small></span>`;
+    // O numero so abre para quem tem direito de ver: o dono e o mestre. Para
+    // os outros fica um "ja rolou" — no painel estreito o placar de todo
+    // mundo virava ruido, e a ordem completa aparece na fase seguinte.
+    action = showMod
+      ? `<span class="init-row-total"><strong>${entry.total}</strong><small>${entry.roll} ${_formatMod(entry.modifier)}</small></span>`
+      : `<span class="init-row-done" title="Já rolou">&#10003;</span>`;
   } else if (canRoll) {
-    action = `<button type="button" class="btn btn-primary btn-sm init-roll-btn" data-init-roll="${escapeHtmlInit(entry.id)}">&#127922; Rolar iniciativa</button>`;
+    const label = mine ? "&#127922; Rolar minha iniciativa" : "&#127922; Rolar";
+    action = `<button type="button" class="btn btn-primary btn-sm init-roll-btn" data-init-roll="${escapeHtmlInit(entry.id)}">${label}</button>`;
   } else if (entry.auto) {
     action = `<span class="init-row-wait">rola no fim</span>`;
   } else {

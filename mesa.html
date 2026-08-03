@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="css/tokens.css?v=2026-06-14-echos-1" />
   <link rel="stylesheet" href="css/reset.css?v=2026-06-12-cache-fix-1" />
   <link rel="stylesheet" href="css/components.css?v=2026-06-12-modal-stack-1" />
-  <link rel="stylesheet" href="css/mesa.css?v=2026-08-02-iniciativa-2" />
+  <link rel="stylesheet" href="css/mesa.css?v=2026-08-02-iniciativa-3" />
   <link rel="stylesheet" href="css/mesa-stage.css?v=2026-08-02-desenho-1" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-06-16-fullbleed-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-06-16-master-vital-card-1" />
@@ -658,22 +658,26 @@
     </aside>
   </div><!-- /vtt-body -->
 
-  <!-- ── INICIATIVA (Etapa 77) ───────────────────────────────────────
-       Fase 1 — modal central de rolagem: aparece para MESTRE E JOGADORES
-       com todos os tokens em cena. Cada jogador rola pelo proprio token;
+  <!-- ── INICIATIVA (Etapas 77-78) ───────────────────────────────────
+       Fase 1 — painel de rolagem ANCORADO no canto inferior esquerdo do
+       palco (Etapa 78: era um modal central com fundo escurecido, que
+       travava a mesa inteira durante a rolagem). Aparece para MESTRE E
+       JOGADORES; cada jogador so tem botao na linha do PROPRIO token e
        NPCs/monstros rolam sozinhos quando o ultimo jogador terminar.
+       Nao e `aria-modal`: o painel convive com o palco, nao o bloqueia.
        As linhas sao montadas por js/mesa-initiative.js. -->
-  <div id="initiativeOverlay" class="init-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="initOverlayTitle">
+  <div id="initiativeOverlay" class="init-overlay" hidden role="region" aria-labelledby="initOverlayTitle">
     <div class="init-modal">
       <button type="button" class="init-collapse-btn" data-init-collapse
               title="Encolher / expandir" aria-label="Encolher ou expandir a iniciativa">&#9472;</button>
       <header class="init-modal-head">
         <p class="init-kicker">Combate</p>
-        <h2 class="init-modal-title" id="initOverlayTitle">&#9876; Rolagem de Iniciativa</h2>
+        <h2 class="init-modal-title" id="initOverlayTitle">&#9876; Iniciativa</h2>
         <p class="init-modal-sub"></p>
       </header>
       <ul class="init-roll-list" id="initRollList" aria-live="polite"></ul>
       <footer class="init-modal-foot">
+        <div class="init-progress-bar" id="initRollProgressBar" aria-hidden="true"><i></i></div>
         <p class="init-progress" id="initRollProgress" aria-live="polite"></p>
         <!-- Escape hatch do mestre: jogador ausente nao pode travar o combate -->
         <button type="button" class="btn btn-sm" id="initForceRollsBtn" data-mesa-master-only hidden>
@@ -683,9 +687,11 @@
     </div>
   </div>
 
-  <!-- Fase 2 — ordem de turno: painel flutuante sobre o palco, visivel para
-       TODOS (jogador e mestre) para que se saiba de quem e a vez. O nome da
-       vez brilha (.init-entry.is-current). So o mestre ve Voltar/Passar. -->
+  <!-- Fase 2 — ordem de turno: MESMA doca da fase 1 (canto inferior
+       esquerdo), para o painel nao pular de lugar na troca de fase.
+       Visivel para TODOS (jogador e mestre) para que se saiba de quem e a
+       vez. O nome da vez brilha (.init-entry.is-current). So o mestre ve
+       Voltar/Passar. -->
   <div id="initiativeTracker" class="init-tracker" hidden aria-live="polite">
     <header class="init-tracker-head">
       <span class="init-round-badge">Rodada <strong class="init-round-num">1</strong></span>
@@ -727,7 +733,7 @@
   <script src="js/mesa-dice.js?v=2026-07-27-dice-1" defer></script>
   <script src="js/mesa-drawing.js?v=2026-08-02-autoria-1" defer></script>
   <script src="js/mesa-select.js?v=2026-08-02-exclusivo-1" defer></script>
-  <script src="js/mesa-initiative.js?v=2026-08-02-iniciativa-2" defer></script>
+  <script src="js/mesa-initiative.js?v=2026-08-02-iniciativa-3" defer></script>
   <!-- Depois de mesa-stage.js (whitelist/toggle) e mesa-inspector.js (linha do inspetor) -->
   <script src="js/mesa-markers.js?v=2026-07-30-markers-1" defer></script>
   <script>

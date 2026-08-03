@@ -16,13 +16,22 @@ C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 
 A pasta antiga `rpg-campaign` nao deve ser usada para editar layout, CSS, HTML ou assets publicados.
 
-## Iniciativa: modal central para agir, painel flutuante para acompanhar (2026-08-02, Etapa 77)
+## Iniciativa: doca unica no canto, nunca modal central (2026-08-02, Etapa 78 — revisa a 77)
 
-Padrao de duas telas para o mesmo estado, reutilizavel em qualquer momento "todo mundo faz uma coisa e depois todo mundo acompanha":
+Painel de mesa nao bloqueia a mesa. A fase de rolagem nasceu (Etapa 77) como modal central com backdrop e **isso foi revertido**: durante a rolagem o jogador precisa continuar vendo mapa e tokens, e um card de 4 linhas nao justifica escurecer a tela inteira.
 
-- **Enquanto se AGE** (fase de rolagem) → **modal central com backdrop** (`#initiativeOverlay`, `z-index: 2400`). Ocupa o centro porque a acao e obrigatoria e de todos ao mesmo tempo. `place-items: center`, largura `min(520px, 100%)`, altura maxima `min(78vh, 720px)` com a lista rolando por dentro.
-- **Enquanto se ACOMPANHA** (ordem de turno) → **painel flutuante sem backdrop** (`#initiativeTracker`, `z-index: 2300`), ancorado no topo-centro do palco, `width: min(340px, calc(100vw - 2rem))`. Nunca bloqueia a mesa: quem esta acompanhando precisa ver o palco.
-- **Colapsar e obrigatorio nos dois.** Botao `[data-init-collapse]` no canto; o modal vira pilula no rodape e o painel guarda a lista, sobrando so o cabecalho com a vez. E preferencia LOCAL — nunca sincroniza.
+O padrao que ficou, reutilizavel para qualquer painel persistente da Mesa:
+
+- **Uma doca, todas as fases.** `#initiativeOverlay` (rolagem) e `#initiativeTracker` (ordem) compartilham posicao e casca: `position: fixed`, `left: calc(60px + var(--sp-3))` — os 60px sao a largura da `.vtt-toolbar`, entao o painel encosta nela sem cobri-la — `bottom: var(--sp-3)`, `width: min(300px, calc(100vw - 60px - 2rem))`, `max-height: min(62vh, 560px)` com a lista rolando por dentro. Trocar de fase **nao muda o painel de lugar**: o olho ja sabe onde olhar.
+- **Sem backdrop e sem `aria-modal`.** O container e `role="region"`; nada fica inerte atras dele.
+- **Mobile (`<=700px`)**: a toolbar vira faixa horizontal no topo, entao o recuo de 60px deixa de existir — `left`/`right` de `var(--sp-2)` e `max-height: 50vh`.
+- **Colapsar e obrigatorio.** Botao `[data-init-collapse]` no canto; sobra so o cabecalho. Preferencia LOCAL — nunca sincroniza.
+
+### O que exige acao vem primeiro, e ocupa a largura toda
+
+Num painel de 300px nao da para espremer nome + meta + botao na mesma linha. Entao a **propria linha** (`.init-row.is-mine`) e tratada como outra coisa: sobe para o topo da lista (ordenacao no JS), ganha retrato maior (34px contra 28px), fundo em gradiente carmesim e o botao em `flex: 1 0 100%` embaixo do nome, com rotulo explicito ("Rolar minha iniciativa"). As outras linhas ficam informativas — um `✓` no lugar do numero enquanto a rolagem corre, porque placar alheio no meio da acao e ruido (e a ordem completa aparece na fase seguinte).
+
+Progresso coletivo vira **barra** (`.init-progress-bar`, 4px) alem do texto: "quanto falta" tem de ser legivel de relance, sem contar linha por linha.
 
 ### Destaque da vez: brilho, nao so cor
 

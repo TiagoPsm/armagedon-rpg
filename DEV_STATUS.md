@@ -30,7 +30,29 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-02 — Etapa 77: iniciativa refeita do zero)
+## Ultima Etapa Concluida (2026-08-02 — Etapa 78: iniciativa ancorada no canto + trava de posse)
+
+Ajuste pedido pelo Tiago sobre a Etapa 77: **o pop-up de iniciativa saiu do centro da tela** e a rolagem de cada jogador ficou blindada.
+
+### O que mudou
+
+1. **Doca unica no canto inferior esquerdo.** `#initiativeOverlay` (rolagem) e `#initiativeTracker` (ordem de turno) usam agora a MESMA posicao: `left: calc(60px + var(--sp-3))` (largura da `.vtt-toolbar`) e `bottom: var(--sp-3)`, `width: min(300px, calc(100vw - 60px - 2rem))`. Trocar de fase nao faz o painel pular de lugar. Em `<=700px` a toolbar vira faixa horizontal e o painel passa a ocupar a largura util (`left`/`right` de `var(--sp-2)`).
+2. **Fim do modal bloqueante.** A fase de rolagem perdeu o backdrop escuro e o `aria-modal` (virou `role="region"`): durante a rolagem todo mundo continua vendo o mapa e os tokens. Era o incomodo principal — 4 linhas de lista travavam a mesa inteira.
+3. **Painel redesenhado para 300px**: retratos de 28px (34px na propria linha), a MINHA linha sobe para o topo da lista e ganha o botao em largura total ("🎲 Rolar minha iniciativa"), barra de progresso das rolagens no rodape e numero das outras pessoas escondido durante a rolagem (vira so um ✓ — a ordem completa aparece na fase seguinte).
+4. **Trava de posse na rolagem** (ver SYSTEM_RULES.md): `rollOwnInitiative()` recusa entrada que nao e do jogador (com aviso), o mestre nao rola em token automatico por engano, o fallback por `characterKey` saiu do recebimento e **o modificador que vale e o da ficha vista pelo mestre** — o numero do cliente so entra quando o mestre nao tem a ficha em cache.
+
+### Arquivos alterados
+
+- `js/mesa-initiative.js` — `initiativeKnownModifierFor()` (novo), trava de posse em `rollOwnInitiative()`, `_receivePlayerRoll()` sem fallback por chave, render da fase 1 com minha-linha-primeiro + barra de progresso
+- `mesa.html` — `#initiativeOverlay` vira `role="region"`, entra `#initRollProgressBar`, titulo encurtado para "Iniciativa"; cache-bust de `css/mesa.css` e `js/mesa-initiative.js` (`2026-08-02-iniciativa-3`)
+- `css/mesa.css` — bloco de iniciativa reancorado (doca comum, casca compartilhada, barra de progresso, media query de 700px)
+- `SYSTEM_RULES.md`, `VISUAL_RULES.md`, `DEV_STATUS.md`
+
+### Verificacao
+
+`npm run check:js`, `npm run audit:static`, `npm run test:mesa` (5) e `npm run test:mesa:audit` (133) passaram. Posicao conferida no navegador: painel em `left: 72px`, `bottom: 12px`, `300x387` a 1280x720, e sem estouro horizontal a 375px.
+
+## Etapa Anterior (2026-08-02 — Etapa 77: iniciativa refeita do zero)
 
 O sistema de iniciativa foi **reescrito por completo**. O modelo antigo (banner para o jogador + popup individual + painel na sidebar) saiu inteiro.
 
