@@ -200,6 +200,78 @@ function normalizeDiceLabel(value) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, 60);
 }
 
+/* ── Modos, critico e segredo (Etapa 79) ────────────────────── */
+
+const DICE_MODES = new Set(["normal", "advantage", "disadvantage"]);
+
+function normalizeDiceMode(value) {
+  const mode = String(value || "normal").trim().toLowerCase();
+  return DICE_MODES.has(mode) ? mode : "normal";
+}
+
+/**
+ * Rola um spec respeitando o modo.
+ *
+ * REGRA (Tiago, 2026-08-02): vantagem/desvantagem funcionam COMO NA FICHA —
+ * rola a FORMULA INTEIRA duas vezes e fica com o TOTAL maior (vantagem) ou
+ * menor (desvantagem). Espelha rollDiceExpressionWithMode() de
+ * js/ficha-dice.js: uma regra so no sistema inteiro. Nao e "2d20 mantem um".
+ *
+ * Devolve `rolls` = a tirada ESCOLHIDA e `rollsSecond` = a descartada (null no
+ * modo normal), para o cliente poder mostrar as duas com a perdedora esmaecida.
+ */
+function rollMesaDiceWithMode(spec, mode, randomInt) {
+  const normalizedMode = normalizeDiceMode(mode);
+  const first = rollMesaDice(spec, randomInt);
+  if (normalizedMode === "normal") {
+    return { mode: normalizedMode, rolls: first.rolls, rollsSecond: null, total: first.total };
+  }
+
+  const second = rollMesaDice(spec, randomInt);
+  const keepFirst = normalizedMode === "advantage"
+    ? first.total >= second.total
+    : first.total <= second.total;
+  const chosen   = keepFirst ? first : second;
+  const discarded = keepFirst ? second : first;
+
+  return {
+    mode: normalizedMode,
+    rolls: chosen.rolls,
+    rollsSecond: discarded.rolls,
+    total: chosen.total
+  };
+}
+
+/**
+ * Critico e desastre.
+ *
+ * REGRA (Tiago, 2026-08-02): SO no d20 com UM dado — 20 natural e critico, 1
+ * natural e desastre. Aqui a Mesa DIVERGE da ficha de proposito: a ficha marca
+ * critico no total maximo de qualquer expressao, o que num 3d6 seria um evento
+ * raro sem significado de regra. Com mais de um d20 a marca ficaria ambigua
+ * (uma tirada poderia ser critico e desastre ao mesmo tempo), entao nao vale.
+ *
+ * O modificador NAO entra: 1d20+5 tirando 20 e critico, mesmo somando 25.
+ */
+function getMesaDiceSpecial(spec, rolls) {
+  if (!spec || spec.sides !== 20 || spec.count !== 1) return "";
+  const die = Array.isArray(rolls) ? Number(rolls[0]) : NaN;
+  if (die === 20) return "critical";
+  if (die === 1) return "fumble";
+  return "";
+}
+
+/**
+ * Historico de dados visivel para um papel. Rolagem secreta e do mestre e
+ * SOME para o jogador — inclusive no mesa:ready de quem entra depois, senao a
+ * entrada inteira (formula e total) chegaria no payload de boot.
+ */
+function filterDiceHistoryForRole(history, role) {
+  const list = Array.isArray(history) ? history : [];
+  if (String(role || "player") === "master") return list;
+  return list.filter(entry => !(entry && entry.secret === true));
+}
+
 /* ── Sanitizacao de desenhos no relay ───────────────────────── */
 
 function isPlainObject(value) {
@@ -439,14 +511,18 @@ export {
   SHEET_PATCH_TYPE,
   checkRealtimeMessageSize,
   createRateBucket,
+  filterDiceHistoryForRole,
   filterPlayerSheetPatch,
+  getMesaDiceSpecial,
   isPlainObject,
   normalizeCharacterKey,
   normalizeDiceLabel,
+  normalizeDiceMode,
   normalizeEchoVitals,
   normalizeSheetPatchPayload,
   parseMesaDiceFormula,
   rollMesaDice,
+  rollMesaDiceWithMode,
   sanitizeRelayDrawingIds,
   sanitizeRelayDrawingStroke,
   sanitizeRelayDrawings,

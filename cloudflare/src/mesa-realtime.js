@@ -21,14 +21,17 @@ import {
   SHEET_PATCH_TYPE,
   checkRealtimeMessageSize,
   createRateBucket,
+  filterDiceHistoryForRole,
   filterPlayerSheetPatch,
+  getMesaDiceSpecial,
   isPlainObject,
   normalizeCharacterKey,
   normalizeDiceLabel,
+  normalizeDiceMode,
   normalizeEchoVitals,
   normalizeSheetPatchPayload,
   parseMesaDiceFormula,
-  rollMesaDice,
+  rollMesaDiceWithMode,
   sanitizeRelayDrawingIds,
   sanitizeRelayDrawingStroke,
   sanitizeRelayDrawings,
@@ -128,7 +131,12 @@ class MesaRealtimeRoom extends DurableObject {
     const [client, server] = Object.values(pair);
     const user = normalizeSocketUser(request);
     const playersMoveLocked = await this.isPlayersMoveLocked();
-    const diceHistory = (await this.ctx.storage.get(DICE_HISTORY_STORAGE_KEY)) || [];
+    // Historico filtrado pelo papel (Etapa 79): sem isso, o jogador que entra
+    // depois receberia as rolagens secretas do mestre inteiras no boot.
+    const diceHistory = filterDiceHistoryForRole(
+      (await this.ctx.storage.get(DICE_HISTORY_STORAGE_KEY)) || [],
+      user?.role
+    );
 
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment({
@@ -285,12 +293,22 @@ class MesaRealtimeRoom extends DurableObject {
       return;
     }
 
-    const { rolls, total } = rollMesaDice(spec, secureRandomInt);
+    const mode = normalizeDiceMode(payload?.mode);
+    // SEGREDO (Etapa 79) e privilegio de mestre. Pedido de jogador com
+    // `secret: true` nao vira erro — a flag e simplesmente ignorada e a
+    // rolagem sai publica, como qualquer outra.
+    const secret = attachment.role === "master" && payload?.secret === true;
+
+    const { rolls, rollsSecond, total } = rollMesaDiceWithMode(spec, mode, secureRandomInt);
     const entry = {
       id: crypto.randomUUID(),
       formula: spec.formula,
       label: normalizeDiceLabel(payload?.label),
+      mode,
       rolls,
+      rollsSecond,
+      special: getMesaDiceSpecial(spec, rolls),
+      secret,
       modifier: spec.modifier,
       total,
       actor: {
@@ -304,7 +322,11 @@ class MesaRealtimeRoom extends DurableObject {
     history.unshift(entry);
     await this.ctx.storage.put(DICE_HISTORY_STORAGE_KEY, history.slice(0, MAX_DICE_HISTORY));
 
-    this.broadcast({ type: DICE_RESULT_TYPE, ...entry });
+    // Secreta so alcanca mestres (inclusive outros mestres conectados); o
+    // jogador nao recebe nem aviso de que houve rolagem.
+    const message = { type: DICE_RESULT_TYPE, ...entry };
+    if (secret) this.broadcastToMasters(message);
+    else this.broadcast(message);
   }
 
   // Jogador pode emitir mesa:token:move quando a trava global esta aberta e o

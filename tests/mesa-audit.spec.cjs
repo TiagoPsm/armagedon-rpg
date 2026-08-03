@@ -2513,7 +2513,9 @@ test.describe("Dados na Mesa (Etapa 45)", () => {
     await page.click("#mesaDiceBtn");
     await page.fill("#mesaDiceQty", "2");
     await page.fill("#mesaDiceMod", "3");
+    // Etapa 79: o chip SELECIONA; quem rola e o botao.
     await page.click('.mesa-dice-die[data-die="20"]');
+    await page.click("#mesaDiceRollBtn");
 
     const result = await page.evaluate(() => {
       const history = window.getMesaDiceHistory();
@@ -2628,6 +2630,173 @@ test.describe("Dados na Mesa (Etapa 45)", () => {
     expect(result.count).toBe(20);
     expect(result.firstId).toBe("h-0");   // mais recente continua no topo
     expect(result.rendered).toBe(20);
+  });
+});
+
+test.describe("Dados da Mesa refeitos (Etapa 79)", () => {
+  test("DO rules: modo, critico so no d20 e historico filtrado por papel", async () => {
+    const { normalizeDiceMode, rollMesaDiceWithMode, getMesaDiceSpecial, filterDiceHistoryForRole, parseMesaDiceFormula } =
+      await import("../cloudflare/src/mesa-realtime-rules.js");
+
+    expect(normalizeDiceMode("advantage")).toBe("advantage");
+    expect(normalizeDiceMode("DISADVANTAGE")).toBe("disadvantage");
+    expect(normalizeDiceMode("trapaca")).toBe("normal");
+    expect(normalizeDiceMode(undefined)).toBe("normal");
+
+    // RNG deterministico: primeira tirada baixa, segunda alta.
+    const spec = parseMesaDiceFormula("1d20");
+    const sequence = valores => { let i = 0; return () => valores[i++ % valores.length]; };
+
+    const vantagem = rollMesaDiceWithMode(spec, "advantage", sequence([4, 17]));
+    expect(vantagem.total).toBe(17);            // fica com o MAIOR total
+    expect(vantagem.rolls).toEqual([17]);
+    expect(vantagem.rollsSecond).toEqual([4]);  // a descartada viaja junto
+
+    const desvantagem = rollMesaDiceWithMode(spec, "disadvantage", sequence([4, 17]));
+    expect(desvantagem.total).toBe(4);
+    expect(desvantagem.rollsSecond).toEqual([17]);
+
+    // Normal nao rola duas vezes
+    const normal = rollMesaDiceWithMode(spec, "normal", sequence([9, 20]));
+    expect(normal.total).toBe(9);
+    expect(normal.rollsSecond).toBeNull();
+
+    // Vantagem compara TOTAL da formula inteira (regra da ficha), nao dado a dado
+    const tresD6 = parseMesaDiceFormula("3d6");
+    const somaMaior = rollMesaDiceWithMode(tresD6, "advantage", sequence([1, 1, 1, 6, 6, 6]));
+    expect(somaMaior.total).toBe(18);
+
+    // Critico/desastre: SO d20 com um dado, e o modificador nao conta
+    expect(getMesaDiceSpecial(parseMesaDiceFormula("1d20+5"), [20])).toBe("critical");
+    expect(getMesaDiceSpecial(parseMesaDiceFormula("1d20-5"), [1])).toBe("fumble");
+    expect(getMesaDiceSpecial(parseMesaDiceFormula("1d20"), [13])).toBe("");
+    expect(getMesaDiceSpecial(parseMesaDiceFormula("2d20"), [20, 20])).toBe("");  // ambiguo -> nao vale
+    expect(getMesaDiceSpecial(parseMesaDiceFormula("3d6"), [6, 6, 6])).toBe("");  // diverge da ficha de proposito
+
+    // Historico: a secreta some para jogador e fica para mestre
+    const history = [
+      { id: "a", secret: true, total: 20 },
+      { id: "b", total: 7 },
+      { id: "c", secret: false, total: 3 }
+    ];
+    expect(filterDiceHistoryForRole(history, "master").map(e => e.id)).toEqual(["a", "b", "c"]);
+    expect(filterDiceHistoryForRole(history, "player").map(e => e.id)).toEqual(["b", "c"]);
+    expect(filterDiceHistoryForRole(history, "").map(e => e.id)).toEqual(["b", "c"]);  // fail-closed
+    expect(filterDiceHistoryForRole(null, "player")).toEqual([]);
+  });
+
+  test("painel: formula livre vence os chips e o motivo chega no pedido", async ({ page }) => {
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    await page.evaluate(() => {
+      window.__diceSent = [];
+      window.APP = Object.assign({}, window.APP, {
+        sendRealtime: message => { window.__diceSent.push(message); return true; }
+      });
+      window.AUTH = Object.assign({}, window.AUTH, { isBackendEnabled: () => true });
+    });
+
+    await page.click("#mesaDiceBtn");
+    await page.click('.mesa-dice-die[data-die="6"]');     // chip diz d6...
+    await page.fill("#mesaDiceFormula", "3d8+2");         // ...mas a formula livre manda
+    await page.fill("#mesaDiceLabel", "Ataque pesado");
+    await page.click('.mesa-dice-mode[data-mode="advantage"]');
+    await page.check("#mesaDiceSecret");
+    await page.click("#mesaDiceRollBtn");
+
+    const pedido = await page.evaluate(() =>
+      window.__diceSent.filter(m => m.type === "mesa:dice:request").pop()
+    );
+    expect(pedido.formula).toBe("3d8+2");
+    expect(pedido.label).toBe("Ataque pesado");
+    expect(pedido.mode).toBe("advantage");
+    expect(pedido.secret).toBe(true);
+
+    // Enquanto o DO nao responde, o botao trava e o card avisa
+    await expect(page.locator("#mesaDiceRollBtn")).toBeDisabled();
+    await expect(page.locator("#mesaDiceResult.is-waiting")).toBeVisible();
+  });
+
+  test("jogador nunca envia segredo, e o card mostra critico quando o DO responde", async ({ page }) => {
+    await seedPlayerWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof state !== "undefined" && state.session != null);
+
+    await page.click("#mesaDiceBtn");   // o card vive dentro do painel
+
+    const pedido = await page.evaluate(() => {
+      window.__diceSent = [];
+      window.APP = Object.assign({}, window.APP, {
+        sendRealtime: message => { window.__diceSent.push(message); return true; }
+      });
+      window.AUTH = Object.assign({}, window.AUTH, { isBackendEnabled: () => true });
+      // Chamada direta com secret: true — a funcao e global e chamavel pelo console
+      window.requestMesaDiceRoll("1d20", "Percepcao", { mode: "normal", secret: true });
+      return window.__diceSent.filter(m => m.type === "mesa:dice:request").pop();
+    });
+    expect(pedido.secret).toBe(false);   // jogador nao rola em segredo
+
+    await page.evaluate(async () => {
+      await applyMesaRealtimeDelta({
+        type: "mesa:dice:result",
+        id: "do-crit-1",
+        formula: "1d20",
+        label: "Percepcao",
+        mode: "normal",
+        rolls: [20],
+        rollsSecond: null,
+        special: "critical",
+        modifier: 0,
+        total: 20,
+        actor: { username: "ana", role: "player" },
+        sentAt: new Date().toISOString()
+      });
+    });
+
+    await expect(page.locator("#mesaDiceResult.is-critical")).toBeVisible();
+    await expect(page.locator("#mesaDiceResult .mesa-dice-result-total")).toHaveText("20");
+    await expect(page.locator("#mesaDiceResult .mesa-dice-pip")).toHaveText("20");
+    // Resposta do DO destrava o botao
+    await expect(page.locator("#mesaDiceRollBtn")).toBeEnabled();
+    await expect(page.locator("#mesaDiceHistory .mesa-dice-entry.is-critical")).toHaveCount(1);
+  });
+
+  test("doca: dados e iniciativa empilham sem se sobrepor nem sair da janela", async ({ page }) => {
+    await seedMasterWithScene(page, [ANA_TOKEN]);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    await page.click("#mesaDiceBtn");
+    await page.evaluate(() => {
+      sendMesaRealtimeDelta = () => true;
+      persistState = () => {};
+      activateInitiative();
+    });
+    await expect(page.locator("#initiativeOverlay")).toBeVisible();
+
+    const caixas = await page.evaluate(() => {
+      const rect = id => {
+        const box = document.getElementById(id).getBoundingClientRect();
+        return { top: box.top, bottom: box.bottom, left: box.left, right: box.right };
+      };
+      return { dados: rect("mesaDicePanel"), inic: rect("initiativeOverlay"), vh: window.innerHeight, vw: window.innerWidth };
+    });
+
+    // Sem sobreposicao vertical (o bug da Etapa 78: os dois no mesmo canto)
+    expect(caixas.dados.bottom).toBeLessThanOrEqual(caixas.inic.top + 1);
+    // Mesma coluna, dentro da janela
+    expect(Math.abs(caixas.dados.left - caixas.inic.left)).toBeLessThan(2);
+    expect(caixas.dados.top).toBeGreaterThanOrEqual(0);
+    expect(caixas.inic.bottom).toBeLessThanOrEqual(caixas.vh);
+    expect(caixas.inic.right).toBeLessThanOrEqual(caixas.vw);
   });
 });
 

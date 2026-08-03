@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-02 22:42:59 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-02 23:14:06 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `01ca1a3 2026-08-02 fix(build): bump do cache-bust dos bundles da Mesa (Etapa 77)`
+- Ultimo commit: `2cf6ba7 2026-08-02 feat(mesa): ancora a iniciativa no canto e blinda a rolagem (Etapa 78)`
 
 ### Alteracoes Locais
 
@@ -22,10 +22,15 @@
 M  DEV_STATUS.md
 M  SYSTEM_RULES.md
 M  VISUAL_RULES.md
+M  cloudflare/README.md
+M  cloudflare/src/mesa-realtime-rules.js
+M  cloudflare/src/mesa-realtime.js
+M  css/mesa-stage.css
 M  css/mesa.css
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-initiative.js
+M  js/mesa-dice.js
 M  mesa.html
+M  tests/mesa-audit.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -41,9 +46,14 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 DEV_STATUS.md
 SYSTEM_RULES.md
 VISUAL_RULES.md
+cloudflare/README.md
+cloudflare/src/mesa-realtime-rules.js
+cloudflare/src/mesa-realtime.js
+css/mesa-stage.css
 css/mesa.css
-js/mesa-initiative.js
+js/mesa-dice.js
 mesa.html
+tests/mesa-audit.spec.cjs
 ```
 
 ## Paginas Principais

@@ -30,7 +30,37 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-02 — Etapa 78: iniciativa ancorada no canto + trava de posse)
+## Ultima Etapa Concluida (2026-08-02 — Etapa 79: Dados da Mesa refeitos)
+
+O painel "Dados da Mesa" (Etapa 45) foi reformulado, e a colisao que a Etapa 78 criou no canto inferior esquerdo foi resolvida na raiz.
+
+### O que mudou
+
+1. **Doca esquerda (`#mesaDockLeft`)** — coluna fixa unica onde moram os paineis persistentes: dados em cima, iniciativa embaixo. O painel de dados deixou de ser `absolute` dentro do palco e a iniciativa deixou de se ancorar sozinha; as duas viraram filhas estaticas de um flex. Container com `pointer-events: none` (so os filhos recebem clique) e `max-height` para dois paineis abertos nunca passarem do topo.
+2. **Fluxo "escolher, depois rolar"** — os chips de dado selecionam; a rolagem sai no botao ROLAR (ou Enter). Necessario porque modo e segredo sao escolhidos ANTES de rolar.
+3. **Campos que o codigo ja aceitava e a UI escondia**: **formula livre** (`2d20+3`, vence os chips) e **motivo** (`label`, aparece no historico de todos).
+4. **Card de resultado** — total em 2rem, dados em pastilhas, **critico dourado / desastre carmesim** com etiqueta, e a tirada descartada da vantagem riscada. Enquanto o DO nao responde, o card mostra "…" pulsando e o botao vira "Rolando…" (timeout de 8s devolve o controle se a mensagem se perder).
+5. **Vantagem/desvantagem** (Worker) — rola a formula inteira duas vezes e fica com o total maior/menor, espelhando `rollDiceExpressionWithMode()` da ficha.
+6. **Rolagem secreta do mestre** (Worker) — vai por `broadcastToMasters()`, e o `mesa:ready` filtra o historico por papel. Para o jogador nao existe: nem entrada, nem aviso. `secret: true` vindo de jogador e ignorado pelo DO.
+
+### Dois bugs corrigidos junto
+
+`state.username` **nao existe** — o campo e `state.session.username`. Por causa disso (a) voce recebia toast das SUAS proprias rolagens com o painel fechado e (b) no modo local sua entrada saia como "voce" em vez do seu nome.
+
+### Arquivos alterados
+
+- `cloudflare/src/mesa-realtime-rules.js` — `normalizeDiceMode`, `rollMesaDiceWithMode`, `getMesaDiceSpecial`, `filterDiceHistoryForRole` (puras, testadas direto)
+- `cloudflare/src/mesa-realtime.js` — `handleDiceRequest` com modo/segredo; `acceptClient` filtra o historico por papel
+- `js/mesa-dice.js` — reescrito (estado do painel, formula livre, motivo, modos, espera, card de resultado, correcao do username)
+- `mesa.html` — `#mesaDockLeft` novo; painel de dados remontado e movido para a doca
+- `css/mesa.css` (doca) e `css/mesa-stage.css` (painel de dados reescrito para 300px)
+- `tests/mesa-audit.spec.cjs` — bloco "Dados da Mesa refeitos (Etapa 79)": regras do DO, formula livre + motivo, segredo negado a jogador, critico no card e **regressao da doca** (os dois paineis nao se sobrepoem)
+
+### Verificacao
+
+`npm run check:js`, `npm run audit:static`, `npm run test:mesa` (5) e `npm run test:mesa:audit` (137) passaram. No navegador, com os dois paineis abertos a 1280x720: dados em 96-504 e iniciativa em 512-708, mesma coluna em `left: 72px`, sem sobreposicao; a 375px a doca ocupa a largura util sem estouro horizontal. Vantagem conferida no modo local (17 escolhido, 4 riscado) e critico renderizado em dourado com etiqueta.
+
+## Etapa Anterior (2026-08-02 — Etapa 78: iniciativa ancorada no canto + trava de posse)
 
 Ajuste pedido pelo Tiago sobre a Etapa 77: **o pop-up de iniciativa saiu do centro da tela** e a rolagem de cada jogador ficou blindada.
 

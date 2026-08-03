@@ -1225,25 +1225,44 @@ html {
   list-style: none;
 }
 
-/* ── ANCORAGEM COMUM (Etapa 78) ───────────────────────────────────
- * Pedido do Tiago: a iniciativa deixa de ser um modal central com fundo
- * escurecido e passa a viver no CANTO INFERIOR ESQUERDO do palco, colada a
- * direita da toolbar (60px). Motivo: durante a rolagem o jogador precisa
- * continuar vendo o mapa e os tokens — o overlay cheio de tela travava a
- * mesa inteira so para mostrar 4 linhas.
- * As duas fases (rolagem e ordem de turno) usam a MESMA doca, entao a
- * troca de fase nao faz o painel pular de lugar.
+/* ── DOCA ESQUERDA (Etapa 79; nasceu na 78 so para a iniciativa) ───
+ * UMA coluna fixa no canto inferior esquerdo, colada a direita da toolbar
+ * (60px), onde moram TODOS os paineis persistentes da Mesa: dados em cima,
+ * iniciativa embaixo. O empilhamento e do flex — nenhum painel precisa
+ * saber a altura do vizinho.
+ *
+ * Historia: a Etapa 78 tirou a iniciativa do centro da tela (modal com
+ * backdrop travava a mesa durante a rolagem) e a ancorou aqui; so que o
+ * painel de dados JA ocupava este canto (`absolute` dentro do palco) e os
+ * dois passaram a se sobrepor. A doca resolve a colisao na raiz.
+ *
+ * `pointer-events: none` no container: os vaos entre paineis nao podem
+ * roubar clique do palco. Cada filho reativa para si.
  * ------------------------------------------------------------------ */
-.init-overlay,
-.init-tracker {
+.mesa-dock-left {
   position: fixed;
   left: calc(60px + var(--sp-3));   /* 60px = largura de .vtt-toolbar */
   bottom: var(--sp-3);
-  top: auto;
-  right: auto;
-  transform: none;
   z-index: 2400;
   width: min(300px, calc(100vw - 60px - 2rem));
+  /* 96px = altura do cabecalho do site + folga; o limite existe para que
+     dois paineis abertos nunca passem do topo da janela. */
+  max-height: calc(100dvh - 96px - var(--sp-3));
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  pointer-events: none;
+}
+.mesa-dock-left > * { pointer-events: auto; }
+
+.init-overlay,
+.init-tracker {
+  position: static;
+  width: 100%;
+  min-height: 0;
+  /* Com os dois paineis abertos, quem cede altura primeiro e a iniciativa:
+     a lista dela rola por dentro. */
   max-height: min(62vh, 560px);
   display: flex;
   flex-direction: column;
@@ -1546,15 +1565,16 @@ html {
 .init-tracker.is-collapsed .init-master-controls { display: none; }
 
 /* Mobile (<=700px): a toolbar vira uma faixa horizontal no topo, entao o
-   recuo de 60px a esquerda deixa de existir e o painel ocupa a largura util. */
+   recuo de 60px a esquerda deixa de existir e a doca ocupa a largura util. */
 @media (max-width: 700px) {
-  .init-overlay,
-  .init-tracker {
+  .mesa-dock-left {
     left: var(--sp-2);
     right: var(--sp-2);
     width: auto;
-    max-height: 50vh;
+    max-height: calc(100dvh - 120px);
   }
+  .init-overlay,
+  .init-tracker { max-height: 45vh; }
 }
 
 /* Btn danger (encerrar combate) */

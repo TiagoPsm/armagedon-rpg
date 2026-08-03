@@ -16,6 +16,25 @@ C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 
 A pasta antiga `rpg-campaign` nao deve ser usada para editar layout, CSS, HTML ou assets publicados.
 
+## Doca esquerda: todo painel persistente da Mesa mora na mesma coluna (2026-08-02, Etapa 79)
+
+`#mesaDockLeft` e uma coluna `position: fixed` no canto inferior esquerdo, colada a direita da toolbar (`left: calc(60px + var(--sp-3))`, `bottom: var(--sp-3)`, largura `min(300px, calc(100vw - 60px - 2rem))`). Todo painel que fica aberto durante o jogo entra nela como filho de posicao **estatica** — dados em cima, iniciativa embaixo — e o empilhamento sai do flex.
+
+Por que uma doca e nao dois paineis ancorados: na Etapa 78 a iniciativa foi ancorada nesse canto sem reparar que o painel de dados ja estava la (`absolute`, dentro do palco). Os dois se sobrepuseram. Painel que se ancora sozinho colide com o proximo; painel que entra numa doca, nao.
+
+Regras da doca:
+
+- **`pointer-events: none` no container, `auto` nos filhos.** Os vaos entre paineis nao podem roubar clique do palco.
+- **`max-height` na doca, `overflow` em cada painel.** A doca limita o conjunto (`calc(100dvh - 96px - var(--sp-3))`); cada painel rola por dentro. Dois abertos nunca passam do topo da janela.
+- **Mobile (`<=700px`)**: a toolbar vira faixa horizontal, o recuo de 60px some e a doca ocupa a largura util (`left`/`right` de `var(--sp-2)`).
+- **Todo painel da doca colapsa** (botao no cabecalho, sobra so o titulo) e o colapso e preferencia LOCAL — nunca sincroniza.
+
+### O resultado tem de ser lido de longe
+
+No painel de dados o numero e o produto: card proprio no topo (`.mesa-dice-result`), total em 2rem, dados individuais em pastilhas, e a tirada descartada pela vantagem/desvantagem **riscada e a 40% de opacidade** — presente para conferencia, sem competir. Critico veste dourado, desastre veste carmesim, cada um com etiqueta escrita: cor sozinha nao diz o que aconteceu.
+
+Enquanto o servidor nao responde (quem rola e o Durable Object, ha latencia de rede), o card mostra "…" pulsando e o botao vira "Rolando…" e desabilita. Acao sem retorno imediato precisa de estado visivel — senao a pessoa clica de novo.
+
 ## Iniciativa: doca unica no canto, nunca modal central (2026-08-02, Etapa 78 — revisa a 77)
 
 Painel de mesa nao bloqueia a mesa. A fase de rolagem nasceu (Etapa 77) como modal central com backdrop e **isso foi revertido**: durante a rolagem o jogador precisa continuar vendo mapa e tokens, e um card de 4 linhas nao justifica escurecer a tela inteira.

@@ -17,8 +17,8 @@
   <link rel="stylesheet" href="css/tokens.css?v=2026-06-14-echos-1" />
   <link rel="stylesheet" href="css/reset.css?v=2026-06-12-cache-fix-1" />
   <link rel="stylesheet" href="css/components.css?v=2026-06-12-modal-stack-1" />
-  <link rel="stylesheet" href="css/mesa.css?v=2026-08-02-iniciativa-3" />
-  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-08-02-desenho-1" />
+  <link rel="stylesheet" href="css/mesa.css?v=2026-08-02-dados-1" />
+  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-08-02-dados-1" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-06-16-fullbleed-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-06-16-master-vital-card-1" />
   <link rel="stylesheet" href="css/mesa-map.css?v=2026-07-31-fit-sempre-1" />
@@ -340,33 +340,6 @@
 
       </div>
 
-      <!-- Painel de Dados da Mesa (Etapa 45) — o Durable Object rola;
-           histórico compartilhado das últimas 20 rolagens -->
-      <aside id="mesaDicePanel" class="mesa-dice-panel" hidden aria-label="Dados da Mesa">
-        <div class="mesa-dice-head">
-          <strong>Dados da Mesa</strong>
-          <button type="button" id="mesaDiceCloseBtn" class="mesa-dice-close" aria-label="Fechar painel de dados">×</button>
-        </div>
-        <div class="mesa-dice-quick">
-          <button type="button" class="mesa-dice-die" data-die="4">d4</button>
-          <button type="button" class="mesa-dice-die" data-die="6">d6</button>
-          <button type="button" class="mesa-dice-die" data-die="8">d8</button>
-          <button type="button" class="mesa-dice-die" data-die="10">d10</button>
-          <button type="button" class="mesa-dice-die" data-die="12">d12</button>
-          <button type="button" class="mesa-dice-die" data-die="20">d20</button>
-          <button type="button" class="mesa-dice-die" data-die="100">d100</button>
-        </div>
-        <div class="mesa-dice-opts">
-          <label>Qtd
-            <input id="mesaDiceQty" type="number" min="1" max="20" value="1" inputmode="numeric">
-          </label>
-          <label>Mod
-            <input id="mesaDiceMod" type="number" min="-99" max="99" value="0" inputmode="numeric">
-          </label>
-        </div>
-        <ol id="mesaDiceHistory" class="mesa-dice-history" aria-live="polite"></ol>
-      </aside>
-
       <!-- Flyout de desenho — abre ao clicar no botão da caneta -->
       <div id="mesaDrawFlyout" class="vtt-draw-flyout" hidden aria-label="Ferramentas de desenho">
 
@@ -658,9 +631,96 @@
     </aside>
   </div><!-- /vtt-body -->
 
-  <!-- ── INICIATIVA (Etapas 77-78) ───────────────────────────────────
-       Fase 1 — painel de rolagem ANCORADO no canto inferior esquerdo do
-       palco (Etapa 78: era um modal central com fundo escurecido, que
+  <!-- ── DOCA ESQUERDA (Etapa 79) ────────────────────────────────────
+       Uma unica coluna fixa no canto inferior esquerdo, colada a direita
+       da toolbar. Todo painel persistente da Mesa mora aqui, e o
+       empilhamento sai do flex — sem JS medindo altura de vizinho.
+       Antes da Etapa 79 o painel de dados era `absolute` dentro do palco
+       e a iniciativa `fixed`: os dois ocupavam o mesmo canto e se
+       sobrepunham. Ordem: dados em cima, iniciativa embaixo (a ordem de
+       turno e a referencia fixa durante o combate).
+       O container nao intercepta ponteiro (so os filhos), senao os vaos
+       entre paineis engoliriam cliques do palco. -->
+  <div id="mesaDockLeft" class="mesa-dock-left">
+
+  <!-- Dados da Mesa (Etapa 45; refeito na Etapa 79) — quem rola e o
+       Durable Object. Fluxo: escolher dado/formula, escolher o modo e
+       rolar no botao. Conteudo dinamico em js/mesa-dice.js. -->
+  <aside id="mesaDicePanel" class="mesa-dice-panel" hidden aria-label="Dados da Mesa">
+    <div class="mesa-dice-head">
+      <strong>&#127922; Dados da Mesa</strong>
+      <span class="mesa-dice-head-btns">
+        <button type="button" id="mesaDiceCollapseBtn" class="mesa-dice-icon-btn"
+                title="Encolher / expandir" aria-label="Encolher ou expandir o painel de dados">&#9472;</button>
+        <button type="button" id="mesaDiceCloseBtn" class="mesa-dice-icon-btn"
+                aria-label="Fechar painel de dados">&times;</button>
+      </span>
+    </div>
+
+    <div class="mesa-dice-body">
+      <!-- Chips de dado: SELECIONAM (a rolagem sai no botao ROLAR), porque
+           modo e segredo sao escolhidos ANTES de rolar. -->
+      <div class="mesa-dice-quick" role="group" aria-label="Dado">
+        <button type="button" class="mesa-dice-die" data-die="4">d4</button>
+        <button type="button" class="mesa-dice-die" data-die="6">d6</button>
+        <button type="button" class="mesa-dice-die" data-die="8">d8</button>
+        <button type="button" class="mesa-dice-die" data-die="10">d10</button>
+        <button type="button" class="mesa-dice-die" data-die="12">d12</button>
+        <button type="button" class="mesa-dice-die is-active" data-die="20">d20</button>
+        <button type="button" class="mesa-dice-die" data-die="100">d100</button>
+        <button type="button" class="mesa-dice-die mesa-dice-die-2" data-die="2">d2</button>
+      </div>
+
+      <div class="mesa-dice-opts">
+        <label>Qtd
+          <input id="mesaDiceQty" type="number" min="1" max="20" value="1" inputmode="numeric">
+        </label>
+        <label>Mod
+          <input id="mesaDiceMod" type="number" min="-99" max="99" value="0" inputmode="numeric">
+        </label>
+      </div>
+
+      <!-- Formula livre: quando preenchida, VENCE os chips acima. -->
+      <label class="mesa-dice-field">
+        <span>Fórmula</span>
+        <input id="mesaDiceFormula" type="text" maxlength="16" autocomplete="off"
+               placeholder="ex: 2d20+3" aria-describedby="mesaDiceFormulaHint">
+      </label>
+      <p class="mesa-dice-hint" id="mesaDiceFormulaHint">Deixe vazio para usar o dado escolhido. Enter rola.</p>
+
+      <label class="mesa-dice-field">
+        <span>Motivo</span>
+        <input id="mesaDiceLabel" type="text" maxlength="60" autocomplete="off"
+               placeholder="ex: Ataque, Furtividade">
+      </label>
+
+      <div class="mesa-dice-modes" role="group" aria-label="Modo de rolagem">
+        <button type="button" class="mesa-dice-mode is-active" data-mode="normal">Normal</button>
+        <button type="button" class="mesa-dice-mode" data-mode="advantage">Vantagem</button>
+        <button type="button" class="mesa-dice-mode" data-mode="disadvantage">Desvant.</button>
+      </div>
+
+      <!-- Segredo e privilegio de mestre: o DO ignora a flag vinda de
+           jogador, e aqui o controle nem aparece. -->
+      <label class="mesa-dice-secret" data-mesa-master-only>
+        <input type="checkbox" id="mesaDiceSecret">
+        <span>&#128274; Rolar em segredo (só o mestre vê)</span>
+      </label>
+
+      <button type="button" class="btn btn-primary mesa-dice-roll-btn" id="mesaDiceRollBtn">Rolar</button>
+
+      <!-- Card do ultimo resultado desta tela. aria-live fica AQUI, e nao
+           no historico: no historico o leitor de tela releria as 20
+           entradas a cada rolagem. -->
+      <div class="mesa-dice-result" id="mesaDiceResult" hidden aria-live="polite"></div>
+
+      <ol id="mesaDiceHistory" class="mesa-dice-history"></ol>
+    </div>
+  </aside>
+
+  <!-- ── INICIATIVA (Etapas 77-79) ───────────────────────────────────
+       Fase 1 — painel de rolagem. Desde a Etapa 78 vive na doca do canto
+       inferior esquerdo (era um modal central com fundo escurecido, que
        travava a mesa inteira durante a rolagem). Aparece para MESTRE E
        JOGADORES; cada jogador so tem botao na linha do PROPRIO token e
        NPCs/monstros rolam sozinhos quando o ultimo jogador terminar.
@@ -707,6 +767,8 @@
     </div>
   </div>
 
+  </div><!-- /mesa-dock-left -->
+
   <!-- Painel de marcadores de status do token (Etapa 64). Conteudo montado em
        js/mesa-markers.js; posicionado em coordenadas de tela junto ao token. -->
   <div id="mesaMarkerPanel" class="mesa-marker-panel" hidden role="dialog" aria-label="Marcadores de status"></div>
@@ -730,7 +792,7 @@
   <script src="js/mesa-scenes.js?v=2026-07-27-scenes-1" defer></script>
   <script src="js/mesa-ping.js?v=2026-07-27-ping-1" defer></script>
   <script src="js/mesa-ruler.js?v=2026-07-27-ruler-1" defer></script>
-  <script src="js/mesa-dice.js?v=2026-07-27-dice-1" defer></script>
+  <script src="js/mesa-dice.js?v=2026-08-02-dados-1" defer></script>
   <script src="js/mesa-drawing.js?v=2026-08-02-autoria-1" defer></script>
   <script src="js/mesa-select.js?v=2026-08-02-exclusivo-1" defer></script>
   <script src="js/mesa-initiative.js?v=2026-08-02-iniciativa-3" defer></script>
