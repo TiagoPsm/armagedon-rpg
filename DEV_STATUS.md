@@ -30,7 +30,37 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-02 — Etapa 79: Dados da Mesa refeitos)
+## Ultima Etapa Concluida (2026-08-02 — Etapa 80: rolagem do jogador nao chegava ao mestre)
+
+**Sintoma** (Tiago, com print): na fase de rolagem, o mestre via a propria linha resolvida mas a rolagem dos jogadores nunca aparecia — ficava em "aguardando…" para sempre. Sem erro no console, sem toast, sem nada.
+
+### Causa raiz: o portao de versao de cena
+
+`applyMesaRealtimeDelta` descarta **qualquer** delta cuja `sceneVersion` seja menor que a local (`isStaleMesaSceneVersion`) — uma protecao contra mensagem atrasada de cena. Duas coisas se somaram:
+
+1. **`bumpMesaSceneVersion()` usa `Date.now()`**, e o MESTRE bumpa a cada mexida na cena (colocar token, mover, grade, nevoa...). A versao dele sobe sozinha.
+2. **Os ramos que dao `return` cedo no roteador — iniciativa, dados, ping, regua, grade, nevoa, desenhos — pulavam a adocao da versao**, que morava no FIM da funcao. Ou seja: o jogador que so recebia esses tipos ficava congelado na versao do boot.
+
+Resultado: o mestre coloca tokens (versao dele vira ~1.7 trilhoes), o jogador rola, o envelope sai carimbado com a versao velha e o cliente do mestre **descarta a mensagem antes de o roteador ver o tipo**. A rolagem existia na rede e morria na porta.
+
+### O que mudou
+
+- **Adocao da versao subiu para o topo** de `applyMesaRealtimeDelta`, antes de todo `return` cedo. Fim da deriva: qualquer delta mantem os clientes em dia.
+- **`MESA_VERSIONLESS_DELTA_TYPES`** (novo): `mesa:initiative:roll`, `mesa:ping`, `mesa:ruler` e `mesa:dice:result` nao passam pelo portao. Nenhum altera a cena, entao "chegou atrasado" nao os invalida. Ping e regua de jogador sofriam do mesmo mal em silencio.
+- **Fallback por DONO em `_receivePlayerRoll`**: se o `tokenId` nao casa (tela do jogador com ordem antiga), procura a UNICA entrada manual pendente daquele ator AUTENTICADO. Com duas, ignora — melhor perder a rolagem do que rolar pelo token errado. Nao e o fallback por `characterKey` que saiu na Etapa 78: ali a chave vinha do payload (o jogador escolhia), aqui vem do socket.
+
+### Verificacao
+
+Os dois testes novos do portao de versao foram rodados **contra o codigo antigo primeiro e falharam** — depois passaram com o fix. `npm run test:mesa:audit` (140), `npm run test:mesa` (5), `check:js` e `audit:static` limpos. Cache-bust de `mesa-core.js` e `mesa-initiative.js` para `2026-08-02-sync-1`. **Sem deploy**: e tudo cliente.
+
+### Arquivos alterados
+
+- `js/mesa-core.js` — adocao de versao no topo do roteador + `MESA_VERSIONLESS_DELTA_TYPES`
+- `js/mesa-initiative.js` — fallback por dono autenticado em `_receivePlayerRoll`
+- `mesa.html` — cache-bust
+- `tests/mesa-audit.spec.cjs` — 3 testes: rolagem com versao atrasada, adocao de versao em delta de iniciativa, e casamento por dono com forja recusada
+
+## Etapa Anterior (2026-08-02 — Etapa 79: Dados da Mesa refeitos)
 
 O painel "Dados da Mesa" (Etapa 45) foi reformulado, e a colisao que a Etapa 78 criou no canto inferior esquerdo foi resolvida na raiz.
 

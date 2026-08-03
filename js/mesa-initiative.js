@@ -520,10 +520,23 @@ function _receivePlayerRoll(payload) {
   const actorName = initUser(payload?.actor?.username || payload?.characterKey);
 
   const tokenId = String(payload?.tokenId || "");
-  // O alvo e SEMPRE o tokenId declarado. O fallback por characterKey saiu na
-  // Etapa 78: com ele, um payload sem tokenId caia na primeira entrada de
-  // mesmo characterKey — e o jogador escolhe o characterKey que envia.
-  const entry = tokenId ? s.order.find(e => e.id === tokenId) : null;
+  // O alvo preferencial e o tokenId declarado. O fallback por characterKey
+  // saiu na Etapa 78: com ele, um payload sem tokenId caia na primeira
+  // entrada de mesmo characterKey — e o jogador escolhe o characterKey que
+  // envia.
+  //
+  // O fallback que ficou (Etapa 80) parte do ATOR AUTENTICADO, nao de campo
+  // do payload: se o id nao casa (a tela do jogador estava com uma ordem
+  // antiga, de antes de o mestre recolocar o token), procuramos a UNICA
+  // entrada manual pendente daquele dono. Com duas, nao ha como saber qual
+  // ele quis — melhor ignorar do que rolar pelo token errado.
+  let entry = tokenId ? s.order.find(e => e.id === tokenId) : null;
+  if (!entry && actorName) {
+    const candidatos = s.order.filter(e =>
+      !e.auto && !e.rolled && (e.ownerUsername === actorName || e.characterKey === actorName)
+    );
+    if (candidatos.length === 1) entry = candidatos[0];
+  }
   if (!entry || entry.rolled) return;
 
   if (actorRole !== "master") {

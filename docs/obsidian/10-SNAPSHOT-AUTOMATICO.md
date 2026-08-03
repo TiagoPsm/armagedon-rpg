@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-02 23:14:06 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-02 23:32:53 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `2cf6ba7 2026-08-02 feat(mesa): ancora a iniciativa no canto e blinda a rolagem (Etapa 78)`
+- Ultimo commit: `fbb1c0f 2026-08-02 feat(mesa): refaz os Dados da Mesa e cria a doca esquerda (Etapa 79)`
 
 ### Alteracoes Locais
 
@@ -21,14 +21,9 @@
  M .claude/settings.local.json
 M  DEV_STATUS.md
 M  SYSTEM_RULES.md
-M  VISUAL_RULES.md
-M  cloudflare/README.md
-M  cloudflare/src/mesa-realtime-rules.js
-M  cloudflare/src/mesa-realtime.js
-M  css/mesa-stage.css
-M  css/mesa.css
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-dice.js
+M  js/mesa-core.js
+M  js/mesa-initiative.js
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
 ```
@@ -45,13 +40,8 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ```text
 DEV_STATUS.md
 SYSTEM_RULES.md
-VISUAL_RULES.md
-cloudflare/README.md
-cloudflare/src/mesa-realtime-rules.js
-cloudflare/src/mesa-realtime.js
-css/mesa-stage.css
-css/mesa.css
-js/mesa-dice.js
+js/mesa-core.js
+js/mesa-initiative.js
 mesa.html
 tests/mesa-audit.spec.cjs
 ```

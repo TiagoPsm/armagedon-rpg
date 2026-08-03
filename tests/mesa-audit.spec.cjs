@@ -1102,6 +1102,125 @@ test.describe("Iniciativa fim-a-fim (Etapa 77)", () => {
     expect(resultado.persisted).toBe(2);
   });
 
+  /* ============================================================
+   * Etapa 80 — a rolagem do jogador nao chegava ao mestre
+   * Causa: `sceneVersion` cresce com Date.now() a cada mexida do mestre na
+   * cena; o jogador so acompanhava a contagem em delta de CENA, entao o
+   * envelope da rolagem dele saia com versao velha e o cliente do mestre
+   * descartava a mensagem no portao de versao, antes do roteador.
+   * ============================================================ */
+  test("mestre aceita rolagem de jogador com sceneVersion ATRASADA (bug da Etapa 80)", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    const resultado = await page.evaluate(async initiative => {
+      sendMesaRealtimeDelta = () => true;
+      persistState = () => {};
+      applyInitiativeState(initiative);
+
+      // O mestre mexeu na cena depois de abrir o combate: a versao dele
+      // disparou para a casa do Date.now().
+      state.sceneVersion = Date.now();
+      const versaoDoMestre = state.sceneVersion;
+
+      await applyMesaRealtimeDelta({
+        type: "mesa:initiative:roll",
+        clientId: "cliente-da-ana",
+        sceneVersion: 3,                 // versao velha, de antes do bump
+        characterKey: "ana",
+        tokenId: "ana",
+        roll: 17,
+        modifier: 1,
+        total: 18,
+        actor: { username: "ana", role: "player" }
+      });
+
+      const ana = getInitiativeState().order.find(e => e.id === "ana");
+      return { rolled: ana.rolled, roll: ana.roll, total: ana.total, versaoDoMestre, versaoAgora: state.sceneVersion };
+    }, ROLLING_STATE);
+
+    expect(resultado.rolled).toBe(true);
+    expect(resultado.roll).toBe(17);
+    // Delta atrasado nao pode REBAIXAR a versao de cena do mestre
+    expect(resultado.versaoAgora).toBe(resultado.versaoDoMestre);
+  });
+
+  test("delta de iniciativa adianta a sceneVersion de quem recebe (fim da deriva)", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedPlayerWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const versoes = await page.evaluate(async initiative => {
+      state.sceneVersion = 5;
+      // O mestre transmite a iniciativa carimbada com a versao ATUAL dele.
+      await applyMesaRealtimeDelta({
+        type: "mesa:initiative:update",
+        clientId: "cliente-do-mestre",
+        sceneVersion: 900001,
+        initiative
+      });
+      return { depois: state.sceneVersion };
+    }, ROLLING_STATE);
+
+    // Sem isso o jogador ficava congelado na versao do boot e toda rolagem
+    // dele nascia "atrasada" para o mestre.
+    expect(versoes.depois).toBe(900001);
+  });
+
+  test("mestre casa a rolagem pelo DONO quando o tokenId nao existe mais", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    const resultado = await page.evaluate(async initiative => {
+      sendMesaRealtimeDelta = () => true;
+      persistState = () => {};
+      applyInitiativeState(initiative);
+
+      // Forja PRIMEIRO, com a entrada da ana ainda pendente: o bruno tenta
+      // rolar pela ana declarando o token dela.
+      await applyMesaRealtimeDelta({
+        type: "mesa:initiative:roll",
+        clientId: "cliente-do-bruno",
+        characterKey: "bruno",
+        tokenId: "ana",
+        roll: 20, modifier: 5, total: 25,
+        actor: { username: "bruno", role: "player" }
+      });
+      const anaAposForja = { ...getInitiativeState().order.find(e => e.id === "ana") };
+
+      // Tela do jogador estava com uma ordem antiga: manda um id que sumiu.
+      await applyMesaRealtimeDelta({
+        type: "mesa:initiative:roll",
+        clientId: "cliente-da-ana",
+        characterKey: "ana",
+        tokenId: "ana-token-velho",
+        roll: 9, modifier: 1, total: 10,
+        actor: { username: "ana", role: "player" }
+      });
+
+      const order = getInitiativeState().order;
+      return {
+        anaAposForja,
+        ana: order.find(e => e.id === "ana"),
+        bruno: order.find(e => e.id === "bruno")
+      };
+    }, ROLLING_STATE);
+
+    expect(resultado.anaAposForja.rolled).toBe(false);   // forja nao passou
+    expect(resultado.ana.rolled).toBe(true);
+    expect(resultado.ana.roll).toBe(9);      // caiu na entrada certa pelo dono
+    expect(resultado.ana.total).toBe(10);    // e NAO virou o 25 forjado
+    expect(resultado.bruno.rolled).toBe(false);
+  });
+
   test("mestre: quando todos rolam, a fase vira ordem sozinha e os botoes de conducao aparecem", async ({ page }) => {
     await seedMasterWithScene(page, BASE_TOKENS);
     const baseUrl = await getMesaBaseUrl();

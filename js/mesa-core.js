@@ -102,6 +102,26 @@ const MESA_REALTIME_DELTA_TYPES = new Set([
   "mesa:ruler",
   "mesa:dice:result"
 ]);
+/**
+ * Deltas que NAO sao mutacao de cena e por isso escapam do portao de versao
+ * (isStaleMesaSceneVersion) — Etapa 80.
+ *
+ * O bug que isso corrige: `sceneVersion` cresce com `Date.now()` a cada
+ * mexida do MESTRE na cena (colocar token, mover, grade, nevoa...). O
+ * jogador so acompanha essa contagem quando recebe um delta de cena. Ao
+ * rolar a iniciativa, o envelope dele saia carimbado com a versao velha e o
+ * cliente do mestre descartava a mensagem ANTES de chegar ao roteador — a
+ * rolagem simplesmente nao aparecia para o mestre, sem erro nenhum.
+ *
+ * Nenhum destes tipos altera a cena, entao "chegou atrasado" nao os torna
+ * invalidos: rolagem de iniciativa, ping, regua e dado sao eventos pontuais.
+ */
+const MESA_VERSIONLESS_DELTA_TYPES = new Set([
+  "mesa:initiative:roll",
+  "mesa:ping",
+  "mesa:ruler",
+  "mesa:dice:result"
+]);
 // Garganta do aviso de recusa do backend (mesa:scene:ack ok:false).
 const MESA_ACK_WARNING_THROTTLE_MS = 4000;
 let lastMesaAckWarningAt = 0;
@@ -547,7 +567,19 @@ async function applyMesaRealtimeDelta(payload) {
   const type = String(payload?.type || "");
   if (!MESA_REALTIME_DELTA_TYPES.has(type)) return;
   if (payload?.clientId === mesaClientId) return;
-  if (isStaleMesaSceneVersion(payload?.sceneVersion)) return;
+  // O portao de versao vale SO para mutacao de cena (ver
+  // MESA_VERSIONLESS_DELTA_TYPES): rolagem, ping, regua e dado nao alteram a
+  // cena e nao podem ser descartados por estarem "atrasados".
+  if (!MESA_VERSIONLESS_DELTA_TYPES.has(type) && isStaleMesaSceneVersion(payload?.sceneVersion)) return;
+
+  // Versao adotada AQUI, antes dos ramos que dao `return` cedo (iniciativa,
+  // dados, ping, regua, grade, nevoa, desenhos). Ate a Etapa 80 isso ficava
+  // so no fim da funcao: quem recebia apenas esses tipos NUNCA atualizava a
+  // propria `sceneVersion` e ia ficando para tras enquanto o mestre mexia na
+  // cena — foi o que travou a rolagem de iniciativa do jogador (o envelope
+  // dele saia com versao velha e o mestre descartava em silencio).
+  const incomingVersion = asPositiveInt(payload?.sceneVersion, 0);
+  if (incomingVersion > state.sceneVersion) state.sceneVersion = incomingVersion;
 
   const previousTokenIds = getMesaSceneTokenIdSet(state.tokens);
   let needsRosterRefresh = false;
@@ -683,8 +715,6 @@ async function applyMesaRealtimeDelta(payload) {
 
   if (!changed && !needsRosterRefresh) return;
 
-  const incomingVersion = asPositiveInt(payload?.sceneVersion, 0);
-  if (incomingVersion > state.sceneVersion) state.sceneVersion = incomingVersion;
   syncSelectedToken();
   cacheMesaSceneSnapshotLocally();
 
