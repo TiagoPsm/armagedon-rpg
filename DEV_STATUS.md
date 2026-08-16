@@ -12,7 +12,6 @@ Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daq
 
 - **[Tiago]** Teto de tamanho do token com a grade ligada: o token para por volta de 800% por causa do `_gridMaxCells` (metade do menor lado do mapa). Nao e bug — e decisao de regra de jogo, e esta esperando voce. — aberta em 2026-07-31 (Etapa 71)
 - **[Tiago]** Credenciais do smoke em producao: `npm run test:mesa:online` precisa de `ARMAGEDON_SITE_URL`, `ARMAGEDON_API_BASE_URL` e usuario/senha de mestre e jogador no ambiente (mais `ARMAGEDON_ONLINE_RELAY_PROBE=1` para a sonda de realtime). Sem elas o spec se pula sozinho e nunca exercitamos producao de verdade. — aberta em 2026-08-16 (conferencia da Etapa 81)
-- **[Claude]** `data-armed` so existe na Mesa: ou vira convencao do projeto para qualquer pagina, ou fica sendo peculiaridade de um arquivo — e peculiaridade nao sobrevive a seis meses. — aberta em 2026-08-16 (Etapa 82)
 - **[Tiago]** Barra circular de HP em volta do token (referencia Roll20): registrada como "pendente" na Etapa 64 e **nunca feita** — conferido em 2026-08-16, nao existe `conic-gradient` nem anel de vida no CSS do palco. Descoberta pela varredura de pendencias; e decisao visual sua se ainda quer. — aberta em 2026-07-30 (Etapa 64)
 
 ## Regra Obrigatoria de Documentacao
@@ -43,7 +42,54 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-16 — Etapa 83: pendencias com dono unico + a Ficha nao aceita editar o que nao carregou)
+## Ultima Etapa Concluida (2026-08-16 — Etapa 84: `data-armed` vira convencao do projeto)
+
+Item 3 da reuniao estrategica. O `data-armed` nasceu na Mesa (Etapa 82) e ganhou a Ficha na Etapa 83, mas continuava sendo peculiaridade de dois arquivos — e peculiaridade nao sobrevive a seis meses. Agora e regra do projeto, verificada nas seis paginas.
+
+### O alcance foi medido, nao chutado
+
+Sonda em todas as paginas, contando botao **visivel e habilitado** com a pagina pronta:
+
+| Pagina | Visiveis | Sem dono |
+|---|---|---|
+| index.html | 1 | 0 |
+| ficha.html | 7 | 0 |
+| mesa.html | 33 | 24 |
+| regras.html | 3 | 1 |
+| sugestoes.html | 2 | 0 |
+| echos.html | 1 | 0 |
+
+Dos 24 da Mesa, a maioria era botao **renderizado em runtime** (`mini-btn`, `stat-step-btn`, `mesa-token-markers-btn` — zero ocorrencias no `mesa.html`). Esses ficaram **fora da regra, por principio e nao por conveniencia**: quem os cria e o modulo que ja esta vivo, entao por construcao nao podem nascer mortos. A familia de bugs das Etapas 81-83 mora nos controles que o HTML entrega prontos ANTES de o JS armar.
+
+Sobraram 11 controles estaticos de verdade, todos agora marcados no ponto em que sao armados:
+
+- `#mesaZoomIn`, `#mesaZoomOut`, `#mesaZoomReset` — `bindZoomControl()` (js/mesa-map.js)
+- `#resetMesaBtn`, `#fullscreenMesaBtn` — `bindEvents()` (js/mesa-core.js)
+- `.vtt-layer-btn[data-layer]` e `.vtt-rtab` — delegados inline no `mesa.html`, marcados junto com o registro do delegado
+- `#clearRulesFilters` — js/regras.js
+
+### O verificador
+
+`tests/controles-armados.spec.cjs` (`npm run test:controles`), 6 testes, um por pagina. Compara o DOM vivo com o **HTML SERVIDO**: so cobra marca de botao cuja assinatura (id, ou lista de classes) existe no markup estatico. E assim que a regra distingue estatico de dinamico sem depender de convencao de nome.
+
+Validado contra violacao plantada: removi o `data-armed` do `#clearRulesFilters` e o teste reprovou nomeando o botao; devolvi e voltou ao verde.
+
+Regra registrada em `CLAUDE.md` (Key Constraints) e `VISUAL_RULES.md`.
+
+### Verificacao
+
+Verde: `test:controles` (6), `test:mesa:audit` (147), `test:mesa` (5), `test:ficha` (32), `permissoes` (15), `tokens` (10), `perf` (1), `check:js`, `audit:static`, `audit:pendencias`, `build:pages`.
+
+Cache-bust `2026-08-16-armados-2` em `js/mesa-core.js`, `js/mesa-map.js`, `js/regras.js` + `MESA_BUNDLE_VERSION`. **Sem deploy**: e tudo cliente.
+
+### Arquivos alterados
+
+- `tests/controles-armados.spec.cjs` (novo), `package.json` (`test:controles`)
+- `js/mesa-map.js`, `js/mesa-core.js`, `js/regras.js`, `mesa.html` (marcadores + cache-bust)
+- `regras.html`, `tools/build-pages.cjs` (cache-bust)
+- `CLAUDE.md`, `VISUAL_RULES.md`, `DEV_STATUS.md`
+
+## Etapa Anterior (2026-08-16 — Etapa 83: pendencias com dono unico + a Ficha nao aceita editar o que nao carregou)
 
 Duas frentes da reuniao estrategica: consertar como o projeto registra pendencia, e levar a varredura de boot das Etapas 81-82 para a Ficha.
 

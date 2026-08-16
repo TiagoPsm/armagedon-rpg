@@ -294,9 +294,10 @@ function bindZoomControl() {
   const btnReset = document.getElementById("mesaZoomReset");
   const slider   = document.getElementById("mesaZoomSlider");
 
-  if (btnIn)    btnIn.addEventListener("click",  () => setStageZoom(_stageZoom + ZOOM_STEP));
-  if (btnOut)   btnOut.addEventListener("click", () => setStageZoom(_stageZoom - ZOOM_STEP));
-  if (btnReset) btnReset.addEventListener("click", () => resetStageView());
+  // data-armed: contrato "este botao tem dono" (Etapa 84).
+  if (btnIn)    { btnIn.addEventListener("click",  () => setStageZoom(_stageZoom + ZOOM_STEP)); btnIn.dataset.armed = "1"; }
+  if (btnOut)   { btnOut.addEventListener("click", () => setStageZoom(_stageZoom - ZOOM_STEP)); btnOut.dataset.armed = "1"; }
+  if (btnReset) { btnReset.addEventListener("click", () => resetStageView()); btnReset.dataset.armed = "1"; }
   if (slider) {
     slider.addEventListener("input", () => setStageZoom(Number(slider.value) / 100));
     // Impede que o scroll dentro do slider propague para o zoom do palco

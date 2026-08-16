@@ -15,6 +15,7 @@
     "test:mesa:online": "playwright test tests/mesa-online.spec.cjs",
     "test:ficha": "playwright test tests/ficha.spec.cjs",
     "perf:mesa": "playwright test tests/mesa.performance.spec.cjs",
+    "test:controles": "playwright test tests/controles-armados.spec.cjs",
     "optimize:images": "node tools/optimize-images.cjs",
     "minify:css": "node tools/minify.cjs --css",
     "minify:js": "node tools/minify.cjs --js",

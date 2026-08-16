@@ -22,6 +22,9 @@ npm run audit:static
 # Check that every open pendency lives in DEV_STATUS.md "Pendencias Vivas"
 npm run audit:pendencias
 
+# Check that every static visible button has an owner (data-armed / onclick)
+npm run test:controles
+
 # Build static artifact for GitHub Pages → _site/
 npm run build:pages
 
@@ -130,6 +133,7 @@ Run it with the other checks before finishing an etapa. Historical blocks are ex
 
 - **No localStorage as primary source in production.** If the API session exists, all reads/writes must go through the API.
 - **Cache-busting**: when changing a JS or CSS file that is referenced in an HTML `<script src>` or `<link>`, update the `?v=` query string in the HTML file(s) that load it.
+- **`data-armed="1"` on every static button you wire.** When a module attaches a listener to a button that ships in the HTML, it must also set `btn.dataset.armed = "1"` — including buttons served by a delegated handler, which leaves no trace on the element. A visible, enabled, static button with neither `onclick` nor `data-armed` is a silent no-op; `npm run test:controles` fails on it across all six pages. Dynamically rendered buttons are exempt: they are created by a module that is already alive, so they cannot be dead on arrival.
 - **`integMax` is editable**: the Worker preserves the client-sent `integMax` and only clamps `integAtual` against it — do not recalculate it from `Alma` on the backend.
 - **Skill fields**: always preserve `id`, `name`, `type`, `trigger`, `desc` when normalising a character sheet.
 - **Monsters** have no `integMax`, no inventory, no faction.

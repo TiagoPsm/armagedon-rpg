@@ -133,6 +133,7 @@ function setupRulesPage() {
     });
   }
 
+  if (clearRulesFilters) clearRulesFilters.dataset.armed = "1";   // contrato da Etapa 84
   clearRulesFilters?.addEventListener("click", () => {
     rulesFilters = { query: "", tag: "" };
     if (rulesSearch instanceof HTMLInputElement) rulesSearch.value = "";

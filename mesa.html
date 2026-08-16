@@ -787,8 +787,8 @@
   <script src="js/mesa-roster.js?v=2026-08-02-permissoes-1" defer></script>
   <script src="js/mesa-inspector.js?v=2026-08-02-permissoes-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
-  <script src="js/mesa-core.js?v=2026-08-16-armados-1" defer></script>
-  <script src="js/mesa-map.js?v=2026-08-16-armados-1" defer></script>
+  <script src="js/mesa-core.js?v=2026-08-16-armados-2" defer></script>
+  <script src="js/mesa-map.js?v=2026-08-16-armados-2" defer></script>
   <script src="js/mesa-grid.js?v=2026-07-31-cells-1" defer></script>
   <script src="js/mesa-fog.js?v=2026-07-29-sharp-1" defer></script>
   <script src="js/mesa-scenes.js?v=2026-07-27-scenes-1" defer></script>
@@ -900,6 +900,10 @@
     document.querySelectorAll(".vtt-tb-btn[data-tool]").forEach(function (b) {
       b.dataset.armed = "1";
     });
+    // Mesmo delegado cuida dos botoes de CAMADA (Etapa 84).
+    document.querySelectorAll(".vtt-layer-btn[data-layer]").forEach(function (b) {
+      b.dataset.armed = "1";
+    });
 
     // Inicializar com camada TOKENS + painel de cena
     showPanel("scene");
@@ -921,6 +925,9 @@
         b.setAttribute('aria-selected', isActive ? 'true' : 'false');
       });
     });
+
+    // O delegado acima ja escuta estas abas — marca o dono (Etapa 84).
+    document.querySelectorAll('.vtt-rtab').forEach(function (b) { b.dataset.armed = '1'; });
   })();
   </script>
 </body>

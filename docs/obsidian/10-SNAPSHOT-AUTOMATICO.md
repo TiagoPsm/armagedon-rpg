@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-16 03:04:00 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-16 03:18:45 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `36373a2 2026-08-16 fix(mesa): controles mortos durante o boot (Etapas 81-82)`
+- Ultimo commit: `b44d57c 2026-08-16 fix(ficha): nao aceitar edicao no que ainda nao carregou + pendencia com dono unico (Etapa 83)`
 
 ### Alteracoes Locais
 
@@ -22,15 +22,14 @@
 M  CLAUDE.md
 M  DEV_STATUS.md
 M  VISUAL_RULES.md
-M  css/ficha.css
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  ficha.html
-M  js/ficha-dice.js
-M  js/ficha-init.js
-M  js/ficha-sheet.js
+M  js/mesa-core.js
+M  js/mesa-map.js
+M  js/regras.js
+M  mesa.html
 M  package.json
-M  tests/ficha.spec.cjs
-A  tools/audit-pendencias.cjs
+M  regras.html
+A  tests/controles-armados.spec.cjs
 M  tools/build-pages.cjs
 ```
 
@@ -47,14 +46,13 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 CLAUDE.md
 DEV_STATUS.md
 VISUAL_RULES.md
-css/ficha.css
-ficha.html
-js/ficha-dice.js
-js/ficha-init.js
-js/ficha-sheet.js
+js/mesa-core.js
+js/mesa-map.js
+js/regras.js
+mesa.html
 package.json
-tests/ficha.spec.cjs
-tools/audit-pendencias.cjs
+regras.html
+tests/controles-armados.spec.cjs
 tools/build-pages.cjs
 ```
 

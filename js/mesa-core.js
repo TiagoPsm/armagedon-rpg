@@ -309,8 +309,10 @@ function bindEvents() {
     if (!isMaster()) return;
     resetPrototype();
   });
+  if (resetMesaBtn) resetMesaBtn.dataset.armed = "1";        // contrato da Etapa 84
 
   fullscreenMesaBtn?.addEventListener("click", toggleMesaFullscreen);
+  if (fullscreenMesaBtn) fullscreenMesaBtn.dataset.armed = "1";
 
   stage?.addEventListener("click", event => {
     if (typeof shouldIgnoreMesaStageClickAfterDrag === "function" && shouldIgnoreMesaStageClickAfterDrag()) return;

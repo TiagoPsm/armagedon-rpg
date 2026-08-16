@@ -481,8 +481,10 @@ Regra geral, nascida do desenho que ficava morto durante o boot da Mesa: **se um
 - Botao de barra que depende de um modulo assincrono nasce `disabled` no HTML e e liberado pelo `init` do proprio modulo. Se o boot falhar, ele fica desabilitado — que e a verdade.
 - `.vtt-tb-btn:disabled` (css/mesa.css): opacidade 0.4, cursor normal. O `:hover` da barra exige `:not(:disabled)`, senao o botao apagado ainda acende sob o cursor.
 - O estado tem um gancho legivel para teste e para CSS: `data-draw-ready="true"` no `#mesaStageWrap` quando o desenho arma.
-- **`data-armed="1"` (Etapa 82)**: todo modulo marca os botoes que arma. Handler delegado nao aparece no elemento, entao sem o marcador a garantia "este botao tem dono" nao e verificavel. Botao visivel e habilitado sem `data-armed` nem `onclick` inline e um no-op silencioso — o teste de barra reprova.
+- **`data-armed="1"` (Etapa 82, convencao do projeto na Etapa 84)**: todo modulo marca os botoes que arma, em TODAS as paginas — nao so na Mesa. Handler registrado por `addEventListener` nao aparece no elemento, e handler delegado nem sequer esta nele; `getEventListeners` so existe no DevTools. Sem o marcador, "este botao faz alguma coisa" nao e verificavel.
 - Controle que nasce `hidden` **nao** cai nesta regra: oculto nao promete nada. O problema e prometer e nao cumprir.
+- **Vale para botao ESTATICO** (presente no HTML servido). Botao renderizado em runtime e criado pelo modulo que ja esta vivo — por construcao nao nasce morto, e exigir marca dele seria ruido sem risco correspondente.
+- Verificado por `npm run test:controles` (`tests/controles-armados.spec.cjs`), que roda nas seis paginas e reprova botao estatico visivel e habilitado sem `onclick` inline nem `data-armed`.
 
 ### Tela que ainda carrega nao pode aceitar edicao (Etapa 83)
 
