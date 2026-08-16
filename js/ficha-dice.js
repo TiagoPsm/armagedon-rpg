@@ -318,6 +318,7 @@ function initDiceTray() {
   }
 
   openButton.addEventListener("click", openDiceTray);
+  openButton.dataset.armed = "1";   // contrato data-armed (Etapas 82-83)
   close.addEventListener("click", closeDiceTray);
   cancel.addEventListener("click", closeDiceTray);
   roll.addEventListener("click", () => {

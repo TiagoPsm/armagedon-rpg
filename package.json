@@ -6,6 +6,7 @@
   "scripts": {
     "check:js": "node tools/check-js.cjs",
     "audit:static": "node tools/audit-static.cjs",
+    "audit:pendencias": "node tools/audit-pendencias.cjs",
     "build:pages": "node tools/build-pages.cjs",
     "test:mesa": "playwright test tests/mesa.spec.cjs",
     "test:mesa:audit": "playwright test tests/mesa-audit.spec.cjs",

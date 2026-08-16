@@ -2,6 +2,19 @@
 
 Este arquivo registra o estado atual do projeto e deve ser atualizado ao final de cada etapa importante.
 
+## Pendencias Vivas
+
+**Esta e a UNICA lista de pendencias abertas do projeto.** Se nao esta aqui, nao esta aberto. Os blocos de etapa mais abaixo narram o que aconteceu — eles nao abrem pendencia.
+
+Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencias dentro do proprio bloco, num arquivo que cresce por cima. Nada obrigava uma etapa futura a voltar e dar baixa. Deu 28 mencoes espalhadas por 9 lugares em 6 formatos, varias mortas ha semanas — uma delas listava "Etapa 7: jogador move o proprio token" como pendente com a secao "Etapa Concluida — Etapa 7" logo abaixo, na mesma tela. `npm run audit:pendencias` reprova quem escrever pendencia fora daqui.
+
+Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
+
+- **[Tiago]** Teto de tamanho do token com a grade ligada: o token para por volta de 800% por causa do `_gridMaxCells` (metade do menor lado do mapa). Nao e bug — e decisao de regra de jogo, e esta esperando voce. — aberta em 2026-07-31 (Etapa 71)
+- **[Tiago]** Credenciais do smoke em producao: `npm run test:mesa:online` precisa de `ARMAGEDON_SITE_URL`, `ARMAGEDON_API_BASE_URL` e usuario/senha de mestre e jogador no ambiente (mais `ARMAGEDON_ONLINE_RELAY_PROBE=1` para a sonda de realtime). Sem elas o spec se pula sozinho e nunca exercitamos producao de verdade. — aberta em 2026-08-16 (conferencia da Etapa 81)
+- **[Claude]** `data-armed` so existe na Mesa: ou vira convencao do projeto para qualquer pagina, ou fica sendo peculiaridade de um arquivo — e peculiaridade nao sobrevive a seis meses. — aberta em 2026-08-16 (Etapa 82)
+- **[Tiago]** Barra circular de HP em volta do token (referencia Roll20): registrada como "pendente" na Etapa 64 e **nunca feita** — conferido em 2026-08-16, nao existe `conic-gradient` nem anel de vida no CSS do palco. Descoberta pela varredura de pendencias; e decisao visual sua se ainda quer. — aberta em 2026-07-30 (Etapa 64)
+
 ## Regra Obrigatoria de Documentacao
 
 Qualquer alteracao no site deve vir acompanhada de atualizacao nos `.md` relacionados. Este arquivo deve ser atualizado sempre que a mudanca afetar comportamento, arquitetura, arquivos principais, deploy, pendencias ou validacoes.
@@ -30,7 +43,50 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-16 — Etapa 82: varredura do boot, "nenhum controle mente")
+## Ultima Etapa Concluida (2026-08-16 — Etapa 83: pendencias com dono unico + a Ficha nao aceita editar o que nao carregou)
+
+Duas frentes da reuniao estrategica: consertar como o projeto registra pendencia, e levar a varredura de boot das Etapas 81-82 para a Ficha.
+
+### Frente 1 — uma lista de pendencias, verificada por script
+
+O `DEV_STATUS.md` tinha **28 mencoes a "pendencia" espalhadas por 9 lugares em 6 formatos**. A causa nao era desleixo: a pendencia era escrita dentro da etapa que a criou, num arquivo que cresce por cima, e nada obrigava uma etapa futura a voltar e dar baixa. O caso mais eloquente listava "Etapa 7: jogador move o proprio token" como pendente com a secao "Etapa Concluida — Etapa 7" logo abaixo, na mesma tela.
+
+- **`## Pendencias Vivas`** no topo do arquivo e a UNICA lista de itens abertos. Formato `- [DONO] item — aberta em AAAA-MM-DD (origem)`.
+- **`tools/audit-pendencias.cjs`** (novo, `npm run audit:pendencias`) reprova pendencia declarada fora dela — titulos, rotulos e itens de lista. Bloco historico so e liberado quando o proprio titulo carrega marca de fechamento (`~~`, FECHADA, RESOLVIDA, CUMPRIDA, MOVIDA, HISTORICO) mais a data da conferencia.
+- Regra registrada no `CLAUDE.md`, com o porque. A regra de atualizar os `.md` ja existia e falhou quatro vezes; esta e verificada por script, nao por memoria.
+- **A varredura achou um item vivo que estava enterrado**: a *barra circular de HP em volta do token* (referencia Roll20), registrada como "pendente" na Etapa 64 e nunca feita — conferido: nao existe `conic-gradient` nem anel de vida no CSS do palco. Foi para a lista canonica como decisao do Tiago. O item vizinho no mesmo bloco, marcadores de status, **estava morto** (feito na Etapa 64, `js/mesa-markers.js`): dois itens colados, um vivo e um morto, ambos escritos como pendentes.
+
+### Frente 2 — boot da Ficha
+
+`js/ficha-init.js` roda `await AUTH_READY` → `await AUTH.refreshDirectory()` → `await openSheet()` e **so entao** arma seis modulos. E `openSheet()` (js/ficha-sheet.js) faz `showScreen("sheetScreen")` e **depois** `await loadSheet(...)`.
+
+Resultado: a ficha aparecia completa e **editavel** enquanto os dados vinham da rede. Quem digitasse nessa janela tinha o texto **descartado** quando a resposta preenchia os campos — sem aviso, e sem autosave para salvar, porque ele so armava depois. Pior que botao morto: perda de dado.
+
+- **A correcao NAO foi armar o autosave mais cedo.** Um `input` durante a carga chamaria `saveSheetSilently()` e gravaria o formulario vazio por cima da ficha real. A garantia certa e nao aceitar edicao no que ainda nao esta pronto.
+- **Trava de carregamento** em `openSheet()`: `data-sheet-loading="true"` + `inert` no `#sheetScreen` antes do await, removidos num `finally` (carga que falha nao pode travar a ficha para sempre). `inert` bloqueia clique **e** foco por teclado.
+- **Sinal visual** (`css/ficha.css`): opacidade 0.55, `cursor: progress` e a etiqueta "Carregando ficha…". Sem isso a ficha so ficaria misteriosamente sem reagir. Sem animacao, conforme a direcao visual.
+- **Modulos de UI pura subiram para antes de todos os awaits**: `initItemEditor`, `initNotesCollapse`, `initSoulAwardModal`, `initDiceTray`, `initSheetMouseGlow`. So dependem de DOM estatico do `ficha.html`.
+- **`initAutoSave()` ficou onde estava, de proposito** — e nao ha instante descoberto: `openSheet` mantem a ficha inerte ate terminar e nao existe `await` entre o fim dela e o `initAutoSave()`. `syncAutoGrowTextareas()` tambem ficou depois, porque dimensiona textareas ja renderizadas.
+- `data-armed="1"` no `#openDiceTrayBtn`, estendendo a convencao da Etapa 82 para a Ficha.
+
+### Verificacao
+
+Os testes novos foram escritos **antes** da correcao e rodados contra o codigo antigo: `ficha visivel mas ainda carregando nao aceita edicao` e `a bandeja de dados responde assim que a ficha aparece` **falharam**; o terceiro (`assim que a ficha fica editavel, o autosave ja esta armado`) passou dos dois lados, e e guarda de regressao. O atraso e deterministico na resposta de `GET /api/characters/:key`, o ponto onde a lentidao existe em producao.
+
+O `audit-pendencias.cjs` tambem foi validado contra violacao plantada: reprovou com linha e motivo, saiu com codigo 1, e voltou a 0 depois de removida.
+
+Verde: `test:ficha` (**32**), `check:js` (47), `audit:static`, `audit:pendencias`. No navegador, com a trava forcada: opacidade 0.55, cursor `progress`, etiqueta "Carregando ficha…" renderizada, foco recusado no campo; destravando, foco liberado e opacidade 1. Console limpo.
+
+Cache-bust `2026-08-16-fichaboot-1` em `js/ficha-sheet.js`, `js/ficha-init.js`, `js/ficha-dice.js`, `css/ficha.css` + `FICHA_BUNDLE_VERSION`. **Sem deploy**: e tudo cliente.
+
+### Arquivos alterados
+
+- `tools/audit-pendencias.cjs` (novo), `package.json`, `CLAUDE.md`
+- `js/ficha-sheet.js` (trava de carregamento), `js/ficha-init.js` (ordem dos inits), `js/ficha-dice.js` (`data-armed`)
+- `css/ficha.css` (estado de carregamento), `ficha.html` (cache-bust), `tools/build-pages.cjs`
+- `tests/ficha.spec.cjs` (bloco novo, 3 testes), `DEV_STATUS.md`, `VISUAL_RULES.md`
+
+## Etapa Anterior (2026-08-16 — Etapa 82: varredura do boot, "nenhum controle mente")
 
 Generalizacao da Etapa 81. Se o desenho ficava morto atras do `await initMesaMap()`, a pergunta seguinte e obrigatoria: **quem mais?** Varredura de todos os controles da Mesa contra o momento em que sao armados.
 
@@ -124,11 +180,13 @@ Estavam escritas como abertas mais abaixo no arquivo, mas a conferencia mostrou 
 - **"specs de `test:ficha` esperam a UI antiga"** (registrada em 2026-06-07, quando 6 falhavam) — passam 29/29.
 - **"rodada com 2 janelas reais via WebSocket de producao"** (citada nas Etapas 38/41/50) — fechada na propria Etapa 51 (deploy final + smoke em producao).
 
-### Pendencias que continuam abertas
+### Pendencias desta conferencia (movidas — ver "Pendencias Vivas" no topo)
+
+O que continuou aberto foi para a lista canonica no topo do arquivo; aqui fica so o registro do que esta conferencia FECHOU.
 
 - ~~**Drift de zoom durante o drag de token**~~ — **FECHADO** (conferido em 2026-08-16). A pendencia era da Etapa 34 (2026-06-30) e a **Etapa 39 (2026-07-11) ja tinha corrigido**: `updateDragPosition` recaptura o `stageRect` a cada frame e guarda o agarre como fracao do token. O documento e que nunca foi atualizado. Ha cobertura para os dois casos em `tests/mesa-audit.spec.cjs`: zoom aplicado ANTES do drag e zoom alterado NO MEIO do drag. O segundo foi verificado como guarda real — removendo a recaptura do rect, ele fica vermelho.
-- **Teto de tamanho do token com a grade ligada** — o token para por volta de 800% por causa do `_gridMaxCells` (metade do menor lado do mapa). **Nao e bug: e decisao de regra do Tiago**, e continua esperando a decisao dele.
-- **`npm run test:mesa:online`** — smoke contra o site publicado. Nao e bug: exige `ARMAGEDON_SITE_URL`, `ARMAGEDON_API_BASE_URL`, `ARMAGEDON_MASTER_USERNAME/PASSWORD` e `ARMAGEDON_PLAYER_USERNAME/PASSWORD` no ambiente (mais `ARMAGEDON_ONLINE_RELAY_PROBE=1` para a sonda de realtime). Sem as credenciais o spec se pula sozinho.
+- Teto de tamanho do token com a grade ligada → **movido** para "Pendencias Vivas" (decisao de regra do Tiago).
+- `npm run test:mesa:online` sem credenciais → **movido** para "Pendencias Vivas" (configuracao de ambiente).
 
 **Com isso o relatorio da auditoria da Etapa 34 esta 100% fechado** — os 11 bugs mais os 3 de severidade media/baixa.
 
@@ -288,7 +346,7 @@ Para mudar a formula depois, mexer so em `INITIATIVE_ATTR` / `INITIATIVE_ATTR_LA
 
 - **Worker publicado** em 2026-08-02, version ID `b55adbb0-319b-4b5a-89d7-4d997cd7eb16` (dry-run limpo antes; health 200 pos-deploy). Detalhes em `cloudflare/README.md`.
 
-### Pendencias
+### Pendencias (nenhuma — FECHADA nesta etapa)
 
 - Nenhuma aberta nesta etapa. As quatro regras de jogo estao fechadas e cobertas por teste; o Worker ja esta no ar com o formato novo da cena.
 
@@ -493,7 +551,7 @@ Pedido do Tiago: poder aplicar os marcadores **que ja existiam** clicando no tok
 - **Arquivos**: js/mesa-markers.js (novo), js/mesa-stage.js, js/mesa-inspector.js, css/mesa-stage.css, mesa.html (container do painel + `<script>` + `?v=2026-07-30-markers-1`), tests/mesa-audit.spec.cjs.
 - **Validacoes**: `check:js` OK (46 arquivos), `audit:static` OK, `test:mesa` 5/5, `test:mesa:tokens` 6/6, `test:mesa:audit` 106/106 (2 testes novos: "Limpar tudo" transmitindo o esvaziamento; Esc + alvos-fantasma). O teste da Etapa 46 que dirigia `.inspector-marker-btn` foi reescrito para o painel novo.
 - **Ajuste 2026-07-30 (mesma etapa)**: a caixa de selecao usava `inset: -6px`, uma folga que era MULTIPLICADA pela escala do token (a 3x virava 18px). A caixa descolava do circulo e nao coincidia com as linhas da grade. Agora `inset: 0` (a caixa e a caixa do token) e o traco tem `border-width` contra-escalado para ficar em 1px de TELA. Botao de marcadores foi de 22px para 30px e o caractere `◉` virou SVG — glifo depende da fonte instalada e nao ficava opticamente centrado. Testes novos medem que, apos um resize com snap, o token ocupa um numero inteiro de celulas e as quatro bordas caem sobre as linhas da grade (desvio < 0,5px), e que o botao mantem tamanho de tela constante com o icone centrado em qualquer escala.
-- **Pendente**: barra circular de HP em volta do token segue nao feita.
+- ~~**Pendente**: barra circular de HP em volta do token segue nao feita.~~ → **movida** para "Pendencias Vivas" no topo em 2026-08-16 (continua por fazer; virou decisao do Tiago).
 
 ## Etapa Anterior (2026-07-30 — Etapa 63: interacao com o token — 8 alcas e hover sem brilho)
 
@@ -512,7 +570,7 @@ Tiago apontou dois incomodos na Mesa: redimensionar token era pouco pratico e o 
 - **Arquivos**: js/mesa-stage.js, js/mesa-grid.js, js/mesa-map.js, css/mesa-stage.css, mesa.html (regras inline + `?v=2026-07-30-token-handles-1`), tests/mesa-token-handles.spec.cjs (novo), package.json (`test:mesa:tokens`).
 - **Validacoes**: `check:js` OK (45 arquivos), `audit:static` OK, `test:mesa` 5/5, `test:mesa:audit` 104/104, `test:mesa:tokens` 6/6 (novo). Verificacao visual no navegador: caixa de 8 alcas no token selecionado, anel do tipo em opacidade cheia no hover, zero branco.
 - **Nota de teste**: o anel tem transicao de 150ms — leitura de `border-color` logo apos trocar a classe pega cor interpolada, nao a final (custou uma investigacao). E `--token-scale` inline em teste dessincroniza o DOM do `token.tokenScale`, fazendo o resize partir de base errada.
-- **Pendente / nao feito**: os **marcadores de status** (bolinhas coloridas + icones sobre o token) da segunda referencia do Roll20 nao entraram nesta etapa — sistema a parte, encaixa no mesa-inspector depois, junto com uma barra circular de HP em volta do token.
+- ~~**Pendente / nao feito**~~ — **RESOLVIDO na Etapa 64** (js/mesa-markers.js, painel de marcadores no token; conferido em 2026-08-16). Registro original: os **marcadores de status** (bolinhas coloridas + icones sobre o token) da segunda referencia do Roll20 nao entraram nesta etapa — sistema a parte, encaixa no mesa-inspector depois, junto com uma barra circular de HP em volta do token.
 
 ## Etapa Anterior (2026-07-28 — BUG: nao dava para DESLIGAR a nevoa)
 
@@ -1110,7 +1168,7 @@ Apos auditoria completa da Mesa (5 frentes via agentes), corrigidos os bugs crit
 - Cache-bust: `mesa-stage.js`, `mesa-core.js`, `mesa-map.js`, `mesa-drawing.js` -> `?v=2026-06-30-bugfix-1`; `MESA_BUNDLE_VERSION` -> `2026-06-30-bugfix-1` em `tools/build-pages.cjs`.
 - Validacao: `check:js` (41 arquivos OK), `audit:static` OK, `build:pages` OK, `test:mesa` 5/5 verde. Verificado manualmente no preview: mestre ve os 3 botoes de camada, jogador so ve TOKENS (MESTRE e MAPA ficam `hidden`), console limpo nos dois papeis.
 - Criado `docs/ROTEIRO_TESTE_MESA.md` com checklist manual cobrindo todas as funcionalidades da Mesa para teste humano.
-- **Pendente**: bugs de severidade media/baixa do relatorio (drift de zoom em drag, handles de resize podem inverter caixa, payload PUT sem limite de tamanho) ficam para uma proxima rodada se o Tiago priorizar.
+- ~~**Pendente**~~ — **FECHADO** (ver Atualizacao logo abaixo). Registro original: bugs de severidade media/baixa do relatorio (drift de zoom em drag, handles de resize podem inverter caixa, payload PUT sem limite de tamanho) ficam para uma proxima rodada se o Tiago priorizar.
   - **Atualizacao (Etapas 81-82, 2026-08-16)**: ~~handles de resize podem inverter caixa~~ resolvido nas Etapas 63/71 (coberto por `test:mesa:tokens`, 10/10); ~~payload PUT sem limite de tamanho~~ resolvido — `readJson()` em `cloudflare/src/auth.js` corta em 16 KB com 413; ~~drift de zoom em drag~~ resolvido na Etapa 39 e coberto por dois testes (zoom antes do drag e zoom no meio do drag). **Nada aberto: este relatorio esta fechado.**
 
 ## Arquitetura Atual
@@ -1329,7 +1387,7 @@ Validacao:
 - `npx wrangler deploy --dry-run`: build OK (31 KiB gzip).
 - Browser (preview :8000, papel forcado `player`): painel "Meu Token" renderiza sem erros; inspetor some ao selecionar token alheio e reaparece no proprio; `renderPlayerEchoCard` gera o markup correto (botao "Invocar"). Sem backend a secao "Meus Echos" fica oculta (esperado).
 
-Pendencias/riscos abertos:
+Pendencias/riscos abertos (HISTORICO — fechados; conferido em 2026-08-16):
 
 - **Deploy do Worker pendente**: a invocacao de Echo pelo jogador so funciona em producao apos `npx wrangler deploy --config cloudflare/wrangler.toml` (a regra do DO e nova). Ate la, o frontend ja esta pronto mas o relay sera rejeitado.
 - Echos so aparecem para o mestre e para o dono — outros jogadores nao tem o Echo no proprio roster, entao o token e descartado na cena deles (limitacao pre-existente do modelo de roster por usuario; fora do escopo desta etapa).
@@ -1439,7 +1497,7 @@ Validacoes executadas:
 - `npx wrangler deploy --dry-run` OK (bindings preservados)
 - QA mobile 360px (home + painel "Meu personagem") sem overflow
 
-Pendencias abertas:
+Pendencias abertas (HISTORICO — fechadas; conferido em 2026-08-16):
 
 - Deploy do Worker + rodar `POST /api/maintenance/migrate-avatars` uma vez (mestre autenticado) — unico passo manual de producao
 - `npm run test:mesa:online` com credenciais reais (smoke contra o site publicado)
@@ -1460,7 +1518,7 @@ Pendencias abertas:
 - Protocolo testado local (wrangler dev + D1 local, 24 casos, todos OK): rotas diretas bloqueadas para jogador; criacao/listagem incoming/outgoing; terceiros e remetente nao aceitam; aceite move item/memoria e grava auditoria com `proposalId`; revalidacao cancela proposta com origem vazia (409); recusa e cancelamento; mestre efetiva direto.
 - npm run check:js (36 arquivos) / audit:static: OK; wrangler deploy --dry-run: OK; test:ficha 24/28 (mesmas 4 falhas pre-existentes de layout/editor de item, sem regressao).
 
-### Pendencias
+### Pendencias (HISTORICO — fechadas; conferido em 2026-08-16)
 - Aplicar `schema.sql` no D1 remoto antes do deploy do Worker (tabela `transfer_proposals`).
 
 ## Etapa Concluida (2026-06-11 — Etapa 7: jogador move o proprio token + trava do mestre)
@@ -1509,7 +1567,7 @@ Pendencias abertas:
 ### Validacoes
 - npm run check:js: OK / npm run audit:static: OK (incluindo a checagem nova)
 
-### Pendencias conhecidas (proximas etapas)
+### Pendencias conhecidas (proximas etapas) (HISTORICO — fechadas; conferido em 2026-08-16)
 - Specs Playwright desatualizados (6 falhas pre-existentes, ver entrada da Etapa 2)
 - Etapa 6: notificacao de ganho de XP ao mestre
 - Etapa 7: jogador move o proprio token com trava do mestre
@@ -1840,7 +1898,7 @@ Auditoria completa do projeto identificou achados de seguranca/logica/UI. Plano 
   - `tests/mesa.spec.cjs`: adicionada cobertura com backend simulado confirmando que o jogador carrega a ficha oficial, ve itens/memorias reais e persiste Vida/Integridade via `PUT /api/characters/:key`
   - validacoes executadas: `npm run check:js`, `npm run audit:static`, `npm run test:mesa`, `npm run perf:mesa`, `npm run build:pages`, `npx.cmd --yes wrangler@latest deploy --dry-run`, `git fsck --no-dangling` e `git diff --check`
   - Worker publicado em 2026-05-07: `armagedon-api`, version ID `b89440a2-65c6-4d1e-8fcb-9b17c2236c6a`
-  - pendencia pos-push: acompanhar GitHub Pages na `main` e conferir o site oficial com jogador editando Vida/Integridade pela Mesa
+  - ~~pendencia pos-push: acompanhar GitHub Pages na `main` e conferir o site oficial com jogador editando Vida/Integridade pela Mesa~~ (HISTORICO — cumprida; conferido em 2026-08-16)
 
 - Painel pessoal do jogador na Mesa em 2026-05-06:
   - objetivo: ocultar do jogador o roster de tokens disponiveis, manter o palco compartilhado e permitir edicao apenas de Vida atual e Integridade atual da propria ficha
@@ -1932,7 +1990,7 @@ Auditoria completa do projeto identificou achados de seguranca/logica/UI. Plano 
   - Worker publicado: `armagedon-api`, version ID `44ddb8ef-776e-4bdc-841b-9dd171af1690`
   - GitHub Pages publicado pela `main` com cache bust `2026-05-01-mesa-scene-1`
   - validacoes executadas: `node --check` em `js/` e `cloudflare/src/`; `git diff --check`; links wiki do Obsidian; `wrangler deploy --dry-run`; `wrangler d1 execute` remoto; `GET /api/health` com HTTP 200; `GET /api/mesa/scene` sem sessao com HTTP 401; `mesa.html`, `js/mesa-core.js` e `js/mesa-stage.js` publicados com HTTP 200
-  - pendencia: validar em navegador logado como mestre e jogador a persistencia visual completa da cena no site oficial
+  - ~~pendencia: validar em navegador logado como mestre e jogador a persistencia visual completa da cena no site oficial~~ (HISTORICO — cumprida; conferido em 2026-08-16)
 
 - Automacao do vault Obsidian em 2026-05-01:
   - `tools/update-obsidian-context.ps1`: criado script para gerar snapshot automatico do estado do repositorio
@@ -1981,7 +2039,7 @@ Auditoria completa do projeto identificou achados de seguranca/logica/UI. Plano 
 - Ajuste visual da ficha em 2026-04-30:
   - `js/ficha-core.js`: habilidades/poderes passam a abrir minimizados por padrao sempre que uma ficha e carregada
   - o estado de expandido/minimizado continua funcionando durante o uso da ficha, mas nao e mais reaproveitado para abrir a ficha expandida em acessos seguintes
-  - pendencia: validar no navegador antes de publicar
+  - ~~pendencia: validar no navegador antes de publicar~~ (HISTORICO — cumprida; conferido em 2026-08-16)
 
 - Retomada de revisao em 2026-04-30:
   - a pasta antiga `C:\Users\tiago\Desktop\Proxima Campanha\FichaApp\rpg-campaign` foi excluida com sucesso
@@ -2001,7 +2059,7 @@ Auditoria completa do projeto identificou achados de seguranca/logica/UI. Plano 
     - concessao local de 100 Essencias rank 1 exibe progressao de Adormecido para Despertado no resumo
   - achado remanescente:
     - `server/src/routes/characters.js` nao possui a rota `POST /characters/:key/soul-essence`, embora o frontend chame essa rota quando a API esta ativa; isso afeta o backend Express/PostgreSQL legado, nao o Worker publicado
-  - pendencia aberta: continuar revisao funcional em navegador nas telas de ficha, mesa e regras
+  - ~~pendencia aberta: continuar revisao funcional em navegador nas telas de ficha, mesa e regras~~ (HISTORICO — cumprida; conferido em 2026-08-16)
 
 - Controle de arquivos `.md` desta etapa, em 2026-04-30:
   - `README.md`: registrado o status operacional da limpeza da pasta antiga, deixando claro que `rpg-campaign-git-sync` e a pasta oficial preservada
@@ -2107,7 +2165,7 @@ Auditoria completa do projeto identificou achados de seguranca/logica/UI. Plano 
   - `git diff --check`
   - `git fsck --no-dangling`
   - QA visual por Playwright em desktop e viewport estreito
-- Pendencia da etapa antes do deploy:
+- ~~Pendencia da etapa antes do deploy:~~ (HISTORICO — cumprida; conferido em 2026-08-16)
   - publicar na `main` e validar o site oficial apos o workflow do GitHub Pages.
 
 ## Ajustes de Gameplay Ja Consolidados
@@ -2235,7 +2293,7 @@ Sistema de Echos: manifestacoes residuais de monstros derrotados, colecionaveis 
 - `npm run audit:static`: OK
 - `npx wrangler deploy --dry-run --config cloudflare/wrangler.toml`: bundle OK
 
-### Pendencias / riscos
+### Pendencias / riscos (HISTORICO — fechados; conferido em 2026-08-16)
 
 - A migracao `0002_add_echos.sql` precisa ser aplicada no D1 remoto antes do deploy do Worker (recria `transfer_proposals` e `transfer_audit` para aceitar `echo`).
 - Invocacao na Mesa e feita pelo mestre (modelo master-invoke), pois a gravacao da cena (`PUT /api/mesa/scene`) e exclusiva do mestre. Permitir o jogador invocar o proprio Echo diretamente exige mudanca futura nas permissoes de escrita da cena.

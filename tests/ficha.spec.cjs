@@ -1989,3 +1989,158 @@ test.describe("Regras com tags", () => {
     expect(combatRule.tag).toBe("Combate, Nucleo");
   });
 });
+
+/* ── Etapa 83: a Ficha nao pode mentir durante o boot ─────────────────
+ *
+ * Mesma varredura que as Etapas 81-82 fizeram na Mesa, agora na Ficha.
+ * js/ficha-init.js roda, nesta ordem:
+ *
+ *   await AUTH_READY  →  await AUTH.refreshDirectory()  →  await openSheet()
+ *   →  initAutoSave(), initItemEditor(), initNotesCollapse(),
+ *      initSoulAwardModal(), initDiceTray(), initSheetMouseGlow()
+ *
+ * E openSheet() (js/ficha-sheet.js) faz `showScreen("sheetScreen")` e SO
+ * DEPOIS `await loadSheet(...)`. Ou seja: a ficha aparece completa e
+ * editavel enquanto os dados ainda estao vindo, e os seis modulos ainda
+ * nao armaram.
+ *
+ * O estrago nao e so botao morto. Quem digitar durante essa janela tem o
+ * texto DESCARTADO quando o loadSheet responde e preenche os campos — e o
+ * autosave (que so arma depois) nem chegou a existir para salvar. Por isso
+ * a garantia cobrada aqui NAO e "armar o autosave mais cedo": armar antes
+ * dos dados chegarem seria pior, um `input` durante a carga gravaria o
+ * formulario vazio por cima da ficha real. A garantia e:
+ *
+ *   enquanto carrega, a ficha nao aceita edicao;
+ *   quando aceita edicao, o autosave ja esta armado.
+ *
+ * O atraso e deterministico no ponto onde a lentidao existe em producao:
+ * a resposta de GET /api/characters/:key. Sem isso o ambiente de teste
+ * responde rapido demais e o teste passa por sorte — o erro que a Etapa 81
+ * cometeu e que so apareceu ao rodar contra o codigo antigo.
+ */
+test.describe("Boot da Ficha: nada de editar o que ainda nao carregou (Etapa 83)", () => {
+  const ATRASO_MS = 1500;
+
+  async function abrirFichaLenta(page) {
+    const baseUrl = await getMesaBaseUrl();
+    const apiBaseUrl = `${baseUrl}/api`;
+    const puts = [];
+
+    const characterData = {
+      charName: "Ana Rubra",
+      vidaAtual: "9",
+      vidaMax: "20",
+      integAtual: "5",
+      integMax: "8",
+      attrAlma: "30",
+      inventorySlots: 12,
+      inv: []
+    };
+
+    const fulfillJson = (route, payload, status = 200) => route.fulfill({
+      status,
+      contentType: "application/json; charset=utf-8",
+      headers: { "access-control-allow-origin": "*" },
+      body: JSON.stringify(payload)
+    });
+
+    await page.route("**/api/**", async route => {
+      const request = route.request();
+      const pathname = new URL(request.url()).pathname;
+
+      if (request.method() === "OPTIONS") {
+        await route.fulfill({ status: 204, headers: { "access-control-allow-origin": "*" }, body: "" });
+        return;
+      }
+      if (pathname === "/api/health") { await fulfillJson(route, { ok: true }); return; }
+      if (pathname === "/api/auth/session") {
+        await fulfillJson(route, { user: { id: "user-ana", username: "ana", role: "player" } });
+        return;
+      }
+      if (pathname === "/api/directory") {
+        await fulfillJson(route, {
+          players: [{ id: "row-ana", key: "player-ana-oficial", username: "ana", charname: "Ana Rubra", inventorySlots: 12, usedSlots: 0 }],
+          npcs: [], monsters: []
+        });
+        return;
+      }
+      if (pathname === "/api/characters/player-ana-oficial" && request.method() === "GET") {
+        // AQUI e a lentidao: a ficha ja esta na tela esperando estes dados.
+        await new Promise(resolve => setTimeout(resolve, ATRASO_MS));
+        await fulfillJson(route, {
+          key: "player-ana-oficial", kind: "player", ownerUsername: "ana", data: characterData
+        });
+        return;
+      }
+      if (pathname === "/api/characters/player-ana-oficial" && request.method() === "PUT") {
+        puts.push(request.postDataJSON());
+        await fulfillJson(route, {
+          key: "player-ana-oficial", kind: "player", ownerUsername: "ana", data: characterData
+        });
+        return;
+      }
+      await fulfillJson(route, { error: `Nao mockado: ${pathname}` }, 404);
+    });
+
+    await page.addInitScript(api => {
+      window.ARMAGEDON_CONFIG = { apiBaseUrl: api, realtimeEnabled: false };
+      localStorage.clear();
+      localStorage.setItem("tc_session_token", "token-ana");
+      localStorage.setItem("tc_session", JSON.stringify({
+        username: "ana", role: "player", token: "token-ana", backend: true
+      }));
+    }, apiBaseUrl);
+
+    await page.goto(`${baseUrl}/ficha.html`);
+    return { puts };
+  }
+
+  test("ficha visivel mas ainda carregando nao aceita edicao", async ({ page }) => {
+    await abrirFichaLenta(page);
+
+    // showScreen("sheetScreen") acontece ANTES do await loadSheet: a tela
+    // aparece aqui, com os dados ainda em transito.
+    await expect(page.locator("#sheetScreen")).toBeVisible();
+
+    const estado = await page.evaluate(() => {
+      const tela = document.getElementById("sheetScreen");
+      const campo = document.getElementById("charName");
+      return {
+        marcada: tela?.getAttribute("data-sheet-loading"),
+        inerte: Boolean(tela?.inert),
+        valorAntes: campo?.value ?? null
+      };
+    });
+
+    expect(estado.marcada, "ficha em carregamento nao esta marcada").toBe("true");
+    expect(estado.inerte, "ficha em carregamento aceita interacao").toBe(true);
+  });
+
+  test("assim que a ficha fica editavel, o autosave ja esta armado", async ({ page }) => {
+    const { puts } = await abrirFichaLenta(page);
+
+    // Espera a ficha ficar realmente utilizavel (dados carregados).
+    await expect(page.locator("#charName")).toHaveValue("Ana Rubra", { timeout: 8000 });
+    await expect(page.locator("#sheetScreen")).not.toHaveAttribute("data-sheet-loading", "true");
+
+    // Primeira edicao do usuario: tem que virar gravacao. Se o autosave
+    // ainda nao estivesse ligado, este PUT nunca sairia.
+    await page.locator("#vidaAtual").fill("7");
+    await expect.poll(() => puts.some(p => p?.data?.vidaAtual === "7"), { timeout: 6000 }).toBe(true);
+  });
+
+  test("a bandeja de dados responde assim que a ficha aparece", async ({ page }) => {
+    await abrirFichaLenta(page);
+    await expect(page.locator("#sheetScreen")).toBeVisible();
+
+    // Modulo puramente de UI: nao depende dos dados da ficha, entao tem que
+    // estar armado antes do await, e nao depois.
+    const armado = await page.evaluate(() => {
+      const btn = document.getElementById("openDiceTrayBtn");
+      if (!btn) return "botao ausente";
+      return btn.dataset.armed === "1" ? "armado" : "sem dono";
+    });
+    expect(armado, "botao de dados visivel porem morto durante o carregamento").toBe("armado");
+  });
+});

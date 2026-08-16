@@ -19,6 +19,9 @@ npm run check:js
 # Check for broken references, missing files, duplicate IDs in HTML
 npm run audit:static
 
+# Check that every open pendency lives in DEV_STATUS.md "Pendencias Vivas"
+npm run audit:pendencias
+
 # Build static artifact for GitHub Pages → _site/
 npm run build:pages
 
@@ -112,6 +115,14 @@ Scripts load via `<script src="...">` tags in order. **Script order in `ficha.ht
 | Worker, D1, routes, Cloudflare deploy | `cloudflare/README.md` |
 
 The pre-commit hook (`tools/install-obsidian-hooks.ps1`) auto-updates `docs/obsidian/10-SNAPSHOT-AUTOMATICO.md` on every commit.
+
+### One list of open pendencies
+
+**Every open pendency lives in the `## Pendencias Vivas` section at the top of `DEV_STATUS.md` — nowhere else.** Etapa blocks narrate what happened; they do not open pendencies. Closing an item means deleting it from that list and recording the closure in the etapa block that closed it.
+
+Why: until 2026-08-16 each etapa wrote its own pendencies inside its own block, in a file that grows top-down, and nothing ever forced a later etapa to go back and close them. The result was 28 mentions scattered across 9 places in 6 formats, several dead for weeks — one listed "Etapa 7: player moves own token" as pending with the "Etapa Concluida — Etapa 7" section directly below it on the same screen. The `.md` rule above already existed and still failed four times, so this one is enforced by `npm run audit:pendencias`, not by memory.
+
+Run it with the other checks before finishing an etapa. Historical blocks are exempt only when the heading itself carries a closure marker (`~~struck~~`, `FECHADA`, `RESOLVIDA`, `CUMPRIDA`, `MOVIDA`, `HISTORICO`) plus the date it was verified.
 
 ---
 

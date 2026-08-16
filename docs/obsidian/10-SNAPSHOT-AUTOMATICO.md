@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-16 02:28:47 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-16 03:04:00 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,23 +13,24 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `eca1572 2026-08-02 fix(mesa): rolagem do jogador morria no portao de versao de cena (Etapa 80)`
+- Ultimo commit: `36373a2 2026-08-16 fix(mesa): controles mortos durante o boot (Etapas 81-82)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
+M  CLAUDE.md
 M  DEV_STATUS.md
 M  VISUAL_RULES.md
-M  css/mesa.css
+M  css/ficha.css
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-core.js
-M  js/mesa-dice.js
-M  js/mesa-drawing.js
-M  js/mesa-map.js
-M  js/mesa-select.js
-M  mesa.html
-M  tests/mesa-audit.spec.cjs
+M  ficha.html
+M  js/ficha-dice.js
+M  js/ficha-init.js
+M  js/ficha-sheet.js
+M  package.json
+M  tests/ficha.spec.cjs
+A  tools/audit-pendencias.cjs
 M  tools/build-pages.cjs
 ```
 
@@ -43,16 +44,17 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ### Arquivos Em Stage
 
 ```text
+CLAUDE.md
 DEV_STATUS.md
 VISUAL_RULES.md
-css/mesa.css
-js/mesa-core.js
-js/mesa-dice.js
-js/mesa-drawing.js
-js/mesa-map.js
-js/mesa-select.js
-mesa.html
-tests/mesa-audit.spec.cjs
+css/ficha.css
+ficha.html
+js/ficha-dice.js
+js/ficha-init.js
+js/ficha-sheet.js
+package.json
+tests/ficha.spec.cjs
+tools/audit-pendencias.cjs
 tools/build-pages.cjs
 ```
 

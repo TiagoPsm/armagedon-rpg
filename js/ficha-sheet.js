@@ -272,7 +272,37 @@ async function openSheet(target, fromMaster) {
   updateSheetHeader(fromMaster);
   applySheetKindUI(resolvedTarget.kind);
   showScreen("sheetScreen");
-  await loadSheet(resolvedTarget.key, resolvedTarget.kind);
+
+  // Trava de carregamento (Etapa 83). showScreen poe a ficha na tela ANTES
+  // de os dados chegarem: sem esta trava ela ficava visivel e editavel
+  // enquanto o loadSheet vinha da rede, e o que o usuario digitasse era
+  // DESCARTADO no momento em que a resposta preenchia os campos — sem
+  // aviso, e sem autosave para salvar (ele so arma depois, em ficha-init).
+  //
+  // A saida NAO e armar o autosave mais cedo: um `input` durante a carga
+  // gravaria o formulario vazio por cima da ficha real. A saida e nao
+  // aceitar edicao no que ainda nao esta pronto.
+  setSheetLoading(true);
+  try {
+    await loadSheet(resolvedTarget.key, resolvedTarget.kind);
+  } finally {
+    // finally: se a carga falhar, a ficha nao pode ficar travada para sempre.
+    setSheetLoading(false);
+  }
+}
+
+/** Marca/desmarca a ficha como "carregando". `inert` bloqueia clique E foco
+ *  por teclado; o atributo e o gancho de CSS e de teste. */
+function setSheetLoading(carregando) {
+  const tela = document.getElementById("sheetScreen");
+  if (!tela) return;
+  if (carregando) {
+    tela.setAttribute("data-sheet-loading", "true");
+    tela.inert = true;
+  } else {
+    tela.removeAttribute("data-sheet-loading");
+    tela.inert = false;
+  }
 }
 
 function updateSheetHeader(fromMaster) {

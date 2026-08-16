@@ -2,6 +2,33 @@
  * ficha.css — Ficha do Personagem (Master + Sheet + Modais)
  * ============================================================ */
 
+/* ── FICHA AINDA CARREGANDO (Etapa 83) ──────────────────────────
+ * openSheet() mostra a tela ANTES de os dados chegarem. Enquanto isso o
+ * JS marca data-sheet-loading e poe `inert` (bloqueia clique e foco por
+ * teclado). Aqui entra a parte visual: a ficha precisa PARECER que ainda
+ * nao esta pronta, senao ela so fica misteriosamente sem reagir.
+ * Sem animacao de fundo — a direcao visual do projeto nao usa. */
+#sheetScreen[data-sheet-loading] {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+#sheetScreen[data-sheet-loading]::after {
+  content: "Carregando ficha…";
+  position: fixed;
+  left: 50%;
+  bottom: var(--sp-6, 1.5rem);
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(200, 70, 60, 0.32);
+  border-radius: 999px;
+  background: rgba(18, 10, 10, 0.92);
+  color: rgba(255, 248, 236, 0.86);
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  z-index: 40;
+}
+
 /* ── LAYOUTS DE PÁGINA ──────────────────────────────────────── */
 
 .page-main-master,

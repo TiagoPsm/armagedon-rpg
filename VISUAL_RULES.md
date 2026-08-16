@@ -484,6 +484,14 @@ Regra geral, nascida do desenho que ficava morto durante o boot da Mesa: **se um
 - **`data-armed="1"` (Etapa 82)**: todo modulo marca os botoes que arma. Handler delegado nao aparece no elemento, entao sem o marcador a garantia "este botao tem dono" nao e verificavel. Botao visivel e habilitado sem `data-armed` nem `onclick` inline e um no-op silencioso — o teste de barra reprova.
 - Controle que nasce `hidden` **nao** cai nesta regra: oculto nao promete nada. O problema e prometer e nao cumprir.
 
+### Tela que ainda carrega nao pode aceitar edicao (Etapa 83)
+
+Extensao da mesma regra para formularios. A Ficha aparecia inteira e editavel enquanto os dados vinham da rede: quem digitasse perdia o texto quando a resposta preenchia os campos.
+
+- Enquanto carrega: `data-sheet-loading="true"` + `inert` no container. `inert` e o que importa — `pointer-events: none` sozinho ainda deixa entrar por Tab.
+- Sempre com **sinal visivel**: opacidade reduzida, `cursor: progress` e uma etiqueta dizendo o que esta acontecendo (`#sheetScreen[data-sheet-loading]::after` em css/ficha.css). Bloquear sem avisar troca um bug por outro — a tela fica so misteriosamente sem reagir.
+- Destravar sempre em `finally`: carga que falha nao pode deixar a tela travada para sempre.
+
 ## O Que Evitar
 
 - excesso de ornamento
