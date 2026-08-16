@@ -115,10 +115,18 @@ html {
   overflow: hidden;
 }
 
-.vtt-tb-btn:hover,
+.vtt-tb-btn:hover:not(:disabled),
 .vtt-layer-btn:hover {
   background: rgba(255, 255, 255, 0.05);
   color: rgba(255, 248, 236, 0.78);
+}
+
+/* Botao de barra ainda nao armado (modulo em boot): a UI nao pode parecer
+ * clicavel enquanto o clique nao faz nada. Vale para qualquer .vtt-tb-btn
+ * que nasca `disabled` — hoje o do desenho. */
+.vtt-tb-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* Ferramentas de interação — carmesim */

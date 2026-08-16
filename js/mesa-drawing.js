@@ -114,6 +114,18 @@ function initMesaDrawing() {
   _buildColorPicker();
   _restoreDrawings();
   _bindDrawingsPresence();
+
+  // A partir daqui o desenho existe de verdade. O botao nasce `disabled` no
+  // mesa.html justamente para nao mentir durante o boot: enquanto os
+  // listeners nao estao no canvas, clicar no lapis nao faria nada e o
+  // usuario nao teria como saber. `data-draw-ready` no wrap e o gancho de
+  // teste e de CSS para o mesmo fato.
+  const toggle = document.getElementById("mesaDrawToggleBtn");
+  if (toggle) {
+    toggle.disabled = false;
+    toggle.dataset.armed = "1";   // contrato da Etapa 82
+  }
+  document.getElementById("mesaStageWrap")?.setAttribute("data-draw-ready", "true");
 }
 
 // ── Persistência local dos traços ──────────────────────────────────

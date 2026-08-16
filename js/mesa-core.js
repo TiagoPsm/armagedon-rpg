@@ -240,20 +240,35 @@ async function initMesaPage() {
   // Busca fichas faltantes do backend em background (não bloqueia o render)
   hydrateAllMesaSheetSnapshots().catch(() => {});
 
+  // O desenho arma ANTES do mapa, e de proposito. initMesaMap() abre o
+  // IndexedDB e restaura a imagem da sessao anterior — um await que dura
+  // centenas de ms. Com o init do desenho depois dele existia uma janela em
+  // que o palco ja estava pintado e a barra de ferramentas visivel, mas
+  // nenhum listener de mousedown existia: o mestre clicava no lapis,
+  // arrastava, e o traco nao nascia. Sem erro, sem toast, sem sintoma.
+  // Aqui e o ponto mais cedo possivel: precisa vir depois de hydrateState
+  // (que marca _sceneDrawingsApplied, senao o restore do localStorage
+  // atropelaria os tracos da cena oficial) e depois de bindMesaRealtime
+  // (que publica window.APP para _bindDrawingsPresence). O canvas se
+  // redimensiona sozinho quando o mapa chegar: initMesaDrawing instala um
+  // ResizeObserver no #mesaStageInner.
+  if (typeof initMesaDrawing === "function") {
+    initMesaDrawing();
+  }
+
+  // Selecionar/Mover pelo mesmo motivo (Etapa 82): initMesaSelect() liga os
+  // cliques dos botoes [data-interaction-tool], que estao visiveis na barra
+  // desde o HTML. Atras do await do mapa eles eram dois botoes mortos.
+  if (typeof initMesaSelect === "function") {
+    initMesaSelect();
+  }
+
   // Inicializa o módulo de mapa após o render inicial:
   // abre IndexedDB, restaura mapa da sessão anterior e registra
   // listeners de presença / WebRTC. É seguro chamar aqui porque
   // window.APP já está conectado via bindMesaRealtime() acima.
   if (typeof initMesaMap === "function") {
     await initMesaMap();
-  }
-
-  if (typeof initMesaDrawing === "function") {
-    initMesaDrawing();
-  }
-
-  if (typeof initMesaSelect === "function") {
-    initMesaSelect();
   }
 
   // Sincroniza a UI de iniciativa com o estado restaurado da cena (painel,

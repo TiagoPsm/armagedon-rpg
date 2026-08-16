@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="css/tokens.css?v=2026-06-14-echos-1" />
   <link rel="stylesheet" href="css/reset.css?v=2026-06-12-cache-fix-1" />
   <link rel="stylesheet" href="css/components.css?v=2026-06-12-modal-stack-1" />
-  <link rel="stylesheet" href="css/mesa.css?v=2026-08-02-dados-1" />
+  <link rel="stylesheet" href="css/mesa.css?v=2026-08-16-drawboot-1" />
   <link rel="stylesheet" href="css/mesa-stage.css?v=2026-08-02-dados-1" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-06-16-fullbleed-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-06-16-master-vital-card-1" />
@@ -185,7 +185,9 @@
 
       <!-- Botão único de desenho — abre flyout com as ferramentas -->
       <div class="vtt-tb-tools">
-        <button class="vtt-tb-btn" id="mesaDrawToggleBtn"
+        <!-- Nasce desabilitado: so initMesaDrawing() liga os listeners do
+             canvas, e ate la o botao seria um no-op silencioso. -->
+        <button class="vtt-tb-btn" id="mesaDrawToggleBtn" disabled
                 title="Ferramentas de desenho" aria-expanded="false" aria-haspopup="true">
           <svg class="vtt-tb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -785,16 +787,16 @@
   <script src="js/mesa-roster.js?v=2026-08-02-permissoes-1" defer></script>
   <script src="js/mesa-inspector.js?v=2026-08-02-permissoes-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
-  <script src="js/mesa-core.js?v=2026-08-02-sync-1" defer></script>
-  <script src="js/mesa-map.js?v=2026-08-02-permissoes-1" defer></script>
+  <script src="js/mesa-core.js?v=2026-08-16-armados-1" defer></script>
+  <script src="js/mesa-map.js?v=2026-08-16-armados-1" defer></script>
   <script src="js/mesa-grid.js?v=2026-07-31-cells-1" defer></script>
   <script src="js/mesa-fog.js?v=2026-07-29-sharp-1" defer></script>
   <script src="js/mesa-scenes.js?v=2026-07-27-scenes-1" defer></script>
   <script src="js/mesa-ping.js?v=2026-07-27-ping-1" defer></script>
   <script src="js/mesa-ruler.js?v=2026-07-27-ruler-1" defer></script>
-  <script src="js/mesa-dice.js?v=2026-08-02-dados-1" defer></script>
-  <script src="js/mesa-drawing.js?v=2026-08-02-autoria-1" defer></script>
-  <script src="js/mesa-select.js?v=2026-08-02-exclusivo-1" defer></script>
+  <script src="js/mesa-dice.js?v=2026-08-16-armados-1" defer></script>
+  <script src="js/mesa-drawing.js?v=2026-08-16-drawboot-1" defer></script>
+  <script src="js/mesa-select.js?v=2026-08-16-armados-1" defer></script>
   <script src="js/mesa-initiative.js?v=2026-08-02-sync-1" defer></script>
   <!-- Depois de mesa-stage.js (whitelist/toggle) e mesa-inspector.js (linha do inspetor) -->
   <script src="js/mesa-markers.js?v=2026-07-30-markers-1" defer></script>
@@ -890,6 +892,13 @@
         });
         showPanel(toolBtn.dataset.tool);
       }
+    });
+
+    // O delegado acima ja escuta estes botoes: marca-los como armados
+    // (Etapa 82) para a rede de seguranca do teste enxergar handler
+    // delegado, que nao aparece nem como onclick inline nem no elemento.
+    document.querySelectorAll(".vtt-tb-btn[data-tool]").forEach(function (b) {
+      b.dataset.armed = "1";
     });
 
     // Inicializar com camada TOKENS + painel de cena

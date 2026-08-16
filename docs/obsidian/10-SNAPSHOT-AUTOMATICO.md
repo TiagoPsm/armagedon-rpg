@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-02 23:32:53 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-16 02:28:47 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,19 +13,24 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `fbb1c0f 2026-08-02 feat(mesa): refaz os Dados da Mesa e cria a doca esquerda (Etapa 79)`
+- Ultimo commit: `eca1572 2026-08-02 fix(mesa): rolagem do jogador morria no portao de versao de cena (Etapa 80)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
 M  DEV_STATUS.md
-M  SYSTEM_RULES.md
+M  VISUAL_RULES.md
+M  css/mesa.css
  M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  js/mesa-core.js
-M  js/mesa-initiative.js
+M  js/mesa-dice.js
+M  js/mesa-drawing.js
+M  js/mesa-map.js
+M  js/mesa-select.js
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
+M  tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -39,11 +44,16 @@ docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 
 ```text
 DEV_STATUS.md
-SYSTEM_RULES.md
+VISUAL_RULES.md
+css/mesa.css
 js/mesa-core.js
-js/mesa-initiative.js
+js/mesa-dice.js
+js/mesa-drawing.js
+js/mesa-map.js
+js/mesa-select.js
 mesa.html
 tests/mesa-audit.spec.cjs
+tools/build-pages.cjs
 ```
 
 ## Paginas Principais
@@ -140,7 +150,7 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
     0,73 MB  debug.log
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js
     0,61 MB  node_modules\playwright-core\lib\vite\traceViewer\assets\defaultSettingsView-GTWI-W_B.js
-    0,48 MB  _site\js\mesa-page.bundle.js
+    0,50 MB  _site\js\mesa-page.bundle.js
     0,45 MB  node_modules\playwright-core\lib\utilsBundleImpl\index.js
 ```
 

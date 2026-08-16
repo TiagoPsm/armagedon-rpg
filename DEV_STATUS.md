@@ -30,7 +30,123 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-02 — Etapa 80: rolagem do jogador nao chegava ao mestre)
+## Ultima Etapa Concluida (2026-08-16 — Etapa 82: varredura do boot, "nenhum controle mente")
+
+Generalizacao da Etapa 81. Se o desenho ficava morto atras do `await initMesaMap()`, a pergunta seguinte e obrigatoria: **quem mais?** Varredura de todos os controles da Mesa contra o momento em que sao armados.
+
+### Inventario
+
+| Controle | Armado em | Janela morta? |
+|---|---|---|
+| Selecionar / Mover | `initMesaSelect()`, **apos** `await initMesaMap()` | **SIM** — visiveis no HTML desde o primeiro paint |
+| Zoom (`+` / `−` / reset / slider) e pan do palco | `bindZoomControl()` / `bindMapInteractions()`, **dentro** do `initMesaMap()` depois de `openMesaMapDB()` + `restoreActiveMap()` | **SIM** |
+| Desenho | `initMesaDrawing()` | Nao (corrigido na Etapa 81) |
+| Dados | `initMesaDice()` no `DOMContentLoaded` | Nao |
+| Nevoa | `initMesaFog()` no `DOMContentLoaded` | Nao |
+| Iniciativa | `onclick` inline, vale no load do script | Nao |
+| Escalacao (`[data-tool]`) | delegado inline no `mesa.html` | Nao |
+| Camadas DM / Mapa | dentro do `initMesaMap()`, mas nascem `hidden` | Nao mente — oculto nao promete nada |
+
+### O que mudou (codigo)
+
+- **`initMesaSelect()` subiu para antes do `await initMesaMap()`** (js/mesa-core.js). Ele liga os cliques de `[data-interaction-tool]`; atras do await eram dois botoes mortos na barra.
+- **`bindMapInteractions()` e `bindZoomControl()` subiram para o topo do `initMesaMap()`**, antes dos dois awaits (js/mesa-map.js). So precisam do DOM. Com um mapa grande restaurando, os botoes de zoom estavam na tela sem efeito e o palco nao respondia a roda nem a arrasto.
+- **Convencao `data-armed="1"`**: todo modulo marca os botoes que arma (`initMesaSelect`, `initMesaDrawing`, `initMesaDice`, e o delegado de `[data-tool]` no mesa.html). Handler delegado nao aparece no elemento e `getEventListeners` so existe no DevTools — sem o marcador, a garantia "este botao tem dono" nao e verificavel por teste.
+
+### Os testes (bloco novo "Boot: nenhum controle da Mesa mente")
+
+Todos rodam com `atrasarBootDoMapa()`, o helper extraido da Etapa 81 que segura o `onsuccess` do `indexedDB.open` por 1,5s e reproduz "mestre com mapa grande restaurando".
+
+1. `Selecionar e Mover respondem no instante em que a Mesa aparece` — **falhava** antes.
+2. `o zoom do palco responde no instante em que a Mesa aparece` — **falhava** antes.
+3. `nenhum botao visivel da barra fica sem resposta` — rede ampla sobre `.vtt-tb-btn`; **falhava** antes.
+4. `os Dados abrem no instante em que a Mesa aparece` — passa nos dois lados **de proposito**: e guarda de regressao para impedir que `initMesaDice` seja movido para dentro do boot assincrono.
+5. `a Nevoa ja esta inicializada quando a Mesa aparece` — idem. Aqui a assercao NAO e um clique: os botoes de nevoa moram no painel de configuracoes, que nasce fechado, entao nao ha controle visivel mentindo. A invariante honesta e o canvas de nevoa ter saido do 300x150 intrinseco.
+
+O teste 5 comecou errado: a primeira versao clicava no botao de nevoa e exigia um sinal que eu tinha inventado. Ele falhou, e a investigacao mostrou que o botao nem visivel estava (`offsetParent` nulo). Assercao trocada pela invariante real — registrado aqui porque o erro foi meu, nao do codigo.
+
+### Verificacao
+
+Os 3 testes que cobram bug real foram rodados **contra o codigo antigo e falharam**; os 2 de regressao passaram dos dois lados, como esperado. Verde: `check:js` (47), `audit:static`, `test:mesa:audit` (**147**), `test:mesa` (5), `test:mesa:permissoes` (15), `test:mesa:tokens` (10), `test:ficha` (29), `perf:mesa` (1).
+
+No navegador (servidor local, sessao de mestre): Selecionar → `data-interaction-mode="select"`, Mover → `"move"`, zoom 1 → 1,1, nenhum `.vtt-tb-btn` visivel sem dono, console limpo.
+
+Cache-bust `2026-08-16-armados-1` em `js/mesa-core.js`, `js/mesa-map.js`, `js/mesa-select.js`, `js/mesa-dice.js` + `MESA_BUNDLE_VERSION`. **Sem deploy**: e tudo cliente.
+
+### Arquivos alterados
+
+- `js/mesa-core.js` — `initMesaSelect()` antes do await do mapa
+- `js/mesa-map.js` — interacao do palco antes dos awaits
+- `js/mesa-select.js`, `js/mesa-dice.js`, `js/mesa-drawing.js` — marcador `data-armed`
+- `mesa.html` — marcador nos `[data-tool]` + cache-bust
+- `tools/build-pages.cjs` — `MESA_BUNDLE_VERSION`
+- `tests/mesa-audit.spec.cjs` — helper `atrasarBootDoMapa` extraido + bloco novo com 5 testes
+- `DEV_STATUS.md`, `VISUAL_RULES.md`
+
+## Etapa Anterior (2026-08-16 — Etapa 81: desenho morto durante o boot + limpeza de pendencias)
+
+Rodada de conferencia do estado do projeto. As suites completas foram executadas, as pendencias antigas foram conferidas CONTRA O CODIGO em vez de contra a memoria do documento, e o unico teste vermelho acabou revelando um **bug real de producao**.
+
+### O bug: janela em que a Mesa parece pronta e o desenho nao existe
+
+O teste `traco novo nasce na camada compartilhada e vai para a rede` falhava de forma reproduzivel na suite completa e passava sozinho. A primeira leitura foi "flake de teste" e a primeira correcao foi errada: **fazer o teste esperar o modulo armar**. Isso e adaptar o teste ao site. O Tiago recusou, e com razao — teste existe para cobrar a necessidade, nao para se moldar ao que o codigo faz hoje.
+
+- **Diagnostico**: no `mousedown` o `#mesaDrawCanvas` estava com **300x150**, o tamanho intrinseco do elemento. Prova de que `_resizeDrawCanvas()` nunca correu, ou seja, `initMesaDrawing()` ainda nao tinha executado. Sem init nao ha `addEventListener("mousedown", _onDrawStart)`: `_isDrawing` fica `false` e o traco morre antes de nascer.
+- **Causa raiz (js/mesa-core.js)**: `initMesaDrawing()` estava **depois do `await initMesaMap()`**, que abre o IndexedDB e restaura a imagem do mapa da sessao anterior. Entre `renderAll()` (palco pintado, tokens na tela, barra de desenho visivel desde o HTML) e o fim daquele await existia uma janela real em que **o mestre clicava no lapis, arrastava, e nada acontecia** — sem erro, sem toast, sem cursor diferente. Quanto maior o mapa salvo, maior a janela.
+- **Nao era hipotese de teste**: o ambiente de teste e que escondia o problema. Sem mapa salvo, `initMesaMap()` volta na hora e a janela fecha rapido demais para qualquer assercao — foi por isso que o bug sobreviveu desde a Etapa 73.
+
+### O que mudou (codigo, nao teste)
+
+- **`initMesaDrawing()` subiu para antes do `await initMesaMap()`** (js/mesa-core.js). E o ponto mais cedo correto: precisa vir depois de `hydrateState` (que marca `_sceneDrawingsApplied`, senao o restore do localStorage atropelaria os tracos da cena oficial) e depois de `bindMesaRealtime` (que publica `window.APP` para `_bindDrawingsPresence`). O canvas se redimensiona sozinho quando o mapa chega: o init instala um `ResizeObserver` no `#mesaStageInner`.
+- **O botao de desenho nasce `disabled` no `mesa.html`** e so e liberado no fim de `initMesaDrawing()`, junto com `data-draw-ready="true"` no `#mesaStageWrap`. Fecha a janela residual (antes de `renderAll`, durante auth + as 3 requests): enquanto o modulo nao arma, a UI **nao finge** estar armada. Se o boot morrer antes do init, o botao fica desabilitado para sempre — que e a verdade.
+- **`.vtt-tb-btn:disabled`** (css/mesa.css): opacidade 0.4 e cursor normal; o `:hover` da barra passou a exigir `:not(:disabled)`. Vale para qualquer botao de barra que nasca desarmado, nao so o do desenho.
+
+### Os testes agora cobram a garantia, nao descrevem o codigo
+
+- O `beforeEach` dos dois blocos de desenho voltou a esperar **so os tokens renderizarem** — a definicao de "a Mesa apareceu" para o usuario. A espera artificial que eu tinha adicionado foi removida.
+- **Teste novo `com o mapa lento, o desenho ja esta armado quando a Mesa aparece`**: torna a lentidao DETERMINISTICA no ponto exato onde ela existe em producao — um `addInitScript` embrulha `indexedDB.open` e atrasa so o `onsuccess` em 1,5s, reproduzindo "mestre com mapa grande restaurando do IndexedDB". Depois espera o primeiro token e exige `data-draw-ready`, botao habilitado, canvas dimensionado **e um traco que nasce de verdade**.
+- **Teste novo `antes de armar, o botao de desenho nasce desabilitado no HTML`**: le o HTML servido sem executar script, que e o estado que o usuario ve durante o boot.
+
+### Verificacao
+
+O teste novo foi rodado **contra o codigo antigo primeiro e falhou** com a mensagem certa (`desenho nao armou antes do mapa`, recebido `null`); com o fix, passou. Vale registrar que a versao anterior do teste — a que so olhava o relogio, sem o atraso injetado — **passava contra o codigo quebrado**: foi ela que provou que "asserir a coisa certa" nao basta se o teste nao reproduz a condicao real.
+
+Verde: `check:js` (47), `audit:static`, `test:mesa:audit` (**142**), `test:mesa` (5), `test:mesa:permissoes` (15), `test:mesa:tokens` (10). No navegador (sessao local de mestre, servidor em :8000): antes de logar, botao `disabled` com opacidade 0.4 e `data-draw-ready` ausente; com a Mesa carregada, botao habilitado, `data-draw-ready="true"`, canvas em 932x655 e um traco de linha criado com sucesso. Console limpo.
+
+Cache-bust `2026-08-16-drawboot-1` em `js/mesa-core.js`, `js/mesa-drawing.js` e `css/mesa.css` (mesa.html) + `MESA_BUNDLE_VERSION` em `tools/build-pages.cjs`. **Sem deploy**: e tudo cliente.
+
+### Pendencias antigas que ja estavam mortas no codigo (fechadas neste registro)
+
+Estavam escritas como abertas mais abaixo no arquivo, mas a conferencia mostrou que o codigo ja as resolveu:
+
+- **"handles de resize podem inverter a caixa"** (bug medio da auditoria da Etapa 34) — as alcas foram refeitas nas Etapas 63/71. `npm run test:mesa:tokens` passa 10/10, incluindo o teste das 8 alcas exatamente nos cantos e meios em qualquer escala.
+- **"payload PUT sem limite de tamanho"** (mesmo relatorio) — existe: `readJson()` em `cloudflare/src/auth.js` checa `content-length` E o texto lido contra `READ_JSON_DEFAULT_MAX_BYTES` (16 KB) e devolve 413.
+- **"specs de `test:ficha` esperam a UI antiga"** (registrada em 2026-06-07, quando 6 falhavam) — passam 29/29.
+- **"rodada com 2 janelas reais via WebSocket de producao"** (citada nas Etapas 38/41/50) — fechada na propria Etapa 51 (deploy final + smoke em producao).
+
+### Pendencias que continuam abertas
+
+- ~~**Drift de zoom durante o drag de token**~~ — **FECHADO** (conferido em 2026-08-16). A pendencia era da Etapa 34 (2026-06-30) e a **Etapa 39 (2026-07-11) ja tinha corrigido**: `updateDragPosition` recaptura o `stageRect` a cada frame e guarda o agarre como fracao do token. O documento e que nunca foi atualizado. Ha cobertura para os dois casos em `tests/mesa-audit.spec.cjs`: zoom aplicado ANTES do drag e zoom alterado NO MEIO do drag. O segundo foi verificado como guarda real — removendo a recaptura do rect, ele fica vermelho.
+- **Teto de tamanho do token com a grade ligada** — o token para por volta de 800% por causa do `_gridMaxCells` (metade do menor lado do mapa). **Nao e bug: e decisao de regra do Tiago**, e continua esperando a decisao dele.
+- **`npm run test:mesa:online`** — smoke contra o site publicado. Nao e bug: exige `ARMAGEDON_SITE_URL`, `ARMAGEDON_API_BASE_URL`, `ARMAGEDON_MASTER_USERNAME/PASSWORD` e `ARMAGEDON_PLAYER_USERNAME/PASSWORD` no ambiente (mais `ARMAGEDON_ONLINE_RELAY_PROBE=1` para a sonda de realtime). Sem as credenciais o spec se pula sozinho.
+
+**Com isso o relatorio da auditoria da Etapa 34 esta 100% fechado** — os 11 bugs mais os 3 de severidade media/baixa.
+
+### Resto da bateria
+
+`test:ficha` (29) e `perf:mesa` (1) tambem verdes na conferencia.
+
+### Arquivos alterados
+
+- `js/mesa-core.js` — `initMesaDrawing()` antes do `await initMesaMap()`
+- `js/mesa-drawing.js` — libera o botao e marca `data-draw-ready` no fim do init
+- `mesa.html` — botao de desenho nasce `disabled` + cache-bust
+- `css/mesa.css` — `.vtt-tb-btn:disabled` e `:hover:not(:disabled)`
+- `tools/build-pages.cjs` — `MESA_BUNDLE_VERSION`
+- `tests/mesa-audit.spec.cjs` — 2 testes novos (mapa lento, botao desabilitado no HTML); espera artificial removida dos `beforeEach`
+- `DEV_STATUS.md`, `VISUAL_RULES.md` — este registro
+
+## Etapa Anterior (2026-08-02 — Etapa 80: rolagem do jogador nao chegava ao mestre)
 
 **Sintoma** (Tiago, com print): na fase de rolagem, o mestre via a propria linha resolvida mas a rolagem dos jogadores nunca aparecia — ficava em "aguardando…" para sempre. Sem erro no console, sem toast, sem nada.
 
@@ -696,7 +812,7 @@ Auditoria medida (nao estimada) da Mesa com o VTT completo. O achado grave: **a 
 - Cache-bust: mesa-core.js e mesa-drawing.js -> `?v=2026-07-28-audit50-1`; `MESA_BUNDLE_VERSION` idem.
 - Deploy do Worker: version `0dc8151d-b91e-4ce7-8eb3-5dfeba73ec33` (dry-run antes; health 200). Compativel com cliente antigo: o full-state continua aceito.
 - Validacao: test:mesa:audit 83/83, test:mesa 5/5, test:ficha 28/28, perf:mesa OK, check:js OK, audit:static OK, build:pages OK.
-- Pendencia: rodada real com 2 janelas (mestre + jogador logados) desenhando ao vivo — Etapa 51.
+- ~~Pendencia: rodada real com 2 janelas (mestre + jogador logados) desenhando ao vivo — Etapa 51.~~ **CUMPRIDA na Etapa 51** (deploy final + smoke em producao).
 
 ## Etapa Concluida (2026-07-27 — Etapa 49: Multiplas cenas — frontend)
 
@@ -898,7 +1014,7 @@ Segunda etapa do plano "Mesa Virtual -> VTT completo" (Etapas 37-51). Os desenho
 - **Testes** (tests/mesa-audit.spec.cjs, describe "Desenhos fim-a-fim (Etapa 38)", suite 25 -> 31): normalizacao no Worker (caps/whitelist/lapis), GET filtra dm por papel (mock D1), guarda de fonte do DO (o modulo importa `cloudflare:workers` e nao roda em Node — teste unitario real do DO fica para a Etapa 41), payload + assinatura de dedupe, jogador aplica desenhos da cena no boot sem mestre online (e nunca ve dm), mestre recebe delta de jogador + persiste + preserva dm local. O teste antigo "bug 4" migrou para o fluxo real (`_broadcastDrawings` em vez de `_persistDrawings`) porque a cena passou a ser a fonte de verdade no F5.
 - Cache-bust: mesa-core.js, mesa-drawing.js e mesa-stage.js -> `?v=2026-07-10-drawings-sync-1` (mesa.html); `MESA_BUNDLE_VERSION` -> `2026-07-10-drawings-sync-1`.
 - Validacao: check:js OK (39), audit:static OK, test:mesa:audit 31/31 (na 1a execucao o flake conhecido do "bug 2" reapareceu sob carga e ficou verde isolado/na re-execucao — mesmo comportamento registrado na Etapa 37), test:mesa 5/5, perf:mesa OK. Preview verificado nos dois papeis (localhost:8000, deltas simulados): MESTRE — desenha publico+secreto, snapshot/payload carregam ambos, delta de jogadora entra e persiste, F5 restaura os 3 tracos; JOGADOR — cena com traco dm forjado renderiza SO o publico no canvas, console limpo.
-- Pendencia da etapa: teste unitario real do DO (relay + filtro dm) na Etapa 41; rodada com 2 janelas reais via WebSocket de producao na Etapa 51.
+- ~~Pendencia da etapa: teste unitario real do DO (relay + filtro dm) na Etapa 41; rodada com 2 janelas reais via WebSocket de producao na Etapa 51.~~ **CUMPRIDAS** nas Etapas 41 e 51.
 
 ## Etapa Concluida (2026-07-10 — Etapa 37: Iniciativa fim-a-fim)
 
@@ -912,7 +1028,7 @@ Primeira etapa do plano "Mesa Virtual -> VTT completo" (Etapas 37-51, plano apro
 - Cache-bust: mesa-core.js e mesa-initiative.js -> `?v=2026-07-10-initiative-sync-1` (mesa.html); `MESA_BUNDLE_VERSION` -> `2026-07-10-initiative-sync-1`.
 - Validacao: check:js OK (39), audit:static OK, test:mesa:audit 25/25 (2a execucao; na 1a o teste pre-existente "bug 2" falhou por flake sob carga paralela — passa isolado e na re-execucao; observar), test:mesa 5/5. Worker deployado: version ID `9c7c6056-b75b-4187-b6b8-78dc7f215e45`, health 200 (ver cloudflare/README.md).
 - Verificado no preview (localhost:8000, deltas simulados via applyMesaRealtimeDelta): MESTRE — ativar combate acende botao INIC. + painel, rolagem legitima da ana entra na ordem (17) e persiste no snapshot, rolagem forjada (ana declarando bruno) descartada, F5 restaura combate ativo com ordem e controles; JOGADOR — update remoto mostra banner "Combate iniciado" + painel sem controles de mestre, clique no banner abre popup com nome/mod corretos (Agilidade 6 -> +2), rolar emite mesa:initiative:roll com characterKey proprio. Console limpo nos dois papeis.
-- Pendencia da etapa: rodada de iniciativa com 2 janelas REAIS via WebSocket de producao (mestre + jogador logados) — sera exercitada na sessao real da Etapa 51.
+- ~~Pendencia da etapa: rodada de iniciativa com 2 janelas REAIS via WebSocket de producao (mestre + jogador logados) — sera exercitada na sessao real da Etapa 51.~~ **CUMPRIDA na Etapa 51.**
 
 ## Etapa Concluida (2026-07-07 — Etapa 36: Mesa igual para todos — cena auto-suficiente + mapa persistente)
 
@@ -995,6 +1111,7 @@ Apos auditoria completa da Mesa (5 frentes via agentes), corrigidos os bugs crit
 - Validacao: `check:js` (41 arquivos OK), `audit:static` OK, `build:pages` OK, `test:mesa` 5/5 verde. Verificado manualmente no preview: mestre ve os 3 botoes de camada, jogador so ve TOKENS (MESTRE e MAPA ficam `hidden`), console limpo nos dois papeis.
 - Criado `docs/ROTEIRO_TESTE_MESA.md` com checklist manual cobrindo todas as funcionalidades da Mesa para teste humano.
 - **Pendente**: bugs de severidade media/baixa do relatorio (drift de zoom em drag, handles de resize podem inverter caixa, payload PUT sem limite de tamanho) ficam para uma proxima rodada se o Tiago priorizar.
+  - **Atualizacao (Etapas 81-82, 2026-08-16)**: ~~handles de resize podem inverter caixa~~ resolvido nas Etapas 63/71 (coberto por `test:mesa:tokens`, 10/10); ~~payload PUT sem limite de tamanho~~ resolvido — `readJson()` em `cloudflare/src/auth.js` corta em 16 KB com 413; ~~drift de zoom em drag~~ resolvido na Etapa 39 e coberto por dois testes (zoom antes do drag e zoom no meio do drag). **Nada aberto: este relatorio esta fechado.**
 
 ## Arquitetura Atual
 
@@ -1446,7 +1563,7 @@ Pendencias abertas:
 ### Validacoes
 - npm run check:js: OK / npm run audit:static: OK
 - Teste manual via preview (API simulada fora do ar): sessao backend e PRESERVADA, pagina bloqueia com aviso, ficha/mesa redirecionam para o index; login sem flag de dev mostra "Servidor indisponivel"; com a flag entra em modo Navegador
-- npm run test:ficha / test:mesa: 24/28 e 3/5 passam. As 6 falhas sao PRE-EXISTENTES (confirmado rodando os mesmos specs no HEAD limpo via git stash): os testes esperam layout/campos antigos do painel do jogador (ex.: attrForca, data-player-item-field) removidos pelas simplificacoes de 2026-06-06/07. Pendencia aberta: atualizar os specs para a UI atual.
+- npm run test:ficha / test:mesa: 24/28 e 3/5 passam. As 6 falhas sao PRE-EXISTENTES (confirmado rodando os mesmos specs no HEAD limpo via git stash): os testes esperam layout/campos antigos do painel do jogador (ex.: attrForca, data-player-item-field) removidos pelas simplificacoes de 2026-06-06/07. ~~Pendencia aberta: atualizar os specs para a UI atual.~~ — **RESOLVIDA** (conferido na Etapa 81, 2026-08-16: `test:ficha` passa 29/29 e `test:mesa` 5/5).
 
 ## Ultima Etapa Concluida (2026-06-10 — Etapa 1 da auditoria: seguranca do Worker)
 

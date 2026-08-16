@@ -474,6 +474,16 @@ Arquivos visuais atuais da Mesa:
 - Na ficha do monstro, a secao "Drop de Echo" reaproveita os componentes de rolagem do drop de memoria (`memory-roll-*`) para manter consistencia
 - Token de Echo na Mesa usa a cor `--token-echo` (roxo) e o rotulo de tipo "Echos"
 
+## Controle Desarmado Nao Pode Parecer Armado (Etapa 81)
+
+Regra geral, nascida do desenho que ficava morto durante o boot da Mesa: **se um controle ainda nao faz nada, ele nao pode ter aparencia de clicavel.** Um botao que responde ao hover e ao clique sem nenhum efeito e pior do que um botao apagado — o usuario culpa a si mesmo, tenta de novo, e nao tem como saber que o modulo ainda esta carregando.
+
+- Botao de barra que depende de um modulo assincrono nasce `disabled` no HTML e e liberado pelo `init` do proprio modulo. Se o boot falhar, ele fica desabilitado — que e a verdade.
+- `.vtt-tb-btn:disabled` (css/mesa.css): opacidade 0.4, cursor normal. O `:hover` da barra exige `:not(:disabled)`, senao o botao apagado ainda acende sob o cursor.
+- O estado tem um gancho legivel para teste e para CSS: `data-draw-ready="true"` no `#mesaStageWrap` quando o desenho arma.
+- **`data-armed="1"` (Etapa 82)**: todo modulo marca os botoes que arma. Handler delegado nao aparece no elemento, entao sem o marcador a garantia "este botao tem dono" nao e verificavel. Botao visivel e habilitado sem `data-armed` nem `onclick` inline e um no-op silencioso — o teste de barra reprova.
+- Controle que nasce `hidden` **nao** cai nesta regra: oculto nao promete nada. O problema e prometer e nao cumprir.
+
 ## O Que Evitar
 
 - excesso de ornamento

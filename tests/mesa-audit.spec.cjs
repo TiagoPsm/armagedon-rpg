@@ -52,6 +52,37 @@ async function waitForMesaSettled(page) {
   await page.waitForFunction(() => typeof state !== "undefined" && state.bootCompleted === true);
 }
 
+/* Torna o boot da Mesa LENTO de forma deterministica, no ponto exato onde a
+ * lentidao existe em producao (Etapas 81-82).
+ *
+ * initMesaPage() pinta o palco em renderAll() e so DEPOIS chama
+ * `await initMesaMap()`, que abre o IndexedDB e restaura a imagem do mapa da
+ * sessao anterior. Em producao esse await dura centenas de ms com um mapa
+ * grande; no ambiente de teste, sem mapa salvo, ele volta na hora — e por
+ * isso que a familia de bugs "controle visivel porem morto" sobreviveu tanto
+ * tempo sem nenhum teste vermelho.
+ *
+ * openMesaMapDB() (js/mesa-map.js) para no indexedDB.open, entao basta
+ * segurar o onsuccess dele. O upgrade passa direto: atrasa-lo faria a
+ * transacao de versao expirar.
+ *
+ * Chamar ANTES do goto/reload que se quer observar. */
+function atrasarBootDoMapa(page, atrasoMs = 1500) {
+  return page.addInitScript(atraso => {
+    const abrirDeVerdade = indexedDB.open.bind(indexedDB);
+    indexedDB.open = (...args) => {
+      const req = abrirDeVerdade(...args);
+      return {
+        get result() { return req.result; },
+        get error()  { return req.error; },
+        set onupgradeneeded(fn) { req.onupgradeneeded = fn; },
+        set onerror(fn)         { req.onerror = fn; },
+        set onsuccess(fn)       { req.onsuccess = e => setTimeout(() => fn(e), atraso); }
+      };
+    };
+  }, atrasoMs);
+}
+
 function seedMasterWithScene(page, tokens) {
   return page.addInitScript(sceneTokens => {
     // addInitScript roda de novo em CADA navegação (inclusive reload):
@@ -4954,6 +4985,10 @@ test.describe("Desenho no palco (Etapa 73)", () => {
   test.beforeEach(async ({ page }) => {
     const baseUrl = await getMesaBaseUrl();
     await page.goto(`${baseUrl}/mesa.html`);
+    // De proposito NAO espera o modulo de desenho: a garantia que estes
+    // testes cobram e "quando a Mesa aparece, desenhar funciona". Se voltar
+    // a existir uma janela em que o palco esta pintado e o desenho ainda
+    // nao arma, este beforeEach tem que denunciar (Etapa 81).
     await page.locator("#mesaStage .mesa-token").first().waitFor();
   });
 
@@ -5022,6 +5057,60 @@ test.describe("Desenho no palco (Etapa 73)", () => {
     await expect(token).toHaveClass(/is-selected/);
   });
 
+  /* Etapa 81: a barra de desenho nao pode mentir durante o boot.
+   * initMesaDrawing() ficava DEPOIS do `await initMesaMap()` (IndexedDB +
+   * restauracao da imagem), entao havia uma janela real em que o palco
+   * estava pintado, o lapis clicavel e nenhum listener existia: clicar e
+   * arrastar nao produzia traco nenhum, sem erro nem aviso. Estes dois
+   * testes fecham as duas metades: enquanto nao arma, o botao esta
+   * desabilitado; quando a Mesa aparece, o desenho ja esta vivo. */
+  test("com o mapa lento, o desenho ja esta armado quando a Mesa aparece", async ({ page }) => {
+    await atrasarBootDoMapa(page);
+    await page.reload();
+    // Espera exatamente o que o USUARIO ve como "a Mesa esta pronta": tokens
+    // no palco. Nao espera o boot inteiro de proposito.
+    await page.locator("#mesaStage .mesa-token").first().waitFor();
+
+    const pronto = await page.evaluate(() => {
+      const canvas = document.getElementById("mesaDrawCanvas");
+      const r = canvas.getBoundingClientRect();
+      return {
+        marcado: document.getElementById("mesaStageWrap").getAttribute("data-draw-ready"),
+        botaoLigado: !document.getElementById("mesaDrawToggleBtn").disabled,
+        // 300x150 e o tamanho intrinseco do <canvas>: se ainda esta assim,
+        // _resizeDrawCanvas() nunca correu e o modulo nao inicializou.
+        canvasDimensionado: r.width > 0 && r.height > 0 && !(r.width === 300 && r.height === 150)
+      };
+    });
+    expect(pronto.marcado, "desenho nao armou antes do mapa").toBe("true");
+    expect(pronto.botaoLigado, "lapis clicavel porem morto").toBe(true);
+    expect(pronto.canvasDimensionado, "canvas ainda no tamanho intrinseco").toBe(true);
+
+    // E desenhar tem que FUNCIONAR agora, nao so parecer pronto.
+    const traco = await page.evaluate(() => {
+      _strokes = [];
+      setDrawTool("line");
+      const canvas = document.getElementById("mesaDrawCanvas");
+      const r = canvas.getBoundingClientRect();
+      const ev = (t, x, y) => new MouseEvent(t, { clientX: x, clientY: y, bubbles: true, button: 0 });
+      canvas.dispatchEvent(ev("mousedown", r.left + 30, r.top + 30));
+      window.dispatchEvent(ev("mousemove", r.left + 120, r.top + 90));
+      window.dispatchEvent(ev("mouseup", r.left + 120, r.top + 90));
+      setDrawTool(null);
+      return _strokes.length;
+    });
+    expect(traco, "com o mapa ainda carregando, o traco nao nasceu").toBe(1);
+  });
+
+  test("antes de armar, o botao de desenho nasce desabilitado no HTML", async ({ page }) => {
+    // Le o HTML servido, sem executar script nenhum: e o estado que o
+    // usuario ve enquanto o boot corre.
+    const html = await (await page.request.get(page.url())).text();
+    const tag = html.match(/<button[^>]*id="mesaDrawToggleBtn"[^>]*>/);
+    expect(tag, "botao de desenho sumiu do mesa.html").not.toBeNull();
+    expect(tag[0]).toContain("disabled");
+  });
+
   test("traco novo nasce na camada compartilhada e vai para a rede", async ({ page }) => {
     const result = await page.evaluate(async () => {
       const calls = [];
@@ -5045,11 +5134,107 @@ test.describe("Desenho no palco (Etapa 73)", () => {
   });
 });
 
+/* ── Etapa 82: nenhum controle da Mesa pode mentir durante o boot ────
+ *
+ * Generalizacao da Etapa 81. La o desenho ficava morto atras do
+ * `await initMesaMap()`; a pergunta obvia em seguida e "quem mais?".
+ * Estes testes cobram a MESMA garantia para o resto da barra: no instante
+ * em que a Mesa aparece para o usuario (tokens no palco), todo controle
+ * visivel e habilitado tem que responder de verdade.
+ *
+ * Todos rodam com o boot do mapa atrasado (atrasarBootDoMapa): sem isso o
+ * ambiente de teste boota rapido demais e o teste passa por sorte, sem
+ * provar nada — foi exatamente o que aconteceu na primeira versao do teste
+ * da Etapa 81. */
+test.describe("Boot: nenhum controle da Mesa mente (Etapa 82)", () => {
+  test.beforeEach(async ({ page }) => {
+    const baseUrl = await getMesaBaseUrl();
+    await atrasarBootDoMapa(page);
+    await page.goto(`${baseUrl}/mesa.html`);
+    // Espera exatamente o que o USUARIO le como "a Mesa esta pronta".
+    // Nao esperar o boot inteiro e o ponto do teste.
+    await page.locator("#mesaStage .mesa-token").first().waitFor();
+  });
+
+  test("Selecionar e Mover respondem no instante em que a Mesa aparece", async ({ page }) => {
+    const wrap = page.locator("#mesaStageWrap");
+
+    await page.locator("#mesaSelectToolBtn").click();
+    await expect(wrap, "botao Selecionar visivel porem morto").toHaveAttribute("data-interaction-mode", "select");
+    await expect(page.locator("#mesaSelectToolBtn")).toHaveAttribute("aria-pressed", "true");
+
+    await page.locator("#mesaMoveToolBtn").click();
+    await expect(wrap, "botao Mover visivel porem morto").toHaveAttribute("data-interaction-mode", "move");
+    await expect(page.locator("#mesaMoveToolBtn")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("o zoom do palco responde no instante em que a Mesa aparece", async ({ page }) => {
+    const antes = await page.evaluate(() => _stageZoom);
+    await page.locator("#mesaZoomIn").click();
+    const depois = await page.evaluate(() => _stageZoom);
+    expect(depois, "botao de zoom visivel porem morto").toBeGreaterThan(antes);
+  });
+
+  test("os Dados abrem no instante em que a Mesa aparece", async ({ page }) => {
+    // Ja correto hoje (initMesaDice roda no DOMContentLoaded, fora do boot
+    // assincrono). O teste existe para IMPEDIR que alguem mova esse init
+    // para dentro do boot e reabra a janela morta.
+    await expect(page.locator("#mesaDicePanel")).toBeHidden();
+    await page.locator("#mesaDiceBtn").click();
+    await expect(page.locator("#mesaDicePanel"), "botao de Dados visivel porem morto").toBeVisible();
+  });
+
+  test("a Nevoa ja esta inicializada quando a Mesa aparece", async ({ page }) => {
+    // Diferente dos outros: os botoes de nevoa moram DENTRO do painel de
+    // configuracoes de mapa, que nasce fechado — nao ha controle visivel
+    // mentindo aqui, entao clicar neles nao provaria nada sobre o boot.
+    // A invariante honesta e "o modulo armou": initMesaFog() (DOMContentLoaded)
+    // chama _resizeFogCanvas(), entao o canvas sai do 300x150 intrinseco.
+    // Este teste tranca o contrato: mover initMesaFog para dentro do boot
+    // assincrono volta a quebrar.
+    const fog = await page.evaluate(() => {
+      const canvas = document.getElementById("mesaFogCanvas");
+      if (!canvas) return null;
+      const r = canvas.getBoundingClientRect();
+      return { w: Math.round(r.width), h: Math.round(r.height) };
+    });
+    expect(fog, "canvas de nevoa sumiu do mesa.html").not.toBeNull();
+    expect(
+      fog.w > 0 && fog.h > 0 && !(fog.w === 300 && fog.h === 150),
+      `nevoa nao inicializou: canvas em ${fog.w}x${fog.h}`
+    ).toBe(true);
+  });
+
+  test("nenhum botao visivel da barra fica sem resposta", async ({ page }) => {
+    // Rede de seguranca ampla: qualquer .vtt-tb-btn visivel e habilitado
+    // tem que ter QUEM o escute quando a Mesa aparece — seja listener
+    // registrado, seja onclick inline. Um botao sem nenhum dos dois e um
+    // no-op silencioso, que e a assinatura desta familia de bugs.
+    const mudos = await page.evaluate(() => {
+      const fora = [];
+      document.querySelectorAll(".vtt-tb-btn").forEach(btn => {
+        if (btn.hidden || btn.disabled || !btn.offsetParent) return;
+        const temInline = Boolean(btn.getAttribute("onclick"));
+        // getEventListeners nao existe fora do DevTools: o sinal possivel
+        // aqui e o marcador que cada modulo deixa ao armar.
+        const temMarcador = btn.dataset.armed === "1";
+        if (!temInline && !temMarcador) fora.push(btn.id || btn.className);
+      });
+      return fora;
+    });
+    expect(mudos, `botoes visiveis sem handler: ${mudos.join(", ")}`).toEqual([]);
+  });
+});
+
 /* ── Etapa 74: uma ferramenta armada por vez + teto de tracos ─────── */
 test.describe("Ferramentas exclusivas e teto de tracos (Etapa 74)", () => {
   test.beforeEach(async ({ page }) => {
     const baseUrl = await getMesaBaseUrl();
     await page.goto(`${baseUrl}/mesa.html`);
+    // De proposito NAO espera o modulo de desenho: a garantia que estes
+    // testes cobram e "quando a Mesa aparece, desenhar funciona". Se voltar
+    // a existir uma janela em que o palco esta pintado e o desenho ainda
+    // nao arma, este beforeEach tem que denunciar (Etapa 81).
     await page.locator("#mesaStage .mesa-token").first().waitFor();
   });
 

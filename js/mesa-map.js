@@ -498,6 +498,14 @@ async function initMesaMap() {
       : session?.role === "master";
     mesaMapState.myUserId   = session?.username || session?.userId || `user-${Date.now()}`;
 
+    // Interacao do palco ANTES dos awaits (Etapa 82). Estas duas so precisam
+    // do DOM, e ficavam depois de openMesaMapDB() + restoreActiveMap(): com
+    // um mapa grande restaurando, os botoes de zoom estavam na tela e mortos,
+    // e o palco nao respondia a roda nem a arrasto. Mesma familia do desenho
+    // na Etapa 81 — controle visivel que nao faz nada e nao avisa.
+    bindMapInteractions();
+    bindZoomControl();
+
     mesaMapState.db = await openMesaMapDB();
     // Jogador em modo backend não restaura mapa local: a cena oficial
     // (e o realtime) são a fonte de verdade — evita mapa antigo no F5
@@ -507,8 +515,6 @@ async function initMesaMap() {
     }
     await _restoreConnectedFolder();
     bindMesaMapPresence();
-    bindMapInteractions();
-    bindZoomControl();
     _observeStageResize();
 
     if (mesaMapState.isMaster) {

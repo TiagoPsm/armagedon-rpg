@@ -478,6 +478,7 @@ function initMesaDice() {
   _dicePanelBound = true;
 
   button.addEventListener("click", () => _toggleMesaDicePanel());
+  button.dataset.armed = "1";   // contrato da Etapa 82
   document.getElementById("mesaDiceCloseBtn")?.addEventListener("click", () => _toggleMesaDicePanel(false));
   document.getElementById("mesaDiceCollapseBtn")?.addEventListener("click", _toggleMesaDiceCollapsed);
 

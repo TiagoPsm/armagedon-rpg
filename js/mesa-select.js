@@ -474,6 +474,8 @@ function initMesaSelect() {
     btn.classList.toggle("is-active", active);
     btn.setAttribute("aria-pressed", String(active));
     btn.addEventListener("click", () => setInteractionMode(btn.dataset.interactionTool));
+    // Marca o contrato "este botao tem dono" (Etapa 82).
+    btn.dataset.armed = "1";
   });
   wrap.dataset.interactionMode = _interactionMode ?? "";
 
