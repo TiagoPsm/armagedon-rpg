@@ -329,7 +329,16 @@ function bindEvents() {
 
   // Deselect ao clicar em espaço vazio — usa 'click' em vez de 'mousedown'
   // para não conflitar com pan (arrastar não dispara 'click' no browser).
-  stage?.addEventListener("click", function(event) {
+  //
+  // Vive no WRAP, não no #mesaStage (Etapa 86). O stage ganhou
+  // `pointer-events: none` na Etapa 73 para o desenho voltar a funcionar:
+  // desde então nenhum clique em espaço vazio chegava aqui e o deselect
+  // estava morto — a caixa de seleção com as alças ficava presa no token
+  // até que outro fosse selecionado. Regressão silenciosa; ninguém cobria
+  // "clicar fora desmarca". O wrap recebe ponteiro (é quem faz pan e
+  // desenho), então o clique chega, e as guardas abaixo continuam valendo.
+  const stageWrap = document.getElementById("mesaStageWrap");
+  stageWrap?.addEventListener("click", function(event) {
     if (window._mesaStagePanMoved) return;
     if (typeof getMesaActiveLayer === "function" && getMesaActiveLayer() !== "tokens") return;
     const tokenElement = event.target.closest?.("[data-token-id]");
@@ -339,6 +348,14 @@ function bindEvents() {
     const previousTokenId = state.selectedTokenId;
     state.selectedTokenId = "";
     updateStageTokenSelection(previousTokenId, "");
+    // Desmarcar tambem grava (Etapa 87). Selecionar ja gravava — selectToken()
+    // chama persistState() — e desmarcar nao: a cena salva continuava dizendo
+    // "ana selecionada" depois do clique fora, e era essa cena velha que
+    // voltava no F5 e no eco do servidor. Sem bumpMesaSceneVersion: a versao
+    // ordena mutacoes de cena, e selecao nao e mutacao de cena (para o jogador,
+    // um bump aqui carimbaria Date.now() no relogio local e faria ele descartar
+    // os deltas seguintes do mestre como "atrasados").
+    if (typeof persistState === "function") persistState();
     scheduleMesaRender({ inspector: true });
   });
 
@@ -815,7 +832,13 @@ function applyMesaTokenUpsertDelta(payload) {
     state.tokens = [...state.tokens, mergedToken];
   }
 
-  state.selectedTokenId = String(payload?.selectedTokenId || state.selectedTokenId || mergedToken.id);
+  // A selecao NAO viaja no delta (Etapa 87). Todo envelope carrega o
+  // selectedTokenId de quem enviou (createMesaRealtimeEnvelope), entao a linha
+  // antiga — `state.selectedTokenId = payload.selectedTokenId || ... ||
+  // mergedToken.id` — deixava o mestre marcar token na tela do jogador, e, com
+  // ninguem selecionado dos dois lados, o fallback marcava o token recem
+  // chegado. Selecao e estado de tela de cada cliente; cena e o que se
+  // compartilha.
   return true;
 }
 
@@ -892,8 +915,15 @@ async function applyRemoteMesaSceneSnapshot(remoteData) {
 
     state.scenePersistence = "remote";
     state.sceneRemoteExists = true;
-    localStorage.setItem(mesaSceneStorageKey(), JSON.stringify(remoteData));
-    applyMesaSceneSnapshot(remoteData);
+    // O cache local guarda a cena remota com a selecao DESTE cliente (Etapa 87).
+    // Gravar `remoteData` cru trocava a selecao pela do emissor no localStorage:
+    // o estado ao vivo ficava certo e o F5 seguinte ressuscitava o token do
+    // outro. Mesma regra do keepSelection abaixo, uma camada mais embaixo.
+    localStorage.setItem(mesaSceneStorageKey(), JSON.stringify({
+      ...remoteData,
+      selectedTokenId: state.selectedTokenId
+    }));
+    applyMesaSceneSnapshot(remoteData, { keepSelection: true });
     lastPersistedMesaSceneSignature = remoteSignature;
     lastRemoteMesaSceneSignature = remoteSignature;
 
@@ -1816,7 +1846,13 @@ async function handleMesaSceneSwitch(payload) {
   if (typeof window.refreshMesaScenesUI === "function") window.refreshMesaScenesUI();
 }
 
-function applyMesaSceneSnapshot(saved) {
+/**
+ * @param {object} saved  cena a aplicar
+ * @param {{keepSelection?: boolean}} options
+ *   keepSelection: preserva a selecao LOCAL em vez de adotar a da cena. Vale
+ *   para cena que chega em tempo real (Etapa 87) — ver applyRemoteMesaSceneSnapshot.
+ */
+function applyMesaSceneSnapshot(saved, options = {}) {
   const savedTokens = Array.isArray(saved?.tokens) ? saved.tokens : [];
   // hasExplicitSave = true quando o usuário já salvou a cena ao menos uma vez
   // (mesmo que vazia). Impede o auto-seed sobrescrever uma cena intencionalmente limpa.
@@ -1842,7 +1878,14 @@ function applyMesaSceneSnapshot(saved) {
     state.tokens = nextTokens;
   }
   state.sceneVersion = asPositiveInt(saved?.sceneVersion, state.sceneVersion);
-  state.selectedTokenId = pickInitialSelectedToken(saved?.selectedTokenId);
+  // Cena vinda da rede nao mexe na selecao de quem recebe (Etapa 87): o
+  // proprio mestre recebe de volta o eco da cena que acabou de gravar, e
+  // adotar a selecao dali desfazia, um instante depois, o clique no espaco
+  // vazio. No boot e na troca de cena a selecao salva vale — saneada por
+  // pickInitialSelectedToken, que nunca inventa uma.
+  state.selectedTokenId = options.keepSelection
+    ? state.selectedTokenId
+    : pickInitialSelectedToken(saved?.selectedTokenId);
 
   // Restaura estado de iniciativa.
   // ATENCAO (Etapa 77): quando o navegador serve os scripts do cache, o
@@ -1989,11 +2032,22 @@ function mergeTokenWithRoster(savedToken, rosterEntry) {
   };
 }
 
+/**
+ * Sanea a selecao SALVA — nao inventa nenhuma (Etapa 87).
+ *
+ * Ate aqui a linha final era `return visibleTokens[0].id`: como "" (nada
+ * selecionado) nao casa com token nenhum, toda cena aplicada sem selecao
+ * escolhia o primeiro token da lista. Era o mesmo defeito que a Etapa 86
+ * corrigiu em syncSelectedToken() — e que nao chegou aqui.
+ *
+ * O sintoma: o clique no espaco vazio desmarcava e, quando o eco da cena
+ * chegava do servidor, o token voltava a ficar marcado sozinho.
+ */
 function pickInitialSelectedToken(savedId) {
   const visibleTokens = getRenderedTokens();
   if (!visibleTokens.length) return "";
   if (visibleTokens.some(token => token.id === savedId)) return String(savedId);
-  return visibleTokens[0].id;
+  return "";
 }
 
 function getMesaSceneSignature(payload) {

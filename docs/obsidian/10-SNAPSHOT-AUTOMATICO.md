@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-16 03:18:45 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-16 22:03:19 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,23 +13,22 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `b44d57c 2026-08-16 fix(ficha): nao aceitar edicao no que ainda nao carregou + pendencia com dono unico (Etapa 83)`
+- Ultimo commit: `54449ee 2026-08-16 chore(controles): data-armed vira convencao do projeto (Etapa 84)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-M  CLAUDE.md
 M  DEV_STATUS.md
+M  SYSTEM_RULES.md
 M  VISUAL_RULES.md
- M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  css/mesa-stage.css
+M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  js/mesa-core.js
-M  js/mesa-map.js
-M  js/regras.js
+M  js/mesa-inspector.js
+M  js/mesa-stage.js
 M  mesa.html
-M  package.json
-M  regras.html
-A  tests/controles-armados.spec.cjs
+M  tests/mesa-audit.spec.cjs
 M  tools/build-pages.cjs
 ```
 
@@ -37,22 +36,21 @@ M  tools/build-pages.cjs
 
 ```text
 .claude/settings.local.json
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 ```
 
 ### Arquivos Em Stage
 
 ```text
-CLAUDE.md
 DEV_STATUS.md
+SYSTEM_RULES.md
 VISUAL_RULES.md
+css/mesa-stage.css
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 js/mesa-core.js
-js/mesa-map.js
-js/regras.js
+js/mesa-inspector.js
+js/mesa-stage.js
 mesa.html
-package.json
-regras.html
-tests/controles-armados.spec.cjs
+tests/mesa-audit.spec.cjs
 tools/build-pages.cjs
 ```
 
@@ -99,7 +97,6 @@ tools/build-pages.cjs
 [dir]  docs
 [dir]  js
 [dir]  node_modules
-[dir]  test-results
 [dir]  tests
 [dir]  tools
 [file] .gitignore

@@ -5329,3 +5329,388 @@ test.describe("Ferramentas exclusivas e teto de tracos (Etapa 74)", () => {
     expect(bytes).toBeLessThan(32 * 1024);
   });
 });
+
+/* ── Etapa 85: barra de vida simplificada no token do jogador ─────────
+ *
+ * Pedido do Tiago (referencia Roll20), item que estava enterrado como
+ * "pendente" desde a Etapa 64 e so reapareceu na varredura da Etapa 83.
+ *
+ * Regras decididas com ele:
+ *  - So em token de JOGADOR. NPC, monstro e Echo nao tem barra.
+ *  - ACIMA do token, dentro do proprio token (nao e overlay do palco).
+ *  - Simplificada: so a barra, sem numeros nem rotulo. Os numeros
+ *    continuam sendo assunto do inspetor.
+ *  - TODOS veem a de TODOS. Segue normalizeStatsVisibility (js/mesa-storage.js),
+ *    que ja retorna `true` incondicionalmente para token de jogador — e e o
+ *    que faz a barra valer a pena numa mesa compartilhada: ler a vida do
+ *    grupo de relance. Nao usa canViewDetailedTokenInfo, que e mais estrito
+ *    e serve ao inspetor (numeros), nao a barra.
+ */
+test.describe("Barra de vida no token do jogador (Etapa 85)", () => {
+  test("token de jogador mostra a barra, proporcional a vida, acima do avatar", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    // Semeado: ana 8/12, bruno 10/10.
+    const medidas = await page.evaluate(() => {
+      const ler = id => {
+        const token = document.querySelector(`.mesa-token[data-token-id="${id}"]`);
+        const barra = token?.querySelector(".mesa-token-life");
+        const preenchimento = barra?.querySelector(".mesa-token-life-fill");
+        const avatar = token?.querySelector(".mesa-token-avatar");
+        if (!token || !barra || !preenchimento || !avatar) return null;
+        return {
+          largura: preenchimento.style.width,
+          acimaDoAvatar: barra.getBoundingClientRect().bottom <= avatar.getBoundingClientRect().top + 1,
+          dentroDoToken: token.contains(barra),
+          semNumeros: !/\d/.test(barra.textContent || "")
+        };
+      };
+      return { ana: ler("ana"), bruno: ler("bruno") };
+    });
+
+    expect(medidas.ana, "token de jogador sem barra de vida").not.toBeNull();
+    expect(medidas.ana.largura).toBe("66.7%");     // 8/12
+    expect(medidas.ana.acimaDoAvatar, "barra nao esta acima do avatar").toBe(true);
+    expect(medidas.ana.dentroDoToken, "barra nao vive dentro do token").toBe(true);
+    expect(medidas.ana.semNumeros, "barra simplificada nao mostra numeros").toBe(true);
+    expect(medidas.bruno.largura).toBe("100%");    // 10/10
+  });
+
+  test("so token de jogador tem barra — NPC, monstro e Echo nao", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    // No nivel do render: imune a normalizacao de roster, e e exatamente
+    // onde a regra de tipo mora.
+    const temBarra = await page.evaluate(() => {
+      const base = { id: "x", name: "Alvo", initials: "AL", x: 10, y: 10, order: 1,
+                     tokenScale: 1, layer: "tokens", currentLife: 5, maxLife: 10 };
+      const resultado = {};
+      ["player", "npc", "monster", "echo"].forEach(tipo => {
+        resultado[tipo] = renderToken({ ...base, type: tipo }).includes("mesa-token-life");
+      });
+      return resultado;
+    });
+
+    expect(temBarra.player, "jogador deveria ter barra").toBe(true);
+    expect(temBarra.npc, "NPC nao pode ter barra").toBe(false);
+    expect(temBarra.monster, "monstro nao pode ter barra").toBe(false);
+    expect(temBarra.echo, "Echo nao pode ter barra").toBe(false);
+  });
+
+  test("jogador ve a barra do token de OUTRO jogador", async ({ page }) => {
+    await seedPlayerWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    // Sessao e da ana; o token do bruno e "do outro". A decisao do Tiago
+    // (Etapa 85) e que a vida do grupo fica a vista para todos.
+    const larguraDoOutro = await page.evaluate(() =>
+      document.querySelector('.mesa-token[data-token-id="bruno"] .mesa-token-life-fill')?.style.width ?? null
+    );
+    expect(larguraDoOutro, "jogador nao ve a barra do companheiro").toBe("100%");
+  });
+
+  test("a barra acompanha a mudanca de vida", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const depois = await page.evaluate(async () => {
+      const token = state.tokens.find(t => t.id === "ana");
+      token.currentLife = 3;            // 3/12 = 25%
+      renderAll();
+      await new Promise(r => requestAnimationFrame(() => r()));
+      return document.querySelector('.mesa-token[data-token-id="ana"] .mesa-token-life-fill')?.style.width ?? null;
+    });
+    expect(depois, "barra nao acompanhou a vida").toBe("25%");
+  });
+
+  test("vida zerada esvazia a barra sem sumir com ela", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const zerado = await page.evaluate(async () => {
+      const token = state.tokens.find(t => t.id === "ana");
+      token.currentLife = 0;
+      renderAll();
+      await new Promise(r => requestAnimationFrame(() => r()));
+      const barra = document.querySelector('.mesa-token[data-token-id="ana"] .mesa-token-life');
+      const fill = barra?.querySelector(".mesa-token-life-fill");
+      return { barraExiste: Boolean(barra), largura: fill?.style.width ?? null };
+    });
+    // A barra vazia comunica "caido"; sumir com ela comunicaria "sem dado".
+    expect(zerado.barraExiste).toBe(true);
+    expect(zerado.largura).toBe("0%");
+  });
+});
+
+/* ── Etapa 86: dois incomodos relatados pelo Tiago ────────────────────
+ *
+ * 1) "seleciono um token e clico para alterar as informacoes, e abre a
+ *    pagina de efeitos de estados". O botao do inspetor dizia so
+ *    "Editar", na secao "Acoes", ao lado de Centralizar e Retirar — lido
+ *    em voz alta e "editar o token". Ele abre o painel de MARCADORES.
+ *    A fiacao sempre esteve certa; o rotulo e que mentia.
+ *
+ * 2) Clicar no espaco vazio nao desmarcava o token. O handler de
+ *    deselect vive em `#mesaStage`, que ganhou `pointer-events: none` na
+ *    Etapa 73 para o desenho voltar a funcionar — desde entao o clique
+ *    nunca chega nele e a caixa de selecao com as alcas fica presa no
+ *    token ate que outro seja selecionado. Regressao silenciosa: nenhum
+ *    teste cobria "clicar fora desmarca".
+ */
+test.describe("Selecao e rotulos do inspetor (Etapa 86)", () => {
+  test("o botao que abre os marcadores diz que e de marcadores", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.locator('.mesa-token[data-token-id="ana"]').click();
+    const botao = page.locator("#tokenInspector .mesa-token-markers-btn.is-inspector");
+    await expect(botao).toBeVisible();
+
+    // O nome acessivel precisa dizer O QUE se edita. "Editar" sozinho,
+    // numa secao chamada "Acoes", promete editar o token.
+    const nome = ((await botao.getAttribute("aria-label")) || (await botao.textContent()) || "").toLowerCase();
+    expect(nome, `rotulo ambiguo no botao de marcadores: "${nome.trim()}"`).toContain("marcador");
+  });
+
+  test("clicar no espaco vazio do palco desmarca o token", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const token = page.locator('.mesa-token[data-token-id="ana"]');
+    await token.click();
+    await expect(token).toHaveClass(/is-selected/);
+
+    // Canto do palco, longe dos dois tokens (que estao em x=20 e x=60, y=20).
+    const palco = await page.locator("#mesaStageInner").boundingBox();
+    await page.mouse.click(palco.x + palco.width * 0.5, palco.y + palco.height * 0.85);
+
+    await expect(token, "token continuou selecionado depois do clique no vazio").not.toHaveClass(/is-selected/);
+    expect(await page.evaluate(() => state.selectedTokenId)).toBe("");
+  });
+
+  test("depois de desmarcar, a caixa de selecao e as alcas somem", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.locator('.mesa-token[data-token-id="ana"]').click();
+    const palco = await page.locator("#mesaStageInner").boundingBox();
+    await page.mouse.click(palco.x + palco.width * 0.5, palco.y + palco.height * 0.85);
+    // A opacidade tem transicao de 0.12s.
+    await page.waitForTimeout(300);
+
+    const estado = await page.evaluate(() => {
+      const t = document.querySelector('.mesa-token[data-token-id="ana"]');
+      const box = t.querySelector(".mesa-token-selbox");
+      const alca = t.querySelector(".mesa-token-handle");
+      return {
+        caixa: box ? getComputedStyle(box).opacity : null,
+        alcaPointer: alca ? getComputedStyle(alca).pointerEvents : null
+      };
+    });
+    expect(estado.caixa, "caixa de selecao ficou desenhada em token desmarcado").toBe("0");
+    expect(estado.alcaPointer, "alca continua clicavel em token desmarcado").toBe("none");
+  });
+
+  test("nenhuma selecao e um estado valido: o render nao inventa uma", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    // A causa-raiz do bug: syncSelectedToken caia em renderedTokens[0]
+    // sempre que o id nao casava — e "" nunca casa. Com dois tokens na cena,
+    // desmarcar jogava a selecao (e as alcas) para o PRIMEIRO da lista.
+    const depoisDeZerar = await page.evaluate(() => {
+      state.selectedTokenId = "";
+      renderAll();
+      return state.selectedTokenId;
+    });
+    expect(depoisDeZerar, "o render reinventou uma selecao").toBe("");
+
+    // Mas selecao APONTANDO PARA TOKEN QUE NAO EXISTE continua sendo limpa.
+    const depoisDeInvalida = await page.evaluate(() => {
+      state.selectedTokenId = "fantasma";
+      renderAll();
+      return state.selectedTokenId;
+    });
+    expect(depoisDeInvalida, "selecao orfa deveria ser limpa").toBe("");
+  });
+
+  test("clicar em OUTRO token troca a selecao, sem desmarcar no caminho", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.locator('.mesa-token[data-token-id="ana"]').click();
+    await page.locator('.mesa-token[data-token-id="bruno"]').click();
+
+    await expect(page.locator('.mesa-token[data-token-id="bruno"]')).toHaveClass(/is-selected/);
+    await expect(page.locator('.mesa-token[data-token-id="ana"]')).not.toHaveClass(/is-selected/);
+    expect(await page.evaluate(() => state.selectedTokenId)).toBe("bruno");
+  });
+});
+
+/* ============================================================
+ * Etapa 87 — "clicar fora desmarca e marca de novo".
+ *
+ * O clique estava certo; quem desfazia era a rede. Quatro defeitos
+ * independentes ressuscitavam a selecao depois do deselect local:
+ *
+ *   1. pickInitialSelectedToken caia em visibleTokens[0] quando o id
+ *      salvo nao casava — e "" nunca casa (mesmo defeito que a Etapa 86
+ *      corrigiu em syncSelectedToken e que nao chegou ate aqui);
+ *   2. applyMesaTokenUpsertDelta adotava o selectedTokenId do EMISSOR;
+ *   3. o handler de deselect nao persistia — selecionar gravava, desmarcar
+ *      nao, entao a cena salva continuava com o token marcado;
+ *   4. o mestre recebe de volta o eco da propria cena, e o snapshot remoto
+ *      impunha a selecao que vinha dele.
+ * ============================================================ */
+test.describe("Selecao nao volta sozinha (Etapa 87)", () => {
+  test("cena sem selecao nao inventa uma (defeito 1)", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const resultado = await page.evaluate(() => ({
+      semSelecao: pickInitialSelectedToken(""),
+      orfa: pickInitialSelectedToken("fantasma"),
+      valida: pickInitialSelectedToken("bruno")
+    }));
+
+    expect(resultado.semSelecao, "cena sem selecao marcou o primeiro token").toBe("");
+    expect(resultado.orfa, "selecao orfa marcou o primeiro token").toBe("");
+    expect(resultado.valida, "selecao salva valida deveria ser preservada").toBe("bruno");
+  });
+
+  test("delta de upsert nao carrega a selecao do emissor (defeito 2)", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const resultado = await page.evaluate(() => {
+      // Sem nada marcado: o delta do outro cliente nao pode marcar nada.
+      state.selectedTokenId = "";
+      applyMesaTokenUpsertDelta({ token: { ...state.tokens[0], x: 44 }, selectedTokenId: "ana" });
+      const semSelecao = state.selectedTokenId;
+
+      // Com algo marcado: a selecao alheia nao pode roubar a minha.
+      state.selectedTokenId = "bruno";
+      applyMesaTokenUpsertDelta({ token: { ...state.tokens[0], x: 45 }, selectedTokenId: "ana" });
+      return { semSelecao, comSelecao: state.selectedTokenId };
+    });
+
+    expect(resultado.semSelecao, "delta alheio marcou um token").toBe("");
+    expect(resultado.comSelecao, "delta alheio trocou minha selecao").toBe("bruno");
+  });
+
+  test("desmarcar grava a cena, igual a selecionar (defeito 3)", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.locator('.mesa-token[data-token-id="ana"]').click();
+    expect(await page.evaluate(() => state.selectedTokenId)).toBe("ana");
+
+    // Clique em espaco vazio do palco (tokens ficam na faixa de cima).
+    const caixa = await page.locator("#mesaStageWrap").boundingBox();
+    await page.mouse.click(caixa.x + caixa.width * 0.5, caixa.y + caixa.height * 0.8);
+
+    await expect
+      .poll(() => page.evaluate(() => {
+        flushPersistState();
+        return JSON.parse(localStorage.getItem("tc_virtual_mesa_mock_v1") || "{}").selectedTokenId;
+      }), { message: "a cena gravada continuou com o token marcado" })
+      .toBe("");
+    expect(await page.evaluate(() => state.selectedTokenId)).toBe("");
+  });
+
+  test("eco da cena nao ressuscita a selecao (defeito 4)", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const resultado = await page.evaluate(async () => {
+      state.selectedTokenId = "ana";
+      // Cena que o mestre acabou de gravar, com "ana" ainda marcada.
+      const eco = createMesaScenePayloadFromState();
+      // Clique fora: desmarca localmente.
+      state.selectedTokenId = "";
+      // O servidor devolve o eco da cena gravada um instante antes.
+      window.APP.__testEmit("mesa:scene", { data: eco });
+      await new Promise(resolve => setTimeout(resolve, 400));
+      const depoisDoEco = state.selectedTokenId;
+
+      // E o eco NAO pode ser descartado por inteiro: os tokens dele chegam.
+      const cena = createMesaScenePayloadFromState();
+      cena.sceneVersion = state.sceneVersion + 5;
+      cena.tokens = cena.tokens.map(token => token.id === "ana" ? { ...token, x: 77 } : token);
+      cena.selectedTokenId = "bruno";
+      window.APP.__testEmit("mesa:scene", { data: cena });
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      return {
+        depoisDoEco,
+        selecaoFinal: state.selectedTokenId,
+        posicaoChegou: state.tokens.find(token => token.id === "ana")?.x
+      };
+    });
+
+    expect(resultado.depoisDoEco, "o eco remarcou o token").toBe("");
+    expect(resultado.selecaoFinal, "a cena remota impos a selecao do emissor").toBe("");
+    expect(resultado.posicaoChegou, "a cena remota deixou de ser aplicada").toBe(77);
+  });
+
+  // Achado da validacao ao vivo: o estado ficava certo e o CACHE nao. A cena
+  // remota era gravada crua no localStorage, com a selecao do emissor dentro,
+  // e o F5 seguinte ressuscitava o token do outro. Mesmo defeito da linha de
+  // cima, uma camada abaixo — por isso tem teste proprio.
+  test("cena remota nao contamina a cena gravada (defeito 4, camada do cache)", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const gravado = await page.evaluate(async () => {
+      state.selectedTokenId = "";
+      const cena = createMesaScenePayloadFromState();
+      cena.sceneVersion = state.sceneVersion + 5;
+      cena.tokens = cena.tokens.map(token => token.id === "ana" ? { ...token, x: 80 } : token);
+      cena.selectedTokenId = "bruno";          // selecao do OUTRO cliente
+      window.APP.__testEmit("mesa:scene", { data: cena });
+      await new Promise(resolve => setTimeout(resolve, 400));
+      const cache = JSON.parse(localStorage.getItem("tc_virtual_mesa_mock_v1") || "{}");
+      return {
+        selecaoNoCache: cache.selectedTokenId,
+        posicaoNoCache: (cache.tokens || []).find(token => token.id === "ana")?.x
+      };
+    });
+
+    expect(gravado.selecaoNoCache, "o cache guardou a selecao do emissor — o F5 vai remarcar").toBe("");
+    expect(gravado.posicaoNoCache, "o cache deixou de receber a cena remota").toBe(80);
+  });
+});

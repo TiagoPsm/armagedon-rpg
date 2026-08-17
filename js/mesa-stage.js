@@ -1407,15 +1407,28 @@ function getRenderedTokens() {
   return state.tokens.filter(token => token.visibleToPlayers !== false && token.layer !== "dm");
 }
 
+/**
+ * Sanea a selecao — NAO escolhe por conta propria (Etapa 86).
+ *
+ * Antes, quando o id nao casava com nenhum token renderizado, esta funcao
+ * selecionava `renderedTokens[0]`. Como "" tambem nao casa com nada, "nada
+ * selecionado" era um estado IMPOSSIVEL: todo render reinventava uma
+ * selecao. O sintoma que o Tiago viu: clicar no espaco vazio desmarcava o
+ * token e o render seguinte jogava a selecao — e as alcas de
+ * redimensionamento junto — para o PRIMEIRO token da lista. Com um token na
+ * cena parecia que o clique nao fazia nada; com varios, as alcas sumiam do
+ * token dele e apareciam noutro.
+ *
+ * Agora: selecao que aponta para token inexistente (removido, oculto, movido
+ * para a camada dm) e LIMPA; nenhuma e inventada. No boot a Mesa comeca sem
+ * selecao, que e o certo — mostrar a ficha de alguem sem o mestre pedir era
+ * efeito colateral do mesmo bug.
+ */
 function syncSelectedToken() {
+  if (!state.selectedTokenId) return;   // "nada selecionado" e um estado valido
   const renderedTokens = getRenderedTokens();
-  if (!renderedTokens.length) {
-    state.selectedTokenId = "";
-    return;
-  }
-
   if (!renderedTokens.some(token => token.id === state.selectedTokenId)) {
-    state.selectedTokenId = renderedTokens[0].id;
+    state.selectedTokenId = "";
   }
 }
 
@@ -1833,6 +1846,35 @@ function renderToken(token) {
   return renderTokenMinimal(token);
 }
 
+/**
+ * Barra de vida simplificada acima do token (Etapa 85).
+ *
+ * SO em token de JOGADOR. NPC e monstro tem vida secreta por regra de mesa,
+ * e o Echo tem os proprios maximos geridos fora daqui — mostrar barra neles
+ * entregaria informacao que o mestre controla de proposito.
+ *
+ * TODOS veem a de TODOS: segue `normalizeStatsVisibility` (js/mesa-storage.js),
+ * que ja retorna `true` incondicionalmente para tipo "player". NAO usa
+ * `canViewDetailedTokenInfo`, que e mais estrito e existe para os NUMEROS do
+ * inspetor; a barra e leitura de relance da vida do grupo, sem numero nenhum.
+ *
+ * Sem `maxLife` nao ha o que desenhar — nesse caso nao renderiza, em vez de
+ * mostrar uma barra cheia mentirosa.
+ */
+function renderTokenLifeBar(token) {
+  if (!token || token.type !== "player") return "";
+  const max = Number(token.maxLife) || 0;
+  if (max <= 0) return "";
+  const atual = clamp(Number(token.currentLife) || 0, 0, max);
+  // Uma casa decimal: o suficiente para a barra nao "pular" entre valores
+  // proximos e ainda assim manter o atributo curto no DOM.
+  const pct = Math.round((atual / max) * 1000) / 10;
+  return `
+      <div class="mesa-token-life" role="presentation" aria-hidden="true">
+        <span class="mesa-token-life-fill" style="width:${pct}%"></span>
+      </div>`;
+}
+
 function renderTokenMinimal(token) {
   const hiddenForMaster = isTokenHiddenForMaster(token);
   const selectedClass = token.id === state.selectedTokenId ? "is-selected" : "";
@@ -1851,6 +1893,7 @@ function renderTokenMinimal(token) {
       data-type="${token.type}"
       style="left:${token.x}%; top:${token.y}%; z-index:${token.order || 1}; --token-scale:${scale};"
     >
+      ${renderTokenLifeBar(token)}
       <div class="mesa-token-avatar">
         ${token.imageUrl
           ? `<img src="${escapeAttribute(token.imageUrl)}" alt="${escapeAttribute(token.name)}" width="128" height="128" loading="lazy" decoding="async" draggable="false" />`

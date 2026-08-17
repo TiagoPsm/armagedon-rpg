@@ -124,9 +124,15 @@ function buildInspectorMarkerRow(token) {
       <div class="inspector-marker-chips">
         ${chips || `<span class="inspector-marker-empty">Nenhum</span>`}
       </div>
+      <!-- O rotulo precisa dizer O QUE se edita (Etapa 86). "Editar" sozinho,
+           numa secao chamada "Acoes" e ao lado de Centralizar/Retirar, era
+           lido como "editar as informacoes do token" — e abrir o painel de
+           marcadores parecia bug. A fiacao sempre esteve certa. -->
       <button type="button"
               class="mini-btn mesa-token-markers-btn is-inspector"
-              data-token-id="${escapeAttribute(token.id)}">Editar</button>
+              aria-label="Editar marcadores de status"
+              title="Marcadores de status (sangrando, atordoado...)"
+              data-token-id="${escapeAttribute(token.id)}">Editar marcadores</button>
     </div>
   `;
 }

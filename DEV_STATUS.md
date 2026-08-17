@@ -12,7 +12,6 @@ Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daq
 
 - **[Tiago]** Teto de tamanho do token com a grade ligada: o token para por volta de 800% por causa do `_gridMaxCells` (metade do menor lado do mapa). Nao e bug — e decisao de regra de jogo, e esta esperando voce. — aberta em 2026-07-31 (Etapa 71)
 - **[Tiago]** Credenciais do smoke em producao: `npm run test:mesa:online` precisa de `ARMAGEDON_SITE_URL`, `ARMAGEDON_API_BASE_URL` e usuario/senha de mestre e jogador no ambiente (mais `ARMAGEDON_ONLINE_RELAY_PROBE=1` para a sonda de realtime). Sem elas o spec se pula sozinho e nunca exercitamos producao de verdade. — aberta em 2026-08-16 (conferencia da Etapa 81)
-- **[Tiago]** Barra circular de HP em volta do token (referencia Roll20): registrada como "pendente" na Etapa 64 e **nunca feita** — conferido em 2026-08-16, nao existe `conic-gradient` nem anel de vida no CSS do palco. Descoberta pela varredura de pendencias; e decisao visual sua se ainda quer. — aberta em 2026-07-30 (Etapa 64)
 
 ## Regra Obrigatoria de Documentacao
 
@@ -42,7 +41,151 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-16 — Etapa 84: `data-armed` vira convencao do projeto)
+## Ultima Etapa Concluida (2026-08-16 — Etapa 87: a selecao voltava sozinha depois do clique fora)
+
+Relato do Tiago: "clico fora para deselecionar o token, ele desseleciona e depois seleciona de novo". A Etapa 86 tinha consertado o clique; o que sobrou nao estava no clique — **a rede desfazia o que ele fazia**, alguns centesimos depois.
+
+### Como o diagnostico foi feito
+
+Sem backend, o deselect funciona e **fica**: um teste com espiao em `state.selectedTokenId` mostrou uma unica escrita (`"ana" → ""`, mesa-core.js:349) e nada depois. Isso descartou o handler e apontou para os caminhos de rede. Cada suspeita virou um teste, e **quatro falharam** — quatro defeitos independentes, todos capazes de ressuscitar a selecao sozinhos.
+
+### Os quatro defeitos
+
+**1. `pickInitialSelectedToken` inventava selecao (a raiz).** Terminava em `return visibleTokens[0].id`: como `""` nao casa com nenhum id, **toda cena aplicada sem selecao marcava o primeiro token**. E o mesmo defeito que a Etapa 86 corrigiu em `syncSelectedToken` — e que nao chegou ate aqui. Agora saneia e devolve `""`; selecao salva valida continua sendo restaurada.
+
+**2. O delta de upsert impunha a selecao do emissor.** `applyMesaTokenUpsertDelta` fazia `state.selectedTokenId = payload.selectedTokenId || state.selectedTokenId || mergedToken.id`, e **todo envelope carrega o `selectedTokenId` de quem enviou** (`createMesaRealtimeEnvelope`). Resultado: o mestre marcava token na tela do jogador e, com ninguem selecionado dos dois lados, o fallback marcava o token recem chegado. A linha saiu: selecao e estado de tela de cada cliente.
+
+**3. Desmarcar nao gravava.** `selectToken()` chama `persistState()`; o handler de deselect nao chamava. Assimetria silenciosa: a cena salva continuava dizendo "ana selecionada" depois do clique fora — e era essa cena velha que voltava no F5 e no eco. Agora grava. **Sem `bumpMesaSceneVersion()` de proposito**: a versao ordena mutacao de cena, e selecao nao e mutacao de cena — para o jogador, um bump aqui carimbaria `Date.now()` no relogio local e faria ele descartar os deltas seguintes do mestre como "atrasados" (mesma armadilha da Etapa 80).
+
+**4. O cliente aplica o proprio eco.** O broadcast `mesa:scene` sai do Worker (`broadcastMesaScene`, cloudflare/src/index.js) **sem `clientId`** — so com `actor` — entao `applyRemoteMesaSceneMessage` nao tem como reconhecer o proprio eco, e o mestre recebe de volta a cena que acabou de gravar. O curto-circuito de assinatura deveria absorver, mas nao absorve: `selectedTokenId` faz parte da assinatura, e o deselect local e justamente o que faz as assinaturas divergirem. **Cena vinda da rede nao mexe mais na selecao de quem recebe** (`applyMesaSceneSnapshot(saved, { keepSelection: true })`) — o resto do snapshot continua sendo aplicado normalmente.
+
+**5. O cache gravado continuava contaminado (achado da validacao).** Com os quatro corrigidos, a validacao ao vivo encenou o cenario inteiro no Playwright — clique, eco, delta alheio, cena remota, F5 — e mostrou que **o estado ficava certo e o `localStorage` nao**: `applyRemoteMesaSceneSnapshot` gravava `remoteData` cru, com o `selectedTokenId` do emissor dentro. Ao vivo nada piscava; **o F5 seguinte ressuscitava o token do outro cliente**. E o mesmo defeito da correcao 4, uma camada abaixo. O cache agora guarda a cena remota com a selecao DESTE cliente.
+
+Registro do metodo: os quatro primeiros defeitos sairam de teste dirigido a hipotese; o quinto so apareceu **encenando o fluxo completo do usuario**, incluindo o F5. Teste por hipotese nao alcanca o que voce nao suspeitou.
+
+### A cadeia completa que ele via na tela
+
+Clica no token (persiste a cena com "ana" marcada) → clica fora (desmarca so na aba dele, defeito 3) → o eco da cena chega (defeito 4) → o snapshot traz "ana" (defeito 1) → marcado de novo.
+
+### O que ficou decidido
+
+**Selecao e estado de tela, nao conteudo da mesa.** Nenhum caminho de rede — delta ou snapshot — marca token na tela de quem recebe. O campo continua viajando no payload da cena (contrato do Worker e do D1 intacto), mas so serve ao boot do proprio cliente e a assinatura de dedupe. Tirar `selectedTokenId` da cena de vez resolveria a familia na origem e continua em aberto como decisao de contrato — nao foi feito aqui para nao mexer no Worker.
+
+### Verificacao
+
+Cinco testes novos em `tests/mesa-audit.spec.cjs` (bloco "Selecao nao volta sozinha (Etapa 87)"), **todos vermelhos antes da correcao** — o do defeito 3 conferido revertendo a linha e vendo a suite reprovar.
+
+Alem deles, uma **validacao ao vivo** com a Mesa rodando: espiao em `state.selectedTokenId` registrando toda escrita com origem, e o roteiro do Tiago encenado do inicio ao fim (abrir, clicar no token, clicar fora, receber o eco, receber delta de outro cliente, receber cena remota, F5). Linha do tempo final: **duas escritas no total** — `(nada) → ana` no clique (mesa-stage.js:604) e `ana → (nada)` no clique fora (mesa-core.js:349). Nenhuma vinda da rede. Foi essa encenacao que revelou o defeito 5.
+
+Nota de ferramenta: o painel de navegador do Claude Code nao estava compondo quadros (screenshot expira), entao a validacao ao vivo rodou no Playwright — mesma licao registrada na Etapa 86.
+
+Verde: `test:mesa:audit` (**162**), `test:mesa` (5), `tokens` (10), `permissoes` (15), `test:ficha` (32), `test:controles` (6), `perf:mesa` (1), `check:js`, `audit:static`, `audit:pendencias`, `build:pages`.
+
+Cache-bust `2026-08-16-selecao-2` em `js/mesa-core.js` + `MESA_BUNDLE_VERSION`. **Sem deploy**: e tudo cliente.
+
+### Arquivos alterados
+
+- `js/mesa-core.js` — os cinco defeitos
+- `mesa.html`, `tools/build-pages.cjs` — cache-bust
+- `tests/mesa-audit.spec.cjs` — 5 testes
+- `DEV_STATUS.md`, `SYSTEM_RULES.md`
+
+## Etapa Anterior (2026-08-16 — Etapa 86: rotulo mentiroso e selecao que nao soltava)
+
+Dois incomodos relatados pelo Tiago. O segundo tinha causa-raiz bem mais funda do que o sintoma sugeria.
+
+### 1. "Clico para alterar as informacoes e abre a pagina de efeitos de estados"
+
+Nao era fiacao errada: era **rotulo mentiroso**. O botao do inspetor dizia so **"Editar"**, dentro da secao **"Acoes"**, ao lado de Centralizar e Retirar. Lido ali, "Editar" significa "editar o token" — e ele abre o painel de MARCADORES.
+
+- `buildInspectorMarkerRow` (js/mesa-inspector.js): rotulo virou **"Editar marcadores"**, com `aria-label="Editar marcadores de status"` e `title` explicando o que sao ("sangrando, atordoado...").
+- Teste cobra o contrato pelo NOME ACESSIVEL, nao pelo texto exato: o nome precisa conter "marcador". Rotulo que nao diz o que edita reprova.
+
+### 2. Clicar fora nao soltava a selecao — e as alcas pulavam de token
+
+O sintoma relatado ("o hover de redimensionamento some") tinha **duas causas somadas**:
+
+**Causa A — o handler de deselect estava morto desde a Etapa 73.** Ele vive num `click` em `#mesaStage`, e a Etapa 73 deu `pointer-events: none` a esse elemento para o desenho voltar a funcionar. Desde entao nenhum clique em espaco vazio chegava ali. Movido para `#mesaStageWrap`, que recebe ponteiro (e quem faz pan e desenho); todas as guardas originais seguem valendo.
+
+**Causa B (a raiz de verdade) — "nada selecionado" era um estado IMPOSSIVEL.** `syncSelectedToken` (js/mesa-stage.js) fazia:
+
+```js
+if (!renderedTokens.some(t => t.id === state.selectedTokenId)) {
+  state.selectedTokenId = renderedTokens[0].id;   // inventava uma selecao
+}
+```
+
+Como `""` nunca casa com nenhum id, **todo render reinventava a selecao no primeiro token da lista**. Com a Causa A corrigida, o deselect passou a rodar — e o render seguinte imediatamente jogava a selecao, e as alcas junto, para o primeiro token. Com um token na cena parecia que o clique nao fazia nada; com varios, as alcas sumiam do token do Tiago e apareciam noutro. **E exatamente o "sumir" que ele descreveu.**
+
+Agora a funcao **saneia, nao escolhe**: selecao apontando para token inexistente (removido, oculto, movido para a camada dm) e limpa; nenhuma e inventada. Efeito colateral bem-vindo: a Mesa deixa de abrir com a ficha de alguem selecionada sem o mestre pedir — isso tambem era o bug.
+
+### Como a raiz apareceu
+
+O teste de deselect passava sozinho e falhava na suite completa. Em vez de conviver com a intermitencia, a investigacao instalou um **setter espiao em `state.selectedTokenId`** para registrar quem escrevia nele, com pilha. O log mostrou as duas escritas em sequencia: `"mestre-local" → ""` (mesa-core.js:349, o deselect) e `"" → "mestre-local"` (syncSelectedToken, dentro do `flushScheduledMesaRender`). Sem isso a correcao teria parado na Causa A e o bug continuaria de pe.
+
+Registro tambem de um caminho errado: a primeira investigacao rodou no painel do navegador e mediu opacidade de transicao CSS. O painel nao estava compondo quadros, entao as transicoes ficam congeladas em `running` e a leitura da opacidade e sempre a inicial. **Medicao de transicao CSS naquele painel nao vale**; o Playwright, que renderiza de verdade, e quem serve.
+
+### Verificacao
+
+Cinco testes novos, todos vermelhos antes: rotulo do botao, deselect por clique no vazio, caixa e alcas sumindo depois de desmarcar, "nenhuma selecao e estado valido" (a raiz), e troca direta entre tokens. A suite completa rodou **tres vezes seguidas** (157 cada) para confirmar que a intermitencia morreu.
+
+Verde: `test:mesa:audit` (**157**), `test:mesa` (5), `tokens` (10), `permissoes` (15), `test:ficha` (32), `test:controles` (6), `perf` (1), `check:js`, `audit:static`, `build:pages`.
+
+Cache-bust `2026-08-16-selecao-1` em `js/mesa-core.js`, `js/mesa-stage.js`, `js/mesa-inspector.js` + `MESA_BUNDLE_VERSION`. **Sem deploy**: e tudo cliente.
+
+### Arquivos alterados
+
+- `js/mesa-inspector.js` — rotulo e nome acessivel do botao de marcadores
+- `js/mesa-core.js` — deselect movido para o wrap
+- `js/mesa-stage.js` — `syncSelectedToken` saneia em vez de escolher
+- `mesa.html`, `tools/build-pages.cjs` — cache-bust
+- `tests/mesa-audit.spec.cjs` — 5 testes
+- `DEV_STATUS.md`
+
+## Etapa Anterior (2026-08-16 — Etapa 85: barra de vida no token do jogador)
+
+Fecha o item que a varredura de pendencias da Etapa 83 desenterrou: registrado na Etapa 64 (30/07) como "barra circular de HP em volta do token" e nunca feito. O Tiago decidiu a forma final: **barra simplificada acima do token, so nos tokens de jogador** — nao o anel circular do Roll20.
+
+### O que foi feito
+
+- **`renderTokenLifeBar(token)`** (js/mesa-stage.js), chamado de `renderTokenMinimal`. So renderiza para `type === "player"` e so quando ha `maxLife > 0` — sem maximo, nao desenha nada, em vez de mostrar barra cheia mentirosa.
+- Sem numeros e sem rotulo. Os numeros continuam sendo assunto do inspetor.
+- Atualizacao automatica: `getTokenContentSignature` ja inclui `currentLife`/`maxLife`, entao o elemento e recriado quando a vida muda. Nao precisou de caminho novo de sync.
+
+### A decisao de visibilidade (do Tiago)
+
+Havia conflito entre duas regras que ja existiam:
+
+- `normalizeStatsVisibility` (js/mesa-storage.js) retorna `true` **incondicionalmente** para token de jogador;
+- `canViewDetailedTokenInfo` (js/mesa-core.js) deixa o jogador ver detalhe **so do proprio** token — e por isso que o inspetor esconde os numeros dos outros.
+
+Decidido: **todos veem a barra de todos**. A barra e leitura de relance da vida do grupo; presa a regra estrita ela perderia a razao de existir numa mesa compartilhada. Os NUMEROS seguem escondidos no inspetor como antes — mudou so a barra.
+
+### A armadilha do layout
+
+O nome do token minimal e `position: absolute` **de proposito**: a caixa de layout do token e exatamente o avatar, e e ela que a grade usa para o encaixe (Etapa 42) e a caixa de selecao para o `inset: 0` (Etapa 71). Uma barra em fluxo normal esticaria essa caixa e o token deixaria de casar com a celula. Por isso a barra tambem e absoluta, ancorada em `bottom: calc(100% + 5px)`.
+
+A barra escala junto com o token (nao se contra-escala como as alcas da Etapa 71): ela e leitura da largura do token, entao acompanhar o tamanho e o comportamento certo.
+
+### Verificacao
+
+Cinco testes escritos **antes** da implementacao, todos vermelhos contra o codigo antigo: proporcao e posicao acima do avatar, filtro de tipo (player sim; NPC, monstro e Echo nao), jogador vendo a barra do companheiro, acompanhamento da mudanca de vida, e vida zerada esvaziando a barra sem sumir com ela (barra vazia comunica "caido"; sumir comunicaria "sem dado").
+
+Regressao do layout conferida de proposito, que era o risco real: `test:mesa:tokens` 10/10 (encaixe na grade, alcas, caixa de selecao) e `test:mesa:audit` **152**. Tambem verde: `test:mesa` (5), `permissoes` (15), `perf` (1), `test:controles` (6), `check:js`, `audit:static`.
+
+No navegador, mestre com ana 8/12 e bruno 2/10: barras em 66,7% e 20%, 5px de altura, 69px sobre avatar de 88px, 5px de folga. **Caixa de layout do token inalterada** (igual ao avatar). Razao barra/avatar constante em 0,78 do zoom 0,5 ao 2 e da escala de token 0,4 a 3. Console limpo.
+
+Cache-bust `2026-08-16-vida-1` em `js/mesa-stage.js` e `css/mesa-stage.css` + `MESA_BUNDLE_VERSION`. **Sem deploy**: e tudo cliente.
+
+### Arquivos alterados
+
+- `js/mesa-stage.js` — `renderTokenLifeBar` + chamada no token minimal
+- `css/mesa-stage.css` — barra absoluta acima do token
+- `mesa.html`, `tools/build-pages.cjs` — cache-bust
+- `tests/mesa-audit.spec.cjs` — 5 testes
+- `DEV_STATUS.md`, `VISUAL_RULES.md`
+
+## Etapa Anterior (2026-08-16 — Etapa 84: `data-armed` vira convencao do projeto)
 
 Item 3 da reuniao estrategica. O `data-armed` nasceu na Mesa (Etapa 82) e ganhou a Ficha na Etapa 83, mas continuava sendo peculiaridade de dois arquivos — e peculiaridade nao sobrevive a seis meses. Agora e regra do projeto, verificada nas seis paginas.
 

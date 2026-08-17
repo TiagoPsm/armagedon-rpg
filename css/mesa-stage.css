@@ -446,6 +446,40 @@
   border-radius: 50%;
 }
 
+/* ── Barra de vida do jogador (Etapa 85) ──────────────────────────────
+   `position: absolute` pelo MESMO motivo do nome logo abaixo: a caixa de
+   layout do token minimal e exatamente o avatar, e e ela que a grade usa
+   para o encaixe (Etapa 42) e a caixa de selecao para o `inset: 0`
+   (Etapa 71). Uma barra em fluxo normal esticaria essa caixa e faria o
+   token deixar de casar com a celula.
+
+   Escala junto com o token (nao se contra-escala como as alcas): a barra
+   e leitura da largura do token, entao acompanhar o tamanho dele e o
+   comportamento certo em qualquer zoom. */
+.mesa-token.is-minimal .mesa-token-life {
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 78%;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(10, 6, 6, 0.82);
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.mesa-token.is-minimal .mesa-token-life-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(214, 92, 92, 0.98), rgba(176, 47, 57, 0.98));
+  transition: width var(--transition);
+}
+
 /* Nome fora da caixa de layout, oculto por padrao: aparece no hover, na
    selecao e durante o arrasto (o token continua identificavel sem inflar
    a area de encaixe no grid). Segue no DOM para leitores de tela. */

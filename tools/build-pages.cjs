@@ -6,7 +6,7 @@ const outDir = path.join(repoRoot, "_site");
 
 // Bump aqui quando mudar arquivos dos bundles
 const FICHA_BUNDLE_VERSION = "2026-08-16-fichaboot-1";
-const MESA_BUNDLE_VERSION  = "2026-08-16-armados-2";
+const MESA_BUNDLE_VERSION  = "2026-08-16-selecao-2";
 
 const files = [
   "index.html", "ficha.html", "mesa.html", "regras.html", "sugestoes.html",

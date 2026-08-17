@@ -474,6 +474,15 @@ Arquivos visuais atuais da Mesa:
 - Na ficha do monstro, a secao "Drop de Echo" reaproveita os componentes de rolagem do drop de memoria (`memory-roll-*`) para manter consistencia
 - Token de Echo na Mesa usa a cor `--token-echo` (roxo) e o rotulo de tipo "Echos"
 
+## Barra de Vida no Token (Etapa 85)
+
+- **So em token de jogador.** NPC e monstro tem vida secreta por regra de mesa; Echo tem maximos geridos fora da Mesa. Barra neles entregaria informacao que o mestre controla de proposito.
+- **Acima do token, simplificada**: 5px, cantos arredondados, trilho quase preto e preenchimento em carmesim (`rgba(214,92,92)` → `rgba(176,47,57)`). Sem numeros e sem rotulo — numero e assunto do inspetor.
+- **Todos veem a de todos.** A barra existe para ler a vida do grupo de relance; presa a regra estrita do inspetor ela perderia a razao de existir. Os numeros seguem restritos.
+- **Vida zerada esvazia a barra, nao a esconde.** Barra vazia comunica "caido"; barra ausente comunicaria "sem dado". Sem `maxLife`, ai sim nao renderiza.
+- **`position: absolute`, sempre.** A caixa de layout do token minimal e exatamente o avatar, e e ela que a grade usa para encaixe e a caixa de selecao para o `inset: 0`. Qualquer elemento novo em fluxo normal dentro do token estica essa caixa e quebra o snap — vale para a barra, para o nome e para o que vier depois.
+- Escala junto com o token (nao se contra-escala como as alcas): a barra e leitura da largura dele.
+
 ## Controle Desarmado Nao Pode Parecer Armado (Etapa 81)
 
 Regra geral, nascida do desenho que ficava morto durante o boot da Mesa: **se um controle ainda nao faz nada, ele nao pode ter aparencia de clicavel.** Um botao que responde ao hover e ao clique sem nenhum efeito e pior do que um botao apagado — o usuario culpa a si mesmo, tenta de novo, e nao tem como saber que o modulo ainda esta carregando.
