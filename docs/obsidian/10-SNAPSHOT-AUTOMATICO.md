@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-18 17:28:49 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-18 17:32:42 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,12 +13,15 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `5672927 2026-08-18 @ fix(mesa): a selecao sai do fio de vez (Etapa 88)`
+- Ultimo commit: `e6f0683 2026-08-18 fix(mesa): a selecao sai do fio de vez (Etapa 88)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
+M  DEV_STATUS.md
+M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  tests/mesa-online.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -30,7 +33,9 @@
 ### Arquivos Em Stage
 
 ```text
-(nenhum)
+DEV_STATUS.md
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+tests/mesa-online.spec.cjs
 ```
 
 ## Paginas Principais

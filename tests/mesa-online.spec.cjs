@@ -346,3 +346,118 @@ test.describe("Mesa online - fluxo autenticado", () => {
     await playerContext.close();
   });
 });
+
+/* ============================================================
+ * Etapa 88 em PRODUCAO — a selecao nao trafega.
+ *
+ * As suites locais provam o comportamento contra um backend simulado. Este
+ * teste roda contra o Worker e o Durable Object de verdade, que sao quem
+ * devolve o eco da cena ao proprio mestre (o broadcast sai sem `clientId`, o
+ * que tornava impossivel reconhecer o proprio eco — foi essa a origem do
+ * defeito 4 da Etapa 87).
+ *
+ * Efeito colateral na cena real: nenhum. Marcar e desmarcar nao mudam mais o
+ * payload da cena, entao o dedupe de assinatura corta o PUT — e o teste nao
+ * move, cria nem apaga token nenhum.
+ * ============================================================ */
+test.describe("Mesa online - selecao nao trafega (Etapa 88)", () => {
+  test.skip(
+    !HAS_ONLINE_CREDENTIALS,
+    "Defina ARMAGEDON_MASTER_USERNAME/PASSWORD e ARMAGEDON_PLAYER_USERNAME/PASSWORD para validar o fluxo online real."
+  );
+
+  test("clique fora do mestre nao volta sozinho e nao marca nada no jogador", async ({ browser, request }) => {
+    const master = await login(request, MASTER_USERNAME, MASTER_PASSWORD);
+    const player = await login(request, PLAYER_USERNAME, PLAYER_PASSWORD);
+
+    const abrirMesa = async (sessao, role, sufixo) => {
+      const context = await browser.newContext();
+      await context.addInitScript(({ token, username, papel }) => {
+        localStorage.setItem("tc_session_token", token);
+        localStorage.setItem("tc_session", JSON.stringify({ username, role: papel, token, backend: true }));
+      }, { token: sessao.token, username: sessao.user.username, papel: role });
+      const page = await context.newPage();
+      await page.goto(`${SITE_BASE_URL}/mesa.html?${sufixo}=${Date.now()}`);
+      await page.waitForFunction(
+        () => typeof state !== "undefined" && state.bootCompleted === true,
+        { timeout: 20000 }
+      );
+      return { context, page };
+    };
+
+    const mestre = await abrirMesa(master, "master", "online-selecao-master");
+    const jogador = await abrirMesa(player, "player", "online-selecao-player");
+
+    try {
+      // A cena publicada e a que estiver la — se nao houver token visivel para
+      // o mestre, nao ha o que selecionar e o teste nao tem o que provar.
+      const tokenId = await mestre.page.evaluate(() => {
+        const alvo = (typeof getRenderedTokens === "function" ? getRenderedTokens() : [])[0];
+        return alvo ? String(alvo.id) : "";
+      });
+      test.skip(!tokenId, "A cena publicada esta sem tokens visiveis para o mestre.");
+
+      // Espiao no jogador ANTES de o mestre mexer: qualquer escrita vinda da
+      // rede fica registrada com a pilha de quem escreveu.
+      await jogador.page.evaluate(() => {
+        let valor = state.selectedTokenId;
+        window.__escritasDeSelecao = [];
+        Object.defineProperty(state, "selectedTokenId", {
+          configurable: true,
+          get() { return valor; },
+          set(novo) {
+            if (novo !== valor) window.__escritasDeSelecao.push({ de: valor, para: novo, pilha: new Error().stack });
+            valor = novo;
+          }
+        });
+      });
+
+      await mestre.page.locator(`.mesa-token[data-token-id="${tokenId}"]`).click();
+      await expect.poll(() => mestre.page.evaluate(() => state.selectedTokenId)).toBe(tokenId);
+
+      // Clique no espaco vazio do palco (tokens ficam na faixa de cima).
+      const caixa = await mestre.page.locator("#mesaStageWrap").boundingBox();
+      await mestre.page.mouse.click(caixa.x + caixa.width * 0.5, caixa.y + caixa.height * 0.8);
+
+      // Janela generosa: e aqui que o eco do Worker e os deltas do DO chegam.
+      // Era exatamente neste intervalo que o token voltava a ficar marcado.
+      await mestre.page.waitForTimeout(4000);
+
+      expect(
+        await mestre.page.evaluate(() => state.selectedTokenId),
+        "a selecao voltou sozinha depois do clique fora, em producao"
+      ).toBe("");
+
+      const escritasNoJogador = await jogador.page.evaluate(() => window.__escritasDeSelecao);
+      expect(
+        escritasNoJogador,
+        `a rede marcou token na tela do jogador: ${JSON.stringify(escritasNoJogador)}`
+      ).toEqual([]);
+
+      // A cena oficial no D1 nao pode carregar selecao nenhuma.
+      const cena = await expectJsonOk(
+        await request.get(apiUrl("/mesa/scene"), { headers: { Authorization: `Bearer ${master.token}` } }),
+        "mesa scene depois do clique fora"
+      );
+      expect(
+        String(cena.data?.selectedTokenId || ""),
+        "a cena oficial ainda guarda selecao — o campo voltou ao contrato"
+      ).toBe("");
+
+      // E o F5 respeita o desmarcar: a selecao mora em chave propria deste
+      // cliente, e a cena remota nao tem como ressuscitar o token.
+      await mestre.page.reload();
+      await mestre.page.waitForFunction(
+        () => typeof state !== "undefined" && state.bootCompleted === true,
+        { timeout: 20000 }
+      );
+      expect(
+        await mestre.page.evaluate(() => state.selectedTokenId),
+        "o F5 em producao ressuscitou o token desmarcado"
+      ).toBe("");
+    } finally {
+      await mestre.context.close();
+      await jogador.context.close();
+    }
+  });
+});

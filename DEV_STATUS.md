@@ -11,7 +11,7 @@ Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencia
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
 
 - **[Tiago]** Teto de tamanho do token com a grade ligada: o token para por volta de 800% por causa do `_gridMaxCells` (metade do menor lado do mapa). Nao e bug — e decisao de regra de jogo, e esta esperando voce. — aberta em 2026-07-31 (Etapa 71)
-- **[Tiago]** Credenciais do smoke em producao: `npm run test:mesa:online` precisa de `ARMAGEDON_SITE_URL`, `ARMAGEDON_API_BASE_URL` e usuario/senha de mestre e jogador no ambiente (mais `ARMAGEDON_ONLINE_RELAY_PROBE=1` para a sonda de realtime). Sem elas o spec se pula sozinho e nunca exercitamos producao de verdade. — aberta em 2026-08-16 (conferencia da Etapa 81)
+- **[Tiago]** Credenciais do smoke em producao: `npm run test:mesa:online` precisa de `ARMAGEDON_SITE_URL`, `ARMAGEDON_API_BASE_URL` e usuario/senha de mestre e jogador no ambiente (mais `ARMAGEDON_ONLINE_RELAY_PROBE=1` para a sonda de realtime). Sem elas o spec se pula sozinho e nunca exercitamos producao de verdade. **Desde 2026-08-18 tem mais um teste esperando nessa fila**: o cenario de selecao da Etapa 88 (clique fora do mestre com jogador conectado, contra o Worker e o DO reais). — aberta em 2026-08-16 (conferencia da Etapa 81)
 
 ## Regra Obrigatoria de Documentacao
 
@@ -74,9 +74,19 @@ Os dois testes da Etapa 87 que liam `selectedTokenId` dentro da cena gravada for
 
 Suites: `test:mesa:audit` 166, `test:mesa` 5, `test:ficha` 32, `test:controles` 6, mais `check:js`, `audit:static`, `audit:pendencias` e `build:pages`.
 
+### Teste em producao (preparado, esperando credenciais)
+
+`tests/mesa-online.spec.cjs` ganhou o bloco "Mesa online - selecao nao trafega (Etapa 88)": mestre e jogador abrem a Mesa publicada em contextos separados, o jogador recebe um espiao em `state.selectedTokenId`, o mestre seleciona um token e clica no espaco vazio, e o teste cobra quatro coisas depois de quatro segundos de janela (tempo do eco do Worker e dos deltas do DO chegarem): a selecao do mestre continua vazia, o jogador nao registrou nenhuma escrita vinda da rede, a cena oficial no D1 nao guarda selecao, e o F5 do mestre nao ressuscita o token.
+
+Importa rodar contra producao porque e o Worker de verdade que devolve o eco ao proprio mestre — o broadcast sai sem `clientId`, e era isso que tornava impossivel reconhecer o proprio eco (origem do defeito 4 da Etapa 87). Efeito colateral na cena real: nenhum, porque marcar/desmarcar nao muda mais o payload e o dedupe de assinatura corta o PUT.
+
+O bloco se pula sozinho enquanto as credenciais nao existirem no ambiente (mesma pendencia aberta desde a Etapa 81). A parte anonima do smoke roda e passa: Pages e API oficiais respondem, endpoints protegidos recusam anonimo.
+
+Verificado sem login que o bundle publicado ja e o desta etapa: `mesa.html` serve `?v=2026-08-18-selecao-fora-do-fio`, o bundle traz `mesaSelectionStorageKey`/`stripMesaSceneSelection`/`writeMesaSelectionToStorage` e **nao tem mais nenhuma ocorrencia de `selectedTokenId: state.selectedTokenId`**.
+
 ### Arquivos
 
-`js/mesa-core.js`, `js/mesa-stage.js`, `tests/mesa-audit.spec.cjs`, `mesa.html` (cache-busting), `tools/build-pages.cjs`, `SYSTEM_RULES.md`, `DEV_STATUS.md`.
+`js/mesa-core.js`, `js/mesa-stage.js`, `tests/mesa-audit.spec.cjs`, `tests/mesa-online.spec.cjs`, `mesa.html` (cache-busting), `tools/build-pages.cjs`, `SYSTEM_RULES.md`, `DEV_STATUS.md`.
 
 ## Etapa Anterior (2026-08-16 — Etapa 87: a selecao voltava sozinha depois do clique fora)
 
