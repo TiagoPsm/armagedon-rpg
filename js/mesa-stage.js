@@ -843,6 +843,9 @@ function flushRealtimeDragMove() {
 function resetPrototype() {
   if (!isMaster()) return;
   localStorage.removeItem(mesaSceneStorageKey());
+  // A selecao mora em chave propria desde a Etapa 88 — limpar a cena e deixar
+  // a selecao para tras faria o F5 apontar para um token que nao existe mais.
+  localStorage.removeItem(mesaSelectionStorageKey());
   state.tokens = [];
   state.selectedTokenId = "";
   bumpMesaSceneVersion();
@@ -872,6 +875,10 @@ function flushPersistState() {
     window.clearTimeout(mesaPersistTimer);
     mesaPersistTimer = null;
   }
+  // Antes do dedupe (Etapa 88): a selecao nao esta mais no payload, entao
+  // marcar/desmarcar produz assinatura igual e o return abaixo cortaria a
+  // gravacao dela.
+  if (typeof writeMesaSelectionToStorage === "function") writeMesaSelectionToStorage();
   if (!pendingPersistPayload) return;
   const payload = pendingPersistPayload;
   const payloadSignature = getMesaSceneSignature(payload);

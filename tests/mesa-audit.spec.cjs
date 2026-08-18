@@ -5640,8 +5640,11 @@ test.describe("Selecao nao volta sozinha (Etapa 87)", () => {
     await expect
       .poll(() => page.evaluate(() => {
         flushPersistState();
-        return JSON.parse(localStorage.getItem("tc_virtual_mesa_mock_v1") || "{}").selectedTokenId;
-      }), { message: "a cena gravada continuou com o token marcado" })
+        // A selecao saiu do payload da cena na Etapa 88 e passou a ter chave
+        // propria; o que o teste cobra continua igual — desmarcar tem que
+        // gravar, senao o F5 remarca.
+        return localStorage.getItem("tc_virtual_mesa_mock_v1_selection");
+      }), { message: "a selecao gravada continuou com o token marcado" })
       .toBe("");
     expect(await page.evaluate(() => state.selectedTokenId)).toBe("");
   });
@@ -5705,12 +5708,131 @@ test.describe("Selecao nao volta sozinha (Etapa 87)", () => {
       await new Promise(resolve => setTimeout(resolve, 400));
       const cache = JSON.parse(localStorage.getItem("tc_virtual_mesa_mock_v1") || "{}");
       return {
-        selecaoNoCache: cache.selectedTokenId,
+        // Etapa 88: o cache de cena nao guarda mais selecao NENHUMA — nem a
+        // do emissor, nem a minha. Quem responde pelo F5 e a chave propria.
+        selecaoNoCache: cache.selectedTokenId ?? "",
+        selecaoDoCliente: localStorage.getItem("tc_virtual_mesa_mock_v1_selection") ?? "",
         posicaoNoCache: (cache.tokens || []).find(token => token.id === "ana")?.x
       };
     });
 
-    expect(gravado.selecaoNoCache, "o cache guardou a selecao do emissor — o F5 vai remarcar").toBe("");
+    expect(gravado.selecaoNoCache, "o cache de cena guardou selecao — o F5 vai remarcar").toBe("");
+    expect(gravado.selecaoDoCliente, "a cena remota escreveu na selecao deste cliente").toBe("");
     expect(gravado.posicaoNoCache, "o cache deixou de receber a cena remota").toBe(80);
+  });
+});
+
+/* ============================================================
+ * Etapa 88 — a selecao sai do fio de vez.
+ *
+ * A Etapa 87 fechou cinco portas; esta tira a chave da casa. Enquanto
+ * `selectedTokenId` viajasse no payload da cena e no envelope de realtime,
+ * cada caminho novo nascia com o mesmo defeito. Agora a selecao e estado de
+ * tela deste cliente, em chave propria de localStorage, e nao existe para o
+ * servidor nem para a assinatura de dedupe.
+ * ============================================================ */
+test.describe("Selecao nao trafega (Etapa 88)", () => {
+  test("payload da cena e envelope de realtime nao carregam selecao", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const resultado = await page.evaluate(() => {
+      state.selectedTokenId = "ana";
+      const cena = createMesaScenePayloadFromState();
+      const envelope = createMesaRealtimeEnvelope("mesa:token:move", { token: { id: "ana" } });
+      return {
+        cenaTemSelecao: Object.prototype.hasOwnProperty.call(cena, "selectedTokenId"),
+        envelopeTemSelecao: Object.prototype.hasOwnProperty.call(envelope, "selectedTokenId")
+      };
+    });
+
+    expect(resultado.cenaTemSelecao, "a cena enviada ao servidor ainda leva a selecao").toBe(false);
+    expect(resultado.envelopeTemSelecao, "o delta ainda carimba a selecao do emissor").toBe(false);
+  });
+
+  test("selecao nao entra na assinatura de dedupe", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const resultado = await page.evaluate(() => {
+      state.selectedTokenId = "ana";
+      const comSelecao = getCurrentMesaSceneSignature();
+      state.selectedTokenId = "";
+      const semSelecao = getCurrentMesaSceneSignature();
+      // Cena legada do D1, gravada quando o campo ainda viajava.
+      const legada = getMesaSceneSignature({ tokens: [], selectedTokenId: "bruno" });
+      const limpa = getMesaSceneSignature({ tokens: [] });
+      return { iguais: comSelecao === semSelecao, legadaIgual: legada === limpa };
+    });
+
+    // Se divergissem, o clique fora faria o proprio eco escapar do
+    // curto-circuito de assinatura — a porta do defeito 4 da Etapa 87.
+    expect(resultado.iguais, "marcar/desmarcar mudou a assinatura da cena").toBe(true);
+    expect(resultado.legadaIgual, "cena legada com selecao gera assinatura diferente").toBe(true);
+  });
+
+  test("F5 restaura a selecao propria e respeita o desmarcar", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.locator('.mesa-token[data-token-id="ana"]').click();
+    await page.evaluate(() => flushPersistState());
+    await page.reload();
+    await waitForMesaSettled(page);
+    expect(await page.evaluate(() => state.selectedTokenId), "o F5 perdeu a selecao").toBe("ana");
+
+    const caixa = await page.locator("#mesaStageWrap").boundingBox();
+    await page.mouse.click(caixa.x + caixa.width * 0.5, caixa.y + caixa.height * 0.8);
+    await page.evaluate(() => flushPersistState());
+    await page.reload();
+    await waitForMesaSettled(page);
+    expect(await page.evaluate(() => state.selectedTokenId), "o F5 ressuscitou o token desmarcado").toBe("");
+  });
+
+  // Trava permanente: e este teste que impede uma etapa futura de reabrir a
+  // familia inteira escrevendo em state.selectedTokenId dentro de um handler
+  // de rede. Espiao igual ao da validacao ao vivo da Etapa 87.
+  test("nenhum caminho de rede escreve na selecao", async ({ page }) => {
+    await installAppEmitHook(page);
+    await seedMasterWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const escritas = await page.evaluate(async () => {
+      state.selectedTokenId = "ana";
+      let valor = state.selectedTokenId;
+      const registradas = [];
+      Object.defineProperty(state, "selectedTokenId", {
+        configurable: true,
+        get() { return valor; },
+        set(novo) {
+          if (novo !== valor) registradas.push({ de: valor, para: novo, pilha: new Error().stack });
+          valor = novo;
+        }
+      });
+
+      const cena = createMesaScenePayloadFromState();
+      cena.sceneVersion = state.sceneVersion + 5;
+      cena.tokens = cena.tokens.map(token => token.id === "ana" ? { ...token, x: 61 } : token);
+      cena.selectedTokenId = "bruno";                       // emissor legado
+      window.APP.__testEmit("mesa:scene", { data: cena });
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      applyMesaTokenUpsertDelta({ token: { ...state.tokens[0], x: 62 }, selectedTokenId: "bruno" });
+      applyMesaTokenMoveDelta({ tokenId: "ana", x: 63, y: 20, selectedTokenId: "bruno" });
+
+      return { registradas, selecaoFinal: state.selectedTokenId, posicao: state.tokens.find(t => t.id === "ana")?.x };
+    });
+
+    expect(escritas.registradas, `a rede escreveu na selecao: ${JSON.stringify(escritas.registradas.map(e => e.pilha))}`).toEqual([]);
+    expect(escritas.selecaoFinal, "a selecao local mudou por causa da rede").toBe("ana");
+    expect(escritas.posicao, "os deltas deixaram de ser aplicados").toBe(63);
   });
 });

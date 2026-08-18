@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-16 22:03:19 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-18 17:28:49 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,23 +13,12 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `54449ee 2026-08-16 chore(controles): data-armed vira convencao do projeto (Etapa 84)`
+- Ultimo commit: `5672927 2026-08-18 @ fix(mesa): a selecao sai do fio de vez (Etapa 88)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-M  DEV_STATUS.md
-M  SYSTEM_RULES.md
-M  VISUAL_RULES.md
-M  css/mesa-stage.css
-M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-core.js
-M  js/mesa-inspector.js
-M  js/mesa-stage.js
-M  mesa.html
-M  tests/mesa-audit.spec.cjs
-M  tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -41,17 +30,7 @@ M  tools/build-pages.cjs
 ### Arquivos Em Stage
 
 ```text
-DEV_STATUS.md
-SYSTEM_RULES.md
-VISUAL_RULES.md
-css/mesa-stage.css
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/mesa-core.js
-js/mesa-inspector.js
-js/mesa-stage.js
-mesa.html
-tests/mesa-audit.spec.cjs
-tools/build-pages.cjs
+(nenhum)
 ```
 
 ## Paginas Principais
@@ -97,6 +76,7 @@ tools/build-pages.cjs
 [dir]  docs
 [dir]  js
 [dir]  node_modules
+[dir]  test-results
 [dir]  tests
 [dir]  tools
 [file] .gitignore
@@ -147,7 +127,7 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
     0,73 MB  debug.log
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js
     0,61 MB  node_modules\playwright-core\lib\vite\traceViewer\assets\defaultSettingsView-GTWI-W_B.js
-    0,50 MB  _site\js\mesa-page.bundle.js
+    0,51 MB  _site\js\mesa-page.bundle.js
     0,45 MB  node_modules\playwright-core\lib\utilsBundleImpl\index.js
 ```
 

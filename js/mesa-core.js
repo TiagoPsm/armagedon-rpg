@@ -85,6 +85,54 @@ function mesaSceneStorageKey() {
   const sceneId = String(state.sceneId || "default");
   return sceneId === "default" ? MESA_STORAGE_KEY : `${MESA_STORAGE_KEY}_${sceneId}`;
 }
+/**
+ * Selecao mora FORA da cena (Etapa 88).
+ *
+ * Ate a Etapa 87 o `selectedTokenId` viajava dentro do payload da cena: ia
+ * para o Worker, voltava no eco, entrava na assinatura de dedupe e vinha
+ * carimbado em todo envelope de realtime. Cada um desses caminhos ja marcou
+ * token na tela de quem nao clicou em nada — foram cinco defeitos com a mesma
+ * origem. Agora a selecao tem chave propria, deste cliente, por cena: nao
+ * trafega, nao entra em assinatura, nao existe para o servidor.
+ */
+function mesaSelectionStorageKey() {
+  return `${mesaSceneStorageKey()}_selection`;
+}
+
+// Cena que vem do servidor (ou do cache antigo) ainda pode trazer o campo:
+// tira antes de gravar, para o cache de cena nunca mais ser fonte de selecao.
+function stripMesaSceneSelection(scene) {
+  if (!scene || typeof scene !== "object") return scene;
+  const { selectedTokenId, ...rest } = scene;
+  return rest;
+}
+
+/**
+ * Devolve `null` quando este cliente ainda nao gravou selecao nenhuma — so ai
+ * a cena salva vale como leitura de compatibilidade. Devolver `""` nesse caso
+ * confundiria "nunca gravei" com "desmarquei de proposito", e o F5 depois do
+ * clique fora traria o token de volta pela cena legada.
+ */
+function readMesaSelectionFromStorage() {
+  try {
+    const raw = localStorage.getItem(mesaSelectionStorageKey());
+    return raw === null ? null : String(raw);
+  } catch (error) {
+    return null;
+  }
+}
+
+// Gravada em todo persist, FORA do dedupe de assinatura: desmarcar nao muda a
+// cena, entao o curto-circuito de assinatura engoliria a gravacao e o F5
+// ressuscitaria o token (era o defeito 3 da Etapa 87, por outro caminho).
+function writeMesaSelectionToStorage() {
+  try {
+    localStorage.setItem(mesaSelectionStorageKey(), String(state.selectedTokenId || ""));
+  } catch (error) {
+    /* storage cheio ou bloqueado: selecao e estado de tela, pode perder */
+  }
+}
+
 const MESA_CLIENT_ID_KEY = "tc_mesa_client_id";
 const MESA_REALTIME_DELTA_TYPES = new Set([
   "mesa:token:move",
@@ -915,14 +963,11 @@ async function applyRemoteMesaSceneSnapshot(remoteData) {
 
     state.scenePersistence = "remote";
     state.sceneRemoteExists = true;
-    // O cache local guarda a cena remota com a selecao DESTE cliente (Etapa 87).
-    // Gravar `remoteData` cru trocava a selecao pela do emissor no localStorage:
-    // o estado ao vivo ficava certo e o F5 seguinte ressuscitava o token do
-    // outro. Mesma regra do keepSelection abaixo, uma camada mais embaixo.
-    localStorage.setItem(mesaSceneStorageKey(), JSON.stringify({
-      ...remoteData,
-      selectedTokenId: state.selectedTokenId
-    }));
+    // Cena remota entra no cache sem selecao nenhuma (Etapa 88). Na Etapa 87
+    // era preciso enxertar aqui a selecao DESTE cliente, senao o F5 seguinte
+    // ressuscitava o token do emissor; agora a selecao mora em chave separada
+    // e o cache de cena nao tem mais como contamina-la.
+    localStorage.setItem(mesaSceneStorageKey(), JSON.stringify(stripMesaSceneSelection(remoteData)));
     applyMesaSceneSnapshot(remoteData, { keepSelection: true });
     lastPersistedMesaSceneSignature = remoteSignature;
     lastRemoteMesaSceneSignature = remoteSignature;
@@ -1801,7 +1846,9 @@ async function loadMesaSceneSnapshot(prefetchedResult) {
           ];
         }
       }
-      localStorage.setItem(mesaSceneStorageKey(), JSON.stringify(remoteData));
+      // Sem o campo de selecao (Etapa 88) — cena do D1 gravada antes da mudanca
+      // ainda pode traze-lo, e o cache de cena nao e fonte de selecao.
+      localStorage.setItem(mesaSceneStorageKey(), JSON.stringify(stripMesaSceneSelection(remoteData)));
       state.scenePersistence = "remote";
       rememberMesaSceneSignature(remoteData, { persisted: true, remote: true });
       return remoteData;
@@ -1883,9 +1930,14 @@ function applyMesaSceneSnapshot(saved, options = {}) {
   // adotar a selecao dali desfazia, um instante depois, o clique no espaco
   // vazio. No boot e na troca de cena a selecao salva vale — saneada por
   // pickInitialSelectedToken, que nunca inventa uma.
+  // No boot a selecao vem da chave propria deste cliente (Etapa 88); o
+  // `saved?.selectedTokenId` fica so como leitura de compatibilidade para
+  // cena antiga, gravada antes de a selecao sair do payload.
   state.selectedTokenId = options.keepSelection
     ? state.selectedTokenId
-    : pickInitialSelectedToken(saved?.selectedTokenId);
+    : pickInitialSelectedToken(
+        readMesaSelectionFromStorage() ?? saved?.selectedTokenId
+      );
 
   // Restaura estado de iniciativa.
   // ATENCAO (Etapa 77): quando o navegador serve os scripts do cache, o
@@ -2081,7 +2133,10 @@ function createMesaRealtimeEnvelope(type, payload = {}) {
     clientId: mesaClientId,
     messageId: `${mesaClientId}:${++mesaRealtimeMessageSequence}`,
     sceneVersion: asPositiveInt(payload.sceneVersion, state.sceneVersion),
-    selectedTokenId: state.selectedTokenId,
+    // Sem `selectedTokenId` (Etapa 88): o envelope carimbava a selecao do
+    // emissor em TODO delta, e era essa a municao do defeito 2 da Etapa 87.
+    // Sem o campo no fio, nenhum handler futuro consegue marcar token na tela
+    // alheia nem por engano.
     sentAt: new Date().toISOString()
   };
 }
@@ -2337,7 +2392,10 @@ function createMesaScenePayloadFromState() {
   return {
     sceneVersion: asPositiveInt(state.sceneVersion, 0),
     tokenStyle: "minimal",
-    selectedTokenId: state.selectedTokenId,
+    // Sem `selectedTokenId` (Etapa 88) — ver mesaSelectionStorageKey. De
+    // brinde, a selecao sai da assinatura de dedupe: era ela que fazia as
+    // assinaturas divergirem no clique fora e deixava o proprio eco passar
+    // pelo curto-circuito (defeito 4 da Etapa 87).
     tokens: state.tokens.map(token => ({
       id: token.id,
       characterKey: token.characterKey,
@@ -2438,7 +2496,8 @@ function normalizeMesaScenePayload(payload = {}) {
   return {
     sceneVersion: asPositiveInt(payload?.sceneVersion, 0),
     tokenStyle: "minimal",
-    selectedTokenId: String(payload?.selectedTokenId || ""),
+    // `selectedTokenId` ignorado de proposito (Etapa 88): cena legada no D1
+    // ainda traz o campo, e ele nao pode voltar a contar para a assinatura.
     tokens: tokens
       .map(token => ({
         id: String(token?.id || ""),

@@ -41,7 +41,44 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-16 — Etapa 87: a selecao voltava sozinha depois do clique fora)
+## Ultima Etapa Concluida (2026-08-18 — Etapa 88: a selecao sai do fio de vez)
+
+A Etapa 87 fechou cinco portas. Esta tira a chave da casa.
+
+### Por que ainda faltava algo
+
+As cinco correcoes da Etapa 87 eram todas defensivas: cada uma bloqueia um caminho de chegada da selecao alheia. A origem continuava intacta — `selectedTokenId` viajava no payload da cena e vinha carimbado em TODO envelope de realtime. Enquanto o campo estivesse no fio, o proximo caminho novo nasceria quebrado de novo, e a decisao de contrato que a Etapa 87 deixou registrada em aberto era exatamente esta.
+
+### O que mudou
+
+**Selecao agora e estado de tela deste cliente, em chave propria** — `<chave da cena>_selection` no `localStorage`, por cliente e por cena (`mesaSelectionStorageKey`). Tres cortes no `js/mesa-core.js`:
+
+1. **`createMesaRealtimeEnvelope` nao carimba mais a selecao.** Era a municao do defeito 2 da Etapa 87. Sem o campo no fio, nenhum handler futuro consegue marcar token na tela alheia nem por engano.
+2. **`createMesaScenePayloadFromState` nao envia mais a selecao ao servidor.** De brinde ela sai da assinatura de dedupe (`normalizeMesaScenePayload` ignora o campo), e isso **conserta o defeito 4 na origem**: era a selecao que fazia as assinaturas divergirem no clique fora e deixava o proprio eco do mestre escapar do curto-circuito. O Worker transmite `mesa:scene` sem `clientId`, entao reconhecer o eco por outro meio nunca foi possivel — agora nao precisa.
+3. **Cache de cena nunca mais guarda selecao.** `stripMesaSceneSelection` nos dois pontos que gravam cena remota (boot e tempo real). A Etapa 87 tinha que enxertar ali a selecao deste cliente; agora nao ha o que enxertar.
+
+Detalhes que valem registro:
+
+- **A gravacao da selecao acontece ANTES do dedupe** (`flushPersistState`, js/mesa-stage.js). Sem selecao no payload, marcar e desmarcar produzem assinatura igual — o curto-circuito de assinatura engoliria a gravacao e o F5 remarcaria o token. Seria o defeito 3 renascendo por outro caminho.
+- **`readMesaSelectionFromStorage` devolve `null`, nao `""`, quando a chave nao existe.** Confundir "nunca gravei" com "desmarquei de proposito" faria o F5 depois do clique fora buscar a selecao na cena legada e trazer o token de volta. So quando a chave nao existe a cena salva vale como leitura de compatibilidade.
+- **`resetPrototype` limpa as duas chaves.** Limpar a cena e deixar a selecao para tras apontaria para um token que nao existe mais.
+- **Nenhum deploy de Worker, nenhuma migracao de D1.** O cliente para de mandar o campo; `cloudflare/src/mesa.js` continua tolerante e cena antiga no banco carrega normalmente.
+
+### Verificacao
+
+Quatro testes novos em `tests/mesa-audit.spec.cjs` (bloco "Selecao nao trafega (Etapa 88)"): payload e envelope sem o campo; assinatura identica com e sem selecao (inclusive para cena legada); F5 restaurando a selecao propria e respeitando o desmarcar; e a **trava permanente** — espiao em `state.selectedTokenId` durante cena remota, delta de upsert e delta de move, exigindo **zero escritas vindas da rede**. E esse ultimo que impede uma etapa futura de reabrir a familia inteira.
+
+Vermelho antes do verde conferido no ponto que nao era trivial: desligando a gravacao da selecao em `flushPersistState`, os dois testes de F5 (Etapa 87 defeito 3 e Etapa 88) reprovam.
+
+Os dois testes da Etapa 87 que liam `selectedTokenId` dentro da cena gravada foram reapontados para a chave nova — o que eles cobram nao mudou (desmarcar tem que gravar; cena remota nao contamina o que o F5 le), so mudou onde a selecao mora. O da camada de cache ganhou uma assercao a mais: o cache de cena nao guarda selecao NENHUMA, nem a do emissor nem a minha.
+
+Suites: `test:mesa:audit` 166, `test:mesa` 5, `test:ficha` 32, `test:controles` 6, mais `check:js`, `audit:static`, `audit:pendencias` e `build:pages`.
+
+### Arquivos
+
+`js/mesa-core.js`, `js/mesa-stage.js`, `tests/mesa-audit.spec.cjs`, `mesa.html` (cache-busting), `tools/build-pages.cjs`, `SYSTEM_RULES.md`, `DEV_STATUS.md`.
+
+## Etapa Anterior (2026-08-16 — Etapa 87: a selecao voltava sozinha depois do clique fora)
 
 Relato do Tiago: "clico fora para deselecionar o token, ele desseleciona e depois seleciona de novo". A Etapa 86 tinha consertado o clique; o que sobrou nao estava no clique — **a rede desfazia o que ele fazia**, alguns centesimos depois.
 
@@ -69,7 +106,7 @@ Clica no token (persiste a cena com "ana" marcada) → clica fora (desmarca so n
 
 ### O que ficou decidido
 
-**Selecao e estado de tela, nao conteudo da mesa.** Nenhum caminho de rede — delta ou snapshot — marca token na tela de quem recebe. O campo continua viajando no payload da cena (contrato do Worker e do D1 intacto), mas so serve ao boot do proprio cliente e a assinatura de dedupe. Tirar `selectedTokenId` da cena de vez resolveria a familia na origem e continua em aberto como decisao de contrato — nao foi feito aqui para nao mexer no Worker.
+**Selecao e estado de tela, nao conteudo da mesa.** Nenhum caminho de rede — delta ou snapshot — marca token na tela de quem recebe. O campo continua viajando no payload da cena (contrato do Worker e do D1 intacto), mas so serve ao boot do proprio cliente e a assinatura de dedupe. ~~Tirar `selectedTokenId` da cena de vez resolveria a familia na origem e continua em aberto como decisao de contrato~~ — **FECHADA em 2026-08-18 pela Etapa 88**: o campo saiu do payload da cena e do envelope de realtime, sem tocar no Worker.
 
 ### Verificacao
 
