@@ -42,7 +42,46 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-18 — Etapa 92: a secao "Acoes" do inspetor)
+## Ultima Etapa Concluida (2026-08-18 — Etapa 93: o +/- de Vida nao commitava)
+
+Relato do Tiago: "a vida do token nao atualiza em tempo real, nem na mesa, nem na ficha, nem acima do token".
+
+### O que a medicao mostrou
+
+Tres sintomas, uma causa — e a cadeia de sincronizacao estava inteira. Medido antes de mexer, com espiao no `broadcastMesaSheetPatch`:
+
+| acao | estado do token | barra acima do token | patch para a rede |
+|---|---|---|---|
+| clicar no `+` | 8 (parado) | 66,7% (parado) | **0** |
+| digitar o valor | 3 | 25% | 1 |
+
+Ou seja: **digitar funcionava, clicar no botao nao**.
+
+### Causa
+
+O stepper (`js/mesa-inspector.js`) atualizava o campo e disparava `new Event("change")`. O inspetor escuta **`input`** (`handleInspectorStatInput`, ligado em `js/mesa-core.js:419`) e `focusout` — ninguem escuta `change` ali. Entao o botao so mexia no numero da tela: nada gravava na ficha, nada redesenhava a barra do token, nada saia para os outros clientes.
+
+Digitar funcionava porque digitacao dispara `input` de verdade. Era essa a assimetria — e como o mestre usa o botao, o efeito era "nao atualiza em lugar nenhum".
+
+Vale registrar o que **nao** era: o caminho de propagacao (ficha local, `mesa:sheet:patch` pelo DO, `sheet:changed` que faz a ficha recarregar) estava correto o tempo todo. Nenhuma linha dele precisou mudar.
+
+### Correcao
+
+Uma linha: o stepper passa a disparar `input`, o evento que o inspetor escuta.
+
+### Verificacao
+
+Tres testes em `tests/mesa-audit.spec.cjs` (bloco "Inspetor: +/- de Vida commita de verdade"), cobrindo exatamente os tres lugares que o Tiago citou: o estado do token, a ficha gravada e a barra desenhada acima do token — mais um que confirma que o botao transmite o patch para a rede, e outro que o teto da ficha continua respeitado.
+
+Voltando o `change`, **os tres reprovam**.
+
+Nota de teste: a primeira versao do teste da barra leu a largura logo apos o clique e reprovava de vez em quando — `scheduleMesaRender` e assincrono. Virou `expect.poll`, e a suite rodou tres vezes seguidas verde. Era corrida do teste, nao do site.
+
+### Arquivos
+
+`js/mesa-inspector.js`, `tests/mesa-audit.spec.cjs`, `mesa.html` (cache-busting), `tools/build-pages.cjs`.
+
+## Etapa Anterior (2026-08-18 — Etapa 92: a secao "Acoes" do inspetor)
 
 Relato do Tiago, com print: "precisamos organizar essa parte, esta totalmente quebrada". Era a secao **Acoes** do inspetor de token (Visibilidade / Camada / Marcadores / Palco).
 

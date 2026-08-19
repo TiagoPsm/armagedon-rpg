@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-19 11:50:51 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-19 11:51:36 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,16 +13,15 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `1eaa4ad 2026-08-19 fix(mesa): o clique volta a chegar em quem foi clicado (Etapa 91)`
+- Ultimo commit: `9feac17 2026-08-19 style(mesa): a secao Acoes do inspetor fala uma lingua so (Etapa 92)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
 M  DEV_STATUS.md
-M  VISUAL_RULES.md
-M  css/mesa-inspector.css
-M  css/mesa-stage.css
+M  SYSTEM_RULES.md
+M  js/mesa-inspector.js
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
 M  tools/build-pages.cjs
@@ -38,9 +37,8 @@ M  tools/build-pages.cjs
 
 ```text
 DEV_STATUS.md
-VISUAL_RULES.md
-css/mesa-inspector.css
-css/mesa-stage.css
+SYSTEM_RULES.md
+js/mesa-inspector.js
 mesa.html
 tests/mesa-audit.spec.cjs
 tools/build-pages.cjs

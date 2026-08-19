@@ -6018,3 +6018,95 @@ test.describe("Inspetor: a secao Acoes fala uma lingua so (Etapa 92)", () => {
     expect(fora, `elementos transbordando: ${JSON.stringify(fora)}`).toEqual([]);
   });
 });
+
+/* ============================================================
+ * Etapa 93 — o +/- de Vida/Integridade nao mudava nada.
+ *
+ * Relato do Tiago: "a vida do token nao atualiza em tempo real, nem na
+ * mesa, nem na ficha, nem acima do token".
+ *
+ * A cadeia inteira estava certa — medido: DIGITAR o valor movia o estado,
+ * redesenhava a barra acima do token (66,7% -> 25%) e mandava um
+ * mesa:sheet:patch para a rede. O que nao funcionava era o botao: o
+ * stepper disparava `new Event("change")`, e o inspetor escuta `input`
+ * (js/mesa-core.js). Ninguem escutava `change` ali, entao o +/- so mexia
+ * no numero da tela.
+ *
+ * Por isso os tres sintomas ao mesmo tempo: quem usa o botao nao propaga
+ * para lugar nenhum — token, ficha e demais clientes ficam todos parados.
+ * ============================================================ */
+test.describe("Inspetor: +/- de Vida commita de verdade (Etapa 93)", () => {
+  async function abrirComTokenSelecionado(page) {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.locator('.mesa-token[data-token-id="ana"]').click();
+    await expect.poll(() => page.locator('#tokenInspector input[data-stat-field="currentLife"]').count()).toBeGreaterThan(0);
+  }
+
+  test("o + move a vida no estado, na ficha e na barra acima do token", async ({ page }) => {
+    await abrirComTokenSelecionado(page);
+
+    const antes = await page.evaluate(() => ({
+      vida: findToken("ana").currentLife,
+      barra: document.querySelector('.mesa-token[data-token-id="ana"] .mesa-token-life-fill')?.style.width,
+      ficha: JSON.parse(localStorage.getItem("tc_sheets") || "{}").ana?.vidaAtual
+    }));
+
+    await page.locator('#tokenInspector .stat-step-btn[data-stat-step="-1"][data-stat-field="currentLife"]').first().click();
+
+    await expect
+      .poll(() => page.evaluate(() => findToken("ana").currentLife))
+      .toBe(antes.vida - 1);
+
+    // A barra e redesenhada por scheduleMesaRender, que e assincrono: espera
+    // ela mudar em vez de ler uma vez so (ler cedo demais reprovava por
+    // corrida do teste, nao por defeito do site).
+    await expect
+      .poll(() => page.evaluate(() =>
+        document.querySelector('.mesa-token[data-token-id="ana"] .mesa-token-life-fill')?.style.width
+      ), { message: "a barra acima do token nao foi redesenhada" })
+      .not.toBe(antes.barra);
+
+    const fichaDepois = await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("tc_sheets") || "{}").ana?.vidaAtual
+    );
+    expect(String(fichaDepois), "a ficha nao acompanhou o botao").toBe(String(antes.vida - 1));
+  });
+
+  test("o botao transmite o patch para os outros clientes, igual a digitacao", async ({ page }) => {
+    await abrirComTokenSelecionado(page);
+
+    const enviados = await page.evaluate(async () => {
+      const registro = [];
+      const original = window.broadcastMesaSheetPatch;
+      window.broadcastMesaSheetPatch = (...args) => { registro.push(args[0]); return original?.apply(null, args); };
+
+      document.querySelector('#tokenInspector .stat-step-btn[data-stat-step="-1"][data-stat-field="currentLife"]').click();
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      window.broadcastMesaSheetPatch = original;
+      return registro;
+    });
+
+    expect(enviados.length, "o botao nao transmitiu nada para a rede").toBe(1);
+    expect(String(enviados[0])).toContain("ana");
+  });
+
+  test("o + respeita o teto da ficha", async ({ page }) => {
+    await abrirComTokenSelecionado(page);
+
+    const resultado = await page.evaluate(async () => {
+      const btn = document.querySelector('#tokenInspector .stat-step-btn[data-stat-step="1"][data-stat-field="currentLife"]');
+      for (let i = 0; i < 12; i += 1) {
+        btn.click();
+        await new Promise(resolve => setTimeout(resolve, 40));
+      }
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const token = findToken("ana");
+      return { vida: token.currentLife, max: token.maxLife };
+    });
+
+    expect(resultado.vida, "a vida passou do maximo").toBe(resultado.max);
+  });
+});

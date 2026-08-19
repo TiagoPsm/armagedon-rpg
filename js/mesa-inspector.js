@@ -251,6 +251,14 @@ function buildInspectorNote(token, canEditCurrent, canEditAll, canViewStats) {
     const newVal = Math.min(max, Math.max(min, (parseInt(input.value, 10) || 0) + step));
 
     input.value = newVal;
-    input.dispatchEvent(new Event("change", { bubbles: true }));
+    // "input", nao "change" (Etapa 93).
+    //
+    // O inspetor escuta `input` (handleInspectorStatInput, ligado em
+    // js/mesa-core.js) — e e ele quem grava na ficha, redesenha a barra do
+    // token e transmite o mesa:sheet:patch. Ninguem escuta `change` aqui,
+    // entao o +/- so mexia no numero da tela: a vida nao mudava no token,
+    // nem na ficha, nem para os outros clientes. Digitar o valor funcionava,
+    // porque digitar dispara `input` de verdade — era essa a assimetria.
+    input.dispatchEvent(new Event("input", { bubbles: true }));
   });
 })();
