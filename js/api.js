@@ -415,6 +415,19 @@
     async activateMesaScene(sceneId) {
       return request(`/mesa/scenes/${encodeURIComponent(sceneId)}/activate`, { method: "POST", body: {} });
     },
+    // Pastas de cena (Etapa 96) — um nivel, master-only. folderId vazio = raiz.
+    async createMesaSceneFolder(name) {
+      return request("/mesa/scene-folders", { method: "POST", body: { name } });
+    },
+    async renameMesaSceneFolder(folderId, name) {
+      return request(`/mesa/scene-folders/${encodeURIComponent(folderId)}`, { method: "PUT", body: { name } });
+    },
+    async deleteMesaSceneFolder(folderId) {
+      return request(`/mesa/scene-folders/${encodeURIComponent(folderId)}`, { method: "DELETE" });
+    },
+    async setMesaSceneFolder(sceneId, folderId) {
+      return request(`/mesa/scenes/${encodeURIComponent(sceneId)}/folder`, { method: "PUT", body: { folderId } });
+    },
     async saveMesaScene(data, options = {}) {
       return request("/mesa/scene", {
         method: "PUT",

@@ -331,6 +331,23 @@ const META_SCENE_ROW_ID = "meta:mesa";
 const MAX_SCENES = 20;
 const SCENE_NAME_MAX = 60;
 
+/* ── PASTAS DE CENA (Etapa 96) ─────────────────────────────────────
+ * Um nivel so, mais a raiz. Vivem no MESMO documento de metadados que ja
+ * guarda nomes e cena ativa (linha `meta:mesa`): zero migracao de schema,
+ * zero coluna nova. `folders` e a lista; `sceneFolders` diz em que pasta
+ * cada cena esta — cena sem entrada esta na raiz. */
+const MAX_SCENE_FOLDERS = 12;
+const FOLDER_NAME_MAX = 40;
+
+function isValidFolderId(value) {
+  return /^f[a-z0-9]{1,32}$/.test(String(value || ""));
+}
+
+function normalizeFolderName(value, fallback = "Pasta sem nome") {
+  const name = String(value || "").replace(/\s+/g, " ").trim().slice(0, FOLDER_NAME_MAX);
+  return name || fallback;
+}
+
 function isValidSceneId(value) {
   const id = String(value || "");
   return /^[a-z0-9_-]{1,40}$/.test(id) && !id.startsWith("meta");
@@ -353,7 +370,25 @@ async function getMesaSceneMeta(env) {
       if (isValidSceneId(id)) names[id] = normalizeSceneName(name);
     });
   }
-  return { activeId, names };
+  const folders = [];
+  if (Array.isArray(data?.folders)) {
+    data.folders.forEach(folder => {
+      if (!isValidFolderId(folder?.id)) return;
+      if (folders.some(existente => existente.id === folder.id)) return;
+      folders.push({ id: String(folder.id), name: normalizeFolderName(folder?.name) });
+    });
+  }
+  // Cena so fica numa pasta que existe: pasta apagada por outra via deixa a
+  // cena na raiz, sem virar orfa apontando para nada.
+  const sceneFolders = {};
+  if (data?.sceneFolders && typeof data.sceneFolders === "object") {
+    Object.entries(data.sceneFolders).forEach(([sceneId, folderId]) => {
+      if (!isValidSceneId(sceneId) || !isValidFolderId(folderId)) return;
+      if (!folders.some(folder => folder.id === folderId)) return;
+      sceneFolders[sceneId] = String(folderId);
+    });
+  }
+  return { activeId, names, folders: folders.slice(0, MAX_SCENE_FOLDERS), sceneFolders };
 }
 
 async function saveMesaSceneMeta(env, meta) {
@@ -412,7 +447,8 @@ async function listMesaScenes(env, actor) {
       // Mesma normalizacao da cena: cartao nunca aponta para URL que a cena
       // em si recusaria.
       mapUrl: normalizeTokenImageUrl(row.map_url) || "",
-      tokenCount: Number.isFinite(row.token_count) ? Number(row.token_count) : 0
+      tokenCount: Number.isFinite(row.token_count) ? Number(row.token_count) : 0,
+      folderId: meta.sceneFolders[row.id] || ""
     }));
   // A cena default existe mesmo sem linha (nasce no primeiro PUT).
   if (!scenes.some(scene => scene.id === DEFAULT_SCENE_ID)) {
@@ -422,10 +458,11 @@ async function listMesaScenes(env, actor) {
       updatedAt: null,
       active: meta.activeId === DEFAULT_SCENE_ID,
       mapUrl: "",
-      tokenCount: 0
+      tokenCount: 0,
+      folderId: meta.sceneFolders[DEFAULT_SCENE_ID] || ""
     });
   }
-  return { scenes, activeId: meta.activeId };
+  return { scenes, activeId: meta.activeId, folders: meta.folders };
 }
 
 async function createMesaScene(env, actor, payload) {
@@ -480,6 +517,7 @@ async function deleteMesaScene(env, actor, sceneId) {
     throw jsonError("Ative outra cena antes de excluir a cena ativa.", 400);
   }
   delete meta.names[sceneId];
+  delete meta.sceneFolders[sceneId];   // senao a cena excluida deixaria lixo na pasta
   const now = new Date().toISOString();
   await env.DB.batch([
     env.DB.prepare("delete from mesa_scenes where id = ?").bind(sceneId),
@@ -582,9 +620,77 @@ async function saveMesaScene(env, actor, payload, requestedId) {
   return getMesaScene(env, actor, sceneId);
 }
 
+/* ── PASTAS ──────────────────────────────────────────────────────── */
+
+async function createMesaSceneFolder(env, actor, payload) {
+  requireMaster(actor, "criar pastas");
+  const meta = await getMesaSceneMeta(env);
+  if (meta.folders.length >= MAX_SCENE_FOLDERS) {
+    throw jsonError(`Limite de ${MAX_SCENE_FOLDERS} pastas atingido.`, 400);
+  }
+  const id = "f" + crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+  const name = normalizeFolderName(payload?.name, "Nova pasta");
+  meta.folders.push({ id, name });
+  await saveMesaSceneMeta(env, meta);
+  return { id, name };
+}
+
+async function renameMesaSceneFolder(env, actor, folderId, payload) {
+  requireMaster(actor, "renomear pastas");
+  if (!isValidFolderId(folderId)) throw jsonError("Pasta invalida.", 400);
+  const meta = await getMesaSceneMeta(env);
+  const folder = meta.folders.find(entry => entry.id === folderId);
+  if (!folder) throw jsonError("Pasta nao encontrada.", 404);
+  folder.name = normalizeFolderName(payload?.name, folder.name);
+  await saveMesaSceneMeta(env, meta);
+  return { id: folderId, name: folder.name };
+}
+
+/**
+ * Excluir pasta NUNCA exclui cena: as cenas dela voltam para a raiz.
+ * Uma pasta e organizacao, nao dono do conteudo.
+ */
+async function deleteMesaSceneFolder(env, actor, folderId) {
+  requireMaster(actor, "excluir pastas");
+  if (!isValidFolderId(folderId)) throw jsonError("Pasta invalida.", 400);
+  const meta = await getMesaSceneMeta(env);
+  if (!meta.folders.some(entry => entry.id === folderId)) {
+    throw jsonError("Pasta nao encontrada.", 404);
+  }
+  meta.folders = meta.folders.filter(entry => entry.id !== folderId);
+  Object.keys(meta.sceneFolders).forEach(sceneId => {
+    if (meta.sceneFolders[sceneId] === folderId) delete meta.sceneFolders[sceneId];
+  });
+  await saveMesaSceneMeta(env, meta);
+  return { ok: true, id: folderId };
+}
+
+/** folderId vazio = mover para a raiz. */
+async function setMesaSceneFolder(env, actor, sceneId, payload) {
+  requireMaster(actor, "organizar cenas em pastas");
+  if (!isValidSceneId(sceneId)) throw jsonError("Cena invalida.", 400);
+  const folderId = String(payload?.folderId || "");
+  const meta = await getMesaSceneMeta(env);
+  if (!folderId) {
+    delete meta.sceneFolders[sceneId];
+  } else {
+    if (!isValidFolderId(folderId)) throw jsonError("Pasta invalida.", 400);
+    if (!meta.folders.some(entry => entry.id === folderId)) {
+      throw jsonError("Pasta nao encontrada.", 404);
+    }
+    meta.sceneFolders[sceneId] = folderId;
+  }
+  await saveMesaSceneMeta(env, meta);
+  return { id: sceneId, folderId };
+}
+
 export {
   activateMesaScene,
   createMesaScene,
+  createMesaSceneFolder,
+  deleteMesaSceneFolder,
+  setMesaSceneFolder,
+  renameMesaSceneFolder,
   deleteMesaScene,
   getMesaScene,
   getMesaSceneMeta,

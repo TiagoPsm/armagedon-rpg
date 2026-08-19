@@ -202,3 +202,24 @@ Os dois campos saem de `json_extract(data_json, '$.map.url')` e `json_array_leng
 `mapUrl` passa pela mesma `normalizeTokenImageUrl` da cena: o cartao nunca aponta para URL que a propria cena recusaria.
 
 Compatibilidade: campos ADICIONADOS, nada removido. Cliente antigo ignora; cliente novo sem o deploy cai no simbolo neutro e "0 tokens". `--dry-run` conferido em 2026-08-18; deploy pendente do Tiago.
+
+
+## Pastas de cena (2026-08-19, Etapa 96)
+
+Rotas novas, todas master-only:
+
+- `POST /api/mesa/scene-folders` — cria pasta (teto de 12, nome de 40 caracteres)
+- `PUT /api/mesa/scene-folders/:id` — renomeia
+- `DELETE /api/mesa/scene-folders/:id` — exclui a pasta e devolve as cenas dela para a raiz; **nenhuma cena e apagada**
+- `PUT /api/mesa/scenes/:id/folder` — move a cena (`folderId` vazio = raiz)
+
+`GET /api/mesa/scenes` passou a devolver `folders` e um `folderId` por cena.
+
+Onde vive: no MESMO documento de metadados de cena (linha `meta:mesa`), campos `folders` e `sceneFolders`. Nenhuma coluna ou tabela nova — nada a migrar.
+
+Duas armadilhas registradas no codigo:
+
+1. `getMesaSceneMeta` **reconstroi** o objeto; sem ler `folders`/`sceneFolders` ali, qualquer `saveMesaSceneMeta` posterior (um rename de cena basta) apagaria todas as pastas.
+2. A rota de `/folder` precisa ser avaliada ANTES da rota generica `PUT /api/mesa/scenes/:id`, senao o sufixo `/folder` entra no id da cena.
+
+Compatibilidade: metadado antigo (sem os campos) funciona — tudo cai na raiz. `--dry-run` conferido em 2026-08-19; deploy pendente do Tiago.

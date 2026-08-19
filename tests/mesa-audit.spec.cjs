@@ -3357,7 +3357,7 @@ test.describe("Multiplas cenas — backend (Etapa 48)", () => {
     const initial = await mesa.listMesaScenes(env, MASTER);
     expect(initial.activeId).toBe("default");
     expect(initial.scenes).toEqual([
-      { id: "default", name: "Cena principal", updatedAt: null, active: true, mapUrl: "", tokenCount: 0 }
+      { id: "default", name: "Cena principal", updatedAt: null, active: true, mapUrl: "", tokenCount: 0, folderId: "" }
     ]);
 
     // Salva algo na default e cria a segunda cena
@@ -6254,5 +6254,184 @@ test.describe("Pop-up de marcadores: proporcional ao inspetor (Etapa 95)", () =>
 
     expect(comparacao.fonteLimpar).toBe(comparacao.fonteInspetor);
     expect(comparacao.alturaLimpar).toBe(comparacao.alturaInspetor);
+  });
+});
+
+/* ============================================================
+ * Pastas de cena — backend (Etapa 96)
+ *
+ * As pastas vivem no MESMO documento de metadados que ja guardava nomes e
+ * cena ativa (linha meta:mesa): zero coluna nova, zero migracao. O que os
+ * testes protegem:
+ *
+ *   1. excluir pasta NAO exclui cena — as de dentro voltam para a raiz;
+ *   2. cena apontando para pasta que nao existe mais cai na raiz sozinha
+ *      (nada de orfa apontando para o vazio);
+ *   3. excluir CENA nao deixa lixo no mapa de pastas;
+ *   4. so o mestre organiza.
+ * ============================================================ */
+test.describe("Pastas de cena — backend (Etapa 96)", () => {
+  function createFakeDb() {
+    const rows = new Map();
+    function makeStatement(sql) {
+      return {
+        bind(...values) {
+          return {
+            sql, values,
+            async first() {
+              const row = rows.get(values[0]);
+              return row ? { ...row } : null;
+            },
+            async run() { applyWrite(sql, values); return { success: true }; },
+            async all() { throw new Error("all() apos bind nao usado"); }
+          };
+        },
+        async all() {
+          if (!/not like 'meta%'/.test(sql)) throw new Error("all() inesperado: " + sql);
+          const results = [...rows.values()]
+            .filter(row => !String(row.id).startsWith("meta"))
+            .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+          return {
+            results: results.map(row => {
+              let data = {};
+              try { data = JSON.parse(row.data_json || "{}"); } catch { data = {}; }
+              return {
+                id: row.id,
+                updated_at: row.updated_at,
+                map_url: data?.map?.url ?? null,
+                token_count: Array.isArray(data?.tokens) ? data.tokens.length : null
+              };
+            })
+          };
+        }
+      };
+    }
+    function applyWrite(sql, values) {
+      if (/^\s*delete/i.test(sql)) { rows.delete(values[0]); return; }
+      if (/insert into mesa_scenes/i.test(sql)) {
+        const [id, dataJson] = values;
+        const createdAt = values.length >= 6 ? values[4] : values[2];
+        const updatedAt = values.length >= 6 ? values[5] : values[3];
+        const existing = rows.get(id);
+        rows.set(id, {
+          id,
+          data_json: dataJson,
+          created_at: existing?.created_at || createdAt,
+          updated_at: updatedAt,
+          updated_by_user_id: values.length >= 6 ? values[3] : (existing?.updated_by_user_id || null)
+        });
+        return;
+      }
+      throw new Error("write inesperado: " + sql);
+    }
+    return {
+      prepare: sql => makeStatement(sql),
+      async batch(statements) { statements.forEach(st => applyWrite(st.sql, st.values)); return []; },
+      _rows: rows
+    };
+  }
+
+  const MESTRE = { role: "master", sub: "u1", username: "mestre" };
+  const JOGADOR = { role: "player", sub: "u2", username: "ana" };
+
+  test("criar, renomear e mover: a cena aparece dentro da pasta", async () => {
+    const mesa = await import("../cloudflare/src/mesa.js");
+    const env = { DB: createFakeDb() };
+
+    const pasta = await mesa.createMesaSceneFolder(env, MESTRE, { name: "Capitulo 1" });
+    expect(pasta.id).toMatch(/^f[a-z0-9]+$/);
+    expect(pasta.name).toBe("Capitulo 1");
+
+    const cena = await mesa.createMesaScene(env, MESTRE, { name: "Caverna" });
+    await mesa.setMesaSceneFolder(env, MESTRE, cena.id, { folderId: pasta.id });
+
+    const lista = await mesa.listMesaScenes(env, MESTRE);
+    expect(lista.folders).toEqual([{ id: pasta.id, name: "Capitulo 1" }]);
+    expect(lista.scenes.find(s => s.id === cena.id).folderId).toBe(pasta.id);
+    // A cena que nunca foi movida fica na raiz.
+    expect(lista.scenes.find(s => s.id === "default").folderId).toBe("");
+
+    await mesa.renameMesaSceneFolder(env, MESTRE, pasta.id, { name: "Capitulo 2" });
+    expect((await mesa.listMesaScenes(env, MESTRE)).folders[0].name).toBe("Capitulo 2");
+
+    // Voltar para a raiz e so mandar folderId vazio.
+    await mesa.setMesaSceneFolder(env, MESTRE, cena.id, { folderId: "" });
+    expect((await mesa.listMesaScenes(env, MESTRE)).scenes.find(s => s.id === cena.id).folderId).toBe("");
+  });
+
+  test("excluir pasta devolve as cenas para a raiz, sem apagar nenhuma", async () => {
+    const mesa = await import("../cloudflare/src/mesa.js");
+    const env = { DB: createFakeDb() };
+
+    const pasta = await mesa.createMesaSceneFolder(env, MESTRE, { name: "Descartavel" });
+    const a = await mesa.createMesaScene(env, MESTRE, { name: "Cena A" });
+    const b = await mesa.createMesaScene(env, MESTRE, { name: "Cena B" });
+    await mesa.setMesaSceneFolder(env, MESTRE, a.id, { folderId: pasta.id });
+    await mesa.setMesaSceneFolder(env, MESTRE, b.id, { folderId: pasta.id });
+
+    await mesa.deleteMesaSceneFolder(env, MESTRE, pasta.id);
+
+    const lista = await mesa.listMesaScenes(env, MESTRE);
+    expect(lista.folders).toEqual([]);
+    // As duas cenas continuam existindo — na raiz.
+    expect(lista.scenes.map(s => s.id)).toEqual(expect.arrayContaining([a.id, b.id]));
+    expect(lista.scenes.find(s => s.id === a.id).folderId).toBe("");
+    expect(lista.scenes.find(s => s.id === b.id).folderId).toBe("");
+  });
+
+  test("cena excluida nao deixa lixo no mapa de pastas", async () => {
+    const mesa = await import("../cloudflare/src/mesa.js");
+    const env = { DB: createFakeDb() };
+
+    const pasta = await mesa.createMesaSceneFolder(env, MESTRE, { name: "Arquivo" });
+    const cena = await mesa.createMesaScene(env, MESTRE, { name: "Temporaria" });
+    await mesa.setMesaSceneFolder(env, MESTRE, cena.id, { folderId: pasta.id });
+    await mesa.deleteMesaScene(env, MESTRE, cena.id);
+
+    const meta = await mesa.getMesaSceneMeta(env);
+    expect(Object.keys(meta.sceneFolders)).not.toContain(cena.id);
+  });
+
+  test("guardas: pasta inexistente, id invalido e jogador", async () => {
+    const mesa = await import("../cloudflare/src/mesa.js");
+    const env = { DB: createFakeDb() };
+    const cena = await mesa.createMesaScene(env, MESTRE, { name: "Cena" });
+
+    const esperaErro = async (promise, status) => {
+      try {
+        await promise;
+        throw new Error("esperava erro " + status);
+      } catch (error) {
+        expect(error?.status).toBe(status);
+      }
+    };
+
+    await esperaErro(mesa.setMesaSceneFolder(env, MESTRE, cena.id, { folderId: "fnaoexiste" }), 404);
+    await esperaErro(mesa.setMesaSceneFolder(env, MESTRE, cena.id, { folderId: "###" }), 400);
+    await esperaErro(mesa.renameMesaSceneFolder(env, MESTRE, "fnaoexiste", { name: "x" }), 404);
+    await esperaErro(mesa.deleteMesaSceneFolder(env, MESTRE, "fnaoexiste"), 404);
+    // Jogador nao organiza a mesa do mestre.
+    await esperaErro(mesa.createMesaSceneFolder(env, JOGADOR, { name: "x" }), 403);
+    await esperaErro(mesa.setMesaSceneFolder(env, JOGADOR, cena.id, { folderId: "" }), 403);
+  });
+
+  test("cena apontando para pasta que sumiu volta para a raiz sozinha", async () => {
+    const mesa = await import("../cloudflare/src/mesa.js");
+    const env = { DB: createFakeDb() };
+    const cena = await mesa.createMesaScene(env, MESTRE, { name: "Cena" });
+
+    // Metadado corrompido na mao: aponta para uma pasta que nao existe.
+    const agora = new Date().toISOString();
+    await env.DB.prepare("insert into mesa_scenes (id, data_json, created_at, updated_at) values (?, ?, ?, ?)")
+      .bind("meta:mesa", JSON.stringify({
+        activeId: "default",
+        names: { [cena.id]: "Cena" },
+        folders: [],
+        sceneFolders: { [cena.id]: "ffantasma" }
+      }), agora, agora)
+      .run();
+
+    const lista = await mesa.listMesaScenes(env, MESTRE);
+    expect(lista.scenes.find(s => s.id === cena.id).folderId).toBe("");
   });
 });

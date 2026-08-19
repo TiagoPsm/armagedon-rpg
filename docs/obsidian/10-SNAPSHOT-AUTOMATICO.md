@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-19 11:54:26 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-19 14:00:06 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,18 +13,29 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `bc2a848 2026-08-19 style(mesa): inspetor vira uma coluna simetrica (Etapa 94)`
+- Ultimo commit: `c0d1fbd 2026-08-19 style(mesa): pop-up de marcadores proporcional ao inspetor (Etapa 95)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
 M  DEV_STATUS.md
-M  VISUAL_RULES.md
-M  css/mesa-stage.css
-M  js/mesa-markers.js
+M  SYSTEM_RULES.md
+M  cloudflare/README.md
+M  cloudflare/src/index.js
+M  cloudflare/src/mesa.js
+M  css/mesa-scenes.css
+M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  echos.html
+M  ficha.html
+M  index.html
+M  js/api.js
+M  js/mesa-scenes.js
 M  mesa.html
+M  regras.html
+M  sugestoes.html
 M  tests/mesa-audit.spec.cjs
+M  tests/mesa-scenes.spec.cjs
 M  tools/build-pages.cjs
 ```
 
@@ -38,11 +49,22 @@ M  tools/build-pages.cjs
 
 ```text
 DEV_STATUS.md
-VISUAL_RULES.md
-css/mesa-stage.css
-js/mesa-markers.js
+SYSTEM_RULES.md
+cloudflare/README.md
+cloudflare/src/index.js
+cloudflare/src/mesa.js
+css/mesa-scenes.css
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+echos.html
+ficha.html
+index.html
+js/api.js
+js/mesa-scenes.js
 mesa.html
+regras.html
+sugestoes.html
 tests/mesa-audit.spec.cjs
+tests/mesa-scenes.spec.cjs
 tools/build-pages.cjs
 ```
 
@@ -140,7 +162,7 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
     0,73 MB  debug.log
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js
     0,61 MB  node_modules\playwright-core\lib\vite\traceViewer\assets\defaultSettingsView-GTWI-W_B.js
-    0,52 MB  _site\js\mesa-page.bundle.js
+    0,53 MB  _site\js\mesa-page.bundle.js
     0,45 MB  node_modules\playwright-core\lib\utilsBundleImpl\index.js
 ```
 

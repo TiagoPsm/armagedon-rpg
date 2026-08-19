@@ -50,11 +50,15 @@ import {
 import {
   activateMesaScene,
   createMesaScene,
+  createMesaSceneFolder,
   deleteMesaScene,
+  deleteMesaSceneFolder,
   getMesaScene,
   listMesaScenes,
   renameMesaScene,
-  saveMesaScene
+  renameMesaSceneFolder,
+  saveMesaScene,
+  setMesaSceneFolder
 } from "./mesa.js";
 import { MesaRealtimeRoom } from "./mesa-realtime.js";
 
@@ -660,6 +664,35 @@ export default {
         const activation = await activateMesaScene(env, session, sceneId);
         await broadcastMesaSceneSwitch(env, activation, session);
         return withCors(json(activation), origin);
+      }
+
+      // Pastas de cena (Etapa 96) — master-only, tudo dentro do documento de
+      // metadados que ja existia. `/folder` vem ANTES da rota generica de PUT
+      // de cena: senao o sufixo entraria no id da cena.
+      if (path.startsWith("/api/mesa/scenes/") && request.method === "PUT" && path.endsWith("/folder")) {
+        const session = await requireAuth(request, env);
+        const sceneId = path.slice("/api/mesa/scenes/".length, -"/folder".length);
+        const body = await readJson(request);
+        return withCors(json(await setMesaSceneFolder(env, session, sceneId, body)), origin);
+      }
+
+      if (path === "/api/mesa/scene-folders" && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        const body = await readJson(request);
+        return withCors(json(await createMesaSceneFolder(env, session, body)), origin);
+      }
+
+      if (path.startsWith("/api/mesa/scene-folders/") && request.method === "PUT") {
+        const session = await requireAuth(request, env);
+        const folderId = path.slice("/api/mesa/scene-folders/".length);
+        const body = await readJson(request);
+        return withCors(json(await renameMesaSceneFolder(env, session, folderId, body)), origin);
+      }
+
+      if (path.startsWith("/api/mesa/scene-folders/") && request.method === "DELETE") {
+        const session = await requireAuth(request, env);
+        const folderId = path.slice("/api/mesa/scene-folders/".length);
+        return withCors(json(await deleteMesaSceneFolder(env, session, folderId)), origin);
       }
 
       if (path.startsWith("/api/mesa/scenes/") && request.method === "PUT") {

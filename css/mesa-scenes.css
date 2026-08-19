@@ -207,6 +207,79 @@
   white-space: nowrap;
 }
 
+/* ── BARRA DE PASTAS (Etapa 96) ──────────────────────────────
+ * Um nivel so: chips de filtro, mais as acoes da pasta aberta. Os chips
+ * sao filtro de TELA — nenhum deles vai ao servidor. */
+
+.mesa-scenes-folderbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mesa-scenes-folders {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.mesa-scene-folder {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+
+.mesa-scene-folder:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.mesa-scene-folder:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Pasta aberta: fundo aceso E aria-pressed no botao — quem nao distingue o
+   tom ainda sabe qual esta aberta. */
+.mesa-scene-folder.is-active {
+  border-color: var(--border-accent);
+  background: var(--accent-deep);
+  color: #e8b4ae;
+}
+
+.mesa-scene-folder-count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 0.68rem;
+  text-align: center;
+}
+
+.mesa-scenes-folder-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.mesa-scenes-folder-actions .mini-btn[hidden] {
+  display: none;
+}
+
 /* ── AVISOS E ESTADO ─────────────────────────────────────────── */
 
 .mesa-scenes-status {
@@ -249,7 +322,7 @@
 
 .mesa-scenes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(166px, 1fr));
   gap: 14px;
   margin: 0;
   padding: 0;
@@ -364,10 +437,18 @@
 
 /* ── ACOES DO CARTAO ─────────────────────────────────────────── */
 
+/* Tres acoes (Renomear / Mover / Excluir) nao cabem lado a lado num cartao
+   de 150px: sem a quebra, "Excluir" saia cortado para fora do cartao. */
 .mesa-scene-card-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   padding: 0 10px 10px;
+}
+
+.mesa-scene-card-actions .mesa-scene-action {
+  flex: 1 1 60px;
+  min-width: 0;
 }
 
 .mesa-scene-action {

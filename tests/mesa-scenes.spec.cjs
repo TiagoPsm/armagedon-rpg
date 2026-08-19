@@ -89,11 +89,16 @@ async function instalarBackendFalso(page, cenas = CENAS) {
     window.confirm = (...args) => { window.__nativosChamados.push(["confirm", ...args]); return true; };
 
     window.__cenas = listaInicial.map(cena => ({ ...cena }));
+    window.__pastas = [];
     window.AUTH = Object.assign({}, window.AUTH, { isBackendEnabled: () => true });
     window.APP = Object.assign({}, window.APP, {
       getMesaScenes: async () => {
         window.__sceneCalls.push(["list"]);
-        return { activeId: window.__cenas.find(c => c.active)?.id || "default", scenes: window.__cenas.map(c => ({ ...c })) };
+        return {
+          activeId: window.__cenas.find(c => c.active)?.id || "default",
+          scenes: window.__cenas.map(c => ({ ...c })),
+          folders: window.__pastas.map(f => ({ ...f }))
+        };
       },
       createMesaScene: async name => {
         window.__sceneCalls.push(["create", name]);
@@ -115,6 +120,31 @@ async function instalarBackendFalso(page, cenas = CENAS) {
         window.__sceneCalls.push(["activate", id]);
         window.__cenas.forEach(c => { c.active = c.id === id; });
         return { activeId: id };
+      },
+      createMesaSceneFolder: async name => {
+        window.__sceneCalls.push(["folder-create", name]);
+        const pasta = { id: `f${window.__pastas.length + 1}`, name };
+        window.__pastas.push(pasta);
+        return { ...pasta };
+      },
+      renameMesaSceneFolder: async (id, name) => {
+        window.__sceneCalls.push(["folder-rename", id, name]);
+        const alvo = window.__pastas.find(f => f.id === id);
+        if (alvo) alvo.name = name;
+        return { id, name };
+      },
+      deleteMesaSceneFolder: async id => {
+        window.__sceneCalls.push(["folder-delete", id]);
+        window.__pastas = window.__pastas.filter(f => f.id !== id);
+        // Excluir pasta NAO exclui cena: as de dentro voltam para a raiz.
+        window.__cenas.forEach(c => { if (c.folderId === id) c.folderId = ""; });
+        return { ok: true };
+      },
+      setMesaSceneFolder: async (sceneId, folderId) => {
+        window.__sceneCalls.push(["scene-folder", sceneId, folderId]);
+        const alvo = window.__cenas.find(c => c.id === sceneId);
+        if (alvo) alvo.folderId = folderId;
+        return { id: sceneId, folderId };
       }
     });
     return window.refreshMesaScenesUI();
@@ -378,5 +408,121 @@ test.describe("Gaveta de cenas — carga e permissao (Etapa 89)", () => {
     });
 
     expect(visivel).toEqual({ botao: false, gaveta: false });
+  });
+});
+
+/* ============================================================
+ * Pastas de cena (Etapa 96)
+ *
+ * Um nivel so, mais a raiz "Todas as cenas". O que estes testes protegem:
+ *
+ *   1. mover cena e por MENU, nao so arrastando — arrastar sozinho e
+ *      intransponivel por teclado;
+ *   2. excluir pasta NUNCA exclui cena: as de dentro voltam para a raiz;
+ *   3. o chip de pasta e filtro de TELA — nao custa requisicao;
+ *   4. a pasta aberta e dita por aria-pressed, nao so pelo destaque.
+ * ============================================================ */
+test.describe("Pastas de cena (Etapa 96)", () => {
+  async function abrirComPasta(page, nome = "Capitulo 1") {
+    await seedMaster(page);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await instalarBackendFalso(page);
+    await abrirGaveta(page);
+
+    await page.locator("#mesaSceneFolderCreateBtn").click();
+    await page.locator("#mesaSceneNameField").fill(nome);
+    await page.locator("#mesaSceneNameSubmit").click();
+    await expect.poll(() => page.locator('[data-folder-filter="f1"]').count()).toBe(1);
+  }
+
+  test("criar pasta usa o dialogo do site e abre a pasta nova", async ({ page }) => {
+    await abrirComPasta(page);
+
+    expect(await page.evaluate(() => window.__sceneCalls)).toContainEqual(["folder-create", "Capitulo 1"]);
+    expect(await page.evaluate(() => window.__nativosChamados)).toEqual([]);
+
+    // A pasta recem-criada fica aberta, e o titulo da lista acompanha.
+    await expect(page.locator('[data-folder-filter="f1"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#mesaScenesListTitle")).toHaveText("Capitulo 1");
+    // Vazia: a mensagem diz COMO por cena nela.
+    await expect(page.locator("#mesaScenesEmpty")).toContainText("Mover");
+  });
+
+  test("mover cena por menu leva ela para a pasta", async ({ page }) => {
+    await abrirComPasta(page);
+
+    // Volta para a raiz para enxergar as cenas.
+    await page.locator('[data-folder-filter=""]').click();
+    await page.locator('[data-scene-action="move"][data-scene-id="scaverna01"]').click();
+
+    const dialogo = page.locator(".ui-modal-panel");
+    await expect(dialogo).toBeVisible();
+    await expect(dialogo).toContainText("Capitulo 1");
+    await dialogo.locator('[data-modal-option="f1"]').click();
+
+    expect(await page.evaluate(() => window.__sceneCalls)).toContainEqual(["scene-folder", "scaverna01", "f1"]);
+    await expect(page.locator("#mesaScenesStatus")).toContainText("Capitulo 1");
+
+    // Agora a pasta tem 1 e a lista filtrada mostra so ela.
+    await expect(page.locator('[data-folder-filter="f1"] .mesa-scene-folder-count')).toHaveText("1");
+    await page.locator('[data-folder-filter="f1"]').click();
+    await expect(page.locator(".mesa-scene-card")).toHaveCount(1);
+    await expect(page.locator(".mesa-scene-card .mesa-scene-card-name")).toHaveText("Caverna Sombria");
+  });
+
+  test("filtrar por pasta nao custa requisicao ao servidor", async ({ page }) => {
+    await abrirComPasta(page);
+
+    const antes = await page.evaluate(() => window.__sceneCalls.filter(c => c[0] === "list").length);
+    await page.locator('[data-folder-filter=""]').click();
+    await page.locator('[data-folder-filter="f1"]').click();
+    await page.locator('[data-folder-filter=""]').click();
+    const depois = await page.evaluate(() => window.__sceneCalls.filter(c => c[0] === "list").length);
+
+    expect(depois, "trocar de pasta foi ao servidor").toBe(antes);
+  });
+
+  test("excluir pasta devolve as cenas para a raiz, sem apagar nenhuma", async ({ page }) => {
+    await abrirComPasta(page);
+
+    await page.locator('[data-folder-filter=""]').click();
+    await page.locator('[data-scene-action="move"][data-scene-id="scaverna01"]').click();
+    await page.locator('.ui-modal-panel [data-modal-option="f1"]').click();
+    await expect(page.locator('[data-folder-filter="f1"] .mesa-scene-folder-count')).toHaveText("1");
+
+    await page.locator('[data-folder-filter="f1"]').click();
+    await page.locator("#mesaSceneFolderDeleteBtn").click();
+
+    // O aviso precisa dizer que cena nenhuma se perde.
+    const confirmacao = page.locator(".ui-modal-panel");
+    await expect(confirmacao).toContainText("voltam para a raiz");
+    await confirmacao.locator("[data-modal-confirm]").click();
+
+    expect(await page.evaluate(() => window.__sceneCalls)).toContainEqual(["folder-delete", "f1"]);
+    // As tres cenas continuam vivas, agora na raiz.
+    await expect(page.locator(".mesa-scene-card")).toHaveCount(3);
+    await expect(page.locator('[data-folder-filter=""]')).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("renomear pasta so aparece com uma pasta aberta", async ({ page }) => {
+    await abrirComPasta(page);
+
+    // Pasta aberta: as duas acoes estao a mao.
+    await expect(page.locator("#mesaSceneFolderRenameBtn")).toBeVisible();
+    await expect(page.locator("#mesaSceneFolderDeleteBtn")).toBeVisible();
+
+    await page.locator("#mesaSceneFolderRenameBtn").click();
+    await expect(page.locator("#mesaSceneNameField")).toHaveValue("Capitulo 1");
+    await page.locator("#mesaSceneNameField").fill("Capitulo 2");
+    await page.locator("#mesaSceneNameSubmit").click();
+
+    expect(await page.evaluate(() => window.__sceneCalls)).toContainEqual(["folder-rename", "f1", "Capitulo 2"]);
+    await expect(page.locator('[data-folder-filter="f1"]')).toContainText("Capitulo 2");
+
+    // Na raiz elas somem: nao ha pasta para renomear nem excluir.
+    await page.locator('[data-folder-filter=""]').click();
+    await expect(page.locator("#mesaSceneFolderRenameBtn")).toBeHidden();
+    await expect(page.locator("#mesaSceneFolderDeleteBtn")).toBeHidden();
   });
 });

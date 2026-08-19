@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-08-18-coluna-1" />
   <link rel="stylesheet" href="css/mesa-map.css?v=2026-07-31-fit-sempre-1" />
   <link rel="stylesheet" href="css/mesa-drawing.css?v=2026-08-02-desenho-1" />
-  <link rel="stylesheet" href="css/mesa-scenes.css?v=2026-08-18-gaveta-cenas-1" />
+  <link rel="stylesheet" href="css/mesa-scenes.css?v=2026-08-19-pastas-1" />
   <!-- Permissoes (Etapa 75): esconde tudo marcado com data-mesa-master-only
        enquanto o body nao estiver com data-role="master". Carrega DEPOIS dos
        demais para vencer por ordem em caso de especificidade empatada. -->
@@ -812,8 +812,22 @@
                  placeholder="Pesquisar..." autocomplete="off" spellcheck="false">
         </div>
         <button type="button" class="btn btn-primary btn-small mesa-scenes-create" id="mesaSceneCreateBtn">
-          <span aria-hidden="true">&#43;</span> Criar cena
+          <span aria-hidden="true">&#43;</span>&nbsp;Criar cena
         </button>
+      </div>
+
+      <!-- Pastas (Etapa 96): um nivel, mais a raiz. Os chips sao montados em
+           js/mesa-scenes.js; aqui ficam o container e as acoes da pasta
+           aberta, que so aparecem quando ha uma selecionada. -->
+      <div class="mesa-scenes-folderbar">
+        <div class="mesa-scenes-folders" id="mesaScenesFolders" role="group" aria-label="Pastas de cena"></div>
+        <div class="mesa-scenes-folder-actions">
+          <button type="button" class="mini-btn" id="mesaSceneFolderCreateBtn">
+            <span aria-hidden="true">&#43;</span>&nbsp;Nova pasta
+          </button>
+          <button type="button" class="mini-btn" id="mesaSceneFolderRenameBtn" hidden>Renomear pasta</button>
+          <button type="button" class="mini-btn is-danger" id="mesaSceneFolderDeleteBtn" hidden>Excluir pasta</button>
+        </div>
       </div>
 
       <!-- O leitor de tela precisa saber o resultado de cada acao: a cena
@@ -854,7 +868,7 @@
   </div>
 
     <script src="js/runtime-config.js?v=2026-05-04-mesa-realtime-1" defer></script>
-  <script src="js/api.js?v=2026-07-27-scenes-1" defer></script>
+  <script src="js/api.js?v=2026-08-19-pastas-1" defer></script>
   <script src="js/ui.js?v=2026-06-11-soul-notify-1" defer></script>
   <script src="js/auth.js?v=2026-06-13-login-form-1" defer></script>
   <!-- Permissoes da Mesa (Etapa 75): precisa vir ANTES de todo modulo mesa-*,
@@ -869,7 +883,7 @@
   <script src="js/mesa-map.js?v=2026-08-18-mapa-por-cena-1" defer></script>
   <script src="js/mesa-grid.js?v=2026-07-31-cells-1" defer></script>
   <script src="js/mesa-fog.js?v=2026-07-29-sharp-1" defer></script>
-  <script src="js/mesa-scenes.js?v=2026-08-18-gaveta-cenas-1" defer></script>
+  <script src="js/mesa-scenes.js?v=2026-08-19-pastas-1" defer></script>
   <script src="js/mesa-ping.js?v=2026-07-27-ping-1" defer></script>
   <script src="js/mesa-ruler.js?v=2026-07-27-ruler-1" defer></script>
   <script src="js/mesa-dice.js?v=2026-08-16-armados-1" defer></script>

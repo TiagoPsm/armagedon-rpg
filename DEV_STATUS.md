@@ -11,6 +11,7 @@ Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencia
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
 
 - **[Tiago]** Teto de tamanho do token com a grade ligada: o token para por volta de 800% por causa do `_gridMaxCells` (metade do menor lado do mapa). Nao e bug — e decisao de regra de jogo, e esta esperando voce. — aberta em 2026-07-31 (Etapa 71)
+- **[Tiago]** Deploy do Worker para as pastas de cena: as rotas de `/api/mesa/scene-folders` e `/api/mesa/scenes/:id/folder` (Etapa 96) so existem depois de `npx wrangler deploy --config cloudflare/wrangler.toml`. Sem o deploy a barra de pastas aparece, mas criar pasta devolve erro. Dry-run ja conferido. — aberta em 2026-08-19 (Etapa 96)
 - **[Tiago]** Deploy do Worker para os cartoes de cena: `listMesaScenes` passou a devolver `mapUrl`/`tokenCount` (Etapa 89) e isso so vale depois de `npx wrangler deploy --config cloudflare/wrangler.toml`. Sem o deploy a gaveta funciona, mas todo cartao mostra o simbolo neutro e "0 tokens". Dry-run ja conferido. — aberta em 2026-08-18 (Etapa 89)
 - **[Tiago]** Credenciais do smoke em producao: `npm run test:mesa:online` precisa de `ARMAGEDON_SITE_URL`, `ARMAGEDON_API_BASE_URL` e usuario/senha de mestre e jogador no ambiente (mais `ARMAGEDON_ONLINE_RELAY_PROBE=1` para a sonda de realtime). Sem elas o spec se pula sozinho e nunca exercitamos producao de verdade. **Desde 2026-08-18 tem mais um teste esperando nessa fila**: o cenario de selecao da Etapa 88 (clique fora do mestre com jogador conectado, contra o Worker e o DO reais). — aberta em 2026-08-16 (conferencia da Etapa 81)
 
@@ -42,7 +43,50 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-18 — Etapa 95: o pop-up de marcadores)
+## Ultima Etapa Concluida (2026-08-19 — Etapa 96: pastas de cena)
+
+Segundo item do redesenho do sistema de cenas (o primeiro foi a gaveta, Etapa 89). Um nivel so, como combinado com o Tiago — arvore recursiva foi descartada de proposito: exige navegacao por teclado recursiva e abre casos chatos (mover pasta para dentro dela mesma, profundidade infinita).
+
+### Onde as pastas moram
+
+No **mesmo documento de metadados** que ja guardava nomes de cena e cena ativa (linha `meta:mesa` da tabela `mesa_scenes`): `folders` e a lista, `sceneFolders` diz em que pasta cada cena esta. **Zero coluna nova, zero migracao de schema.** Cena sem entrada esta na raiz.
+
+Cuidado que virou teste: `getMesaSceneMeta` **reconstroi** o objeto de metadados; se as pastas nao fossem lidas ali, o proximo `saveMesaSceneMeta` (um rename de cena, por exemplo) apagaria todas.
+
+### Regras que ficaram
+
+- **Excluir pasta NUNCA exclui cena.** As de dentro voltam para a raiz, e o texto do dialogo diz isso — "excluir" ao lado de uma lista de cenas assusta, com razao.
+- **Cena apontando para pasta que nao existe mais cai na raiz sozinha**, na leitura dos metadados. Sem isso, pasta apagada em outra aba deixaria a cena invisivel: nem na raiz, nem em pasta nenhuma.
+- **Excluir cena limpa a entrada dela em `sceneFolders`** — senao ficaria lixo apontando para uma cena morta.
+- **Mover cena e por MENU** (`UI.pickOption`, o mesmo dialogo acessivel do resto do site), nao so arrastando. Arrastar pode vir depois como atalho; sozinho, e intransponivel por teclado.
+- **Trocar de pasta e filtro de TELA** — nao custa requisicao (ha teste contando as chamadas de listagem).
+- **A pasta aberta e dita por `aria-pressed`**, nao so pelo destaque de cor.
+
+### Rotas novas (master-only)
+
+`POST /api/mesa/scene-folders`, `PUT|DELETE /api/mesa/scene-folders/:id` e `PUT /api/mesa/scenes/:id/folder` (folderId vazio = raiz). A rota de `/folder` fica **antes** da rota generica de `PUT /api/mesa/scenes/:id` no roteador: senao o sufixo entraria no id da cena. `GET /api/mesa/scenes` passou a devolver `folders` e um `folderId` por cena. Tetos: 12 pastas, nome de 40 caracteres.
+
+**Precisa de deploy** para as pastas funcionarem em producao (`npx wrangler deploy --config cloudflare/wrangler.toml`); dry-run conferido.
+
+### Tres defeitos visuais achados na captura, nao nos testes
+
+1. **"Excluir" saia cortado para fora do cartao**: com o botao "Mover" novo sao tres acoes, e elas nao cabem lado a lado em 150px. As acoes passaram a poder quebrar de linha, e o cartao minimo foi para 166px.
+2. **O contador dizia "4 cenas" mostrando 2** — falava do total, nao da lista na tela. Agora diz "2 cenas em 'Masmorras'".
+3. O "+" estava grudado no rotulo dos botoes de criar.
+
+### Verificacao
+
+`tests/mesa-scenes.spec.cjs` foi de 13 para 18 testes (bloco "Pastas de cena"): criar abrindo a pasta nova, mover por menu, filtrar sem ir ao servidor, excluir devolvendo as cenas a raiz, e renomear/excluir aparecendo so com pasta aberta.
+
+`tests/mesa-audit.spec.cjs` ganhou 5 testes de backend exercitando `cloudflare/src/mesa.js` direto: o ciclo criar/renomear/mover, excluir pasta sem perder cena, cena excluida sem deixar lixo, as guardas (404/400/403) e a cena orfa voltando para a raiz.
+
+Suites: `test:mesa:scenes` 18, `test:mesa:audit` 186, mais `check:js`, `audit:static`, `audit:pendencias`, `build:pages` e `wrangler deploy --dry-run`.
+
+### Arquivos
+
+`cloudflare/src/mesa.js`, `cloudflare/src/index.js`, `js/api.js`, `js/mesa-scenes.js`, `css/mesa-scenes.css`, `mesa.html`, `tests/mesa-scenes.spec.cjs`, `tests/mesa-audit.spec.cjs`, `tools/build-pages.cjs`, mais o cache-busting do `api.js` nas seis paginas.
+
+## Etapa Anterior (2026-08-18 — Etapa 95: o pop-up de marcadores)
 
 Pedido do Tiago: "esse pop-up fica desproporcional com o resto das opcoes, quero um novo estilo".
 
