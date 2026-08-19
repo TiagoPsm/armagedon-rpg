@@ -42,7 +42,34 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-18 — Etapa 94: o inspetor virou uma coluna simetrica)
+## Ultima Etapa Concluida (2026-08-18 — Etapa 95: o pop-up de marcadores)
+
+Pedido do Tiago: "esse pop-up fica desproporcional com o resto das opcoes, quero um novo estilo".
+
+### O que estava desproporcional
+
+Depois da Etapa 94, a coluna de controles do inspetor tem 235px, cantos de 4px, botoes de 26px e texto de 9,6px. O painel de marcadores ficou falando outra lingua: **268px** de largura, cantos de **14px**, titulo em serifada de 0,95rem, "Limpar tudo" em pilula vermelha arredondada e icones em caixas de 7px que nem quadradas eram (padding vertical fixo, largura elastica).
+
+### O que mudou
+
+- **Largura amarrada ao controle que o abre**: 236px, contra os 234px do botao "Editar marcadores". O painel le como extensao do controle, nao como outro bloco.
+- **Mesmos tokens do inspetor**: `--radius-md` no painel e `--radius-sm` nos icones, `--border`/`--border-accent` nas bordas, espacamento em `--sp-*`.
+- **"Limpar tudo" virou botao do mesmo desenho da secao Acoes** — retangulo, borda discreta, caixa alta 9,6px, altura 26px (identicos aos do inspetor, e ha teste comparando os dois).
+- **Icones quadrados de verdade** (`aspect-ratio: 1/1`), com o mesmo aceso do controle segmentado quando ligados (`--accent-deep` + borda de acento).
+- **Cabecalho ganhou kicker "Marcadores"** no tom dos titulos de secao (ESTADO / ACOES), com o nome do token embaixo. Antes o painel abria mostrando so o nome, sem dizer do que se tratava.
+- Foco visivel (`:focus-visible`) nos icones e no "Limpar tudo", que nao tinham.
+
+### Verificacao
+
+Tres testes em `tests/mesa-audit.spec.cjs` (bloco "Pop-up de marcadores"), cobrando proporcao e coerencia — nao cor nem sombra: a largura acompanha o controle que abriu (tolerancia de 8px), os icones sao quadrados, e "Limpar tudo" tem a mesma altura e escala de fonte dos botoes do inspetor.
+
+Os testes de marcadores que ja existiam (Etapa 64) continuam passando sem alteracao: os ganchos `.marker-icon`, `[data-marker-key]` e `.marker-clear-btn` foram preservados de proposito.
+
+### Arquivos
+
+`css/mesa-stage.css`, `js/mesa-markers.js`, `tests/mesa-audit.spec.cjs`, `mesa.html` (cache-busting), `tools/build-pages.cjs`.
+
+## Etapa Anterior (2026-08-18 — Etapa 94: o inspetor virou uma coluna simetrica)
 
 Pedido do Tiago depois da Etapa 92: "refazer essa organizacao e estilo da aba de gerenciamento de token — algo simetrico, que nao quebre e seja estetico".
 

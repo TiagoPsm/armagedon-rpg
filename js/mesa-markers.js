@@ -33,9 +33,15 @@ function renderMesaMarkerPanel() {
             aria-pressed="${active.has(marker.key)}">${marker.icon}</button>
   `).join("");
 
+  // Etapa 95: o cabecalho ganhou um kicker "Marcadores" no mesmo tom das
+  // secoes do inspetor (ESTADO / ACOES). Sem ele, o painel abria mostrando
+  // so o nome do token e nada dizia do que aquilo se tratava.
   panel.innerHTML = `
     <div class="marker-panel-head">
-      <strong class="marker-panel-title">${escapeHtml(token.name || "Token")}</strong>
+      <div class="marker-panel-heading">
+        <span class="marker-panel-kicker">Marcadores</span>
+        <strong class="marker-panel-title">${escapeHtml(token.name || "Token")}</strong>
+      </div>
       <button type="button" class="marker-clear-btn" data-marker-action="clear" ${active.size ? "" : "disabled"}>Limpar tudo</button>
     </div>
     <div class="marker-icon-grid">${botoes}</div>

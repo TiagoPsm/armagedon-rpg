@@ -16,6 +16,12 @@ C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 
 A pasta antiga `rpg-campaign` nao deve ser usada para editar layout, CSS, HTML ou assets publicados.
 
+## Pop-up herda a lingua de quem o abriu (2026-08-18, Etapa 95)
+
+Painel flutuante ancorado a um controle nao inventa estilo proprio: largura amarrada a do controle que o abre, mesmos tokens de raio, borda e espacamento, mesma escala de texto e mesma altura de botao da secao de origem. Foi a divergencia disso (268px contra 235px, cantos de 14px contra 4px, pilula contra retangulo) que fez o painel de marcadores parecer de outro site.
+
+Grade de icones usa `aspect-ratio: 1/1` — com padding vertical fixo e largura elastica, o "quadrado" deforma assim que o painel muda de largura.
+
 ## Coluna estreita: controle ocupa a largura toda (2026-08-18, Etapa 94)
 
 Em painel estreito, controle com largura de conteudo serrilha a borda direita e a simetria passa a depender do texto. Regra: **todo controle de acao vai de borda a borda** — segmentado (duas metades de 50%), botao unico esticado, ou par em grade 50/50. Rotulo maior deixa de mexer no desenho.

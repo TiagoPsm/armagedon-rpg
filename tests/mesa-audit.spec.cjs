@@ -6191,3 +6191,68 @@ test.describe("Inspetor: coluna simetrica (Etapa 94)", () => {
     expect(pressionados.filter(p => p.pressed === "true")).toHaveLength(1);
   });
 });
+
+/* ============================================================
+ * Etapa 95 — o pop-up de marcadores falava outra lingua.
+ *
+ * Media 268px de largura ao lado de uma coluna de controles de 235px,
+ * cantos de 14px contra 4px, titulo em serifada de 0,95rem, botao em
+ * pilula vermelha e icones em caixas de 7px que nao eram quadradas.
+ *
+ * O teste cobra proporcao e coerencia — largura amarrada ao controle que
+ * o abre, icone quadrado, "Limpar tudo" na mesma altura e escala dos
+ * botoes da secao — e nao valores absolutos de cor ou sombra.
+ * ============================================================ */
+test.describe("Pop-up de marcadores: proporcional ao inspetor (Etapa 95)", () => {
+  async function abrirPainel(page) {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.locator('.mesa-token[data-token-id="ana"]').click();
+    await page.locator("#tokenInspector .mesa-token-markers-btn.is-inspector").click();
+    await page.waitForSelector("#mesaMarkerPanel .marker-icon");
+  }
+
+  test("a largura acompanha o controle que abriu o painel", async ({ page }) => {
+    await abrirPainel(page);
+
+    const larguras = await page.evaluate(() => ({
+      painel: Math.round(document.getElementById("mesaMarkerPanel").getBoundingClientRect().width),
+      botao: Math.round(document.querySelector("#tokenInspector .mesa-token-markers-btn.is-inspector").getBoundingClientRect().width)
+    }));
+
+    // Ate 8px de folga: o painel e uma extensao do controle, nao outro bloco.
+    expect(Math.abs(larguras.painel - larguras.botao)).toBeLessThanOrEqual(8);
+  });
+
+  test("os icones sao quadrados", async ({ page }) => {
+    await abrirPainel(page);
+
+    const fora = await page.evaluate(() =>
+      [...document.querySelectorAll("#mesaMarkerPanel .marker-icon")]
+        .map(el => el.getBoundingClientRect())
+        .filter(r => Math.abs(r.width - r.height) > 1)
+        .length
+    );
+
+    expect(fora, "icones deformados na grade").toBe(0);
+  });
+
+  test('"Limpar tudo" usa a mesma altura e escala dos botoes do inspetor', async ({ page }) => {
+    await abrirPainel(page);
+
+    const comparacao = await page.evaluate(() => {
+      const px = el => Math.round(parseFloat(getComputedStyle(el).fontSize) * 10) / 10;
+      const limpar = document.querySelector("#mesaMarkerPanel .marker-clear-btn");
+      const doInspetor = document.querySelector('#tokenInspector [data-inspector-action="center"]');
+      return {
+        fonteLimpar: px(limpar), fonteInspetor: px(doInspetor),
+        alturaLimpar: Math.round(limpar.getBoundingClientRect().height),
+        alturaInspetor: Math.round(doInspetor.getBoundingClientRect().height)
+      };
+    });
+
+    expect(comparacao.fonteLimpar).toBe(comparacao.fonteInspetor);
+    expect(comparacao.alturaLimpar).toBe(comparacao.alturaInspetor);
+  });
+});

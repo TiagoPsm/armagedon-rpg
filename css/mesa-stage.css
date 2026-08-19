@@ -1318,16 +1318,6 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
   line-height: 0;
 }
 
-.mesa-token-markers-btn:not(.is-inspector) {
-  line-height: 0;
-}
-
-.mesa-token-markers-btn svg {
-  display: block;
-}
-
-/* O SVG e o unico filho: display block tira o espaco de linha-de-base, que
-   empurraria o icone alguns px para baixo dentro do circulo. */
 .mesa-token-markers-btn svg {
   display: block;
 }
@@ -1350,18 +1340,23 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
 }
 
 .mesa-marker-panel {
+  /* Etapa 95: o painel falava outra lingua — 268px de largura, cantos de
+     14px, titulo em serifada de 0,95rem, botao em pilula e icones em caixas
+     de 7px. Ao lado de uma coluna de controles de 235px com cantos de 4px,
+     parecia de outro site. Agora usa a mesma largura, os mesmos tokens de
+     borda/raio e a mesma escala de texto do inspetor. */
   position: fixed;
   z-index: 60;
-  width: 268px;
+  width: 236px;
   max-height: 70vh;
   overflow-y: auto;
   display: grid;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 14px;
-  background: rgba(12, 8, 10, 0.97);
-  border: 1px solid rgba(176, 48, 57, 0.45);
-  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.66);
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
+  background: rgba(10, 7, 8, 0.97);
+  border: 1px solid var(--border-accent);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
@@ -1373,29 +1368,62 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--sp-2);
 }
+
+.marker-panel-heading {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Mesmo tom dos titulos de secao do inspetor (ESTADO / ACOES). */
+.marker-panel-kicker {
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent, #a83028);
+}
+
 .marker-panel-title {
-  font-family: var(--font-title);
-  font-size: 0.95rem;
-  color: var(--text-primary, rgba(255, 248, 236, 0.95));
+  font-family: var(--font-ui, "Cinzel", serif);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text, rgba(255, 248, 236, 0.94));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Mesmo desenho dos botoes da secao Acoes: retangulo, borda discreta, texto
+   em caixa alta pequeno. A pilula vermelha destoava de tudo. */
 .marker-clear-btn {
   flex: none;
-  padding: 4px 10px;
-  font-size: 0.74rem;
-  font-weight: 600;
-  color: rgba(255, 248, 236, 0.9);
-  background: rgba(176, 48, 57, 0.28);
-  border: 1px solid rgba(176, 48, 57, 0.55);
-  border-radius: 999px;
+  min-height: 26px;
+  padding: var(--sp-1) var(--sp-2);
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-soft);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
 }
 .marker-clear-btn:hover:not(:disabled) {
-  background: rgba(176, 48, 57, 0.5);
+  color: #e8b4ae;
+  border-color: var(--border-accent);
+  background: var(--accent-deep);
+}
+.marker-clear-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 .marker-clear-btn:disabled {
   opacity: 0.4;
@@ -1405,36 +1433,42 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
 .marker-icon-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 5px;
+  gap: var(--sp-1);
 }
+
+/* Quadrado de verdade (aspect-ratio), para a grade nao deformar quando o
+   painel muda de largura. */
 .marker-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 0;
-  font-size: 0.9rem;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  font-size: 0.85rem;
   line-height: 1;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(176, 48, 57, 0.3);
-  border-radius: 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background var(--transition, 0.15s), border-color var(--transition, 0.15s);
 }
 .marker-icon:hover {
-  background: rgba(176, 48, 57, 0.2);
-  border-color: rgba(214, 69, 80, 0.7);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-strong);
 }
+/* Ligado: o mesmo aceso do controle segmentado do inspetor. */
 .marker-icon.is-active {
-  background: rgba(176, 48, 57, 0.35);
-  border-color: rgba(214, 69, 80, 0.95);
-  box-shadow: 0 0 6px rgba(176, 48, 57, 0.45);
+  background: var(--accent-deep);
+  border-color: var(--border-accent);
+}
+.marker-icon:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .marker-panel-count {
   margin: 0;
-  font-size: 0.76rem;
-  color: var(--text-secondary, rgba(255, 248, 236, 0.55));
-}
-.marker-panel-count {
   text-align: right;
+  font-size: var(--fs-2xs);
+  color: var(--text-soft, rgba(255, 248, 236, 0.5));
 }
