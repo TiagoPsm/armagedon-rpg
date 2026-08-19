@@ -42,7 +42,47 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-18 — Etapa 91: o clique chega a quem foi clicado)
+## Ultima Etapa Concluida (2026-08-18 — Etapa 92: a secao "Acoes" do inspetor)
+
+Relato do Tiago, com print: "precisamos organizar essa parte, esta totalmente quebrada". Era a secao **Acoes** do inspetor de token (Visibilidade / Camada / Marcadores / Palco).
+
+### O que a medicao mostrou
+
+Nao era impressao — os numeros, colhidos na tela antes de qualquer alteracao:
+
+| | antes | outros controles |
+|---|---|---|
+| "Editar marcadores" — fonte | **16px** | 9,6px |
+| "Editar marcadores" — largura | **228px** (faixa inteira) | 58-99px |
+| "Nenhum" — fonte | 12,8px | rotulos a 9,3px |
+| "Nenhum" — alinhamento | encostado a **direita** | rotulos a esquerda |
+
+Tres causas independentes:
+
+1. **`font-size: inherit` em `.mesa-token-markers-btn.is-inspector`.** A regra existia para anular o estilo da variante que vive no token; de quebra anulava tambem o tamanho do `.mini-btn` e o botao herdava ~16px do painel. Dai a largura de 228px: o texto em caixa alta, nesse tamanho, ocupa a faixa toda.
+2. **Alinhamento a direita sobrando de um layout antigo.** `.inspector-marker-summary` e `.inspector-marker-chips` ainda tinham `justify-content: flex-end` (e `max-width: 150px`) de quando a linha era "rotulo a esquerda, conteudo a direita". Depois que a linha virou coluna, isso jogava "Nenhum" e os chips contra a borda direita.
+3. **Uma caixa por acao.** Cada `.inspector-action-row` tinha borda e fundo proprios, dentro da secao que ja e uma caixa: quatro molduras competindo em 234px de largura.
+
+### O que mudou
+
+- A secao voltou a ser **um bloco so**: as molduras por acao sairam, e cada acao e um grupo rotulo + controle separado por espaco (escala de 4px do projeto, `--sp-*`, no lugar de 0,3rem / 0,4rem 0,5rem soltos).
+- **Uma coluna de alinhamento**: rotulos, controles e o resumo de marcadores partem todos da mesma borda esquerda.
+- **Um tamanho de controle**: todo botao da secao usa a escala do `.mini-btn` (9,6px, 21px de altura). O `line-height: 0` — que existe para o icone da variante do token — passou a ser escopado com `:not(.is-inspector)`, o que tirou os 2px de diferenca de altura que sobravam no botao de marcadores.
+- No grupo Marcadores, os chips ficam numa linha e o botao na de baixo, os dois alinhados a esquerda: com ate 8 chips, o botao nao fica mais pulando de posicao.
+
+### Verificacao
+
+Tres testes em `tests/mesa-audit.spec.cjs` (bloco "Inspetor: a secao Acoes fala uma lingua so"), que cobram **coerencia, nao pixels**: uma unica escala de fonte e altura entre os controles; uma unica coluna de alinhamento entre rotulos, controles e o "Nenhum"; e nada transbordando a largura do painel.
+
+Vermelho antes do verde: com um `font-size` fora da escala injetado no botao, **dois dos tres reprovam**.
+
+Medido tambem em 1440 e 1024 de largura: nenhum elemento transborda o painel (288px em ambos).
+
+### Arquivos
+
+`css/mesa-inspector.css`, `css/mesa-stage.css`, `tests/mesa-audit.spec.cjs`, `mesa.html` (cache-busting), `tools/build-pages.cjs`.
+
+## Etapa Anterior (2026-08-18 — Etapa 91: o clique chega a quem foi clicado)
 
 Relato do Tiago: "nao consigo selecionar nenhuma opcao, onde quer que eu clique abre os efeitos de status". Com um token selecionado, nenhum botao do inspetor respondia — Visibilidade, Camada, Centralizar, Retirar. Todo clique abria o painel de marcadores.
 

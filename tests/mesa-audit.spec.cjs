@@ -5931,3 +5931,90 @@ test.describe("Inspetor: o clique chega a quem foi clicado (Etapa 91)", () => {
     expect(area.pseudo === "none" || area.pseudo === "normal").toBe(true);
   });
 });
+
+/* ============================================================
+ * Etapa 92 — a secao "Acoes" do inspetor falava tres linguas.
+ *
+ * Medido antes: "Editar marcadores" com fonte de 16px contra 9,6px de
+ * todo outro botao (herdava do painel por um `font-size: inherit`), 228px
+ * de largura contra 58-99px; "Nenhum" a 12,8px encostado na borda direita
+ * enquanto os rotulos alinhavam a esquerda (sobra de quando a linha era
+ * rotulo-esquerda/conteudo-direita); e cada acao dentro da propria caixa
+ * com borda, quatro molduras competindo em 234px.
+ *
+ * Estes testes cobram COERENCIA, nao pixels exatos: mesma escala de fonte
+ * e uma unica coluna de alinhamento. E o que quebra se alguem reintroduzir
+ * um controle com estilo proprio.
+ * ============================================================ */
+test.describe("Inspetor: a secao Acoes fala uma lingua so (Etapa 92)", () => {
+  async function abrirInspetorComToken(page) {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.locator('.mesa-token[data-token-id="ana"]').click();
+    await expect.poll(() => page.locator(".inspector-action-row").count()).toBeGreaterThan(0);
+  }
+
+  test("todo controle da secao tem a mesma escala de fonte e altura", async ({ page }) => {
+    await abrirInspetorComToken(page);
+
+    const controles = await page.evaluate(() =>
+      [...document.querySelectorAll(".inspector-action-row button")].map(b => ({
+        texto: (b.textContent || "").trim().slice(0, 20),
+        fonte: Math.round(parseFloat(getComputedStyle(b).fontSize) * 10) / 10,
+        altura: Math.round(b.getBoundingClientRect().height)
+      }))
+    );
+
+    expect(controles.length).toBeGreaterThan(2);
+    const fontes = [...new Set(controles.map(c => c.fonte))];
+    const alturas = [...new Set(controles.map(c => c.altura))];
+    expect(fontes, `tamanhos de fonte diferentes: ${JSON.stringify(controles)}`).toHaveLength(1);
+    expect(alturas, `alturas diferentes: ${JSON.stringify(controles)}`).toHaveLength(1);
+  });
+
+  test("rotulos e controles compartilham uma unica coluna de alinhamento", async ({ page }) => {
+    await abrirInspetorComToken(page);
+
+    const bordas = await page.evaluate(() => {
+      const esquerdaDe = el => Math.round(el.getBoundingClientRect().left);
+      const rotulos = [...document.querySelectorAll(".inspector-action-label")].map(esquerdaDe);
+      // O primeiro controle de cada grupo: os seguintes ficam ao lado dele
+      // (Centralizar / Retirar), e ai a coluna e outra de proposito.
+      const primeiros = [...document.querySelectorAll(".inspector-action-row")]
+        .map(row => row.querySelector("button"))
+        .filter(Boolean)
+        .map(esquerdaDe);
+      const vazio = document.querySelector(".inspector-marker-empty");
+      return {
+        rotulos: [...new Set(rotulos)],
+        primeirosControles: [...new Set(primeiros)],
+        marcadorVazio: vazio ? esquerdaDe(vazio) : null
+      };
+    });
+
+    expect(bordas.rotulos, "os rotulos nao partem todos da mesma coluna").toHaveLength(1);
+    expect(bordas.primeirosControles, "os controles nao partem todos da mesma coluna").toHaveLength(1);
+    expect(bordas.primeirosControles[0], "controle desalinhado do rotulo").toBe(bordas.rotulos[0]);
+    if (bordas.marcadorVazio !== null) {
+      expect(bordas.marcadorVazio, '"Nenhum" fora da coluna (estava encostado a direita)').toBe(bordas.rotulos[0]);
+    }
+  });
+
+  test("nada da secao transborda a largura do painel", async ({ page }) => {
+    await abrirInspetorComToken(page);
+
+    const fora = await page.evaluate(() => {
+      const secao = document.querySelector(".token-inspector-controls");
+      const limite = secao.getBoundingClientRect();
+      return [...secao.querySelectorAll("*")]
+        .filter(el => {
+          const r = el.getBoundingClientRect();
+          return r.width > 0 && (r.right > limite.right + 1 || r.left < limite.left - 1);
+        })
+        .map(el => (el.className || el.tagName).toString().slice(0, 40));
+    });
+
+    expect(fora, `elementos transbordando: ${JSON.stringify(fora)}`).toEqual([]);
+  });
+});

@@ -1209,22 +1209,22 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
 }
 /* Resumo dos marcadores no inspetor (Etapa 64): a grade duplicada virou
    um resumo + botao que abre o MESMO painel do token. */
-.inspector-action-row.is-markers {
-  align-items: flex-start;
-}
+/* Etapa 92: este bloco ainda estava alinhado a DIREITA — sobra de quando a
+ * linha era "rotulo a esquerda, conteudo a direita". Depois que a linha
+ * virou coluna (rotulo em cima), "Nenhum" ficava encostado na borda direita
+ * enquanto todo rotulo alinhava a esquerda, e a fileira de chips crescia
+ * para o lado errado. Tudo alinha a esquerda, como o resto do inspetor. */
 .inspector-marker-summary {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
 }
 .inspector-marker-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
-  justify-content: flex-end;
-  max-width: 150px;
+  gap: var(--sp-1);
+  justify-content: flex-start;
 }
 .inspector-marker-chip {
   display: inline-flex;
@@ -1238,8 +1238,10 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
   background: rgba(10, 6, 8, 0.92);
   border: 1px solid rgba(176, 48, 57, 0.55);
 }
+/* Mesma escala dos outros textos auxiliares do bloco: estava em 0,8rem
+   (12,8px) ao lado de rotulos de 9,3px — duas escalas na mesma secao. */
 .inspector-marker-empty {
-  font-size: 0.8rem;
+  font-size: var(--fs-2xs);
   color: var(--text-secondary, rgba(255, 248, 236, 0.55));
 }
 
@@ -1263,7 +1265,8 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
   display: flex;
   align-items: center;
   justify-content: center;
-  line-height: 0;
+  /* line-height: 0 e para o icone da variante do token; no inspetor o botao
+     e so texto, e o reset dele deixava a altura 2px fora dos vizinhos. */
   color: rgba(255, 248, 236, 0.92);
   background: rgba(14, 8, 10, 0.92);
   border: 1px solid rgba(214, 92, 92, 0.7);
@@ -1311,6 +1314,10 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
   line-height: 0;
 }
 
+.mesa-token-markers-btn:not(.is-inspector) {
+  line-height: 0;
+}
+
 .mesa-token-markers-btn svg {
   display: block;
 }
@@ -1327,10 +1334,13 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
   width: auto;
   height: auto;
   margin: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   transform: none;
-  font-size: inherit;
-  line-height: normal; /* anula o line-height: 0 usado pelo icone no token */
+  /* SEM `font-size: inherit` (Etapa 92): ele herdava ~16px do painel e o
+     botao saia com 1,7x o tamanho de todo outro mini-btn do inspetor
+     (medido: 16px contra 9,6px) e 228px de largura contra 58-99px — era o
+     que fazia "EDITAR MARCADORES" dominar a secao inteira. Sem a linha,
+     vale a regra do .mini-btn, como nos vizinhos. */
 }
 
 .mesa-marker-panel {

@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-19 11:48:14 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-19 11:50:51 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,7 +13,7 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `53e1ee4 2026-08-18 fix(mesa): cada cena com o seu mapa, e so ele (Etapa 90)`
+- Ultimo commit: `1eaa4ad 2026-08-19 fix(mesa): o clique volta a chegar em quem foi clicado (Etapa 91)`
 
 ### Alteracoes Locais
 
@@ -21,8 +21,8 @@
  M .claude/settings.local.json
 M  DEV_STATUS.md
 M  VISUAL_RULES.md
+M  css/mesa-inspector.css
 M  css/mesa-stage.css
-M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
 M  tools/build-pages.cjs
@@ -39,8 +39,8 @@ M  tools/build-pages.cjs
 ```text
 DEV_STATUS.md
 VISUAL_RULES.md
+css/mesa-inspector.css
 css/mesa-stage.css
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 mesa.html
 tests/mesa-audit.spec.cjs
 tools/build-pages.cjs

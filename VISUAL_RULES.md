@@ -16,6 +16,16 @@ C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 
 A pasta antiga `rpg-campaign` nao deve ser usada para editar layout, CSS, HTML ou assets publicados.
 
+## Secao de acoes: um bloco, uma coluna, um tamanho (2026-08-18, Etapa 92)
+
+Numa coluna estreita (o inspetor tem 288px), lista de acoes nao leva moldura por item: a secao ja e a caixa. Cada acao e um grupo rotulo + controle, separado por ESPACO. Quatro caixas empilhadas dentro de outra caixa foi o que fez a secao parecer quebrada.
+
+Tres regras que vieram junto:
+
+- **Uma coluna de alinhamento.** Rotulo, controle e texto auxiliar partem da mesma borda esquerda. Alinhamento a direita so se a linha inteira for "rotulo a esquerda / valor a direita" — e se o layout mudar de linha para coluna, essa sobra precisa sair junto (foi o que deixou "Nenhum" encostado na borda).
+- **Um tamanho de controle por secao.** Todo botao de uma mesma secao usa a mesma escala (`.mini-btn`). Variante que existe em dois lugares (token e inspetor) anula so o que e do outro contexto — `position`, `line-height` do icone —, nunca o tamanho de fonte: `font-size: inherit` num botao dentro de painel o faz saltar para ~16px e dominar a secao.
+- **Espacamento na escala de 4px** (`--sp-*`), nao valores soltos como 0,3rem ou 0,4rem 0,5rem.
+
 ## Alvo de clique ampliado exige dono posicionado (2026-08-18, Etapa 91)
 
 O truque de aumentar a area clicavel com `::before { position: absolute; inset: -Npx }` **so funciona se o elemento dono tiver `position` diferente de `static`**. Dentro de um dono estatico, o pseudo-elemento se ancora no ancestral posicionado mais proximo e o alvo invisivel cresce ate o tamanho DELE.

@@ -380,21 +380,25 @@
 
 /* ── LISTA DE AÇÕES (novo estilo simplificado) ───────────────── */
 
+/* Etapa 92: cada acao era uma CAIXA com borda e fundo proprios, dentro da
+ * secao que ja e uma caixa — quatro containers competindo em 234px de
+ * largura. Agora a secao "Acoes" e um bloco so, e cada acao e um grupo
+ * rotulo + controle, separado por espaco, nao por moldura. O espacamento
+ * saiu de valores soltos (0,3rem / 0,4rem 0,5rem) para a escala de 4px do
+ * projeto. */
 .inspector-action-list {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: var(--sp-3);
 }
 
-/* Linha: label em cima, botões embaixo */
+/* Grupo: rotulo em cima, controle embaixo — nesta largura, rotulo e
+   controle na mesma linha espremeria "Status dos jogadores". */
 .inspector-action-row {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  padding: 0.4rem 0.5rem;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.02);
+  align-items: flex-start;
+  gap: var(--sp-2);
 }
 
 .inspector-action-label {
@@ -409,9 +413,10 @@
 .inspector-action-btns {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: var(--sp-2);
   flex-wrap: wrap;
 }
+
 
 /* Variante danger para Retirar */
 .mini-btn.is-danger {
