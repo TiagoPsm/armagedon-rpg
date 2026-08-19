@@ -382,11 +382,25 @@ function sceneDisplayName(meta, id) {
   return id === DEFAULT_SCENE_ID ? "Cena principal" : "Cena sem nome";
 }
 
+/**
+ * Lista as cenas com o minimo para desenhar um cartao (Etapa 89).
+ *
+ * O cartao mostra a imagem de mapa que a cena ja tem e quantos tokens ela
+ * carrega. Ler `data_json` inteiro para descobrir isso seria caro — uma cena
+ * com desenhos e nevoa passa de centenas de KB, vezes ate 20 cenas, a cada
+ * abertura da gaveta. `json_extract`/`json_array_length` fazem a conta DENTRO
+ * do SQLite e devolvem so a URL e o numero: a resposta continua pequena.
+ */
 async function listMesaScenes(env, actor) {
   requireMaster(actor, "listar as cenas");
   const meta = await getMesaSceneMeta(env);
   const rows = await env.DB.prepare(
-    "select id, updated_at from mesa_scenes where id not like 'meta%' order by created_at asc"
+    `select id, updated_at,
+            json_extract(data_json, '$.map.url') as map_url,
+            json_array_length(json_extract(data_json, '$.tokens')) as token_count
+       from mesa_scenes
+      where id not like 'meta%'
+      order by created_at asc`
   ).all();
   const scenes = (rows?.results || [])
     .filter(row => isValidSceneId(row.id))
@@ -394,7 +408,11 @@ async function listMesaScenes(env, actor) {
       id: row.id,
       name: sceneDisplayName(meta, row.id),
       updatedAt: row.updated_at || null,
-      active: row.id === meta.activeId
+      active: row.id === meta.activeId,
+      // Mesma normalizacao da cena: cartao nunca aponta para URL que a cena
+      // em si recusaria.
+      mapUrl: normalizeTokenImageUrl(row.map_url) || "",
+      tokenCount: Number.isFinite(row.token_count) ? Number(row.token_count) : 0
     }));
   // A cena default existe mesmo sem linha (nasce no primeiro PUT).
   if (!scenes.some(scene => scene.id === DEFAULT_SCENE_ID)) {
@@ -402,7 +420,9 @@ async function listMesaScenes(env, actor) {
       id: DEFAULT_SCENE_ID,
       name: sceneDisplayName(meta, DEFAULT_SCENE_ID),
       updatedAt: null,
-      active: meta.activeId === DEFAULT_SCENE_ID
+      active: meta.activeId === DEFAULT_SCENE_ID,
+      mapUrl: "",
+      tokenCount: 0
     });
   }
   return { scenes, activeId: meta.activeId };

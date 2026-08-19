@@ -1,0 +1,518 @@
+/* ============================================================
+ * mesa-scenes.css — Gaveta de cenas (Etapa 89)
+ *
+ * A gaveta desce do topo sobre a mesa e ocupa a faixa de cima da tela,
+ * deixando o palco visivel embaixo: o mestre escolhe a cena olhando para
+ * a mesa, nao para um modal que cobre tudo.
+ *
+ * Direcao visual: preto + carmesim, sem animacao de fundo (VISUAL_RULES).
+ * A unica animacao e a descida da propria gaveta, e ela respeita
+ * prefers-reduced-motion.
+ * ============================================================ */
+
+/* ── SO PARA LEITOR DE TELA ──────────────────────────────────
+ * .sr-only existia apenas em css/echos.css, que a Mesa nao carrega — ou
+ * seja, todo texto marcado como "so para leitor de tela" aparecia na tela
+ * aqui (a etiqueta da busca e o nome dentro do botao de 40px). Fica
+ * definida neste arquivo, e nao em components.css, para nao obrigar um
+ * cache-bust do CSS compartilhado nas seis paginas. */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── BOTAO QUE ABRE (canto superior direito) ─────────────────── */
+
+.mesa-scenes-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 40px: alvo de toque confortavel sem competir com os controles de mapa
+     que dividem o mesmo canto. */
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--bg-raised);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+
+.mesa-scenes-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+.mesa-scenes-toggle:hover {
+  border-color: var(--border-accent);
+  color: #d57a72;
+}
+
+.mesa-scenes-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Aberta: o botao fica aceso, para nao se perder de onde a gaveta saiu. */
+.mesa-scenes-toggle[aria-expanded="true"] {
+  border-color: var(--border-accent);
+  background: var(--accent-deep);
+  color: #e8b4ae;
+}
+
+/* ── GAVETA ──────────────────────────────────────────────────── */
+
+.mesa-scenes-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 70;              /* acima do palco e das docas, abaixo dos toasts */
+}
+
+.mesa-scenes-drawer[hidden] {
+  display: none;
+}
+
+.mesa-scenes-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.mesa-scenes-drawer-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  /* Faixa do topo, como a referencia: no maximo 70% da altura, com a lista
+     rolando por dentro. O palco continua aparecendo embaixo. */
+  max-height: 70vh;
+  padding: 18px 22px 22px;
+  background: linear-gradient(180deg, #0a0708 0%, var(--bg-card) 100%);
+  border-bottom: 1px solid var(--border-accent);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.75);
+  animation: mesa-scenes-drop 0.22s ease-out;
+}
+
+@keyframes mesa-scenes-drop {
+  from { transform: translateY(-14px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mesa-scenes-drawer-panel { animation: none; }
+}
+
+.mesa-scenes-drawer-panel:focus-visible {
+  outline: none;            /* o painel so recebe foco programatico */
+}
+
+/* ── CABECALHO ───────────────────────────────────────────────── */
+
+.mesa-scenes-drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.mesa-scenes-drawer-title {
+  margin: 0;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: 1.25rem;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+
+.mesa-scenes-active {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: var(--text-soft);
+}
+
+.mesa-scenes-active strong {
+  color: #d57a72;
+  font-weight: 600;
+}
+
+.mesa-scenes-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+
+.mesa-scenes-close:hover {
+  border-color: var(--border-accent);
+  color: var(--text);
+}
+
+.mesa-scenes-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── BARRA DE FERRAMENTAS ────────────────────────────────────── */
+
+.mesa-scenes-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mesa-scenes-search {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mesa-scenes-search-field {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #050405;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.mesa-scenes-search-field::placeholder {
+  color: var(--text-faint);
+}
+
+.mesa-scenes-search-field:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--border-accent);
+}
+
+.mesa-scenes-create {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* ── AVISOS E ESTADO ─────────────────────────────────────────── */
+
+.mesa-scenes-status {
+  min-height: 1.1em;        /* reserva a linha: texto novo nao empurra a lista */
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-soft);
+}
+
+.mesa-scenes-status[data-tone="error"] {
+  color: #d57a72;
+}
+
+.mesa-scenes-body {
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.mesa-scenes-section-title {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.mesa-scenes-empty {
+  margin: 0;
+  padding: 18px 0;
+  font-size: 0.88rem;
+  color: var(--text-soft);
+}
+
+.mesa-scenes-empty[hidden] {
+  display: none;
+}
+
+/* ── CARTOES ─────────────────────────────────────────────────── */
+
+.mesa-scenes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mesa-scene-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-raised);
+  overflow: hidden;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.mesa-scene-card:hover {
+  border-color: var(--border-strong);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mesa-scene-card:hover { transform: translateY(-2px); }
+}
+
+/* Cena ativa: borda carmesim + faixa. Nao depende so de cor — a faixa
+   escrita "ATIVA" carrega a mesma informacao para quem nao distingue o
+   tom da borda. */
+.mesa-scene-card.is-active {
+  border-color: var(--border-accent);
+  box-shadow: 0 0 0 1px var(--border-accent), 0 0 22px rgba(168, 48, 40, 0.18);
+}
+
+.mesa-scene-card-open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.mesa-scene-card-open:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.mesa-scene-thumb {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #060506;
+  overflow: hidden;
+}
+
+.mesa-scene-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Cena sem mapa: simbolo neutro no lugar da imagem. */
+.mesa-scene-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-faint);
+  font-size: 1.6rem;
+}
+
+.mesa-scene-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--accent-deep);
+  border: 1px solid var(--border-accent);
+  color: #e8b4ae;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.mesa-scene-card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 10px 10px;
+}
+
+.mesa-scene-card-name {
+  min-width: 0;
+  font-size: 0.86rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mesa-scene-card-meta {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  color: var(--text-soft);
+}
+
+/* ── ACOES DO CARTAO ─────────────────────────────────────────── */
+
+.mesa-scene-card-actions {
+  display: flex;
+  gap: 6px;
+  padding: 0 10px 10px;
+}
+
+.mesa-scene-action {
+  flex: 1 1 auto;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+
+.mesa-scene-action:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.mesa-scene-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.mesa-scene-action.is-activate {
+  border-color: var(--border-accent);
+  color: #d57a72;
+}
+
+.mesa-scene-action.is-activate:hover {
+  background: var(--accent-deep);
+  color: #e8b4ae;
+}
+
+.mesa-scene-action.is-danger:hover {
+  border-color: var(--border-accent);
+  color: #d57a72;
+}
+
+.mesa-scene-action[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── DIALOGO DE NOME ─────────────────────────────────────────── */
+
+.mesa-scene-name-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 80;              /* acima da gaveta: nasce de dentro dela */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mesa-scene-name-dialog[hidden] {
+  display: none;
+}
+
+.mesa-scene-name-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.mesa-scene-name-panel {
+  position: relative;
+  width: min(420px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid var(--border-accent);
+  border-radius: 12px;
+  background: var(--bg-card);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.8);
+}
+
+.mesa-scene-name-title {
+  margin: 0 0 4px;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.mesa-scene-name-label {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.mesa-scene-name-field {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #050405;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.mesa-scene-name-field:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--border-accent);
+}
+
+/* Erro de validacao: some da arvore quando vazio, senao o leitor de tela
+   anuncia um alerta em branco a cada abertura. */
+.mesa-scene-name-error {
+  min-height: 1em;
+  margin: 0;
+  font-size: 0.78rem;
+  color: #d57a72;
+}
+
+.mesa-scene-name-error:empty {
+  display: none;
+}
+
+.mesa-scene-name-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* ── TELAS ESTREITAS ─────────────────────────────────────────── */
+
+@media (max-width: 720px) {
+  .mesa-scenes-drawer-panel {
+    max-height: 82vh;
+    padding: 14px 14px 18px;
+  }
+
+  .mesa-scenes-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .mesa-scenes-create {
+    width: 100%;
+  }
+
+  .mesa-scenes-grid {
+    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+    gap: 10px;
+  }
+}

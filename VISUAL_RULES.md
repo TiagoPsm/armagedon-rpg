@@ -16,6 +16,18 @@ C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 
 A pasta antiga `rpg-campaign` nao deve ser usada para editar layout, CSS, HTML ou assets publicados.
 
+## Gaveta de cenas: faixa do topo, nunca modal de tela cheia (2026-08-18, Etapa 89)
+
+O gerenciador de cenas desce do topo e ocupa no maximo 70% da altura (82% em tela estreita), com a lista rolando por dentro. O palco continua aparecendo embaixo: o mestre escolhe a cena olhando para a mesa, nao para uma tela que cobriu a mesa.
+
+Regras que vem junto:
+
+- **Dialogo nativo nao entra na Mesa.** `window.prompt`/`window.confirm` sairam daqui; nomear tem dialogo proprio (erro em `role="alert"`, amarrado ao campo por `aria-describedby`) e confirmar usa `UI.confirm`. Ha teste que reprova se voltarem.
+- **Estado nunca depende so de cor.** A cena ativa tem borda carmesim E a faixa escrita "ATIVA" E `aria-current` no botao.
+- **A unica animacao e a descida da gaveta** (0,22s), desligada em `prefers-reduced-motion`. Nada de fundo animado.
+- **Armadilha de foco nao se empilha.** Dialogo que nasce dentro de outro DESLIGA a armadilha do de baixo enquanto vive e a religa ao fechar, apontando para onde o foco deve parar. Empilhar as duas faz a de baixo puxar o foco para fora da de cima — foi assim que o campo de nome ficou inalcancavel na propria Etapa 89.
+- **`.sr-only` precisa estar definida na pagina que a usa.** Estava so em `css/echos.css`; na Mesa, todo texto "so para leitor de tela" aparecia na tela. Agora vive tambem em `css/mesa-scenes.css`.
+
 ## Doca esquerda: todo painel persistente da Mesa mora na mesma coluna (2026-08-02, Etapa 79)
 
 `#mesaDockLeft` e uma coluna `position: fixed` no canto inferior esquerdo, colada a direita da toolbar (`left: calc(60px + var(--sp-3))`, `bottom: var(--sp-3)`, largura `min(300px, calc(100vw - 60px - 2rem))`). Todo painel que fica aberto durante o jogo entra nela como filho de posicao **estatica** — dados em cima, iniciativa embaixo — e o empilhamento sai do flex.

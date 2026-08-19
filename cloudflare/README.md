@@ -191,3 +191,14 @@ Proximos passos tecnicos:
 - Validacao publica:
   - `GET /api/health`: HTTP 200
   - `GET /api/mesa/scene` sem sessao: HTTP 401, confirmando rota ativa e protegida
+
+
+## Cartoes da gaveta de cenas (2026-08-18, Etapa 89)
+
+`GET /api/mesa/scenes` passou a devolver, por cena, `mapUrl` e `tokenCount` alem de `id`/`name`/`updatedAt`/`active`.
+
+Os dois campos saem de `json_extract(data_json, '$.map.url')` e `json_array_length(json_extract(data_json, '$.tokens'))` — a conta acontece **dentro do SQLite**. Ler `data_json` inteiro para montar cartao traria centenas de KB por cena (desenhos e nevoa) vezes ate 20 cenas, a cada abertura da gaveta.
+
+`mapUrl` passa pela mesma `normalizeTokenImageUrl` da cena: o cartao nunca aponta para URL que a propria cena recusaria.
+
+Compatibilidade: campos ADICIONADOS, nada removido. Cliente antigo ignora; cliente novo sem o deploy cai no simbolo neutro e "0 tokens". `--dry-run` conferido em 2026-08-18; deploy pendente do Tiago.

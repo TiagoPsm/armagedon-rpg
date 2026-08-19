@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-06-16-master-vital-card-1" />
   <link rel="stylesheet" href="css/mesa-map.css?v=2026-07-31-fit-sempre-1" />
   <link rel="stylesheet" href="css/mesa-drawing.css?v=2026-08-02-desenho-1" />
+  <link rel="stylesheet" href="css/mesa-scenes.css?v=2026-08-18-gaveta-cenas-1" />
   <!-- Permissoes (Etapa 75): esconde tudo marcado com data-mesa-master-only
        enquanto o body nao estiver com data-role="master". Carrega DEPOIS dos
        demais para vencer por ordem em caso de especificidade empatada. -->
@@ -441,6 +442,18 @@
            Todo o chrome de mapa (rotulo "Sem mapa", abrir, limpar, engrenagem)
            e gestao: o jogador ve o mapa no palco, nunca os controles. -->
       <div class="vtt-overlay vtt-overlay-tr" data-mesa-master-only>
+        <!-- Gaveta de cenas (Etapa 89). aria-expanded/aria-controls fazem o
+             leitor de tela anunciar que este botao abre outra coisa. -->
+        <button type="button" class="mesa-scenes-toggle" id="mesaScenesToggle"
+                aria-controls="mesaScenesDrawer" aria-expanded="false"
+                title="Cenas da mesa" hidden>
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2.5" y="5.5" width="15" height="11" rx="1.8"/>
+            <path d="M7.5 5.5V4.2a1.2 1.2 0 0 1 1.2-1.2h2.6a1.2 1.2 0 0 1 1.2 1.2v1.3"/>
+            <path d="M2.5 10.5h15"/>
+          </svg>
+          <span class="sr-only">Cenas da mesa</span>
+        </button>
         <div class="mesa-map-controls">
           <span id="mesaMapLabel" class="mesa-map-label">Sem mapa</span>
           <button type="button" class="btn btn-ghost btn-small" id="mesaMapOpenBtn" onclick="openAndSetLocalMap()">Abrir mapa</button>
@@ -512,14 +525,9 @@
           </div>
         </div>
 
-        <!-- Múltiplas cenas (Etapa 49) — gerenciador do mestre -->
-        <div class="mesa-map-transform-group" id="mesaScenesGroup" hidden>
-          <span class="mesa-map-transform-label">Cenas</span>
-          <div id="mesaScenesList" class="mesa-scenes-list"></div>
-          <div class="mesa-map-transform-row">
-            <button type="button" class="mesa-transform-btn mesa-scene-create-btn" id="mesaSceneCreateBtn" title="Criar nova cena vazia">+ Nova cena</button>
-          </div>
-        </div>
+        <!-- O grupo "Cenas" (Etapa 49) saiu daqui na Etapa 89: virou a gaveta
+             #mesaScenesDrawer, aberta pelo botao do canto superior direito.
+             Gerenciar cena tem UM lugar so. -->
 
       </div>
 
@@ -775,6 +783,76 @@
        js/mesa-markers.js; posicionado em coordenadas de tela junto ao token. -->
   <div id="mesaMarkerPanel" class="mesa-marker-panel" hidden role="dialog" aria-label="Marcadores de status"></div>
 
+  <!-- ── GAVETA DE CENAS (Etapa 89) ──────────────────────────────────
+       Substitui o grupo "Cenas" que vivia espremido no painel do mapa e o
+       par window.prompt()/window.confirm() que ele usava para nomear e
+       excluir. Dialogo de verdade: aria-modal, foco preso enquanto aberto
+       (UI.activateModal), Esc fecha e o foco volta para o botao que abriu.
+       Master-only — data-mesa-master-only garante que nem existe para o
+       jogador, e o modulo tambem checa isMaster() antes de qualquer acao. -->
+  <div id="mesaScenesDrawer" class="mesa-scenes-drawer" data-mesa-master-only hidden
+       role="dialog" aria-modal="true" aria-labelledby="mesaScenesDrawerTitle">
+    <div class="mesa-scenes-drawer-backdrop" data-scenes-close="backdrop"></div>
+    <section class="mesa-scenes-drawer-panel" id="mesaScenesDrawerPanel" tabindex="-1">
+
+      <header class="mesa-scenes-drawer-head">
+        <div class="mesa-scenes-drawer-heading">
+          <h2 class="mesa-scenes-drawer-title" id="mesaScenesDrawerTitle">Cenas</h2>
+          <p class="mesa-scenes-active" id="mesaScenesActiveLabel"></p>
+        </div>
+        <button type="button" class="mesa-scenes-close" data-scenes-close="button" aria-label="Fechar gaveta de cenas">
+          <span aria-hidden="true">&#10005;</span>
+        </button>
+      </header>
+
+      <div class="mesa-scenes-toolbar">
+        <div class="mesa-scenes-search">
+          <label class="sr-only" for="mesaScenesSearch">Pesquisar cena pelo nome</label>
+          <input type="search" id="mesaScenesSearch" class="mesa-scenes-search-field"
+                 placeholder="Pesquisar..." autocomplete="off" spellcheck="false">
+        </div>
+        <button type="button" class="btn btn-primary btn-small mesa-scenes-create" id="mesaSceneCreateBtn">
+          <span aria-hidden="true">&#43;</span> Criar cena
+        </button>
+      </div>
+
+      <!-- O leitor de tela precisa saber o resultado de cada acao: a cena
+           trocou, a busca nao achou nada, a lista carregou. -->
+      <p class="mesa-scenes-status" id="mesaScenesStatus" role="status" aria-live="polite"></p>
+
+      <div class="mesa-scenes-body">
+        <h3 class="mesa-scenes-section-title" id="mesaScenesListTitle">Todas as cenas</h3>
+        <ul class="mesa-scenes-grid" id="mesaScenesGrid" aria-labelledby="mesaScenesListTitle"></ul>
+        <p class="mesa-scenes-empty" id="mesaScenesEmpty" hidden></p>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- Nomear cena: um campo de texto, usado tanto para criar quanto para
+       renomear. Era window.prompt() ate a Etapa 89 — que o leitor de tela
+       anuncia mal, nao aceita estilo e trava a aba inteira. -->
+  <div id="mesaSceneNameDialog" class="mesa-scene-name-dialog" hidden
+       role="dialog" aria-modal="true" aria-labelledby="mesaSceneNameTitle">
+    <div class="mesa-scene-name-backdrop" data-scene-name-close="backdrop"></div>
+    <!-- novalidate de proposito (Etapa 89): a validacao nativa aborta o envio
+         antes do nosso codigo e mostra uma bolha que some sozinha e que nem
+         todo leitor de tela anuncia. Aqui o erro vive em #mesaSceneNameError,
+         com role="alert" e amarrado ao campo por aria-describedby. -->
+    <form class="mesa-scene-name-panel" id="mesaSceneNameForm" tabindex="-1" novalidate>
+      <h2 class="mesa-scene-name-title" id="mesaSceneNameTitle">Nova cena</h2>
+      <label class="mesa-scene-name-label" for="mesaSceneNameField">Nome da cena</label>
+      <input type="text" id="mesaSceneNameField" class="mesa-scene-name-field"
+             maxlength="60" autocomplete="off"
+             aria-describedby="mesaSceneNameError">
+      <p class="mesa-scene-name-error" id="mesaSceneNameError" role="alert"></p>
+      <div class="mesa-scene-name-actions">
+        <button type="button" class="btn btn-ghost btn-small" data-scene-name-close="cancel">Cancelar</button>
+        <button type="submit" class="btn btn-primary btn-small" id="mesaSceneNameSubmit">Salvar</button>
+      </div>
+    </form>
+  </div>
+
     <script src="js/runtime-config.js?v=2026-05-04-mesa-realtime-1" defer></script>
   <script src="js/api.js?v=2026-07-27-scenes-1" defer></script>
   <script src="js/ui.js?v=2026-06-11-soul-notify-1" defer></script>
@@ -791,7 +869,7 @@
   <script src="js/mesa-map.js?v=2026-08-16-armados-2" defer></script>
   <script src="js/mesa-grid.js?v=2026-07-31-cells-1" defer></script>
   <script src="js/mesa-fog.js?v=2026-07-29-sharp-1" defer></script>
-  <script src="js/mesa-scenes.js?v=2026-07-27-scenes-1" defer></script>
+  <script src="js/mesa-scenes.js?v=2026-08-18-gaveta-cenas-1" defer></script>
   <script src="js/mesa-ping.js?v=2026-07-27-ping-1" defer></script>
   <script src="js/mesa-ruler.js?v=2026-07-27-ruler-1" defer></script>
   <script src="js/mesa-dice.js?v=2026-08-16-armados-1" defer></script>

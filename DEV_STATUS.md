@@ -11,6 +11,7 @@ Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencia
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
 
 - **[Tiago]** Teto de tamanho do token com a grade ligada: o token para por volta de 800% por causa do `_gridMaxCells` (metade do menor lado do mapa). Nao e bug — e decisao de regra de jogo, e esta esperando voce. — aberta em 2026-07-31 (Etapa 71)
+- **[Tiago]** Deploy do Worker para os cartoes de cena: `listMesaScenes` passou a devolver `mapUrl`/`tokenCount` (Etapa 89) e isso so vale depois de `npx wrangler deploy --config cloudflare/wrangler.toml`. Sem o deploy a gaveta funciona, mas todo cartao mostra o simbolo neutro e "0 tokens". Dry-run ja conferido. — aberta em 2026-08-18 (Etapa 89)
 - **[Tiago]** Credenciais do smoke em producao: `npm run test:mesa:online` precisa de `ARMAGEDON_SITE_URL`, `ARMAGEDON_API_BASE_URL` e usuario/senha de mestre e jogador no ambiente (mais `ARMAGEDON_ONLINE_RELAY_PROBE=1` para a sonda de realtime). Sem elas o spec se pula sozinho e nunca exercitamos producao de verdade. **Desde 2026-08-18 tem mais um teste esperando nessa fila**: o cenario de selecao da Etapa 88 (clique fora do mestre com jogador conectado, contra o Worker e o DO reais). — aberta em 2026-08-16 (conferencia da Etapa 81)
 
 ## Regra Obrigatoria de Documentacao
@@ -41,7 +42,53 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-18 — Etapa 88: a selecao sai do fio de vez)
+## Ultima Etapa Concluida (2026-08-18 — Etapa 89: gaveta de cenas)
+
+Primeira etapa do redesenho do sistema de cenas pedido pelo Tiago (gaveta que desce do topo, cartoes por cena, engrenagem de configuracoes, pastas). Esta etapa entrega **a gaveta e o fim dos dialogos nativos**; pastas ficam para a Etapa 90 e as configuracoes por cena para a 91.
+
+### O que existia e o que era o problema
+
+O backend de multi-cena esta pronto desde a Etapa 48 (listar, criar, renomear, ativar, excluir + broadcast `mesa:scene:switch`) e **nao foi tocado**. O problema era a UI: 140 linhas desenhando uma listinha espremida dentro do painel do mapa, usando `window.prompt()` para nomear e `window.confirm()` para excluir. Os dois sao barreira de acessibilidade — leitor de tela anuncia mal, nao ha como amarrar rotulo a campo, o popup nativo trava a aba inteira e nao aceita estilo.
+
+### O que mudou
+
+- **Gaveta `#mesaScenesDrawer`**, aberta por um botao proprio no canto superior direito. `role="dialog"`, `aria-modal`, foco preso enquanto aberta, `Esc` fecha e o foco volta para o botao que abriu. O grupo "Cenas" saiu do painel do mapa: gerenciar cena tem um lugar so.
+- **Cartoes por cena** com a imagem de mapa que a cena ja tem, nome, contagem de tokens e faixa "ATIVA" (texto, nao so cor de borda). Botao principal do cartao = ativar; na cena ativa ele fica desabilitado com `aria-current`.
+- **Dialogo proprio para nomear** (criar e renomear), com erro em `role="alert"` amarrado ao campo por `aria-describedby`. Excluir passou a usar o `UI.confirm` do site.
+- **Busca por nome**, com a contagem anunciada em regiao viva (`role="status"`).
+
+### Worker
+
+`listMesaScenes` passou a devolver `mapUrl` e `tokenCount` por cena, extraidos **dentro do SQLite** (`json_extract` / `json_array_length`). Ler `data_json` inteiro so para montar cartao custaria centenas de KB por cena (desenhos e nevoa) vezes ate 20 cenas, a cada abertura. **Precisa de deploy** — enquanto nao subir, o cartao cai no simbolo neutro e "0 tokens", sem quebrar nada.
+
+### Velocidade (pedido explicito do Tiago)
+
+Sem dependencia nova e sem custo: a lista **so e buscada quando a gaveta abre** — o boot e a troca de cena nao pagam requisicao por uma tela que ninguem esta vendo, e ha teste para isso; as miniaturas usam `loading="lazy"` e `decoding="async"` nativos, entao a imagem so desce quando o cartao entra na tela.
+
+Limite honesto: redimensionar imagem no servidor e recurso pago na Cloudflare, entao o cartao reduz o mapa no proprio navegador. Nao e miniatura pronta — e o preco de nao criar armazenamento nem custo.
+
+### Dois defeitos encontrados dentro da propria etapa
+
+1. **A armadilha de foco da gaveta brigava com o dialogo que nasce dentro dela.** `UI.activateModal` vigia o foco e puxa de volta tudo que sai do painel — inclusive o campo de texto do dialogo de nome. O cursor nunca chegava ao campo. Correcao: o dialogo de nome DESLIGA a armadilha da gaveta enquanto vive e a religa ao fechar, ja apontando para o destino final do foco.
+2. **`.sr-only` nao existia na Mesa** — estava definida so em `css/echos.css`. Todo texto marcado como "so para leitor de tela" aparecia na tela: a etiqueta da busca e o nome dentro do botao de 40px. Achado na captura de tela, nao em teste. Ficou definida em `css/mesa-scenes.css`, para nao obrigar cache-bust do CSS compartilhado nas seis paginas.
+
+Um terceiro ajuste veio de teste vermelho: o `required` nativo do campo de nome abortava o envio antes do nosso codigo e mostrava a bolha do navegador, que some sozinha e nem todo leitor de tela anuncia. O formulario virou `novalidate` e a validacao passou a ser nossa.
+
+### Verificacao
+
+Suite nova `tests/mesa-scenes.spec.cjs` (13 testes, `npm run test:mesa:scenes`), incluindo: espiao que reprova a suite se `window.prompt`/`window.confirm` voltarem; uma volta inteira de Tab sem escapar da gaveta; `Esc` no dialogo de nome fechando so ele; e a carga preguicosa (zero requisicao com a gaveta fechada).
+
+O SQL novo foi exercitado no motor real (`wrangler d1 execute --local`): `map_url` extraido e `token_count` = 2 na cena de prova. O D1 falso dos testes nao interpreta SQL — faz a mesma conta em JS —, entao erro de sintaxe so apareceria em producao; por isso a checagem no motor de verdade.
+
+Suites: `test:mesa:scenes` 13, `test:mesa:audit` 166, `test:mesa` 5, `test:mesa:permissoes` 15, `test:controles` 6, mais `check:js`, `audit:static`, `audit:pendencias`, `build:pages` e `wrangler deploy --dry-run`.
+
+Os testes de cena que viviam em `mesa-audit.spec.cjs` foram reapontados: o detalhe de UI mudou de casa para a suite nova, e la ficou o que aquela suite sempre protegeu — mestre enxerga o gerenciador, jogador nunca.
+
+### Arquivos
+
+`js/mesa-scenes.js` (reescrito), `css/mesa-scenes.css` (novo), `mesa.html`, `cloudflare/src/mesa.js`, `tests/mesa-scenes.spec.cjs` (novo), `tests/mesa-audit.spec.cjs`, `tests/mesa-online.spec.cjs`, `tools/build-pages.cjs`, `package.json`.
+
+## Etapa Anterior (2026-08-18 — Etapa 88: a selecao sai do fio de vez)
 
 A Etapa 87 fechou cinco portas. Esta tira a chave da casa.
 

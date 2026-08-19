@@ -3293,7 +3293,23 @@ test.describe("Multiplas cenas — backend (Etapa 48)", () => {
           const results = [...rows.values()]
             .filter(row => !String(row.id).startsWith("meta"))
             .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
-          return { results: results.map(row => ({ id: row.id, updated_at: row.updated_at })) };
+          // Etapa 89: a listagem passou a pedir map.url e a contagem de tokens
+          // por json_extract/json_array_length. O falso D1 nao interpreta SQL,
+          // entao faz a mesma conta em JS — o contrato que mesa.js espera
+          // continua exercitado. (Erro de SINTAXE no SQL so apareceria no D1
+          // de verdade: e o que o smoke de producao cobre.)
+          return {
+            results: results.map(row => {
+              let data = {};
+              try { data = JSON.parse(row.data_json || "{}"); } catch { data = {}; }
+              return {
+                id: row.id,
+                updated_at: row.updated_at,
+                map_url: data?.map?.url ?? null,
+                token_count: Array.isArray(data?.tokens) ? data.tokens.length : null
+              };
+            })
+          };
         }
       };
     }
@@ -3341,7 +3357,7 @@ test.describe("Multiplas cenas — backend (Etapa 48)", () => {
     const initial = await mesa.listMesaScenes(env, MASTER);
     expect(initial.activeId).toBe("default");
     expect(initial.scenes).toEqual([
-      { id: "default", name: "Cena principal", updatedAt: null, active: true }
+      { id: "default", name: "Cena principal", updatedAt: null, active: true, mapUrl: "", tokenCount: 0 }
     ]);
 
     // Salva algo na default e cria a segunda cena
@@ -3427,65 +3443,46 @@ test.describe("Multiplas cenas — backend (Etapa 48)", () => {
 });
 
 test.describe("Multiplas cenas — frontend (Etapa 49)", () => {
-  test("mestre: grupo Cenas lista, destaca a ativa e Ativar chama a API", async ({ page }) => {
+  /* Etapa 89: a listinha do painel do mapa virou a gaveta #mesaScenesDrawer.
+   * O detalhe da UI mudou de lugar e mora agora em tests/mesa-scenes.spec.cjs;
+   * aqui fica o que esta suite sempre protegeu — o mestre enxerga o
+   * gerenciador, o jogador nunca. */
+  test("mestre: o botao da gaveta de cenas aparece com backend ativo", async ({ page }) => {
     await seedMasterWithScene(page, [ANA_TOKEN]);
     const baseUrl = await getMesaBaseUrl();
     await page.goto(`${baseUrl}/mesa.html`);
     await waitForMesaSettled(page);
 
-    await page.evaluate(async () => {
-      window.__sceneCalls = [];
+    const visivel = await page.evaluate(async () => {
       window.AUTH = Object.assign({}, window.AUTH, { isBackendEnabled: () => true });
       window.APP = Object.assign({}, window.APP, {
         getMesaScenes: async () => ({
           activeId: "default",
-          scenes: [
-            { id: "default", name: "Cena principal", updatedAt: null, active: true },
-            { id: "scaverna01", name: "Caverna Sombria", updatedAt: null, active: false }
-          ]
-        }),
-        activateMesaScene: async id => { window.__sceneCalls.push(["activate", id]); return { activeId: id }; }
+          scenes: [{ id: "default", name: "Cena principal", updatedAt: null, active: true, mapUrl: "", tokenCount: 1 }]
+        })
       });
       await window.refreshMesaScenesUI();
+      return !document.getElementById("mesaScenesToggle").hidden;
     });
 
-    const ui = await page.evaluate(() => ({
-      groupVisible: !document.getElementById("mesaScenesGroup").hidden,
-      rows: [...document.querySelectorAll(".mesa-scene-row")].map(row => ({
-        name: row.querySelector(".mesa-scene-name").textContent,
-        active: row.classList.contains("is-active"),
-        hasActivate: Boolean(row.querySelector('[data-scene-action="activate"]')),
-        hasDelete: Boolean(row.querySelector('[data-scene-action="delete"]'))
-      }))
-    }));
-
-    expect(ui.groupVisible).toBe(true);
-    expect(ui.rows.length).toBe(2);
-    expect(ui.rows[0]).toEqual({ name: "Cena principal", active: true, hasActivate: false, hasDelete: false });
-    expect(ui.rows[1]).toEqual({ name: "Caverna Sombria", active: false, hasActivate: true, hasDelete: true });
-
-    // O painel do mapa pode estar recolhido (elemento fora de vista): dispara
-    // o click direto — o handler e delegation no grupo, nao depende de layout.
-    await page.evaluate(() => {
-      document.querySelector('[data-scene-action="activate"][data-scene-id="scaverna01"]').click();
-    });
-    await page.waitForFunction(() => (window.__sceneCalls || []).length > 0);
-    const calls = await page.evaluate(() => window.__sceneCalls);
-    expect(calls).toContainEqual(["activate", "scaverna01"]);
+    expect(visivel).toBe(true);
   });
 
-  test("jogador: grupo Cenas nunca aparece", async ({ page }) => {
+  test("jogador: gerenciador de cenas nunca aparece", async ({ page }) => {
     await seedPlayerWithScene(page, [ANA_TOKEN]);
     const baseUrl = await getMesaBaseUrl();
     await page.goto(`${baseUrl}/mesa.html`);
     await waitForMesaSettled(page);
 
-    const hidden = await page.evaluate(async () => {
+    const escondido = await page.evaluate(async () => {
       window.AUTH = Object.assign({}, window.AUTH, { isBackendEnabled: () => true });
       await window.refreshMesaScenesUI();
-      return document.getElementById("mesaScenesGroup").hidden;
+      return {
+        botao: document.getElementById("mesaScenesToggle").hidden,
+        gaveta: document.getElementById("mesaScenesDrawer").hidden
+      };
     });
-    expect(hidden).toBe(true);
+    expect(escondido).toEqual({ botao: true, gaveta: true });
   });
 
   test("mesa:scene:switch recarrega a cena ativa e o snapshot local vira por-cena", async ({ page }) => {

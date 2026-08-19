@@ -6,7 +6,7 @@ const outDir = path.join(repoRoot, "_site");
 
 // Bump aqui quando mudar arquivos dos bundles
 const FICHA_BUNDLE_VERSION = "2026-08-16-fichaboot-1";
-const MESA_BUNDLE_VERSION  = "2026-08-18-selecao-fora-do-fio";
+const MESA_BUNDLE_VERSION  = "2026-08-18-gaveta-cenas-1";
 
 const files = [
   "index.html", "ficha.html", "mesa.html", "regras.html", "sugestoes.html",
@@ -34,7 +34,7 @@ const mesaJsBundle  = "js/mesa-page.bundle.js";
 const mesaCssFiles  = [
   "css/tokens.css","css/reset.css","css/components.css","css/mesa.css",
   "css/mesa-stage.css","css/mesa-roster.css","css/mesa-inspector.css","css/mesa-map.css",
-  "css/mesa-drawing.css"
+  "css/mesa-drawing.css","css/mesa-scenes.css"
 ];
 // O Canvas renderer (mesa-renderer-v2.js + mesa-renderer-worker.js) foi removido
 // em 2026-06-30: o token da Mesa e sempre o estilo redondo (DOM), sem Canvas.

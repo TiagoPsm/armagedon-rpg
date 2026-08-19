@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-18 17:32:42 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-18 23:03:44 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,29 +13,54 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `e6f0683 2026-08-18 fix(mesa): a selecao sai do fio de vez (Etapa 88)`
+- Ultimo commit: `6b9f6b1 2026-08-18 test(mesa): cenario de selecao no smoke de producao (Etapa 88)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
 M  DEV_STATUS.md
+ M SYSTEM_RULES.md
+M  VISUAL_RULES.md
+M  cloudflare/README.md
+M  cloudflare/src/mesa.js
+A  css/mesa-scenes.css
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+ M js/mesa-map.js
+M  js/mesa-scenes.js
+M  mesa.html
+M  package.json
+M  tests/mesa-audit.spec.cjs
 M  tests/mesa-online.spec.cjs
+A  tests/mesa-scenes.spec.cjs
+M  tools/build-pages.cjs
+?? tests/mesa-scene-map.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
 .claude/settings.local.json
+SYSTEM_RULES.md
+js/mesa-map.js
 ```
 
 ### Arquivos Em Stage
 
 ```text
 DEV_STATUS.md
+VISUAL_RULES.md
+cloudflare/README.md
+cloudflare/src/mesa.js
+css/mesa-scenes.css
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+js/mesa-scenes.js
+mesa.html
+package.json
+tests/mesa-audit.spec.cjs
 tests/mesa-online.spec.cjs
+tests/mesa-scenes.spec.cjs
+tools/build-pages.cjs
 ```
 
 ## Paginas Principais
@@ -50,7 +75,7 @@ tests/mesa-online.spec.cjs
 ## Contagem Rapida
 
 - JavaScript em `js/`: 38 arquivo(s)
-- CSS em `css/`: 14 arquivo(s)
+- CSS em `css/`: 15 arquivo(s)
 - Notas Obsidian: 11 arquivo(s)
 
 ## Notas Do Vault
@@ -132,7 +157,7 @@ Use esta lista para evitar publicar arquivos pesados sem necessidade.
     0,73 MB  debug.log
     0,62 MB  node_modules\playwright-core\lib\mcpBundleImpl.js
     0,61 MB  node_modules\playwright-core\lib\vite\traceViewer\assets\defaultSettingsView-GTWI-W_B.js
-    0,51 MB  _site\js\mesa-page.bundle.js
+    0,52 MB  _site\js\mesa-page.bundle.js
     0,45 MB  node_modules\playwright-core\lib\utilsBundleImpl\index.js
 ```
 

@@ -296,7 +296,7 @@ test.describe("Mesa online - fluxo autenticado", () => {
     const ferramentasDoMestre = await masterPage.evaluate(() => ({
       grade: !document.getElementById("mesaGridGroup")?.hidden,
       nevoa: !document.getElementById("mesaFogGroup")?.hidden,
-      cenas: !document.getElementById("mesaScenesGroup")?.hidden,
+      cenas: !document.getElementById("mesaScenesToggle")?.hidden,
       dados: Boolean(document.getElementById("mesaDicePanel")),
       nevoaCanvas: Boolean(document.getElementById("mesaFogCanvas")),
       desenhoCanvas: Boolean(document.getElementById("mesaDrawCanvas"))
@@ -336,7 +336,7 @@ test.describe("Mesa online - fluxo autenticado", () => {
     const vazamentoNoJogador = await playerPage.evaluate(() => ({
       grade: !document.getElementById("mesaGridGroup")?.hidden,
       nevoa: !document.getElementById("mesaFogGroup")?.hidden,
-      cenas: !document.getElementById("mesaScenesGroup")?.hidden,
+      cenas: !document.getElementById("mesaScenesToggle")?.hidden,
       tokensSecretos: document.querySelectorAll("#mesaStage .mesa-token.is-layer-dm").length
     }));
     expect(vazamentoNoJogador).toEqual({
