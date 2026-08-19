@@ -49,6 +49,38 @@ const MESA_MAP_STORE      = "maps";
 const MESA_MAP_SETTINGS_STORE = "settings";
 const MESA_MAP_ACTIVE_KEY = "tc_mesa_active_map";
 
+/* ── O MAPA LOCAL PERTENCE A UMA CENA (Etapa 90) ──────────────────
+ *
+ * Ate aqui o mapa local do mestre era um so, global: uma chave de
+ * localStorage e um `activeMapUrl` que valiam para a Mesa inteira. Com
+ * multi-cena isso virou vazamento — o mestre trocava de cena e continuava
+ * vendo o mapa da anterior, e o persist seguinte gravava esse mapa dentro
+ * da cena nova (medido: cena sem mapa e cena com outro mapa, ambas ficavam
+ * com o mapa da primeira).
+ *
+ * A partir daqui todo mapa local carrega a cena a que pertence, e a chave
+ * do localStorage e por cena. A cena "default" mantem a chave legada — zero
+ * migracao para quem ja tem mapa salvo — seguindo a mesma convencao de
+ * mesaSceneStorageKey() em mesa-core.js.
+ */
+function _currentMesaSceneId() {
+  return String((typeof state !== "undefined" && state && state.sceneId) || "default");
+}
+
+function _mapActiveKeyForScene(sceneId) {
+  const id = String(sceneId || "default");
+  return id === "default" ? MESA_MAP_ACTIVE_KEY : `${MESA_MAP_ACTIVE_KEY}_${id}`;
+}
+
+/** Marca o mapa local como pertencente a cena atual. */
+function _stampLocalMapScene(sceneId) {
+  mesaMapState.mapSceneId = String(sceneId || _currentMesaSceneId());
+}
+
+function _localMapBelongsToCurrentScene() {
+  return Boolean(mesaMapState.mapSceneId) && mesaMapState.mapSceneId === _currentMesaSceneId();
+}
+
 // Eventos internos (Durable Object relay)
 const EV_MAP_ANNOUNCE  = "mesa:map:announce";   // mestre → todos: novo mapa disponível
 const EV_MAP_HAVE      = "mesa:map:have";        // jogador → mestre: já tenho no cache
@@ -119,6 +151,9 @@ const mesaMapState = {
   // campo, os broadcasts de transform (que carregam o id do mestre) ficavam
   // pendentes para sempre e o pan/zoom nunca chegava ao jogador.
   remoteMapId:        "",
+  // Cena a que o mapa local pertence (Etapa 90). Vazio = desconhecida:
+  // estado legado, anterior a esta etapa — a cena manda nesse caso.
+  mapSceneId:         "",
 };
 
 /* Estado da pasta conectada (monitoramento em tempo real, sem IDB) */
@@ -843,7 +878,10 @@ async function applyActiveMap(mapEntry) {
     mesaMapState.mapTransform = saved ? JSON.parse(saved) : { x: 0, y: 0, scale: 1 };
   } catch { mesaMapState.mapTransform = { x: 0, y: 0, scale: 1 }; }
 
-  try { localStorage.setItem(MESA_MAP_ACTIVE_KEY, mapEntry.id); } catch {}
+  // Chave POR CENA (Etapa 90): o mapa que o mestre carrega aqui pertence a
+  // cena aberta agora, e so ela deve restaura-lo depois do F5.
+  _stampLocalMapScene();
+  try { localStorage.setItem(_mapActiveKeyForScene(mesaMapState.mapSceneId), mapEntry.id); } catch {}
 
   // Medir a imagem: é o que ajusta o palco à proporção dela.
   _probeMapImage(blobUrl, function () {
@@ -867,7 +905,8 @@ function clearActiveMap() {
   mesaMapState._imgW        = 0;
   mesaMapState._imgH        = 0;
 
-  try { localStorage.removeItem(MESA_MAP_ACTIVE_KEY); } catch {}
+  try { localStorage.removeItem(_mapActiveKeyForScene(_currentMesaSceneId())); } catch {}
+  mesaMapState.mapSceneId = "";
 
   // Limpa seleção da pasta conectada e mapa persistido
   connectedFolder._activePath = "";
@@ -892,7 +931,9 @@ function clearActiveMap() {
 
 async function restoreActiveMap() {
   // 1. Tentar restaurar mapa salvo na biblioteca IDB
-  const savedId = localStorage.getItem(MESA_MAP_ACTIVE_KEY);
+  // Mapa da CENA ATUAL (Etapa 90): a chave e por cena, entao o F5 numa cena
+  // sem mapa nao ressuscita o mapa de outra.
+  const savedId = localStorage.getItem(_mapActiveKeyForScene(_currentMesaSceneId()));
   if (savedId && mesaMapState.db) {
     const mapEntry = await loadMesaMapFromDB(savedId);
     if (mapEntry) {
@@ -917,7 +958,12 @@ async function _restoreCFActiveMap() {
     });
     if (!record || !record.value) return;
 
-    var saved = record.value; // { blob, name, cfPath }
+    var saved = record.value; // { blob, name, cfPath, sceneId }
+    // Registro sem sceneId e anterior a Etapa 90, quando so existia a cena
+    // "default" na pratica — tratar como dela preserva o comportamento antigo
+    // sem deixar o mapa aparecer nas outras.
+    var savedSceneId = String(saved.sceneId || "default");
+    if (savedSceneId !== _currentMesaSceneId()) return;
     var blobUrl = URL.createObjectURL(saved.blob);
     var hash = await computeBlobHash(saved.blob);
 
@@ -927,7 +973,8 @@ async function _restoreCFActiveMap() {
     mesaMapState.activeMapId  = "cf-" + hash.slice(0, 12);
     mesaMapState.activeEntry  = { id: "cf-" + hash.slice(0, 12), name: saved.name || "", blob: saved.blob, hash: hash };
     mesaMapState.activeMapUrl = blobUrl;
-    try { localStorage.removeItem(MESA_MAP_ACTIVE_KEY); } catch {}
+    _stampLocalMapScene(savedSceneId);
+    try { localStorage.removeItem(_mapActiveKeyForScene(savedSceneId)); } catch {}
 
     // Marcar pasta conectada como tendo esse caminho ativo (sera confirmado apos reconexao)
     connectedFolder._activePath = saved.cfPath || "";
@@ -1333,7 +1380,10 @@ function _normalizedMapTransform() {
 
 // Consumido por createMesaScenePayloadFromState (mesa-core.js) em todo persist.
 window.getMesaSceneMapPayload = function () {
-  if (mesaMapState.activeMapPublicUrl && mesaMapState.activeMapId) {
+  // O `_localMapBelongsToCurrentScene()` e o que impede o persist de gravar o
+  // mapa de uma cena dentro de outra (Etapa 90) — era assim que o vazamento
+  // saia da tela e chegava ao D1, virando o mapa oficial da cena errada.
+  if (mesaMapState.activeMapPublicUrl && mesaMapState.activeMapId && _localMapBelongsToCurrentScene()) {
     return {
       id:        mesaMapState.activeMapId,
       url:       mesaMapState.activeMapPublicUrl,
@@ -1366,16 +1416,30 @@ function _applyPendingSceneMap() {
 }
 
 function _applySceneMapRef(ref) {
+  // Etapa 90: a pergunta que faltava era "de que cena e o mapa que estou
+  // exibindo?". Sem ela, as duas guardas abaixo — escritas quando existia UMA
+  // cena — protegiam o mapa local do mestre a ponto de carrega-lo para dentro
+  // de todas as outras cenas.
+  const localEDestaCena = _localMapBelongsToCurrentScene();
+
   if (!ref) {
     // Cena oficial sem mapa: o jogador só limpa se o que exibe veio da cena
     // (um mapa entregue via P2P/WS pelo mestre online permanece).
-    if (!_isMasterRole() && mesaMapState._lastSceneMapUrl) {
-      mesaMapState._lastSceneMapUrl = "";
-      mesaMapState.activeMapId = "";
-      mesaMapState._imgW = 0;
-      mesaMapState._imgH = 0;
-      renderMesaMapLayer("", "");
+    if (!_isMasterRole()) {
+      if (mesaMapState._lastSceneMapUrl) {
+        mesaMapState._lastSceneMapUrl = "";
+        mesaMapState.activeMapId = "";
+        mesaMapState._imgW = 0;
+        mesaMapState._imgH = 0;
+        renderMesaMapLayer("", "");
+      }
+      return;
     }
+    // Mestre: o mapa local desta cena continua valendo — pode ser um mapa
+    // recem-carregado que ainda nao subiu ao R2, e apagar isso seria perder
+    // trabalho. Mapa de OUTRA cena sai de cena.
+    if (localEDestaCena) return;
+    void _trocarMapaLocalDaCena();
     return;
   }
 
@@ -1385,16 +1449,19 @@ function _applySceneMapRef(ref) {
     if (mesaMapState.activeMapId && mesaMapState.activeMapId === ref.id) {
       mesaMapState.activeMapPublicUrl = ref.url;
       mesaMapState._uploadedMapId = ref.id;
+      _stampLocalMapScene();
       // `ref.fit` é ignorado desde a Etapa 68: o palco é sempre ajustado, então
       // uma cena antiga gravada com fit:false não desajusta mais nada.
       return;
     }
-    // Mestre com outro mapa local ativo: o local manda (a cena converge no
-    // próximo persist do próprio mestre).
-    if (mesaMapState.activeMapUrl) return;
-    // Mestre sem mapa local (cache perdido): carrega da cena.
+    // Mestre com outro mapa local ativo: o local manda SE for desta cena (a
+    // cena converge no próximo persist do próprio mestre). Se for de outra
+    // cena, quem manda e a cena — era exatamente aqui que o mapa vazava.
+    if (mesaMapState.activeMapUrl && localEDestaCena) return;
+    // Mestre sem mapa local desta cena: carrega o da cena.
     mesaMapState.activeMapPublicUrl = ref.url;
     mesaMapState._uploadedMapId = ref.id;
+    _stampLocalMapScene();
     _renderSceneMapFromUrl(ref);
     return;
   }
@@ -1408,6 +1475,55 @@ function _applySceneMapRef(ref) {
   _renderSceneMapFromUrl(ref);
 }
 
+/**
+ * Troca de cena para o MESTRE: solta o mapa que estava na tela (que e de
+ * outra cena) e tenta restaurar o mapa local DESTA cena.
+ *
+ * Nao mexe no R2 nem persiste — diferente de clearActiveMap(), que e uma
+ * decisao do mestre ("limpar o mapa") e apaga o mapa oficial. Aqui ninguem
+ * pediu para apagar nada: o mapa da outra cena continua no IndexedDB, na
+ * cena dela, e volta quando ela voltar.
+ */
+async function _trocarMapaLocalDaCena() {
+  if (mesaMapState.activeMapUrl && String(mesaMapState.activeMapUrl).startsWith("blob:")) {
+    URL.revokeObjectURL(mesaMapState.activeMapUrl);
+  }
+  mesaMapState.activeMapUrl       = "";
+  mesaMapState.activeMapId        = "";
+  mesaMapState.activeEntry        = null;
+  mesaMapState.activeMapPublicUrl = "";
+  mesaMapState._uploadedMapId     = "";
+  mesaMapState._lastSceneMapUrl   = "";
+  mesaMapState._imgW              = 0;
+  mesaMapState._imgH              = 0;
+  mesaMapState.mapSceneId         = "";
+  renderMesaMapLayer("", "");
+
+  await _restaurarMapaLocalDaCena(_currentMesaSceneId());
+}
+
+/**
+ * Mapa local de uma cena especifica, vindo do IndexedDB.
+ *
+ * Existe porque mapa local nem sempre chega ao R2/D1 (o upload e ultimo
+ * recurso): sem isto, sair de uma cena e voltar perderia de vista um mapa
+ * que so existe neste navegador.
+ */
+async function _restaurarMapaLocalDaCena(sceneId) {
+  try {
+    const savedId = localStorage.getItem(_mapActiveKeyForScene(sceneId));
+    if (!savedId || !mesaMapState.db) return false;
+    const mapEntry = await loadMesaMapFromDB(savedId);
+    if (!mapEntry) return false;
+    await applyActiveMap(mapEntry);
+    mesaMapState.activeEntry = mapEntry;
+    return true;
+  } catch (error) {
+    console.warn("[mesa-map] falha ao restaurar o mapa local da cena:", error);
+    return false;
+  }
+}
+
 function _renderSceneMapFromUrl(ref) {
   if (mesaMapState.activeMapUrl && mesaMapState.activeMapUrl.startsWith("blob:")) {
     URL.revokeObjectURL(mesaMapState.activeMapUrl);
@@ -1418,6 +1534,7 @@ function _renderSceneMapFromUrl(ref) {
   mesaMapState.activeMapId = String(ref.id || "scene-map");
   mesaMapState.remoteMapId = String(ref.id || "");
   mesaMapState._lastSceneMapUrl = ref.url;
+  _stampLocalMapScene();   // o que esta na tela pertence a cena aberta agora
 
   // `ref.fit` é ignorado desde a Etapa 68 (o palco é sempre ajustado).
   _probeMapImage(ref.url, function () {
@@ -2899,7 +3016,8 @@ async function setMapFromConnectedFolder(path) {
     mesaMapState.activeMapId  = cfEntry.id;
     mesaMapState.activeEntry  = cfEntry;
     mesaMapState.activeMapUrl = blobUrl;
-    try { localStorage.removeItem(MESA_MAP_ACTIVE_KEY); } catch {}
+    _stampLocalMapScene();
+    try { localStorage.removeItem(_mapActiveKeyForScene(_currentMesaSceneId())); } catch {}
 
     renderMesaMapLayer(blobUrl, entry.fullName);
     resetMapTransform();
@@ -3175,7 +3293,9 @@ function _saveCFActiveMapToIDB(blob, name, cfPath) {
     try {
       var tx    = mesaMapState.db.transaction(MESA_MAP_SETTINGS_STORE, "readwrite");
       var store = tx.objectStore(MESA_MAP_SETTINGS_STORE);
-      store.put({ key: "cfActiveMap", value: { blob: blob, name: name, cfPath: cfPath } });
+      // sceneId junto (Etapa 90): sem ele o restore devolvia o mapa da pasta
+      // conectada em QUALQUER cena, inclusive nas que nao tem mapa.
+      store.put({ key: "cfActiveMap", value: { blob: blob, name: name, cfPath: cfPath, sceneId: _currentMesaSceneId() } });
       tx.oncomplete = function() { resolve(); };
       tx.onerror    = function(e) { reject(e.target.error); };
       tx.onabort    = function(e) { reject(new Error("IDB transaction aborted")); };

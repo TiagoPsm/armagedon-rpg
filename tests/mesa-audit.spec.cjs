@@ -4117,6 +4117,11 @@ test.describe("Palco ajustado ao mapa + resolucao (Etapas 52-55)", () => {
     mesaMapState.activeMapUrl = "blob:teste";
     mesaMapState.activeMapId = "map-teste";
     mesaMapState.activeMapPublicUrl = "https://exemplo/r2/map-teste.webp";
+    // Etapa 90: mapa local sempre sabe de que cena e. Em producao quem carrega
+    // o mapa ja carimba isso (applyActiveMap / _renderSceneMapFromUrl); este
+    // seed escreve o estado na mao, entao carimba junto — sem a marca, o
+    // payload da cena sai vazio de proposito, que e a protecao nova.
+    mesaMapState.mapSceneId = String(state.sceneId || "default");
     document.getElementById("mesaMapLayer").removeAttribute("hidden");
     applyMapTransform();
   };
@@ -4365,6 +4370,7 @@ test.describe("Ajuste do palco sempre ligado (Etapa 68)", () => {
     mesaMapState._imgH = ih;
     mesaMapState.activeMapUrl = "blob:teste";
     mesaMapState.activeMapId = "map-teste";
+    mesaMapState.mapSceneId = String(state.sceneId || "default");   // Etapa 90
     document.getElementById("mesaMapLayer").removeAttribute("hidden");
     applyMapTransform();
   };

@@ -42,7 +42,58 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-18 — Etapa 89: gaveta de cenas)
+## Ultima Etapa Concluida (2026-08-18 — Etapa 90: cada cena com o seu mapa, e so ele)
+
+Etapa nascida de uma pergunta do Tiago depois da 89 — "da para validar se cada cena tem apenas o seu mapa?". Nao tinha: o mestre trocava de cena e continuava com o mapa da anterior, **e gravava esse mapa dentro da cena nova**.
+
+### O vazamento, como foi medido
+
+Tres cenas em sequencia, lendo o palco e o payload que vai para o D1:
+
+| | Mestre — palco | Mestre — payload | Jogador — palco |
+|---|---|---|---|
+| Cena A (mapa A) | mapa A | mapa A | mapa A |
+| Cena B (sem mapa) | **mapa A** | **mapa A** | vazio |
+| Cena C (mapa C) | **mapa A** | **mapa A** | mapa C |
+
+O jogador ja estava certo nos tres casos. A coluna do meio e a grave: bastava o mestre mexer um token depois da troca para o mapa da cena A virar o mapa OFICIAL da cena B no D1 — e dali alcancar os jogadores e os cartoes da gaveta da Etapa 89.
+
+### Causa
+
+Duas guardas em `_applySceneMapRef` (js/mesa-map.js), escritas quando existia **uma cena so**:
+
+- cena sem mapa nao limpava nada para o mestre (`if (!_isMasterRole() && ...)`);
+- `if (mesaMapState.activeMapUrl) return;` — "o local manda".
+
+As duas protegiam algo legitimo: o mestre carrega o mapa localmente (blob/IndexedDB) antes de ele existir no R2, e um persist nao podia apagar esse trabalho. Faltava a pergunta que so passou a existir com multi-cena: **de que cena e o mapa que estou exibindo?**
+
+E nao era caso de borda — depois da primeira cena com mapa, `activeMapUrl` fica preenchido, entao todo mestre caia nisso.
+
+### O que mudou
+
+- **O mapa local passou a saber a que cena pertence** (`mesaMapState.mapSceneId`), e a chave do `localStorage` virou por cena (`tc_mesa_active_map_<sceneId>`; a cena `default` mantem a chave legada — zero migracao, mesma convencao de `mesaSceneStorageKey` em mesa-core.js).
+- **As duas guardas agora perguntam pela cena**: o mapa local so manda se for DESTA cena; se for de outra, quem manda e a cena (adota o mapa dela, ou fica sem mapa).
+- **`getMesaSceneMapPayload()` nunca devolve mapa de outra cena.** E esta linha que impede o persist de gravar o mapa errado no D1.
+- **Trocar de cena nao apaga mapa de ninguem**: `_trocarMapaLocalDaCena()` solta o mapa da tela e tenta restaurar o mapa local DESTA cena do IndexedDB — diferente de `clearActiveMap()`, que e uma decisao do mestre e apaga o mapa oficial (R2 + cena). Isso importa porque mapa local nem sempre chega ao R2 (o upload e ultimo recurso): sem esse resgate, sair de uma cena e voltar perderia de vista um mapa que so existe naquele navegador.
+- **Mapa da pasta conectada tambem virou por cena**: o registro no IndexedDB passou a guardar `sceneId`, e o restore so devolve o mapa na cena dona. Registro antigo, sem o campo, e tratado como da `default` — que era a unica cena na pratica naquela epoca.
+
+### Verificacao
+
+Suite nova `tests/mesa-scene-map.spec.cjs` (6 testes, `npm run test:mesa:scenemap`): a tabela acima virou teste nos dois papeis, mais o retorno a cena de origem, a chave por cena com a legada preservada e o carimbo de cena no mapa local.
+
+Vermelho antes do verde conferido de forma direta: forcando `_localMapBelongsToCurrentScene()` a devolver `true` — que reproduz exatamente a logica anterior — **tres dos seis reprovam**, os tres que descrevem o vazamento.
+
+Um ajuste de fixture foi necessario em `mesa-audit.spec.cjs`: o `seedMapaAtivo` escreve o estado do mapa na mao e nao carimbava a cena, entao o payload saia vazio (que e a protecao nova funcionando). As assercoes do teste ficaram identicas; o seed passou a carimbar, como todo caminho de producao ja faz.
+
+Suites: `test:mesa:scenemap` 6, `test:mesa:audit` 166, `test:mesa:scenes` 13, `test:mesa` 5, `test:mesa:tokens` 10, `test:mesa:permissoes` 15, `test:controles` 6, `perf:mesa` 1, mais `check:js`, `audit:static`, `audit:pendencias` e `build:pages`.
+
+Limite conhecido: o F5 dentro de uma cena especifica e coberto pelo mecanismo (chave por cena), nao por um teste de ponta a ponta com IndexedDB semeado — o Playwright teria de plantar o blob no IDB antes do boot.
+
+### Arquivos
+
+`js/mesa-map.js`, `tests/mesa-scene-map.spec.cjs` (novo), `tests/mesa-audit.spec.cjs` (fixture), `mesa.html` (cache-busting), `tools/build-pages.cjs`, `package.json`.
+
+## Etapa Anterior (2026-08-18 — Etapa 89: gaveta de cenas)
 
 Primeira etapa do redesenho do sistema de cenas pedido pelo Tiago (gaveta que desce do topo, cartoes por cena, engrenagem de configuracoes, pastas). Esta etapa entrega **a gaveta e o fim dos dialogos nativos**; pastas ficam para a Etapa 90 e as configuracoes por cena para a 91.
 

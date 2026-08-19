@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-18 23:03:44 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-18 23:04:27 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,53 +13,38 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `6b9f6b1 2026-08-18 test(mesa): cenario de selecao no smoke de producao (Etapa 88)`
+- Ultimo commit: `b0b844d 2026-08-18 feat(mesa): gaveta de cenas, sem dialogo nativo (Etapa 89)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
 M  DEV_STATUS.md
- M SYSTEM_RULES.md
-M  VISUAL_RULES.md
-M  cloudflare/README.md
-M  cloudflare/src/mesa.js
-A  css/mesa-scenes.css
-M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
- M js/mesa-map.js
-M  js/mesa-scenes.js
+M  SYSTEM_RULES.md
+M  js/mesa-map.js
 M  mesa.html
 M  package.json
 M  tests/mesa-audit.spec.cjs
-M  tests/mesa-online.spec.cjs
-A  tests/mesa-scenes.spec.cjs
+A  tests/mesa-scene-map.spec.cjs
 M  tools/build-pages.cjs
-?? tests/mesa-scene-map.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
 .claude/settings.local.json
-SYSTEM_RULES.md
-js/mesa-map.js
 ```
 
 ### Arquivos Em Stage
 
 ```text
 DEV_STATUS.md
-VISUAL_RULES.md
-cloudflare/README.md
-cloudflare/src/mesa.js
-css/mesa-scenes.css
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/mesa-scenes.js
+SYSTEM_RULES.md
+js/mesa-map.js
 mesa.html
 package.json
 tests/mesa-audit.spec.cjs
-tests/mesa-online.spec.cjs
-tests/mesa-scenes.spec.cjs
+tests/mesa-scene-map.spec.cjs
 tools/build-pages.cjs
 ```
 
