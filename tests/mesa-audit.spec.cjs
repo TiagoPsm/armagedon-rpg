@@ -5894,7 +5894,9 @@ test.describe("Inspetor: o clique chega a quem foi clicado (Etapa 91)", () => {
     await page.locator('.mesa-token[data-token-id="ana"]').click();
     const antes = await page.evaluate(() => findToken("ana").visibleToPlayers);
 
-    await page.locator('[data-inspector-action="toggle-visibility"]').first().click();
+    // Etapa 94: o alternador virou segmentado — clica-se no lado desejado.
+    const alvo = antes ? "hidden" : "visible";
+    await page.locator(`[data-inspector-action="set-visibility"][data-value="${alvo}"]`).click();
 
     await expect
       .poll(() => page.evaluate(() => findToken("ana").visibleToPlayers))
@@ -5979,10 +5981,12 @@ test.describe("Inspetor: a secao Acoes fala uma lingua so (Etapa 92)", () => {
     const bordas = await page.evaluate(() => {
       const esquerdaDe = el => Math.round(el.getBoundingClientRect().left);
       const rotulos = [...document.querySelectorAll(".inspector-action-label")].map(esquerdaDe);
-      // O primeiro controle de cada grupo: os seguintes ficam ao lado dele
-      // (Centralizar / Retirar), e ai a coluna e outra de proposito.
+      // O BLOCO de controle de cada grupo (segmentado, par dividido, resumo
+      // de marcadores) — nao o botao interno: desde a Etapa 94 o segmentado
+      // tem borda propria, e o primeiro botao dentro dele fica 1px a dentro.
+      // Comparar botao com rotulo acusaria uma desigualdade que nao existe.
       const primeiros = [...document.querySelectorAll(".inspector-action-row")]
-        .map(row => row.querySelector("button"))
+        .map(row => row.querySelector(".inspector-segmented, .inspector-action-btns, .inspector-marker-summary"))
         .filter(Boolean)
         .map(esquerdaDe);
       const vazio = document.querySelector(".inspector-marker-empty");
@@ -6108,5 +6112,82 @@ test.describe("Inspetor: +/- de Vida commita de verdade (Etapa 93)", () => {
     });
 
     expect(resultado.vida, "a vida passou do maximo").toBe(resultado.max);
+  });
+});
+
+/* ============================================================
+ * Etapa 94 — o inspetor virou uma coluna simetrica.
+ *
+ * Medido antes: os botoes das acoes tinham 58, 63, 99, 68 e 144px,
+ * alinhados so pela esquerda — a borda direita serrilhava. E nos vitais o
+ * campo do valor atual tinha 83px contra 46px do maximo, com a largura
+ * ainda variando conforme a quantidade de digitos.
+ *
+ * A garantia aqui e a que sobrevive a mudanca de texto: todo controle de
+ * acao fecha nas duas bordas, e atual/maximo tem a mesma largura.
+ * ============================================================ */
+test.describe("Inspetor: coluna simetrica (Etapa 94)", () => {
+  async function abrir(page) {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.locator('.mesa-token[data-token-id="ana"]').click();
+    await expect.poll(() => page.locator(".inspector-segmented").count()).toBeGreaterThan(0);
+  }
+
+  test("todo controle de acao fecha nas duas bordas da coluna", async ({ page }) => {
+    await abrir(page);
+
+    const bordas = await page.evaluate(() => {
+      const controles = [...document.querySelectorAll(
+        "#tokenInspector .inspector-segmented, #tokenInspector .inspector-action-btns.is-split, #tokenInspector .mesa-token-markers-btn.is-inspector"
+      )];
+      return {
+        quantidade: controles.length,
+        esquerdas: [...new Set(controles.map(el => Math.round(el.getBoundingClientRect().left)))],
+        direitas: [...new Set(controles.map(el => Math.round(el.getBoundingClientRect().right)))]
+      };
+    });
+
+    expect(bordas.quantidade).toBeGreaterThan(2);
+    expect(bordas.esquerdas, "controles comecando em colunas diferentes").toHaveLength(1);
+    expect(bordas.direitas, "controles terminando em colunas diferentes (borda serrilhada)").toHaveLength(1);
+  });
+
+  test("atual e maximo tem a mesma largura, nos dois vitais", async ({ page }) => {
+    await abrir(page);
+
+    const larguras = await page.evaluate(() =>
+      [...document.querySelectorAll("#tokenInspector .inspector-vital-stepper input")]
+        .map(i => Math.round(i.getBoundingClientRect().width))
+    );
+
+    expect(larguras.length).toBe(4);            // atual + maximo, Vida e Integridade
+    expect([...new Set(larguras)], `larguras diferentes: ${larguras}`).toHaveLength(1);
+  });
+
+  test("o segmentado mostra o estado e o lado ja ativo nao desfaz nada", async ({ page }) => {
+    await abrir(page);
+
+    const estadoInicial = await page.evaluate(() => findToken("ana").visibleToPlayers);
+    const ladoAtivo = estadoInicial ? "visible" : "hidden";
+
+    // Clicar no lado JA ativo: no-op. Com o toggle antigo, isso desligava
+    // justamente o que a pessoa apontou como certo.
+    await page.locator(`[data-inspector-action="set-visibility"][data-value="${ladoAtivo}"]`).click();
+    await page.waitForTimeout(200);
+    expect(await page.evaluate(() => findToken("ana").visibleToPlayers)).toBe(estadoInicial);
+
+    // O outro lado troca.
+    const outro = estadoInicial ? "hidden" : "visible";
+    await page.locator(`[data-inspector-action="set-visibility"][data-value="${outro}"]`).click();
+    await expect.poll(() => page.evaluate(() => findToken("ana").visibleToPlayers)).toBe(!estadoInicial);
+
+    // E o estado fica dito no proprio controle, para leitor de tela.
+    const pressionados = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-inspector-action="set-visibility"]')]
+        .map(b => ({ valor: b.dataset.value, pressed: b.getAttribute("aria-pressed") }))
+    );
+    expect(pressionados.filter(p => p.pressed === "true")).toHaveLength(1);
   });
 });

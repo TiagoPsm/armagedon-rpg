@@ -1219,6 +1219,10 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
   flex-direction: column;
   align-items: flex-start;
   gap: var(--sp-2);
+  /* width: 100% (Etapa 94): a linha e um flex com align-items:flex-start,
+     entao este bloco nascia do tamanho dos chips — e o botao com width:100%
+     preenchia 100% DELE, parando no meio da coluna. */
+  width: 100%;
 }
 .inspector-marker-chips {
   display: flex;
@@ -1331,7 +1335,9 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
 /* No inspetor o botao e um mini-btn normal: anula o posicionamento acima. */
 .mesa-token-markers-btn.is-inspector {
   position: static;
-  width: auto;
+  /* Largura total (Etapa 94): a linha fecha nas duas bordas, como o
+     segmentado e o par Centralizar/Retirar. */
+  width: 100%;
   height: auto;
   margin: 0;
   border-radius: var(--radius-sm);

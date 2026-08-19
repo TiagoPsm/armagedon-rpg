@@ -42,7 +42,47 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-18 — Etapa 93: o +/- de Vida nao commitava)
+## Ultima Etapa Concluida (2026-08-18 — Etapa 94: o inspetor virou uma coluna simetrica)
+
+Pedido do Tiago depois da Etapa 92: "refazer essa organizacao e estilo da aba de gerenciamento de token — algo simetrico, que nao quebre e seja estetico".
+
+### O que ainda quebrava a simetria
+
+A Etapa 92 tirou as molduras e alinhou tudo pela esquerda, mas duas coisas continuavam dependendo do TEXTO:
+
+- os botoes de acao tinham 58, 63, 68, 99 e 144px — alinhados so pela esquerda, a borda direita serrilhava;
+- nos vitais, o campo do valor atual tinha 83px e o do maximo 46px, e ambos mudavam de largura conforme a quantidade de digitos.
+
+### O que mudou
+
+**Alternadores viraram controles segmentados.** Visibilidade, Camada e Status dos jogadores mostram as duas opcoes lado a lado, metade da largura cada, com a ativa acesa. Ganha-se simetria que nao depende do rotulo — e some a ambiguidade de antes: um botao escrito "Visivel" nao dizia se aquilo era o estado atual ou o que aconteceria ao clicar.
+
+A acao passou de `toggle-*` para `set-*` com o valor desejado (`data-value`). Clicar no lado que ja esta ativo e no-op — com "toggle" seria o contrario: desligaria justamente o que a pessoa apontou como certo. O lado ativo continua clicavel e focavel (nao usa `disabled`, que o tiraria do teclado), e carrega `aria-pressed`.
+
+**Tudo fecha nas duas bordas.** Segmentados, "Editar marcadores" e o par Centralizar/Retirar (grade 50/50) vao de borda a borda: medido, todo controle de acao comeca em 1179 e termina em 1414.
+
+**Vitais equilibrados.** O stepper virou `30px 1fr 30px auto 1fr`: atual e maximo com a mesma largura (66px cada, nos dois cartoes), independente dos digitos.
+
+**Uma altura so.** O segmentado tem 26px; os `mini-btn` da secao foram para 26px tambem — a mesma coerencia que a Etapa 92 aplicou aos tamanhos de fonte.
+
+### Duas descobertas no caminho
+
+1. **`width: 100%` nao esticava o botao de marcadores.** O bloco que o contem e filho de um flex com `align-items: flex-start`, entao nascia do tamanho dos chips — e 100% de um pai encolhido para no meio da coluna. Corrigido com `width: 100%` no bloco.
+2. **`css/mesa-roster.css` sobrepoe o `.mini-btn` global** (que usa `--fs-2xs`, 11px) por `0.6rem` = 9,6px. Por isso o segmentado, usando o token, saia 1,4px maior que os vizinhos. O segmentado passou a usar 0,6rem, com o porque anotado no CSS. **Fica o alerta**: uma regra global de componente redefinida dentro de `mesa-roster.css` e surpresa esperando a proxima pessoa — vale unificar algum dia.
+
+### Verificacao
+
+Tres testes novos em `tests/mesa-audit.spec.cjs` (bloco "Inspetor: coluna simetrica"), que cobram o que sobrevive a mudanca de texto: todo controle de acao fechando nas duas bordas; atual e maximo com a mesma largura nos dois vitais; e o segmentado dizendo o estado (`aria-pressed`) com o lado ativo sendo no-op.
+
+Os dois testes da Etapa 92 foram reapontados, sem afrouxar: o de alinhamento passou a medir o BLOCO de controle em vez do botao interno (o segmentado tem borda propria e o primeiro botao fica 1px a dentro — comparar botao com rotulo acusaria uma desigualdade que nao existe). O de altura continuou exigindo uma altura so; foi o CSS que se ajustou a ele, nao o contrario.
+
+Suites: `test:mesa:audit` 178, `test:mesa:permissoes` 15, `test:mesa` 5, `test:mesa:tokens` 10, `test:controles` 6, mais `check:js`, `audit:static`, `audit:pendencias` e `build:pages`.
+
+### Arquivos
+
+`js/mesa-inspector.js`, `js/mesa-stage.js` (acoes `set-*`), `css/mesa-inspector.css`, `css/mesa-stage.css`, `tests/mesa-audit.spec.cjs`, `mesa.html` (cache-busting), `tools/build-pages.cjs`.
+
+## Etapa Anterior (2026-08-18 — Etapa 93: o +/- de Vida nao commitava)
 
 Relato do Tiago: "a vida do token nao atualiza em tempo real, nem na mesa, nem na ficha, nem acima do token".
 

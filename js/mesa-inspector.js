@@ -60,34 +60,22 @@ function renderInspector() {
     <section class="token-inspector-controls">
       <h3>A&ccedil;&otilde;es</h3>
       <div class="inspector-action-list">
-        <div class="inspector-action-row">
-          <span class="inspector-action-label">Visibilidade</span>
-          <div class="inspector-action-btns">
-            <button type="button" class="mini-btn ${token.visibleToPlayers ? "" : "is-primary"}" data-inspector-action="toggle-visibility">
-              ${token.visibleToPlayers ? "Vis&iacute;vel" : "Oculto"}
-            </button>
-          </div>
-        </div>
+        ${buildInspectorSegmented("Visibilidade", "set-visibility", [
+          { value: "visible", label: "Vis&iacute;vel", active: token.visibleToPlayers },
+          { value: "hidden",  label: "Oculto",         active: !token.visibleToPlayers }
+        ])}
 
-        <div class="inspector-action-row">
-          <span class="inspector-action-label">Camada</span>
-          <div class="inspector-action-btns">
-            <button type="button" class="mini-btn ${token.layer === "dm" ? "is-primary" : ""}" data-inspector-action="toggle-layer" title="Mover para a camada secreta do mestre (só você vê) ou de volta para a camada de tokens">
-              ${token.layer === "dm" ? "Mestre" : "Token"}
-            </button>
-          </div>
-        </div>
+        ${buildInspectorSegmented("Camada", "set-layer", [
+          { value: "tokens", label: "Token",  active: token.layer !== "dm",
+            title: "Camada normal: todos veem" },
+          { value: "dm",     label: "Mestre", active: token.layer === "dm",
+            title: "Camada secreta do mestre (só você vê)" }
+        ])}
 
-        ${canConfigureStatsVisibility(token) ? `
-          <div class="inspector-action-row">
-            <span class="inspector-action-label">Status dos jogadores</span>
-            <div class="inspector-action-btns">
-              <button type="button" class="mini-btn ${token.statsVisibleToPlayers ? "is-primary" : ""}" data-inspector-action="toggle-stats-visibility">
-                ${token.statsVisibleToPlayers ? "Liberados" : "Ocultos"}
-              </button>
-            </div>
-          </div>
-        ` : ""}
+        ${canConfigureStatsVisibility(token) ? buildInspectorSegmented("Status dos jogadores", "set-stats-visibility", [
+          { value: "shown",  label: "Liberados", active: token.statsVisibleToPlayers },
+          { value: "hidden", label: "Ocultos",   active: !token.statsVisibleToPlayers }
+        ]) : ""}
 
         <div class="inspector-action-row is-markers">
           <span class="inspector-action-label">Marcadores</span>
@@ -96,7 +84,7 @@ function renderInspector() {
 
         <div class="inspector-action-row">
           <span class="inspector-action-label">Palco</span>
-          <div class="inspector-action-btns">
+          <div class="inspector-action-btns is-split">
             <button type="button" class="mini-btn" data-inspector-action="center">Centralizar</button>
             <button type="button" class="mini-btn is-danger" data-inspector-action="remove">Retirar</button>
           </div>
@@ -104,6 +92,39 @@ function renderInspector() {
       </div>
     </section>
     ` : ""}
+  `;
+}
+
+/**
+ * Controle segmentado (Etapa 94): as duas opcoes lado a lado, ocupando a
+ * largura toda, com a ativa acesa.
+ *
+ * Resolve duas coisas de uma vez. Simetria: cada metade e 50% da coluna, entao
+ * a linha nao serrilha quando o rotulo muda de tamanho — antes os botoes
+ * tinham 58, 63, 99 e 144px, todos alinhados so pela esquerda. E leitura: um
+ * botao escrito "Visivel" nao dizia se aquilo era o estado atual ou o que
+ * aconteceria ao clicar. Aqui o estado esta aceso e a alternativa esta ao lado.
+ *
+ * O botao ja ativo continua clicavel (nao usa `disabled`, que o tiraria da
+ * navegacao por teclado): quem trata a acao ignora o clique redundante.
+ */
+function buildInspectorSegmented(label, action, options) {
+  const botoes = options.map(option => `
+    <button type="button"
+            class="inspector-seg-btn${option.active ? " is-active" : ""}"
+            data-inspector-action="${escapeAttribute(action)}"
+            data-value="${escapeAttribute(option.value)}"
+            aria-pressed="${option.active ? "true" : "false"}"
+            ${option.title ? `title="${escapeAttribute(option.title)}"` : ""}>${option.label}</button>
+  `).join("");
+
+  return `
+    <div class="inspector-action-row">
+      <span class="inspector-action-label" id="${escapeAttribute(`acao-${action}`)}">${label}</span>
+      <div class="inspector-segmented" role="group" aria-labelledby="${escapeAttribute(`acao-${action}`)}">
+        ${botoes}
+      </div>
+    </div>
   `;
 }
 

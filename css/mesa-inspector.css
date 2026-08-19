@@ -290,9 +290,12 @@
 }
 
 /* Stepper do mestre: [−] [atual] [+] / [max] */
+/* Etapa 94: atual e maximo com a MESMA largura (as duas colunas 1fr). Antes
+   eram 1fr e 46px fixos — o par "22 / 22" saia com caixas de 83px e 46px, e
+   a largura ainda mudava conforme a quantidade de digitos. */
 .inspector-vital-stepper.is-master {
-  grid-template-columns: 30px minmax(0, 1fr) 30px auto 46px;
-  gap: 0.3rem;
+  grid-template-columns: 30px minmax(0, 1fr) 30px auto minmax(0, 1fr);
+  gap: var(--sp-1);
 }
 
 .inspector-vital-stepper.is-master .stat-step-btn {
@@ -417,6 +420,81 @@
   flex-wrap: wrap;
 }
 
+/* Uma altura so para todo controle da secao (Etapa 94): o segmentado tem
+   26px, e sem isto os mini-btn vizinhos (Centralizar, Retirar, Editar
+   marcadores) ficariam com 21px — a mesma incoerencia que a Etapa 92
+   tirou dos tamanhos de fonte. */
+.token-inspector-controls .mini-btn {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── CONTROLE SEGMENTADO (Etapa 94) ──────────────────────────
+ * As duas opcoes lado a lado, metade da largura cada. A simetria nao
+ * depende do texto: rotulo maior nao alarga a metade dele. */
+.inspector-segmented {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.inspector-seg-btn {
+  min-height: 26px;
+  padding: var(--sp-1) var(--sp-2);
+  border: 0;
+  background: transparent;
+  color: var(--text-soft);
+  font-family: var(--font-ui);
+  /* 0,6rem e o tamanho que os .mini-btn REALMENTE tem na Mesa: css/mesa-roster.css
+     sobrepoe o `.mini-btn` global (que usa --fs-2xs, 11px) por 0,6rem = 9,6px.
+     Usar o token aqui deixaria o segmentado 1,4px maior que os vizinhos. */
+  font-size: 0.6rem;
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+/* Divisoria entre as metades: borda interna, para o bloco continuar com
+   um contorno so por fora. */
+.inspector-seg-btn + .inspector-seg-btn {
+  border-left: 1px solid var(--border);
+}
+
+.inspector-seg-btn:hover:not(.is-active) {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.inspector-seg-btn.is-active {
+  background: var(--accent-deep);
+  color: #e8b4ae;
+}
+
+.inspector-seg-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Dois controles dividindo a linha (Centralizar / Retirar): 50% cada, para
+   a linha fechar nas duas bordas como as demais. */
+.inspector-action-btns.is-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-2);
+  width: 100%;
+}
+
+.inspector-action-btns.is-split .mini-btn {
+  width: 100%;
+  text-align: center;
+}
 
 /* Variante danger para Retirar */
 .mini-btn.is-danger {

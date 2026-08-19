@@ -16,6 +16,16 @@ C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 
 A pasta antiga `rpg-campaign` nao deve ser usada para editar layout, CSS, HTML ou assets publicados.
 
+## Coluna estreita: controle ocupa a largura toda (2026-08-18, Etapa 94)
+
+Em painel estreito, controle com largura de conteudo serrilha a borda direita e a simetria passa a depender do texto. Regra: **todo controle de acao vai de borda a borda** — segmentado (duas metades de 50%), botao unico esticado, ou par em grade 50/50. Rotulo maior deixa de mexer no desenho.
+
+- **Alternador de dois estados vira segmentado**, nao botao que troca de rotulo. "Visivel" sozinho num botao nao diz se e o estado atual ou o que acontece ao clicar. No segmentado, o estado esta aceso e a alternativa esta do lado — e a acao carrega o valor desejado (`data-value`), com clique no lado ativo sendo no-op.
+- **O lado ativo continua focavel** (nada de `disabled`, que o tira da navegacao por teclado) e leva `aria-pressed`.
+- **Par de campos relacionados tem a mesma largura** (atual/maximo): colunas `1fr`, nunca uma fixa e outra flexivel — senao o par desequilibra e ainda muda de tamanho com a quantidade de digitos.
+- **Uma altura por secao**, do mesmo jeito que ja vale para tamanho de fonte.
+- Cuidado medido na Etapa 94: `width: 100%` so estica se o PAI tiver largura. Dentro de flex com `align-items: flex-start`, o pai encolhe para o conteudo e o filho para no meio da coluna.
+
 ## Secao de acoes: um bloco, uma coluna, um tamanho (2026-08-18, Etapa 92)
 
 Numa coluna estreita (o inspetor tem 288px), lista de acoes nao leva moldura por item: a secao ja e a caixa. Cada acao e um grupo rotulo + controle, separado por ESPACO. Quatro caixas empilhadas dentro de outra caixa foi o que fez a secao parecer quebrada.

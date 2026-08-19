@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-19 11:51:36 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-19 11:54:01 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,35 +13,41 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `9feac17 2026-08-19 style(mesa): a secao Acoes do inspetor fala uma lingua so (Etapa 92)`
+- Ultimo commit: `6502a8f 2026-08-19 style(mesa): inspetor vira uma coluna simetrica (Etapa 94)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
-M  DEV_STATUS.md
-M  SYSTEM_RULES.md
+ M DEV_STATUS.md
+ M VISUAL_RULES.md
+M  css/mesa-inspector.css
+ M css/mesa-stage.css
 M  js/mesa-inspector.js
-M  mesa.html
-M  tests/mesa-audit.spec.cjs
-M  tools/build-pages.cjs
+ M js/mesa-markers.js
+ M mesa.html
+ M tests/mesa-audit.spec.cjs
+ M tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
 .claude/settings.local.json
+DEV_STATUS.md
+VISUAL_RULES.md
+css/mesa-stage.css
+js/mesa-markers.js
+mesa.html
+tests/mesa-audit.spec.cjs
+tools/build-pages.cjs
 ```
 
 ### Arquivos Em Stage
 
 ```text
-DEV_STATUS.md
-SYSTEM_RULES.md
+css/mesa-inspector.css
 js/mesa-inspector.js
-mesa.html
-tests/mesa-audit.spec.cjs
-tools/build-pages.cjs
 ```
 
 ## Paginas Principais

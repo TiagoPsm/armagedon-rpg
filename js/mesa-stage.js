@@ -231,17 +231,30 @@ function handleInspectorAction(event) {
   if (!token) return;
   if (!isMaster()) return;
 
-  if (action === "toggle-visibility") {
-    token.visibleToPlayers = !token.visibleToPlayers;
+  // Etapa 94: os tres alternadores viraram controles segmentados (as duas
+  // opcoes lado a lado, a ativa acesa), entao a acao carrega o valor DESEJADO
+  // em vez de "inverta o que estiver la". Clicar no lado que ja esta ativo e
+  // no-op — com "toggle" seria o contrario: desligaria justamente o que a
+  // pessoa apontou como certo.
+  const valorPedido = String(button.dataset.value || "");
+
+  if (action === "set-visibility") {
+    const querVisivel = valorPedido === "visible";
+    if (token.visibleToPlayers === querVisivel) return;
+    token.visibleToPlayers = querVisivel;
   }
 
-  if (action === "toggle-layer") {
+  if (action === "set-layer") {
     // Move o token entre a camada de tokens e a camada secreta do mestre.
-    token.layer = token.layer === "dm" ? "tokens" : "dm";
+    const camada = valorPedido === "dm" ? "dm" : "tokens";
+    if (token.layer === camada) return;
+    token.layer = camada;
   }
 
-  if (action === "toggle-stats-visibility" && canConfigureStatsVisibility(token)) {
-    token.statsVisibleToPlayers = !token.statsVisibleToPlayers;
+  if (action === "set-stats-visibility" && canConfigureStatsVisibility(token)) {
+    const querLiberado = valorPedido === "shown";
+    if (token.statsVisibleToPlayers === querLiberado) return;
+    token.statsVisibleToPlayers = querLiberado;
   }
 
   if (action === "center") {
