@@ -5839,3 +5839,95 @@ test.describe("Selecao nao trafega (Etapa 88)", () => {
     expect(escritas.posicao, "os deltas deixaram de ser aplicados").toBe(63);
   });
 });
+
+/* ============================================================
+ * Etapa 91 — "onde quer que eu clique abre os efeitos de status".
+ *
+ * Com um token selecionado, o mestre nao conseguia clicar em NADA do
+ * inspetor: Visibilidade, Camada, Centralizar, Retirar. Todo clique abria
+ * o painel de marcadores.
+ *
+ * Causa (CSS, desde a Etapa 64): o botao "Editar marcadores" do inspetor e
+ * `position: static` — a regra que anula o posicionamento da variante do
+ * token —, mas o `::before` que amplia o alvo de clique e
+ * `position: absolute; inset: -6px`. Absoluto dentro de estatico nao se
+ * ancora no pai: sobe ate o ancestral posicionado, a `.vtt-body` inteira.
+ * O alvo invisivel de 6px virava a Mesa toda (medido: 1400x835), e evento
+ * em pseudo-elemento conta como evento no dono.
+ *
+ * Estes testes olham QUEM RECEBE O CLIQUE, nao a regra de CSS: e o
+ * sintoma que o Tiago viu, e sobrevive a qualquer reescrita do estilo.
+ * ============================================================ */
+test.describe("Inspetor: o clique chega a quem foi clicado (Etapa 91)", () => {
+  test("cada botao do inspetor recebe o proprio clique", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.locator('.mesa-token[data-token-id="ana"]').click();
+    await expect.poll(() => page.locator(".mesa-token-markers-btn.is-inspector").count()).toBeGreaterThan(0);
+
+    const roubados = await page.evaluate(() => {
+      const fora = [];
+      document.querySelectorAll("#mesaInspector .mini-btn, .vtt-sidebar .mini-btn").forEach(botao => {
+        const r = botao.getBoundingClientRect();
+        if (!r.width || !r.height) return;
+        const topo = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        if (!topo) return;                       // fora da janela: nao da para julgar
+        if (topo === botao || botao.contains(topo)) return;
+        fora.push({
+          botao: (botao.textContent || "").trim().slice(0, 24),
+          quemRecebeu: (topo.className || "").toString().slice(0, 60)
+        });
+      });
+      return fora;
+    });
+
+    expect(roubados, `botoes cujo clique vai para outro elemento: ${JSON.stringify(roubados)}`).toEqual([]);
+  });
+
+  test("clicar em Visibilidade alterna a visibilidade e nao abre os marcadores", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.locator('.mesa-token[data-token-id="ana"]').click();
+    const antes = await page.evaluate(() => findToken("ana").visibleToPlayers);
+
+    await page.locator('[data-inspector-action="toggle-visibility"]').first().click();
+
+    await expect
+      .poll(() => page.evaluate(() => findToken("ana").visibleToPlayers))
+      .toBe(!antes);
+    expect(
+      await page.evaluate(() => document.getElementById("mesaMarkerPanel").hidden),
+      "o painel de marcadores abriu no lugar da acao pedida"
+    ).toBe(true);
+  });
+
+  test("o alvo ampliado do botao de marcadores nao passa do proprio botao", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.locator('.mesa-token[data-token-id="ana"]').click();
+    await expect.poll(() => page.locator(".mesa-token-markers-btn.is-inspector").count()).toBeGreaterThan(0);
+
+    const area = await page.evaluate(() => {
+      const btn = document.querySelector(".mesa-token-markers-btn.is-inspector");
+      const b = btn.getBoundingClientRect();
+      // Ponto claramente fora do botao, mas dentro da area da Mesa: com o
+      // defeito, o pseudo-elemento cobria isto tambem.
+      const longe = document.elementFromPoint(Math.round(b.left + b.width / 2), Math.round(Math.max(4, b.top - 120)));
+      return {
+        larguraDoBotao: Math.round(b.width),
+        longeEhOBotao: longe === btn,
+        pseudo: getComputedStyle(btn, "::before").content
+      };
+    });
+
+    expect(area.longeEhOBotao, "o alvo invisivel do botao alcanca 120px acima dele").toBe(false);
+    // A variante do token continua com o alvo ampliado; a do inspetor, nao.
+    expect(area.pseudo === "none" || area.pseudo === "normal").toBe(true);
+  });
+});

@@ -42,7 +42,48 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-18 — Etapa 90: cada cena com o seu mapa, e so ele)
+## Ultima Etapa Concluida (2026-08-18 — Etapa 91: o clique chega a quem foi clicado)
+
+Relato do Tiago: "nao consigo selecionar nenhuma opcao, onde quer que eu clique abre os efeitos de status". Com um token selecionado, nenhum botao do inspetor respondia — Visibilidade, Camada, Centralizar, Retirar. Todo clique abria o painel de marcadores.
+
+### Causa: um pseudo-elemento solto
+
+Duas regras de `css/mesa-stage.css`, ambas da Etapa 64 (f920bcb, 2026-07-30):
+
+```
+.mesa-token-markers-btn::before          { position: absolute; inset: -6px; }  /* alvo maior */
+.mesa-token-markers-btn.is-inspector     { position: static; }                 /* anula o do token */
+```
+
+Um `::before` absoluto dentro de um dono `static` **nao se ancora no dono**: sobe ate o ancestral posicionado mais proximo. No inspetor esse ancestral e a `.vtt-body` — medida na sonda: **1400x835**. O alvo invisivel de 6px virava a Mesa inteira. E como evento em pseudo-elemento conta como evento no elemento dono, todo clique caia em `.mesa-token-markers-btn` e o handler de `pointerdown` (captura, em js/mesa-markers.js) abria o painel de status.
+
+Por isso so aparecia com token selecionado: sem selecao o botao "Editar marcadores" nao existe, e o alvo fantasma nao existe com ele.
+
+### Correcao
+
+O alvo ampliado passou a valer so na variante do token: `.mesa-token-markers-btn:not(.is-inspector)::before`. No inspetor o botao ja tem tamanho normal e nao precisa dele. A alca (`.mesa-token-handle::before`) usa o mesmo truque **com seguranca**, porque la o elemento dono e `position: absolute` — foi conferido.
+
+### Verificacao
+
+Tres testes em `tests/mesa-audit.spec.cjs` (bloco "Inspetor: o clique chega a quem foi clicado"). Eles olham **quem recebe o clique**, nao a regra de CSS: sobrevivem a qualquer reescrita do estilo.
+
+- cada botao do inspetor recebe o proprio clique (`elementFromPoint` no centro de cada um);
+- clicar em Visibilidade alterna a visibilidade **e** nao abre os marcadores;
+- o alvo do botao de marcadores nao alcanca 120px acima dele.
+
+Reintroduzindo a regra antiga, **dois dos tres reprovam** — incluindo o sintoma exato que o Tiago descreveu.
+
+Diagnostico feito com sonda no navegador (`getComputedStyle(btn, "::before")` + `elementFromPoint` em cada `.mini-btn`), que mostrou botoes recebendo o clique de outro elemento antes de qualquer alteracao de codigo.
+
+### Licao que fica
+
+`position: static` num elemento que tem `::before` absoluto de alvo de clique e uma armadilha silenciosa: nada quebra visualmente, o alvo so vaza. Registrada em VISUAL_RULES.md.
+
+### Arquivos
+
+`css/mesa-stage.css`, `tests/mesa-audit.spec.cjs`, `mesa.html` (cache-busting), `tools/build-pages.cjs`.
+
+## Etapa Anterior (2026-08-18 — Etapa 90: cada cena com o seu mapa, e so ele)
 
 Etapa nascida de uma pergunta do Tiago depois da 89 — "da para validar se cada cena tem apenas o seu mapa?". Nao tinha: o mestre trocava de cena e continuava com o mapa da anterior, **e gravava esse mapa dentro da cena nova**.
 

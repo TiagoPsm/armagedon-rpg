@@ -1285,12 +1285,36 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
   background: rgba(176, 48, 57, 0.55);
   border-color: rgba(232, 130, 130, 0.95);
 }
-/* Alvo de clique maior que o desenho (mesmo truque das alcas). */
-.mesa-token-markers-btn::before {
+/* Alvo de clique maior que o desenho (mesmo truque das alcas) — SO na
+ * variante do token (Etapa 91).
+ *
+ * O ::before e `position: absolute`, e no inspetor o botao e
+ * `position: static` (regra abaixo, que anula o posicionamento do token).
+ * Elemento absoluto dentro de pai estatico nao se ancora no pai: sobe ate o
+ * ancestral posicionado mais proximo — a `.vtt-body` INTEIRA (medido:
+ * 1400x835). O alvo invisivel de 6px virava a Mesa toda, e como evento em
+ * pseudo-elemento conta como evento no dono, todo clique no inspetor e no
+ * palco caia no botao de marcadores e abria o painel de status. Era isso que
+ * impedia de clicar em Visibilidade, Camada, Centralizar, Retirar.
+ *
+ * No inspetor o botao ja tem tamanho normal e nao precisa do alvo ampliado.
+ * A alca (.mesa-token-handle::before) usa o mesmo truque com seguranca: la o
+ * elemento dono e `position: absolute`. */
+.mesa-token-markers-btn:not(.is-inspector)::before {
   content: "";
   position: absolute;
   inset: -6px;
 }
+/* O SVG e o unico filho: display block tira o espaco de linha-de-base, que
+   empurraria o icone alguns px para baixo dentro do circulo. */
+.mesa-token-markers-btn:not(.is-inspector) {
+  line-height: 0;
+}
+
+.mesa-token-markers-btn svg {
+  display: block;
+}
+
 /* O SVG e o unico filho: display block tira o espaco de linha-de-base, que
    empurraria o icone alguns px para baixo dentro do circulo. */
 .mesa-token-markers-btn svg {

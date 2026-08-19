@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-18 23:04:27 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-19 11:48:14 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,19 +13,18 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `b0b844d 2026-08-18 feat(mesa): gaveta de cenas, sem dialogo nativo (Etapa 89)`
+- Ultimo commit: `53e1ee4 2026-08-18 fix(mesa): cada cena com o seu mapa, e so ele (Etapa 90)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
 M  DEV_STATUS.md
-M  SYSTEM_RULES.md
-M  js/mesa-map.js
+M  VISUAL_RULES.md
+M  css/mesa-stage.css
+M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  mesa.html
-M  package.json
 M  tests/mesa-audit.spec.cjs
-A  tests/mesa-scene-map.spec.cjs
 M  tools/build-pages.cjs
 ```
 
@@ -39,12 +38,11 @@ M  tools/build-pages.cjs
 
 ```text
 DEV_STATUS.md
-SYSTEM_RULES.md
-js/mesa-map.js
+VISUAL_RULES.md
+css/mesa-stage.css
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 mesa.html
-package.json
 tests/mesa-audit.spec.cjs
-tests/mesa-scene-map.spec.cjs
 tools/build-pages.cjs
 ```
 

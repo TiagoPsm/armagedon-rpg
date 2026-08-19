@@ -16,6 +16,14 @@ C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 
 A pasta antiga `rpg-campaign` nao deve ser usada para editar layout, CSS, HTML ou assets publicados.
 
+## Alvo de clique ampliado exige dono posicionado (2026-08-18, Etapa 91)
+
+O truque de aumentar a area clicavel com `::before { position: absolute; inset: -Npx }` **so funciona se o elemento dono tiver `position` diferente de `static`**. Dentro de um dono estatico, o pseudo-elemento se ancora no ancestral posicionado mais proximo e o alvo invisivel cresce ate o tamanho DELE.
+
+Foi o que aconteceu com o botao de marcadores no inspetor: `position: static` (para anular o posicionamento da variante do token) + `::before` com `inset: -6px` = alvo do tamanho da `.vtt-body` inteira (1400x835). Nada quebrava na tela; todo clique da Mesa e que ia parar no botao errado.
+
+Regra: sempre que um `::before` servir de alvo de clique, ou o dono e `relative`/`absolute`, ou a regra do alvo e escopada para a variante que tem posicionamento (`:not(.is-inspector)`). E ao criar uma variante que zera posicionamento, conferir se algum pseudo-elemento dependia dele.
+
 ## Gaveta de cenas: faixa do topo, nunca modal de tela cheia (2026-08-18, Etapa 89)
 
 O gerenciador de cenas desce do topo e ocupa no maximo 70% da altura (82% em tela estreita), com a lista rolando por dentro. O palco continua aparecendo embaixo: o mestre escolhe a cena olhando para a mesa, nao para uma tela que cobriu a mesa.
