@@ -40,7 +40,46 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-20 — Etapa 103: contraste do texto pequeno)
+## Ultima Etapa Concluida (2026-08-20 — Etapa 104: os dois ultimos da Mesa)
+
+Pedido do Tiago: corrigir tambem os dois casos de contraste que a Etapa 103 deixou dentro da Mesa.
+
+### Mesmo defeito nos dois
+
+Os dois falhavam pelo MESMO motivo — **alfa diluindo uma cor que sozinha ja passava** —, e nao por escolha de cor ruim:
+
+| Elemento | Antes | Depois |
+|---|---|---|
+| `.mesa-transform-reset` (o `↻` do d-pad de escala) | `rgba(255,248,236,0.4)` → **3,63:1** | `--text-soft` → **5,17:1** |
+| `.draw-flyout-item--danger` ("Limpar tudo") | `rgba(232,100,90,0.65)` → **3,11:1** | `#e8645a` cheio → **6,08:1** |
+
+No reset, a intencao era deixa-lo **secundario** em relacao aos vizinhos do d-pad, e ela continua de pe: os vizinhos usam `--text` (15:1), o reset fica em `--text-soft`. Discreto nao precisa ser apagado.
+
+Em "Limpar tudo", a cor cheia e o mesmo tom sem o veu, e o hover (`#e87070`) segue mais claro — a resposta ao mouse nao se perdeu. E o item que apaga o quadro inteiro: era o que menos podia ficar ilegivel.
+
+### Onde a Mesa parou
+
+**10 → 8 reprovados.** Os oito restantes, e por que ficam:
+
+- **6 sao `.mini-btn` a 4,497:1** contra os 4,5 exigidos — 0,003 de diferenca. Reprova pela letra da norma; e um fio, nao um problema de leitura. Corrigir exige sobrepor `--text-soft` localmente, porque a razao depende do fundo da linha do roster, nao do token.
+- **2 vivem no cabecalho do site** (`.nav-link` ativo e o `small` "Mesa virtual"), compartilhado pelas seis paginas. Mexer ali e mudanca de site, nao de Mesa.
+
+Dentro da Mesa, fora esses fios, nao ha mais texto pequeno abaixo do minimo AA.
+
+### Verificacao
+
+O teste novo entrou no bloco de contraste da Etapa 103, reaproveitando a mesma conta do WCAG. Rodado contra o alfa antigo de "Limpar tudo": falhou com "'Limpar tudo' ilegivel".
+
+Bateria completa verde: `test:mesa:audit` (**206**), `test:mesa` (5), `test:mesa:scenemap` (6), `test:mesa:scenes` (22), `test:mesa:permissoes` (15), `test:mesa:tokens` (10), `test:ficha` (32), `test:controles` (6), `perf:mesa` (1), `check:js` (47), `audit:static`, `audit:pendencias`.
+
+Cache-bust `2026-08-20-contraste-3` em `css/mesa-map.css` e `css/mesa-drawing.css`. **Sem deploy**: e tudo cliente.
+
+### Arquivos alterados
+
+- `css/mesa-map.css`, `css/mesa-drawing.css`, `mesa.html` (cache-bust)
+- `tests/mesa-audit.spec.cjs` (1 teste novo), `DEV_STATUS.md`, `VISUAL_RULES.md`
+
+## Etapa Anterior (2026-08-20 — Etapa 103: contraste do texto pequeno)
 
 Pedido do Tiago: verificar contraste do texto pequeno e alvos de toque; depois, clarear os rotulos da barra.
 

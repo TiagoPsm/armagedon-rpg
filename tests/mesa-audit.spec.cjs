@@ -6806,4 +6806,25 @@ test.describe("Contraste de texto pequeno (Etapa 103)", () => {
       if (r !== null) expect(r, `${sel} voltou a ficar ilegivel`).toBeGreaterThanOrEqual(3);
     }
   });
+
+  /* Etapa 104: os dois que sobraram dentro da Mesa. Os dois falhavam pelo
+     MESMO motivo — alfa diluindo uma cor que sozinha ja passava —, e por
+     isso entram juntos: e o padrao que precisa nao voltar. */
+  test("o reset de escala e o 'Limpar tudo' sao legiveis (Etapa 104)", async ({ page }) => {
+    await abrirMesa(page);
+    await page.evaluate(() => {
+      document.querySelectorAll("[hidden]").forEach(el => {
+        if (el.closest("#mesaPanelStage, .vtt-toolbar")) el.hidden = false;
+      });
+    });
+
+    // Reset (↻) do d-pad de escala: era alfa 0.4 -> 3,63:1.
+    const reset = await contraste(page, ".mesa-transform-reset");
+    if (reset !== null) expect(reset, "reset de escala ilegivel").toBeGreaterThanOrEqual(AA);
+
+    // "Limpar tudo" apaga o quadro inteiro: e o item que menos pode
+    // ficar ilegivel. Era alfa 0.65 -> 3,11:1.
+    const limpar = await contraste(page, ".draw-flyout-item--danger");
+    if (limpar !== null) expect(limpar, "'Limpar tudo' ilegivel").toBeGreaterThanOrEqual(AA);
+  });
 });

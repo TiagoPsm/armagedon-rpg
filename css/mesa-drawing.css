@@ -127,10 +127,14 @@
 }
 
 /* Item danger (limpar tudo) */
+/* Etapa 104: o alfa 0.65 diluia o vermelho contra o fundo do flyout e
+   derrubava a leitura para 3,11:1. A cor cheia da 6,3:1 — mesmo tom, sem o
+   veu. "Limpar tudo" apaga o quadro: e o item que menos pode ficar ilegivel.
+   O hover (#e87070) segue mais claro, entao a resposta ao mouse continua. */
 .draw-flyout-item--danger {
-  color: rgba(232, 100, 90, 0.65);
+  color: #e8645a;
 }
-.draw-flyout-item--danger svg { color: rgba(232, 100, 90, 0.65); }
+.draw-flyout-item--danger svg { color: #e8645a; }
 .draw-flyout-item--danger:hover {
   background: rgba(168, 48, 40, 0.12);
   color: #e87070;

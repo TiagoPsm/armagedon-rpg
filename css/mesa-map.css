@@ -418,7 +418,11 @@
 /* O glifo segue o MESMO nivel de icone dos vizinhos (0,82rem). Ficar em
    0,85rem nao era escolha, era sobra: media 13,6px ao lado de 13,12px. */
 .mesa-transform-reset {
-  color: rgba(255, 248, 236, 0.4);
+  /* Etapa 104: o alfa 0.4 derrubava o glifo para 3,63:1. A intencao era
+     deixar o reset SECUNDARIO em relacao aos vizinhos, e ela continua de
+     pe com --text-soft: os vizinhos usam --text (15:1), este fica visivel
+     mais discreto — mas agora legivel. Discreto nao e apagado. */
+  color: var(--text-soft);
 }
 
 /* ── INDICADOR DE CARREGAMENTO ──────────────────────────────── */

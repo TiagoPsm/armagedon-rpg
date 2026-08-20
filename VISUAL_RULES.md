@@ -71,6 +71,14 @@ Alvo de clique e a **linha inteira** (`min-height: var(--control-md)`), nao os 1
 
 `width: 248px` e o que destrava a regra da Etapa 94 ("controle de acao vai de borda a borda"). Sem largura o painel encolhe para o conteudo e um filho com `width: 100%` para no meio da coluna — o mesmo cuidado ja medido na Etapa 94.
 
+### Alfa e o jeito silencioso de reprovar contraste (2026-08-20, Etapa 104)
+
+Os quatro piores casos de contraste destas duas etapas tinham a cor CERTA e um alfa por cima: o rotulo do zoom (carmesim a 0.7), os rotulos da barra (0.38), o reset de escala (0.4) e "Limpar tudo" (0.65). Nenhum apareceria numa revisao que confere apenas "o token e o certo?".
+
+Regra: para deixar um elemento secundario, escolha um TOM mais escuro da paleta — nao um alfa sobre o tom claro. `--text-soft` ao lado de `--text` diz "secundario" e continua legivel; `rgba(--text, 0.4)` diz a mesma coisa e some. Discreto nao e apagado.
+
+Quando o alfa for mesmo necessario, meca o resultado composto contra o fundo real, nunca a cor declarada.
+
 ### `--accent` preenche; `--accent-text` se le (2026-08-20, Etapa 103)
 
 `--accent` (#a83028) sobre o fundo quase preto da Mesa da **3,0:1** — abaixo dos 4,5:1 do WCAG AA para texto pequeno — e estava pintando justamente rotulos de 8 a 11px (kickers, selos de papel, rotulo do zoom).
