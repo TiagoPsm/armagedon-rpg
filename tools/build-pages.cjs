@@ -5,8 +5,8 @@ const repoRoot = path.resolve(__dirname, "..");
 const outDir = path.join(repoRoot, "_site");
 
 // Bump aqui quando mudar arquivos dos bundles
-const FICHA_BUNDLE_VERSION = "2026-08-19-pastas-1";
-const MESA_BUNDLE_VERSION  = "2026-08-19-pastas-1";
+const FICHA_BUNDLE_VERSION = "2026-08-19-escala-1";
+const MESA_BUNDLE_VERSION  = "2026-08-19-escala-1";
 
 const files = [
   "index.html", "ficha.html", "mesa.html", "regras.html", "sugestoes.html",

@@ -6435,3 +6435,60 @@ test.describe("Pastas de cena — backend (Etapa 96)", () => {
     expect(lista.scenes.find(s => s.id === cena.id).folderId).toBe("");
   });
 });
+
+/* ============================================================
+ * Etapa 98 — o painel do mapa subia por cima da barra do canto.
+ *
+ * O `top` do painel era 52px escrito a mao. Ja encostava 4px na barra
+ * antes da migracao para a escala de controle; quando os controles do
+ * overlay cresceram para 32/40px, virou 18px de sobreposicao — e o pior
+ * caso e justamente o do mestre com cena carregada, porque o botao da
+ * gaveta de cenas (40px, o filho mais alto) nasce `hidden` e so entra
+ * depois. Medir so o estado inicial NAO pegaria o bug.
+ *
+ * O teste cobra a relacao (o painel comeca abaixo da barra), nao o
+ * numero: quem trocar a altura dos controles de novo continua coberto.
+ * ============================================================ */
+test.describe("Painel do mapa nao invade a barra do canto (Etapa 98)", () => {
+  async function abrirPainelDoMapa(page) {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.evaluate(() => {
+      // A engrenagem e o painel nascem `hidden` ate existir mapa; o alvo
+      // deste teste e a GEOMETRIA, entao revelamos sem depender de upload.
+      document.getElementById("mesaMapSettingsBtn").hidden = false;
+      document.getElementById("mesaMapTransform").hidden = false;
+      document.getElementById("mesaGridGroup").hidden = false;
+      document.getElementById("mesaFogGroup").hidden = false;
+    });
+  }
+
+  async function folga(page, comGaveta) {
+    return page.evaluate((mostrarGaveta) => {
+      const gaveta = document.getElementById("mesaScenesToggle");
+      if (gaveta) gaveta.hidden = !mostrarGaveta;
+      const barra = document.querySelector(".vtt-overlay-tr").getBoundingClientRect();
+      const painel = document.getElementById("mesaMapTransform").getBoundingClientRect();
+      return Math.round(painel.top - barra.bottom);
+    }, comGaveta);
+  }
+
+  test("o painel comeca abaixo da barra, com a gaveta de cenas oculta", async ({ page }) => {
+    await abrirPainelDoMapa(page);
+    expect(await folga(page, false), "painel sobrepondo a barra").toBeGreaterThanOrEqual(0);
+  });
+
+  test("continua abaixo quando o botao da gaveta de cenas aparece", async ({ page }) => {
+    await abrirPainelDoMapa(page);
+    // Pior caso real: o filho mais alto do overlay (40px) entra em cena e
+    // empurra a base da barra para baixo.
+    expect(await folga(page, true), "painel sobrepondo a barra com a gaveta visivel").toBeGreaterThanOrEqual(0);
+  });
+
+  test("nada do painel encosta na barra em largura estreita", async ({ page }) => {
+    await abrirPainelDoMapa(page);
+    await page.setViewportSize({ width: 900, height: 800 });
+    expect(await folga(page, true), "painel sobrepondo a barra em 900px").toBeGreaterThanOrEqual(0);
+  });
+});

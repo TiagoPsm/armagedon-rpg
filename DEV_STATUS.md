@@ -40,13 +40,104 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
+## Ultima Etapa Concluida (2026-08-20 — Etapa 99: o painel do mapa fala carmesim)
+
+Pedido do Tiago: "enxergar melhor os elementos desse pop-up, deixe ele com tons de vermelho do site e compacte as informacoes ainda deixando elas organizadas".
+
+### A causa raiz do "cinza"
+
+`css/mesa.css` ja define `--hud-bg`/`--hud-border`/`--hud-blur`/`--hud-radius` e diz, no comentario, que sao o "estilo compartilhado por todos os paineis flutuantes da mesa". O painel do mapa **nao usava nenhum deles** — fundo e raio proprios e borda `rgba(255,255,255,0.08)`, BRANCA, onde o `--hud-border` e carmesim (`rgba(168,48,40,0.22)`). Nao era falta de token: era um painel ignorando o token que existia para ele.
+
+Corrigido: o painel herda os quatro. Medido — borda e fundo agora **identicos** aos da barra do canto (`rgba(168,48,40,0.22)` / `rgba(4,3,8,0.8)`).
+
+### Enxergar melhor: era contraste, nao tamanho
+
+Rotulo de botao e de opcao estavam em `--text-soft` (#8a8272, bege apagado) em corpo de 11,2px — **5,7:1**. Passaram para `--text`: **14,4:1** medido. Sobrancelha de secao saiu do mesmo bege para carmesim claro (6,2:1) e passou a marcar o bloco.
+
+O estado LIGADO era o pior caso: checkbox marcado e pincel armado usavam `--accent-deep` (#3a0a08, quase preto), entao "marcado" mal se distinguia de "desmarcado". Agora `--accent` (#a83028) cheio, com o "v" em quase-branco por cima. Botoes e caixas trocaram borda/fundo brancos por `--border-accent` sobre `rgba(168,48,40,0.10)`.
+
+### Compactar sem encolher alvo
+
+**557px → 530px** no mesmo estado. O piso de 28px da Etapa 97 continua valendo e todo controle segue em 32px — a reducao veio de espaco e texto, nunca de area de clique:
+
+- Vao entre secoes 16px → 12px, com uma **regua fina carmesim** assumindo a separacao. Troca espaco por estrutura: encurta e deixa o agrupamento mais explicito do que o vao maior deixava.
+- Legenda reescrita de 3 para 2 linhas (mesmos dois fatos: encaixe em celulas inteiras + escape pelo Alt, agora destacado) e `line-height` 1,5 → 1,35.
+
+### A armadilha da regua
+
+`+ .mesa-map-transform-group` (irmao adjacente) parecia obvio e erra dos dois lados: ha um `<p>` de ajuda entre grupos, entao a divisoria pularia um par; e os grupos nascem `hidden`, entao o primeiro grupo VISIVEL herdaria uma regua no topo do painel assim que um grupo oculto o precedesse. O seletor certo usa o combinador geral com `:not([hidden])` dos dois lados. Conferido nos tres arranjos (nenhum, um e dois grupos ocultos): o primeiro visivel nunca leva regua.
+
+### Verificacao
+
+Medido no navegador: altura 530px, borda/fundo batendo com a barra, contrastes 14,4 / 14,4 / 6,2:1 (WCAG AA pede 4,5:1), legenda em 2 linhas, reguas so nos grupos seguintes ao primeiro visivel.
+
+Verde: `test:mesa:audit` (189), `test:controles` (6), `audit:static`, `audit:pendencias`. Os tres testes de geometria da Etapa 98 continuam verdes — a compactacao nao reintroduziu sobreposicao.
+
+Cache-bust `2026-08-20-carmesim-1` em `css/mesa-map.css`. **Sem deploy**: e tudo cliente.
+
+### Arquivos alterados
+
+- `css/mesa-map.css` (cores HUD, carmesim de estado, regua, compactacao)
+- `mesa.html` (legenda reescrita, cache-bust)
+- `VISUAL_RULES.md`, `DEV_STATUS.md`
+
+## Etapa Anterior (2026-08-19 — Etapa 98: o painel do mapa entra na escala)
+
+Pedido do Tiago: "arrumar essa interface das configuracoes da cena e estabelecer um padrao de interface para a mesa.html".
+
+### A descoberta
+
+O padrao **ja existia** — a Etapa 97 fechou a escala de controle, e as Etapas 92/94/95 fecharam as regras de coluna estreita, segmentado e pop-up. O que faltava nao era inventar padrao: `css/mesa-map.css` era o **unico** arquivo da Mesa que nunca tinha migrado. Conferido por busca: `mesa-inspector.css`, `mesa-scenes.css` e `mesa-stage.css` ja usavam `--control-*`; `mesa-map.css`, zero ocorrencias.
+
+Medido no painel `#mesaMapTransform`: altura unica de 26px (a escala pede 32px em painel), **cinco tamanhos de fonte** (0,56 / 0,68 / 0,70 / 0,72 / 0,78rem), **tres raios** (3px, 4px, 10px) e espacamentos fora da escala de 4px (0,55rem, 0,7rem 0,8rem, 0,2rem, 0,25rem, 0,35rem).
+
+### O problema que nao era tamanho
+
+Na secao Nevoa, quatro botoes com o MESMO desenho carregavam **dois significados**: `Revelar`/`Cobrir` sao MODO de pincel (exclusivo, continuo), e `Cobrir tudo`/`Revelar tudo` sao ACAO de uma vez que **zera todas as pinceladas**. Pior: a classe `.is-active` queria dizer "pincel armado" num par e "o mapa ja esta assim" no outro. E os dois pares vinham em **ordem invertida** um em relacao ao outro, na mesma coluna.
+
+Correcao: o modo virou segmentado (regra da Etapa 94), a acao virou par 50/50 de botoes comuns e mais discretos, e os dois pares passaram a seguir a mesma ordem.
+
+### O que mais mudou
+
+- **Unidade visivel** nos steppers (`colunas`, `% do mapa`). O significado morava so no `title` — invisivel no toque e no teclado. O `id` ficou no `<span>` que tem so o numero, senao o `textContent` do JS apagaria a unidade (conferido: `mesa-grid.js:502` e `mesa-fog.js:380` escrevem por `textContent`).
+- **Checkbox desenhado a mao**: o `<input>` cru herdava o tema do SO e aparecia como quadrado cinza claro — o unico elemento da Mesa fora da direcao visual. Com `appearance: none` veio junto o **foco visivel proprio**, senao o controle sumia da navegacao por teclado. Alvo de clique passou dos ~13px do input para a linha inteira (32px).
+- **Engrenagem 26px → 32px**: ela ABRE o painel, e a Etapa 95 ja diz que pop-up herda a lingua de quem o abriu. Deixa-la em 26px com o painel em 32px recriaria exatamente o bug daquela etapa. Os vizinhos da linha (`.btn-small`) foram normalizados **com escopo** (`.mesa-map-controls .btn`), porque `.btn-small` e compartilhado com as paginas que ainda nao migraram.
+- **Largura declarada** no painel (248px): sem ela o painel encolhe para o conteudo e `width: 100%` nao estica — o cuidado ja medido na Etapa 94.
+- **`--fs-eyebrow` (0,58rem)** entrou em `tokens.css`. Nao foi invencao: era a convencao de fato da Mesa (inspetor 0,58rem, painel do mapa 0,56rem), escrita a mao e com valores divergentes.
+- Legenda perdeu o `border-top`, que a fazia parecer cabecalho da secao seguinte.
+- **A engrenagem nao era uma engrenagem.** O icone do `#mesaMapSettingsBtn` era um circulo com oito tracos SOLTOS em volta — a silhueta de "brilho/sol", que e o que o olho lia. Trocado por um cog de contorno continuo (dentes fazendo parte da silhueta, viewBox 24, `stroke-width` 1.9) mais o furo central. Ocorrencia unica no projeto, conferido por busca.
+- **O painel subia por cima da barra do canto — regressao parcialmente minha.** O `top` era `52px` escrito a mao. Medido: ja encostava **4px** antes desta etapa, e crescer os controles do overlay para a escala levou a sobreposicao a **10px** (gaveta oculta) e **18px** no caso real do mestre — porque o filho mais alto do overlay e o botao da gaveta de cenas (40px, `--control-lg`), que nasce `hidden` e so entra depois. Medir so o estado inicial nao acharia. Correcao: `--hud-overlay-h` em `css/mesa.css` (filho mais alto + padding + borda) e o painel calculando `top: calc(var(--hud-inset) + var(--hud-overlay-h) + var(--sp-2))` — se a barra crescer de novo, o painel desce junto. Folga medida: 16px com a gaveta oculta, 8px com ela visivel.
+
+### Verificacao
+
+Medido no navegador com o painel forcado visivel: largura 248px, **uma unica altura de botao (32px)** contra as varias de antes, e **dois tamanhos de fonte em botao** (13,12px de icone / 11,2px de rotulo) contra cinco. As quatro linhas de acao fecham simetricas nas duas bordas (1px de cada lado, que e a borda do painel). Checkbox em 16px com `appearance: none`, fundo `--accent-deep` quando marcado, linha de 32px. Unidades renderizadas; os spans de id seguem contendo so o numero. Console limpo.
+
+O `↻` foi pego na propria medicao: estava em 0,85rem ao lado dos `−`/`+` em 0,82rem — sobra, nao escolha. Nivelado.
+
+Os tres testes novos do bloco "Painel do mapa nao invade a barra do canto (Etapa 98)" foram rodados **contra o CSS antigo antes da correcao**: falharam os tres, com `-18` — o mesmo numero medido a mao. Depois da correcao, verdes. Eles cobram a RELACAO (o painel comeca abaixo da barra), nao o numero: quem mexer na altura dos controles de novo continua coberto.
+
+Verde: `test:mesa:audit` (**189**), `test:controles` (6), `check:js` (47), `audit:static`, `audit:pendencias`.
+
+Cache-bust `2026-08-19-painel-1` em `css/tokens.css` (as **seis** paginas carregam), `css/mesa.css` e `css/mesa-map.css` (so a mesa.html). **Sem deploy**: e tudo cliente.
+
+### Arquivos alterados
+
+- `css/mesa-map.css` (o grosso), `css/tokens.css` (`--fs-eyebrow`), `css/mesa.css` (`--hud-overlay-h`)
+- `mesa.html` (segmentado, par de acao, unidades, engrenagem, cache-bust) + as outras cinco paginas so no cache-bust do tokens.css
+- `tests/mesa-audit.spec.cjs` (bloco novo, 3 testes)
+- `VISUAL_RULES.md` (padrao de painel da Mesa), `DEV_STATUS.md`
+
+### Fica para depois
+
+O `.btn-small` global e as outras cinco paginas continuam na escala antiga — a migracao delas e etapa propria, como a Etapa 97 ja previa. Nao virou pendencia porque nao e item aberto, e o plano declarado da propria escala.
+
 ## Etapa Concluida (2026-08-19 — deploy das pastas/cartoes de cena + decisao do teto de token)
 
 - **Deploy**: `npx wrangler deploy --config cloudflare/wrangler.toml` publicado com version ID `81f01c5f-2fde-42da-bf52-0f8d10407c7f` (ver `cloudflare/README.md`). Leva ao ar as rotas de pastas de cena (Etapa 96) e o `mapUrl`/`tokenCount` de `listMesaScenes` (Etapa 89), ambos codificados mas presos atras de deploy. Dry-run limpo antes.
 - **Decisao do Tiago**: o teto de tamanho do token com a grade ligada (~800%, por causa do `_gridMaxCells`) fica como esta — nao e bug, e a regra de jogo confirmada. Pendencia fechada sem mudanca de codigo.
 - Fecha as tres pendencias registradas em 2026-07-31/2026-08-18/2026-08-19.
 
-## Ultima Etapa Concluida (2026-08-19 — Etapa 97: escala de controle)
+## Etapa Anterior (2026-08-19 — Etapa 97: escala de controle)
 
 Pedido do Tiago: "deixar os botoes maiores e simetricos, com um padrao estabelecido".
 

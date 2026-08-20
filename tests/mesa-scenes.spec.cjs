@@ -526,3 +526,98 @@ test.describe("Pastas de cena (Etapa 96)", () => {
     await expect(page.locator("#mesaSceneFolderDeleteBtn")).toBeHidden();
   });
 });
+
+/* ============================================================
+ * Escala de controle (Etapa 97)
+ *
+ * Antes conviviam SETE alturas entre a gaveta e o inspetor — 21, 26, 27,
+ * 29, 30, 32 e 36px. O mesmo `.mini-btn` media 26px no inspetor e 21px na
+ * gaveta, e "Nova pasta" (21px) ficava lado a lado com chips de 29px.
+ *
+ * A escala fechada vive em css/tokens.css: 28 (denso) / 32 (padrao) / 40
+ * (destaque). Este teste e o que impede a oitava altura de aparecer.
+ * ============================================================ */
+test.describe("Escala de controle (Etapa 97)", () => {
+  const ALTURAS = [28, 32, 40];
+
+  async function medirBotoes(page, seletor) {
+    return page.evaluate(sel => {
+      const fora = [];
+      document.querySelectorAll(sel).forEach(botao => {
+        const r = botao.getBoundingClientRect();
+        if (!r.width || botao.hidden) return;
+        // O cartao inteiro e clicavel (.mesa-scene-card-open): e uma area, nao
+        // um controle de barra — a escala nao se aplica a ele.
+        if (botao.classList.contains("mesa-scene-card-open")) return;
+        fora.push({
+          texto: (botao.textContent || "").trim().slice(0, 18),
+          altura: Math.round(r.height),
+          fonte: Math.round(parseFloat(getComputedStyle(botao).fontSize) * 10) / 10
+        });
+      });
+      return fora;
+    }, seletor);
+  }
+
+  test("todo botao da gaveta usa uma das tres alturas da escala", async ({ page }) => {
+    await seedMaster(page);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await instalarBackendFalso(page);
+    await abrirGaveta(page);
+
+    const botoes = await medirBotoes(page, "#mesaScenesDrawer button");
+    expect(botoes.length).toBeGreaterThan(4);
+
+    const foraDaEscala = botoes.filter(b => !ALTURAS.includes(b.altura));
+    expect(foraDaEscala, `botoes fora da escala 28/32/40: ${JSON.stringify(foraDaEscala)}`).toEqual([]);
+  });
+
+  test("nenhum controle fica abaixo do minimo de alvo de clique", async ({ page }) => {
+    await seedMaster(page);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await instalarBackendFalso(page);
+    await abrirGaveta(page);
+
+    const botoes = await medirBotoes(page, "#mesaScenesDrawer button");
+    // WCAG 2.2 AA pede 24px; a escala parte de 28 justamente para nao
+    // encostar no limite.
+    const pequenos = botoes.filter(b => b.altura < 28);
+    expect(pequenos, `controles pequenos demais: ${JSON.stringify(pequenos)}`).toEqual([]);
+  });
+
+  test("os rotulos de controle compartilham um tamanho de fonte", async ({ page }) => {
+    await seedMaster(page);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await instalarBackendFalso(page);
+    await abrirGaveta(page);
+
+    // So os botoes com ROTULO: o "x" de fechar e glifo, e segue a propria
+    // escala de icone.
+    const rotulados = (await medirBotoes(page, "#mesaScenesDrawer button"))
+      .filter(b => b.texto.length > 2);
+    const tamanhos = [...new Set(rotulados.map(b => b.fonte))];
+    expect(tamanhos, `rotulos com tamanhos diferentes: ${JSON.stringify(rotulados)}`).toHaveLength(1);
+  });
+
+  test("a barra de pastas nao mistura alturas na mesma linha", async ({ page }) => {
+    await seedMaster(page);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await instalarBackendFalso(page);
+    await abrirGaveta(page);
+
+    // Era o caso mais visivel: chip de 29px ao lado de "Nova pasta" de 21px.
+    const linha = await page.evaluate(() => {
+      const alvos = [
+        ...document.querySelectorAll("#mesaScenesFolders button"),
+        ...document.querySelectorAll(".mesa-scenes-folder-actions button:not([hidden])")
+      ];
+      return [...new Set(alvos.map(el => Math.round(el.getBoundingClientRect().height)))];
+    });
+
+    expect(linha, `alturas diferentes na barra de pastas: ${JSON.stringify(linha)}`).toHaveLength(1);
+  });
+});

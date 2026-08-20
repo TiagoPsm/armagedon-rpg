@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-19 23:07:35 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-20 01:01:27 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,38 +13,51 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `13c68c0 2026-08-19 feat(mesa): pastas de cena, um nivel (Etapa 96)`
+- Ultimo commit: `53a47c9 2026-08-19 docs: registra deploy das pastas/cartoes de cena e fecha pendencias`
 
 ### Alteracoes Locais
 
 ```text
- M .claude/settings.local.json
+M  .claude/SKILL_IMPROVEMENTS.md
+M  .claude/settings.local.json
 M  DEV_STATUS.md
- M VISUAL_RULES.md
-M  cloudflare/README.md
- M css/mesa-inspector.css
- M css/mesa-scenes.css
- M css/mesa-stage.css
- M css/tokens.css
- M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
- M echos.html
- M ficha.html
- M index.html
- M mesa.html
- M regras.html
- M sugestoes.html
- M tests/mesa-scenes.spec.cjs
- M tools/build-pages.cjs
+M  VISUAL_RULES.md
+M  css/mesa-inspector.css
+M  css/mesa-map.css
+M  css/mesa-scenes.css
+M  css/mesa-stage.css
+M  css/mesa.css
+M  css/tokens.css
+M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  echos.html
+M  ficha.html
+M  index.html
+M  mesa.html
+M  regras.html
+M  sugestoes.html
+M  tests/mesa-audit.spec.cjs
+M  tests/mesa-scenes.spec.cjs
+M  tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
+(nenhum)
+```
+
+### Arquivos Em Stage
+
+```text
+.claude/SKILL_IMPROVEMENTS.md
 .claude/settings.local.json
+DEV_STATUS.md
 VISUAL_RULES.md
 css/mesa-inspector.css
+css/mesa-map.css
 css/mesa-scenes.css
 css/mesa-stage.css
+css/mesa.css
 css/tokens.css
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 echos.html
@@ -53,15 +66,9 @@ index.html
 mesa.html
 regras.html
 sugestoes.html
+tests/mesa-audit.spec.cjs
 tests/mesa-scenes.spec.cjs
 tools/build-pages.cjs
-```
-
-### Arquivos Em Stage
-
-```text
-DEV_STATUS.md
-cloudflare/README.md
 ```
 
 ## Paginas Principais

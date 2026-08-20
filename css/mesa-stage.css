@@ -1402,10 +1402,14 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
    em caixa alta pequeno. A pilula vermelha destoava de tudo. */
 .marker-clear-btn {
   flex: none;
-  min-height: 26px;
+  /* Escala de controle (Etapa 97): o pop-up segue a mesma dos botoes do
+     inspetor. Quando o inspetor subiu para 32px/11,2px e este ficou em
+     26px/9,6px, foi o teste da Etapa 95 — que compara os dois — quem
+     denunciou. */
+  min-height: var(--control-md);
   padding: var(--sp-1) var(--sp-2);
   font-family: var(--font-ui);
-  font-size: 0.6rem;
+  font-size: var(--fs-control);
   font-weight: var(--fw-semibold);
   letter-spacing: var(--tracking-widest);
   text-transform: uppercase;

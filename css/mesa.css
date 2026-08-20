@@ -458,6 +458,19 @@ html {
   --hud-border: rgba(168, 48, 40, 0.22);
   --hud-radius: 12px;
   --hud-inset:  12px;            /* margem uniforme dos cantos do canvas */
+
+  /* Altura do overlay do canto (Etapa 98). Existe para que QUALQUER painel
+     ancorado abaixo dele calcule o proprio `top` a partir daqui, em vez de
+     copiar um numero medido a mao — foi exatamente esse numero solto
+     (`top: 52px` no painel do mapa) que ficou para tras quando os controles
+     do overlay cresceram, e o painel subiu por cima da barra.
+
+     Conta: filho MAIS ALTO + padding vertical + borda. O filho mais alto e o
+     botao da gaveta de cenas (--control-lg), nao os botoes de texto — usar
+     --control-md aqui daria 8px a menos e o encosto voltaria assim que a
+     gaveta aparecesse (ela nasce `hidden`, entao o erro so apareceria para
+     o mestre com cena carregada). */
+  --hud-overlay-h: calc(var(--control-lg) + 1rem + 2px);
 }
 
 .vtt-overlay {

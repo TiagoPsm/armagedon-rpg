@@ -16,6 +16,107 @@ C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 
 A pasta antiga `rpg-campaign` nao deve ser usada para editar layout, CSS, HTML ou assets publicados.
 
+## Escala de controle: tres alturas, uma fonte de rotulo (2026-08-19, Etapa 97)
+
+Altura de botao nao se escolhe caso a caso. A escala vive em `css/tokens.css`:
+
+- `--control-sm` **28px** — acao dentro de cartao, contexto denso
+- `--control-md` **32px** — PADRAO: botao de painel, chip, segmentado, stepper
+- `--control-lg` **40px** — destaque: icone que abre painel, fechar
+
+Rotulo de controle usa `--fs-control` (11,2px). Glifo de icone (`+`, `−`, `x`) segue a propria escala e nao conta como rotulo.
+
+Por que existe: entre a gaveta de cenas e o inspetor conviviam SETE alturas e SEIS tamanhos de fonte, com "Nova pasta" (21px) ao lado de chips (29px) na mesma linha. O mesmo `.mini-btn` media 26px num lugar e 21px no outro.
+
+Regras que vem junto:
+
+- **Piso de 28px** para qualquer alvo de clique (WCAG 2.2 AA pede 24px; a escala parte de 28 para nao encostar no limite).
+- **Painel flutuante segue a escala de quem o abriu** — quando o inspetor subiu para 32px e o pop-up de marcadores ficou em 26px, foi o teste que compara os dois que denunciou.
+- **Aplicada na Mesa inteira** desde a Etapa 98 — gaveta, inspetor e painel de configuracoes do mapa. As outras paginas migram em etapa propria; ate la, nao misturar as duas escalas dentro da mesma tela.
+
+## Padrao de painel da Mesa (2026-08-19, Etapa 98)
+
+O painel de configuracoes do mapa (`#mesaMapTransform`) era o unico canto da Mesa que nunca tinha migrado para a escala da Etapa 97: 26px de altura, CINCO tamanhos de fonte num painel so (0,56 / 0,68 / 0,70 / 0,72 / 0,78rem) e tres raios (3px, 4px, 10px). Arrumar ele fechou o padrao que vale para **qualquer painel da mesa.html**.
+
+### Dois niveis de texto, os dois com nome
+
+- `--fs-eyebrow` **9,28px**, caixa alta, com tracking — nomeia um BLOCO ("Grade", "Nevoa", "Acoes"). Nunca fica dentro de um alvo de clique, entao pode ser pequeno.
+- `--fs-control` **11,2px** — rotulo DENTRO de um controle.
+- **Glifo de icone** (`−`, `+`, `↻`) e um terceiro nivel, e tambem tem um valor so por painel. Foi o `↻` em 0,85rem ao lado de `−`/`+` em 0,82rem que mostrou que "sobra" tambem acontece em icone.
+
+Os dois primeiros ja eram a convencao de fato (inspetor 0,58rem, painel do mapa 0,56rem) — viraram token porque estavam escritos a mao, com valores diferentes, em cada arquivo.
+
+### Peso visual igual obriga significado igual
+
+A regra mais cara desta etapa. Na Nevoa conviviam quatro botoes identicos com **dois significados**:
+
+| Par | O que e | O que `.is-active` queria dizer |
+|---|---|---|
+| Revelar / Cobrir | MODO do pincel, exclusivo e continuo | "este pincel esta armado" |
+| Revelar tudo / Cobrir tudo | ACAO de uma vez, destrutiva (zera as pinceladas) | "o mapa JA esta assim" |
+
+A mesma classe significando duas coisas, com o mesmo desenho, fazia o bloco parecer quatro opcoes irmas. Correcao: **modo vira segmentado** (Etapa 94), **acao vira par 50/50 de botoes comuns**, mais discretos. E os dois pares seguem a **mesma ordem** — antes um vinha invertido em relacao ao outro, na mesma coluna.
+
+### Numero sem unidade nao informa
+
+"20" e "7" nao dizem nada, e o significado morava so no atributo `title` — invisivel no toque e para quem navega por teclado. A unidade vai **visivel** ao lado do numero (`colunas`, `% do mapa`), em `--fs-eyebrow`. O `id` fica no `<span>` que tem SO o numero, senao o `textContent` do JS apaga a unidade junto.
+
+### Controle nativo importa o tema do sistema
+
+`<input type="checkbox">` cru aparecia como um quadrado cinza claro num painel preto — o unico elemento da Mesa fora da direcao visual. Precisa de `appearance: none` + desenho proprio, e ai **o foco visivel tem de ser redesenhado junto**: o mesmo `appearance: none` que apaga a caixa apaga o anel de foco nativo. O "v" e pseudo-elemento com `transform`, nao glifo de fonte (o Cinzel nao tem um check apresentavel).
+
+Alvo de clique e a **linha inteira** (`min-height: var(--control-md)`), nao os 13px do input.
+
+### Painel flutuante precisa de largura declarada
+
+`width: 248px` e o que destrava a regra da Etapa 94 ("controle de acao vai de borda a borda"). Sem largura o painel encolhe para o conteudo e um filho com `width: 100%` para no meio da coluna — o mesmo cuidado ja medido na Etapa 94.
+
+### Painel flutuante da Mesa usa os tokens `--hud-*` (2026-08-20, Etapa 99)
+
+`css/mesa.css` define `--hud-bg`, `--hud-border`, `--hud-blur` e `--hud-radius` dizendo, no proprio comentario, que sao o "estilo compartilhado por todos os paineis flutuantes da mesa". O painel do mapa **nao usava nenhum deles**: fundo e raio proprios e borda `rgba(255,255,255,0.08)` — BRANCA, onde o padrao do HUD e carmesim (`rgba(168,48,40,0.22)`). Era a razao de ele parecer cinza e estrangeiro logo abaixo da barra do canto, que usa os tokens.
+
+Regra: painel flutuante nao escolhe fundo, borda nem raio. Herda os `--hud-*`. Conferido por medicao — borda e fundo do painel agora batem exatamente com os da barra.
+
+### Carmesim marca estado, nao decora
+
+Dentro do painel, o neutro era o padrao e o acento quase nao aparecia:
+
+- Botao e checkbox tinham borda/fundo **brancos** translucidos → passaram para `--border-accent` sobre `rgba(168,48,40,0.10)`.
+- Estado LIGADO (checkbox marcado, pincel armado) usava `--accent-deep` (#3a0a08, quase preto) — "marcado" mal se distinguia de "desmarcado". Passou para `--accent` (#a83028) cheio, com o "v" em quase-branco por cima.
+- Rotulo de secao saiu de `--text-soft` (#8a8272, bege apagado) para carmesim claro: ele marca o bloco em vez de sumir.
+
+**Texto de controle e conteudo, nao decoracao.** Rotulo de botao e de opcao estavam em `--text-soft`: 5,7:1 de contraste em corpo de 11,2px. Passaram para `--text`, medido em **14,4:1**. A sobrancelha de secao ficou em 6,2:1. Reservar `--text-soft` para texto de apoio (legenda), nao para o rotulo do controle que a pessoa precisa ler para agir.
+
+### Compactar tirando espaco, nunca alvo
+
+Reduzir painel nao pode encolher area de clique — o piso de 28px da Etapa 97 continua valendo, e todo controle deste painel segue em 32px. A altura saiu de **557px para 530px** no mesmo estado, vinda de:
+
+- vao entre secoes 16px → 12px, com uma **regua fina carmesim** assumindo a separacao. Troca espaco por estrutura: encurta e ainda deixa o agrupamento mais explicito.
+- legenda reescrita de 3 para 2 linhas (mesmos dois fatos, sem repetir o que os controles ja dizem) e `line-height` 1,5 → 1,35, que e respiro de leitura corrida e nao de texto de apoio.
+
+**A regua tem uma armadilha.** Os grupos nascem `hidden` e ha um `<p>` de ajuda entre eles, entao `+` (irmao adjacente) erra dos dois lados: pula a divisoria de um par e, pior, poe uma regua no TOPO do painel assim que um grupo oculto precede o primeiro visivel. O seletor certo e geral, com `:not([hidden])` nos dois lados:
+
+```css
+.mesa-map-transform-group:not([hidden]) ~ .mesa-map-transform-group:not([hidden])
+```
+
+Conferido nos tres arranjos (nenhum oculto, um oculto, dois ocultos): o primeiro grupo **visivel** nunca leva regua.
+
+### Painel ancorado calcula o proprio `top`, nunca copia um numero
+
+O painel do mapa usava `top: 52px`, medido a mao um dia. Ja encostava 4px na barra do canto antes desta etapa; quando os controles do overlay subiram para a escala, virou **18px de sobreposicao**.
+
+Regra: quem se ancora abaixo de uma barra deriva a posicao **da barra**, nao de um numero. `--hud-overlay-h` (em `css/mesa.css`) = filho mais alto + padding vertical + borda, e o painel faz `top: calc(var(--hud-inset) + var(--hud-overlay-h) + var(--sp-2))`.
+
+Duas armadilhas medidas:
+
+- **O filho mais alto pode nascer `hidden`.** No overlay do canto o mais alto e o botao da gaveta de cenas (`--control-lg`, 40px), que so aparece para o mestre com cena. Calcular pela altura do estado inicial da 8px a menos, e o encosto volta exatamente para quem usa a ferramenta. Use a altura do MAIOR possivel, nao a do visivel agora.
+- **Teste de sobreposicao tem de rodar no estado revelado.** Os tres testes desta etapa medem `painel.top - barra.bottom >= 0` com a gaveta oculta, com ela visivel e em 900px de largura. Rodados contra o CSS antigo, falharam com `-18`.
+
+### Legenda pertence a secao de cima
+
+O `border-top` acima do texto de ajuda o fazia parecer cabecalho da secao SEGUINTE, quando ele explica a atual. Parentesco se resolve por **proximidade** (colado no grupo, separado do proximo pelo `gap` do painel), nao por regua.
+
 ## Pop-up herda a lingua de quem o abriu (2026-08-18, Etapa 95)
 
 Painel flutuante ancorado a um controle nao inventa estilo proprio: largura amarrada a do controle que o abre, mesmos tokens de raio, borda e espacamento, mesma escala de texto e mesma altura de botao da secao de origem. Foi a divergencia disso (268px contra 235px, cantos de 14px contra 4px, pilula contra retangulo) que fez o painel de marcadores parecer de outro site.

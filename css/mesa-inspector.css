@@ -294,16 +294,16 @@
    eram 1fr e 46px fixos — o par "22 / 22" saia com caixas de 83px e 46px, e
    a largura ainda mudava conforme a quantidade de digitos. */
 .inspector-vital-stepper.is-master {
-  grid-template-columns: 30px minmax(0, 1fr) 30px auto minmax(0, 1fr);
+  grid-template-columns: var(--control-md) minmax(0, 1fr) var(--control-md) auto minmax(0, 1fr);
   gap: var(--sp-1);
 }
 
 .inspector-vital-stepper.is-master .stat-step-btn {
-  height: 30px;
+  height: var(--control-md);
 }
 
 .inspector-vital-stepper.is-master input {
-  min-height: 30px;
+  min-height: var(--control-md);
   padding: 0.25rem 0.3rem;
 }
 
@@ -425,7 +425,8 @@
    marcadores) ficariam com 21px — a mesma incoerencia que a Etapa 92
    tirou dos tamanhos de fonte. */
 .token-inspector-controls .mini-btn {
-  min-height: 26px;
+  min-height: var(--control-md);
+  font-size: var(--fs-control);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -444,16 +445,16 @@
 }
 
 .inspector-seg-btn {
-  min-height: 26px;
+  min-height: var(--control-md);
   padding: var(--sp-1) var(--sp-2);
   border: 0;
   background: transparent;
   color: var(--text-soft);
   font-family: var(--font-ui);
-  /* 0,6rem e o tamanho que os .mini-btn REALMENTE tem na Mesa: css/mesa-roster.css
-     sobrepoe o `.mini-btn` global (que usa --fs-2xs, 11px) por 0,6rem = 9,6px.
-     Usar o token aqui deixaria o segmentado 1,4px maior que os vizinhos. */
-  font-size: 0.6rem;
+  /* Etapa 97: a escala de controle vale para os dois — o `.mini-btn` desta
+     secao tambem passou a usar --fs-control, entao segmentado e vizinhos
+     continuam iguais, agora em 11,2px em vez de 9,6px. */
+  font-size: var(--fs-control);
   font-weight: var(--fw-semibold);
   letter-spacing: var(--tracking-widest);
   text-transform: uppercase;

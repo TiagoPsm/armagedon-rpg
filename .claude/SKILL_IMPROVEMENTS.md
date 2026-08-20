@@ -325,6 +325,30 @@ Skill 03 (page-architecture):
 
 ---
 
+### [2026-08-19] - 02b-layout-integrity-checker + 03-page-architecture - ⚠️ APROPRIADAS, MAS INCOMPLETAS
+
+**Trigger:**
+Screenshot do painel de configuracoes da cena + "estabelecer um padrao de interface para a mesa.html" (Etapa 98)
+
+**Apropriada?** ⚠️ Parcial — acertaram o diagnostico de escala/espacamento, mas nenhuma das duas cobre o achado mais caro da etapa.
+
+**O que funcionou:**
+- 02b pegou na hora as cinco fontes, os tres raios e os espacamentos fora da escala de 4px.
+- 03 pegou a legenda com `border-top` parecendo cabecalho da secao seguinte.
+
+**O que NENHUMA skill pegou (e virou a maior correcao):**
+- **Peso visual igual com significado diferente.** Quatro botoes identicos onde dois eram MODO (pincel armado) e dois eram ACAO destrutiva, com `.is-active` querendo dizer coisas opostas em cada par. Isso e semantica de controle, nao layout nem hierarquia de pagina.
+- **Numero sem unidade visivel** (significado so no `title` — morto no toque e no teclado).
+- **Controle nativo importando o tema do SO** (`<input type=checkbox>` cinza claro em painel preto) e o foco que some junto com `appearance: none`.
+
+**Falso positivo evitado:**
+Quase "corrigi" a fonte da legenda de `--font-body` para `--font-ui` por parecer inconsistente. Estava certa: `--font-ui` e Cinzel (display serif), pessima para frase de duas linhas. **Ler o token antes de nivelar** — nem toda divergencia e erro.
+
+**Melhoria proposta (aguarda OK do Tiago):**
+Criar gatilho novo em 02b ou skill propria: **"dois controles com o mesmo desenho fazem a mesma classe de coisa?"** — checar modo x acao, estado x gatilho, e se a mesma classe de estado (`.is-active`) significa a mesma coisa em todos os usos dentro do painel. Foi o unico achado desta etapa que exigiu ler o JS junto com o CSS.
+
+---
+
 ### [2026-06-16] - 02b-layout-integrity-checker + 03-page-architecture - ✅ APROPRIADAS + FEEDBACK VISUAL
 
 **Trigger:**

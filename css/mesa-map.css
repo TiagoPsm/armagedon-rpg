@@ -93,13 +93,18 @@
 
 /* ── BOTÃO DE ENGRENAGEM ─────────────────────────────────────── */
 
+/* Etapa 98: a engrenagem ABRE o painel, entao ela e o painel precisam falar
+   a mesma lingua (regra da Etapa 95). Enquanto ela media 26px e o painel
+   passou a 32px, era exatamente a divergencia que a Etapa 95 tirou do
+   pop-up de marcadores. Os vizinhos da linha (.btn-small) vem junto logo
+   abaixo — "uma altura por secao" (Etapa 92). */
 .mesa-map-settings-btn {
-  width: 26px;
-  height: 26px;
+  width: var(--control-md);
+  height: var(--control-md);
   display: grid;
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-soft);
   cursor: pointer;
@@ -108,8 +113,17 @@
 }
 
 .mesa-map-settings-btn svg {
-  width: 13px;
-  height: 13px;
+  width: 15px;
+  height: 15px;
+}
+
+/* Escopo proposital: `.btn-small` e compartilhado com as outras paginas, que
+   ainda nao migraram para a escala. Normalizar so DENTRO desta linha alinha
+   "Abrir mapa"/"Limpar mapa" com a engrenagem sem arrastar o resto do site. */
+.mesa-map-controls .btn {
+  min-height: var(--control-md);
+  display: inline-flex;
+  align-items: center;
 }
 
 .mesa-map-settings-btn:hover,
@@ -121,20 +135,38 @@
 
 /* ── PAINEL DE CONFIGURAÇÕES DO MAPA (flutuante) ─────────────── */
 
+/* Etapa 98: LARGURA FIXA e o que destrava a regra da Etapa 94 ("controle de
+   acao vai de borda a borda"). Sem ela o painel encolhe para o conteudo, e
+   um botao com `width: 100%` para no meio da coluna em vez de esticar —
+   o cuidado medido na propria Etapa 94. 248px comporta o segmentado de
+   duas metades sem quebrar "Encaixar ao mover" em duas linhas. */
 .mesa-map-settings-panel {
   position: absolute;
-  top: 52px;   /* abaixo do overlay */
-  right: 12px;
+  /* Etapa 98: era `top: 52px`, um numero medido a mao que ja encostava 4px na
+     barra e virou 18px de sobreposicao quando os controles do overlay
+     subiram para a escala. Agora deriva do proprio overlay
+     (--hud-overlay-h, em css/mesa.css) mais um respiro — se a barra crescer
+     de novo, o painel desce junto. */
+  top: calc(var(--hud-inset) + var(--hud-overlay-h) + var(--sp-2));
+  right: var(--hud-inset);
   z-index: 30;
+  width: 248px;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
-  padding: 0.7rem 0.8rem;
-  background: rgba(4, 3, 8, 0.88);
-  backdrop-filter: blur(12px) saturate(120%);
-  -webkit-backdrop-filter: blur(12px) saturate(120%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
+  /* Etapa 99: 16px -> 12px. A separacao entre secoes passou a ser feita por
+     uma linha (ver .mesa-map-transform-group + group), entao o vao nao
+     precisa mais carregar esse trabalho sozinho. */
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  /* Etapa 99: o painel hardcodava fundo e borda BRANCA, enquanto o css/mesa.css
+     define --hud-* como "estilo compartilhado por todos os paineis flutuantes
+     da mesa" — e o --hud-border ja e carmesim. Era a razao de ele parecer
+     cinza e estrangeiro logo abaixo da barra, que usa os tokens. */
+  background: var(--hud-bg);
+  backdrop-filter: var(--hud-blur);
+  -webkit-backdrop-filter: var(--hud-blur);
+  border: 1px solid var(--hud-border);
+  border-radius: var(--hud-radius);
 }
 
 .mesa-map-settings-panel[hidden] { display: none; }
@@ -142,32 +174,72 @@
 .mesa-map-transform-group {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--sp-2);
+}
+
+/* Etapa 99: uma linha fina carmesim separa as secoes. Troca ESPACO por
+   ESTRUTURA — o painel encurta e a organizacao fica mais explicita do que
+   estava com o vao de 16px, que so afastava sem agrupar.
+   Combinador GERAL (`~`) e `:not([hidden])` nos dois lados, de proposito:
+   (a) ha um `<p>` de ajuda entre grupos, entao `+` pularia a divisoria de um
+   par e nao do outro; (b) os grupos nascem `hidden` e aparecem conforme o
+   papel e o mapa — com `+`, o primeiro grupo VISIVEL herdaria uma regua no
+   topo do painel assim que um grupo oculto o precedesse. */
+.mesa-map-transform-group:not([hidden]) ~ .mesa-map-transform-group:not([hidden]) {
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--hud-border);
 }
 
 .mesa-map-transform-label {
   font-family: var(--font-ui);
-  font-size: 0.56rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  font-size: var(--fs-eyebrow);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-widest);
   text-transform: uppercase;
-  color: var(--text-soft);
+  /* Carmesim claro em vez de --text-soft (#8a8272, um bege apagado): o rotulo
+     de secao passa a marcar o bloco em vez de sumir no fundo. */
+  color: #c97a70;
 }
 
 .mesa-map-transform-row {
   display: flex;
   align-items: center;
-  gap: 0.2rem;
+  gap: var(--sp-1);
+}
+
+/* Stepper (Etapa 98): [−] [valor] [+] ocupando a linha inteira, com o valor
+   elastico no meio. Antes o par de 26px + leitura de 38px deixava uma sobra
+   variavel a direita — a borda serrilhada da Etapa 94, agora sem texto que
+   a justifique. */
+.mesa-map-transform-row.is-stepper {
+  display: grid;
+  grid-template-columns: var(--control-md) minmax(0, 1fr) var(--control-md);
+  gap: var(--sp-1);
 }
 
 .mesa-map-scale-val {
   font-family: var(--font-ui);
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
   letter-spacing: 0.06em;
   color: var(--text);
-  min-width: 38px;
   text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-md);
+}
+
+/* A unidade fica VISIVEL ao lado do numero. "20" e "7" sozinhos nao dizem
+   nada, e o significado morava so no atributo `title` — invisivel no toque
+   e para quem navega por teclado. */
+.mesa-map-scale-unit {
+  font-size: var(--fs-eyebrow);
+  font-weight: 400;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-left: 0.35em;
 }
 
 /* ─── Grade funcional (Etapa 42) ─────────────────────────────── */
@@ -188,48 +260,139 @@
   z-index: 7;
 }
 
+/* Etapa 98: a linha inteira e o alvo de clique, com a mesma altura dos
+   demais controles da secao. O `<input>` cru media ~13px — abaixo do piso
+   de 24px do WCAG 2.2 AA e visualmente perdido ao lado de botoes de 32px. */
 .mesa-grid-check {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: var(--sp-2);
+  min-height: var(--control-md);
   font-family: var(--font-ui);
-  font-size: 0.68rem;
-  color: var(--text-soft);
+  font-size: var(--fs-control);
+  /* Etapa 99: era --text-soft. O rotulo de uma opcao e conteudo, nao
+     decoracao — sobe para --text junto com os botoes. */
+  color: var(--text);
   cursor: pointer;
   user-select: none;
 }
 
-.mesa-grid-check input {
-  accent-color: var(--accent, #8c1d2f);
+.mesa-grid-check:hover {
+  color: #e8b4b0;
+}
+
+/* Caixa desenhada a mao: o controle nativo herda o tema do sistema
+   operacional e aparecia como um quadrado cinza claro no meio de um painel
+   preto — o unico elemento da Mesa fora da direcao visual. */
+.mesa-grid-check input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-sm);
+  background: rgba(168, 48, 40, 0.10);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+/* O "v" e um pseudo-elemento com transform, nao um glifo de fonte: o
+   caractere depende da fonte carregada e o Cinzel nao tem um check bonito. */
+.mesa-grid-check input[type="checkbox"]::after {
+  content: "";
+  width: 4px;
+  height: 8px;
+  /* Quase branco sobre o carmesim cheio: o "v" precisa vencer o fundo novo. */
+  border: solid #fbeae8;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+/* Etapa 99: era --accent-deep (#3a0a08, quase preto) — "marcado" mal se
+   distinguia de "desmarcado" a um metro da tela. Agora o carmesim cheio. */
+.mesa-grid-check input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.mesa-grid-check input[type="checkbox"]:checked::after {
+  opacity: 1;
+}
+
+/* Foco visivel proprio: `appearance: none` apaga o anel nativo junto com o
+   desenho da caixa, e sem isto o controle sumia da navegacao por teclado. */
+.mesa-grid-check input[type="checkbox"]:focus-visible {
+  outline: 2px solid rgba(214, 69, 80, 0.9);
+  outline-offset: 2px;
 }
 
 /* Hint de instrução no painel */
+/* Etapa 98: a fonte de LEITURA continua sendo --font-body (Crimson Text) de
+   proposito — --font-ui e Cinzel, uma display serif que castiga frase de
+   duas linhas. O que mudou foi o `border-top`: uma regua ACIMA do texto o
+   fazia parecer cabecalho da secao seguinte, quando ele explica a atual.
+   O parentesco agora vem da proximidade (fica colado no grupo, e o gap do
+   painel o separa do proximo). */
 .mesa-map-settings-hint {
   font-family: var(--font-body, serif);
   font-size: 0.72rem;
   color: var(--text-soft);
-  line-height: 1.45;
+  /* Etapa 99: 1.5 -> 1.35. Em texto de apoio de duas linhas o respiro de
+     leitura corrida so alonga o painel sem ganhar legibilidade. */
+  line-height: 1.35;
   margin: 0;
-  padding-top: 0.3rem;
-  border-top: 1px solid rgba(255,255,255,0.06);
+  padding-top: var(--sp-1);
+}
+
+/* A tecla citada no texto (Alt) marcada em carmesim: e a unica coisa
+   acionavel dentro da frase. */
+.mesa-map-settings-hint strong {
+  color: #c97a70;
+  font-weight: var(--fw-semibold);
 }
 
 /* Botão comum de transform */
 .mesa-transform-btn {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-soft);
-  font-size: 0.78rem;
+  width: var(--control-md);
+  height: var(--control-md);
+  /* Etapa 99: borda e fundo eram BRANCOS translucidos — o painel inteiro lia
+     como cinza. Agora carmesim, na mesma familia da barra do canto. */
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-sm);
+  background: rgba(168, 48, 40, 0.10);
+  /* --text (#e2d9c5) no lugar de --text-soft (#8a8272): 15:1 de contraste
+     contra ~5,7:1. Em rotulo de 11,2px a diferenca e enxergar ou adivinhar. */
+  color: var(--text);
+  font-family: var(--font-ui);
+  /* Glifo de icone (− +) segue a propria escala e nao conta como rotulo
+     (regra da Etapa 97); o texto dos botoes de nevoa cai em --fs-control
+     mais abaixo, na variante .mesa-fog-*-btn. */
+  font-size: 0.82rem;
   line-height: 1;
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s, color 0.12s;
   user-select: none;
   padding: 0;
+}
+
+.mesa-transform-btn:focus-visible {
+  outline: 2px solid rgba(214, 69, 80, 0.9);
+  outline-offset: 2px;
+}
+
+/* Pincel desarmado com a nevoa desligada (o teste da auditoria checa
+   `.disabled` nos dois): o estado precisa ser visivel, nao so inerte. */
+.mesa-transform-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .mesa-transform-btn:hover {
@@ -243,8 +406,9 @@
 }
 
 /* Botão reset (centro do d-pad) */
+/* O glifo segue o MESMO nivel de icone dos vizinhos (0,82rem). Ficar em
+   0,85rem nao era escolha, era sobra: media 13,6px ao lado de 13,12px. */
 .mesa-transform-reset {
-  font-size: 0.85rem;
   color: rgba(255, 248, 236, 0.4);
 }
 
@@ -795,21 +959,80 @@
 #mesaStageWrap.is-fog-brushing * {
   cursor: crosshair;
 }
+/* ── OS DOIS PARES DA NEVOA (Etapa 98) ───────────────────────
+ * Aqui morava o pior problema do painel, e nao era tamanho: quatro botoes
+ * com o MESMO peso visual carregavam DOIS significados diferentes.
+ *
+ *   Revelar / Cobrir      → MODO do pincel, exclusivo e continuo.
+ *                            `.is-active` = "este pincel esta armado".
+ *   Cobrir tudo / Revelar tudo → ACAO de uma vez, destrutiva (zera todas
+ *                            as pinceladas). `.is-active` = "o mapa JA
+ *                            esta assim", que e leitura, nao modo.
+ *
+ * A mesma classe `.is-active` significando "armado" num par e "estado
+ * atual" no outro e o que fazia o bloco parecer quatro opcoes irmas.
+ * Agora o modo e um SEGMENTADO (regra da Etapa 94) e a acao e um par
+ * 50/50 de botoes comuns, mais discretos.
+ */
+
+/* Par de modo: duas metades, contorno unico por fora. */
+.mesa-segmented {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  gap: 0;
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.mesa-segmented .mesa-transform-btn {
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.mesa-segmented .mesa-transform-btn + .mesa-transform-btn {
+  border-left: 1px solid var(--border-accent);
+}
+
 .mesa-fog-brush-btn {
-  width: auto;
-  padding: 0 10px;
-  font-size: 0.72rem;
+  font-size: var(--fs-control);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+}
+
+/* Pincel ARMADO: carmesim cheio. E o unico estado do painel que muda o que o
+   arrasto no palco faz, entao e o que mais precisa saltar. */
+.mesa-fog-brush-btn.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fbeae8;
+}
+
+/* Par de acao: mesma largura para os dois (Etapa 94), peso menor que o
+   segmentado — sao gatilhos de uma vez, nao o estado corrente. */
+.mesa-btn-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-1);
+}
+
+.mesa-btn-pair .mesa-transform-btn {
+  width: 100%;
+}
+
+.mesa-fog-reset-btn {
+  font-size: var(--fs-control);
   letter-spacing: 0.04em;
 }
-.mesa-fog-brush-btn.is-active {
-  background: rgba(176, 48, 57, 0.4);
-  border-color: rgba(214, 69, 80, 0.95);
-  box-shadow: 0 0 6px rgba(176, 48, 57, 0.5);
-}
-.mesa-fog-reset-btn {
-  width: auto;
-  padding: 0 10px;
-  font-size: 0.72rem;
+
+/* "Ja esta assim": o botao continua clicavel, mas recuado — nunca com o
+   mesmo aceso do pincel armado, que e outra coisa. */
+.mesa-fog-reset-btn.is-active {
+  color: var(--text);
+  border-color: rgba(214, 69, 80, 0.4);
 }
 
 /* ── Gerenciador de cenas (Etapa 49) ─────────────────────────

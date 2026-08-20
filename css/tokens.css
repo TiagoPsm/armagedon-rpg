@@ -123,6 +123,34 @@
   --sp-16: 4rem;      /* 64px */
   --sp-20: 5rem;      /* 80px */
 
+  /* ── ALTURA DE CONTROLE (Etapa 97) ──────────────────────────
+   * Escala fechada de tres. Antes cada canto escolhia a sua: so entre a
+   * gaveta de cenas e o inspetor conviviam SETE alturas (21, 26, 27, 29,
+   * 30, 32 e 36px) — o mesmo `.mini-btn` media 26px num lugar e 21px no
+   * outro, e "Nova pasta" (21px) ficava ao lado de chips de 29px.
+   *
+   *   sm  28px  acoes dentro de cartao, contexto denso
+   *   md  32px  PADRAO — botao de painel, chip, segmentado, stepper
+   *   lg  40px  destaque: botao de icone que abre painel, fechar
+   *
+   * O piso de acessibilidade para alvo de clique e 24px (WCAG 2.2 AA):
+   * 28px ja passa com folga, e 32px e confortavel no mouse.
+   * Aplicada por enquanto na Mesa (gaveta + inspetor); as outras paginas
+   * migram em etapa propria. */
+  --control-sm: 28px;
+  --control-md: 32px;
+  --control-lg: 40px;
+  /* Rotulo de controle: 11,2px. A Mesa vinha usando 9,6px em botao de
+     32px, e o texto ficava perdido dentro do alvo. */
+  --fs-control: 0.7rem;
+  /* Sobrancelha de secao (Etapa 98): 9,28px, caixa alta, com tracking.
+     NAO e a mesma coisa que rotulo de controle — este nomeia um BLOCO
+     ("Grade", "Nevoa", "Acoes") e nunca fica dentro de um alvo de clique,
+     entao pode ser menor sem sumir dentro do botao. Ja era a convencao de
+     fato da Mesa (inspetor 0,58rem, painel do mapa 0,56rem); virou token
+     porque estava escrita a mao em cada arquivo, com valores diferentes. */
+  --fs-eyebrow: 0.58rem;
+
   /* ── BORDER RADIUS ──────────────────────────────────────── */
   --radius-sm:   4px;
   --radius-md:   8px;

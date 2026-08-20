@@ -37,8 +37,8 @@
   justify-content: center;
   /* 40px: alvo de toque confortavel sem competir com os controles de mapa
      que dividem o mesmo canto. */
-  width: 40px;
-  height: 40px;
+  width: var(--control-lg);
+  height: var(--control-lg);
   padding: 0;
   border: 1px solid var(--border-strong);
   border-radius: 10px;
@@ -148,8 +148,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: var(--control-lg);
+  height: var(--control-lg);
   border: 1px solid var(--border);
   border-radius: 8px;
   background: transparent;
@@ -184,7 +184,8 @@
 
 .mesa-scenes-search-field {
   width: 100%;
-  padding: 9px 12px;
+  min-height: var(--control-md);
+  padding: 6px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #050405;
@@ -231,13 +232,13 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 28px;
-  padding: 4px 10px;
+  min-height: var(--control-md);
+  padding: 4px 12px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: transparent;
   color: var(--text-soft);
-  font-size: 0.78rem;
+  font-size: var(--fs-control);
   cursor: pointer;
   transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
 }
@@ -274,6 +275,17 @@
   align-items: center;
   gap: 6px;
   flex: 0 0 auto;
+}
+
+/* Etapa 97: eram 21px ao lado de chips de 29px — os dois na mesma linha, e
+   a diferenca saltava aos olhos. */
+.mesa-scenes-folder-actions .mini-btn,
+.mesa-scenes-toolbar .btn {
+  min-height: var(--control-md);
+  font-size: var(--fs-control);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mesa-scenes-folder-actions .mini-btn[hidden] {
@@ -453,12 +465,13 @@
 
 .mesa-scene-action {
   flex: 1 1 auto;
-  padding: 6px 8px;
+  min-height: var(--control-sm);
+  padding: 4px 8px;
   border: 1px solid var(--border);
   border-radius: 7px;
   background: transparent;
   color: var(--text-soft);
-  font-size: 0.75rem;
+  font-size: var(--fs-control);
   cursor: pointer;
   transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
 }
