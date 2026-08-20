@@ -6722,3 +6722,88 @@ test.describe("Foco por teclado e visivel na Mesa (Etapa 102)", () => {
     if (estilo.foco) expect(estilo.estilo, "anel vazando no clique de mouse").toBe("none");
   });
 });
+
+/* ============================================================
+ * Etapa 103 — texto pequeno abaixo do contraste minimo.
+ *
+ * Medicao inicial: 85 textos com menos de 14px na Mesa, 29 reprovando
+ * WCAG AA. Duas causas distintas:
+ *
+ *  - `--text-faint` (#3a382f, **1,74:1**) pintando CONTEUDO — estados
+ *    vazios, rotulo de secao, e ate um botao (o "dispensar" do banner de
+ *    reconexao). O token e documentado em tokens.css como "placeholder,
+ *    desabilitado": era uso errado, nao escolha de cor.
+ *  - `--accent` (#a83028, ~3,0:1) como TEXTO em corpos de 8 a 11px.
+ *
+ * O teste calcula o contraste do jeito que o WCAG manda (luminancia
+ * relativa, com o fundo resolvido subindo a arvore e compondo alfa) em
+ * vez de comparar strings de cor — cor certa com alfa errado reprova
+ * igual, e foi assim que o rotulo do zoom (alfa 0.7) apareceu.
+ * ============================================================ */
+test.describe("Contraste de texto pequeno (Etapa 103)", () => {
+  /** Razao de contraste real do elemento contra o fundo efetivo. */
+  async function contraste(page, seletor) {
+    return page.evaluate((sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return null;
+      const parse = c => { const m = String(c).match(/[\d.]+/g);
+        return m ? { r:+m[0], g:+m[1], b:+m[2], a:m[3] !== undefined ? +m[3] : 1 } : null; };
+      const sobre = (f,b) => ({ r:f.r*f.a+b.r*(1-f.a), g:f.g*f.a+b.g*(1-f.a), b:f.b*f.a+b.b*(1-f.a), a:1 });
+      const lum = c => { const f = v => { v/=255; return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4); };
+        return 0.2126*f(c.r) + 0.7152*f(c.g) + 0.0722*f(c.b); };
+      let pilha = [], n = el;
+      while (n && n !== document.documentElement) {
+        const bg = parse(getComputedStyle(n).backgroundColor);
+        if (bg && bg.a > 0) { pilha.push(bg); if (bg.a === 1) break; }
+        n = n.parentElement;
+      }
+      pilha.push({ r:0, g:0, b:0, a:1 });
+      const fundo = pilha.reduceRight((acc,c) => sobre(c,acc));
+      const cor = parse(getComputedStyle(el).color);
+      const frente = cor.a < 1 ? sobre(cor, fundo) : cor;
+      const l1 = lum(frente), l2 = lum(fundo);
+      return (Math.max(l1,l2) + 0.05) / (Math.min(l1,l2) + 0.05);
+    }, seletor);
+  }
+
+  async function abrirMesa(page) {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+  }
+
+  const AA = 4.5;
+
+  test("os rotulos da barra de ferramentas sao legiveis", async ({ page }) => {
+    await abrirMesa(page);
+    // Nomes da navegacao principal, em corpo de 8px: eram 3,3:1.
+    const r = await contraste(page, ".vtt-tb-btn span");
+    expect(r, "rotulo da barra abaixo do minimo AA").toBeGreaterThanOrEqual(AA);
+  });
+
+  test("o kicker de secao da sidebar e legivel", async ({ page }) => {
+    await abrirMesa(page);
+    const r = await contraste(page, ".vtt-kicker");
+    expect(r, "kicker abaixo do minimo AA").toBeGreaterThanOrEqual(AA);
+  });
+
+  test("o rotulo do zoom e legivel (o alfa contava)", async ({ page }) => {
+    await abrirMesa(page);
+    const r = await contraste(page, "#mesaZoomLabel");
+    expect(r, "rotulo do zoom abaixo do minimo AA").toBeGreaterThanOrEqual(AA);
+  });
+
+  test("--text-faint nao volta a pintar conteudo", async ({ page }) => {
+    await abrirMesa(page);
+    // O token continua existindo para placeholder/desabilitado; o que nao
+    // pode e conteudo herdar ele de novo. 1,74:1 era o valor medido.
+    await page.evaluate(() => {
+      const b = document.getElementById("vttMapLibraryBlock");
+      if (b) b.hidden = false;
+    });
+    for (const sel of [".map-lib-section-label", ".token-inspector-empty strong"]) {
+      const r = await contraste(page, sel);
+      if (r !== null) expect(r, `${sel} voltou a ficar ilegivel`).toBeGreaterThanOrEqual(3);
+    }
+  });
+});

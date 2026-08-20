@@ -601,13 +601,13 @@
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-faint, rgba(255, 248, 236, 0.18));
+  color: var(--text-soft));
 }
 
 .token-inspector-empty p {
   font-family: var(--font-body, "Crimson Text", serif);
   font-size: 0.82rem;
-  color: var(--text-faint, rgba(255, 248, 236, 0.18));
+  color: var(--text-soft));
   max-width: 22ch;
   line-height: 1.45;
 }

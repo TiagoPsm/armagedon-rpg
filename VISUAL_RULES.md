@@ -71,6 +71,25 @@ Alvo de clique e a **linha inteira** (`min-height: var(--control-md)`), nao os 1
 
 `width: 248px` e o que destrava a regra da Etapa 94 ("controle de acao vai de borda a borda"). Sem largura o painel encolhe para o conteudo e um filho com `width: 100%` para no meio da coluna — o mesmo cuidado ja medido na Etapa 94.
 
+### `--accent` preenche; `--accent-text` se le (2026-08-20, Etapa 103)
+
+`--accent` (#a83028) sobre o fundo quase preto da Mesa da **3,0:1** — abaixo dos 4,5:1 do WCAG AA para texto pequeno — e estava pintando justamente rotulos de 8 a 11px (kickers, selos de papel, rotulo do zoom).
+
+- **`--accent`**: preenchimento, borda, estado ativo. Nunca texto pequeno.
+- **`--accent-text` (#c97a70, 6,5:1)**: quando o carmesim precisa ser lido.
+
+### `--text-faint` e placeholder, nao conteudo (2026-08-20, Etapa 103)
+
+`tokens.css` documenta `--text-faint` (#3a382f) como "placeholder, desabilitado" — e ele estava pintando estados vazios, rotulos de secao e ate o botao "dispensar" do banner de reconexao, a **1,74:1**. Nao era escolha de cor errada: era o token errado no lugar errado.
+
+Texto que a pessoa precisa ler para agir e CONTEUDO — piso `--text-soft`. `--text-faint` fica para placeholder de campo e simbolo decorativo, onde e o proposito dele.
+
+### Contraste se mede, nao se compara por nome (2026-08-20, Etapa 103)
+
+Conferir se a cor "e o token certo" nao basta: o rotulo do zoom usava o carmesim certo com **alfa 0.7**, e o alfa derrubava a leitura para 3,8:1. A conta tem de ser a do WCAG — luminancia relativa, com o fundo resolvido subindo a arvore e compondo alfa em cada camada translucida. Os testes da Etapa 103 fazem exatamente isso e servem de modelo.
+
+Cuidado ao ler resultado de varredura: **valide os falsos positivos antes de "consertar"**. Nesta etapa, tres caixas de 16x16 pareciam alvos minusculos e vivem dentro de `<label>` de 222x32; e um swatch de 20px entre onze de 17px era o item ATIVO com `scale(1.15)`. Nenhum dos dois era defeito.
+
 ### `outline: none` sem substituto e um controle invisivel ao teclado (2026-08-20, Etapa 102)
 
 `.vtt-tb-btn, .vtt-layer-btn` zeravam o outline na regra base para o clique de mouse nao deixar anel — e levaram o teclado junto. Eram a barra de ferramentas e as camadas: a navegacao principal da Mesa ficava sem nenhum sinal de foco.

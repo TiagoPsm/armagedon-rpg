@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-20 14:33:14 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-20 14:56:33 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,16 +13,25 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `7970331 2026-08-20 feat(mesa): mapa so pela pasta conectada e zoom ate 500% (Etapas 100-101)`
+- Ultimo commit: `92b123a 2026-08-20 fix(mesa): foco de teclado visivel na barra e nas camadas (Etapa 102)`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
 M  VISUAL_RULES.md
+M  css/mesa-inspector.css
+M  css/mesa-map.css
+M  css/mesa-roster.css
 M  css/mesa.css
+M  css/tokens.css
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+M  echos.html
+M  ficha.html
+M  index.html
 M  mesa.html
+M  regras.html
+M  sugestoes.html
 M  tests/mesa-audit.spec.cjs
 ```
 
@@ -37,9 +46,18 @@ M  tests/mesa-audit.spec.cjs
 ```text
 DEV_STATUS.md
 VISUAL_RULES.md
+css/mesa-inspector.css
+css/mesa-map.css
+css/mesa-roster.css
 css/mesa.css
+css/tokens.css
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+echos.html
+ficha.html
+index.html
 mesa.html
+regras.html
+sugestoes.html
 tests/mesa-audit.spec.cjs
 ```
 

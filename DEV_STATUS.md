@@ -40,7 +40,66 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-20 — Etapa 102: foco de teclado visivel na Mesa)
+## Ultima Etapa Concluida (2026-08-20 — Etapa 103: contraste do texto pequeno)
+
+Pedido do Tiago: verificar contraste do texto pequeno e alvos de toque; depois, clarear os rotulos da barra.
+
+### A medicao
+
+**85** textos com menos de 14px na Mesa, **29 reprovando** WCAG AA (4,5:1). O calculo e o do WCAG — luminancia relativa, fundo resolvido subindo a arvore e compondo alfa — e nao comparacao de strings de cor: foi assim que o rotulo do zoom apareceu, com a cor certa mas alfa 0.7 diluindo.
+
+Duas causas distintas:
+
+| Causa | Contraste | Onde |
+|---|---|---|
+| `--text-faint` (#3a382f) pintando CONTEUDO | **1,74:1** | estados vazios, rotulo de secao, banner de reconexao (inclusive um BOTAO) |
+| `--accent` (#a83028) como TEXTO | ~3,0:1 | kickers, selos de papel, rotulo do zoom |
+| rotulos da barra em alfa 0.38 | 3,3:1 | MESTRE, MAPA, ESCAL., INIC., DADOS (8px) |
+
+O primeiro nao era escolha de cor e sim **uso errado de token**: `tokens.css` documenta `--text-faint` como "placeholder, desabilitado". Corrigidos os 12 usos de conteudo para `--text-soft`; os 3 que sao mesmo placeholder/decorativo ficaram — e o proposito do token.
+
+### `--accent-text` (novo)
+
+`--accent: #a83028` da 3,0:1 sobre o fundo da Mesa: serve para preenchimento e borda, nao para ser lido. `--accent-text: #c97a70` da **6,5:1** medido e mantem a familia carmesim. A Etapa 99 ja tinha chegado neste valor a mao no painel do mapa — agora tem nome e um lugar so, e aquele valor solto foi consolidado no token.
+
+Regra registrada: `--accent` preenche e contorna; `--accent-text` quando o carmesim precisa ser lido.
+
+### Rotulos da barra (decisao do Tiago)
+
+Alfa 0.38 → **0.55**: de 3,3:1 para **5,98:1**. Mexeu-se no alfa e nao numa cor nova porque `currentColor` alimenta tambem os icones, que sobem junto. A hierarquia continua de pe: repouso 0.55, hover 0.78, ativo quase branco.
+
+### Resultado
+
+**29 → 10 reprovados.** O grupo de 1,74:1 desapareceu inteiro. Os 10 restantes, com o motivo de cada um ficar:
+
+- **6 sao `.mini-btn` a 4,497:1** — um fio abaixo do limiar de 4,5.
+- **2 estao no cabecalho do site** (`.nav-link` ativo e o `small` "Mesa virtual"), compartilhado pelas seis paginas: fora do escopo da Mesa, e mexer ali afeta o site inteiro.
+- **2 na Mesa** (`↻` do reajuste de escala, "Limpar tudo" do pop-up de marcadores) — ficaram para nao ampliar a etapa sem pedido.
+
+### Alvos de toque — verificado, com dois falsos positivos
+
+Dos 58 controles, 17 apareciam abaixo de 24px. Investigados:
+
+- **Falso positivo**: as tres caixas de 16x16 (grade, encaixe, nevoa) vivem dentro de `<label>` com alvo efetivo de **222x32**. Nao sao problema.
+- **Reais**: botoes de zoom 22x22, slider com 4px de largura agarravel, abas do roster 20px, `.mini-btn` 21px.
+
+**Nada foi alterado aqui**: subir esses alvos muda a densidade da barra lateral e varios usam `.btn-small`, compartilhado com paginas que ainda nao migraram para a escala. Fica como decisao do Tiago, ao lado do teto de tamanho do token.
+
+### Verificacao
+
+Quatro testes novos calculam contraste real. Rodados contra o alfa antigo (0.38): o da barra falhou com "rotulo da barra abaixo do minimo AA".
+
+Bateria completa verde: `test:mesa:audit` (**205**), `test:mesa` (5), `test:mesa:scenemap` (6), `test:mesa:scenes` (22), `test:mesa:permissoes` (15), `test:mesa:tokens` (10), `test:ficha` (32), `test:controles` (6), `perf:mesa` (1), `check:js` (47), `audit:static`, `audit:pendencias`.
+
+Cache-bust `2026-08-20-contraste-1` nos css da Mesa e `2026-08-20-contraste-2` no `mesa.css`; `tokens.css` foi bumpado nas **seis** paginas, que o carregam. **Sem deploy**: e tudo cliente.
+
+### Arquivos alterados
+
+- `css/tokens.css` (`--accent-text`), `css/mesa.css`, `css/mesa-map.css`, `css/mesa-roster.css`, `css/mesa-inspector.css`
+- `mesa.html` + as outras cinco paginas (cache-bust do tokens.css)
+- `tests/mesa-audit.spec.cjs` (bloco novo, 4 testes), `DEV_STATUS.md`, `VISUAL_RULES.md`
+
+## Etapa Anterior (2026-08-20 — Etapa 102: foco de teclado visivel na Mesa)
 
 Pedido do Tiago: "vamos continuar polindo a mesa" — sem alvo definido, entao a etapa comecou por MEDIR em vez de chutar.
 

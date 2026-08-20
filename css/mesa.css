@@ -81,7 +81,8 @@ html {
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--accent);
+  /* Etapa 103: --accent dava 3,06:1 em 9,6px. Ver tokens.css. */
+  color: var(--accent-text);
   line-height: 1;
 }
 
@@ -110,7 +111,13 @@ html {
   background: transparent;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
-  color: rgba(255, 248, 236, 0.38);
+  /* Etapa 103: era alfa 0.38 — 3,3:1 medido nos rotulos de 8px (MESTRE,
+     MAPA, ESCAL., INIC., DADOS), abaixo dos 4,5:1 do WCAG AA. Sao os nomes
+     da navegacao principal; ficar discreto nao pode custar ler.
+     O alfa (e nao uma cor nova) porque `currentColor` alimenta tambem os
+     icones, que sobem junto. A hierarquia continua: repouso aqui, 0.78 no
+     hover e quase branco no ativo. */
+  color: rgba(255, 248, 236, 0.55);
   outline: none;
   overflow: hidden;
 }
@@ -399,7 +406,9 @@ html {
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.04em;
-  color: rgba(210, 130, 120, 0.7);
+  /* Etapa 103: o alfa 0.7 diluia a cor contra o fundo do HUD e derrubava a
+     leitura para 3,8:1 em corpo de 9px. Opaco, no token de texto carmesim. */
+  color: var(--accent-text);
   line-height: 1;
   margin-bottom: 2px;
   min-width: 22px;
@@ -754,7 +763,8 @@ html {
 }
 
 .vtt-meta-chip-accent strong {
-  color: var(--accent);
+  /* Etapa 103: --accent dava 3,04:1 em 11,2px. Ver tokens.css. */
+  color: var(--accent-text);
 }
 
 /* Blocos de conteúdo na sidebar.
@@ -790,7 +800,9 @@ html {
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent);
+  /* Etapa 103: era --accent (#a83028) — 3,0:1 medido, em corpo de 9,3px.
+     --accent-text da 6,5:1 e continua carmesim. Ver tokens.css. */
+  color: var(--accent-text);
   margin: 0;
 }
 
@@ -895,13 +907,13 @@ html {
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-soft);
 }
 
 .token-inspector-empty p {
   font-family: var(--font-body);
   font-size: var(--fs-xs);
-  color: var(--text-faint);
+  color: var(--text-soft);
   max-width: 24ch;
   line-height: 1.5;
 }

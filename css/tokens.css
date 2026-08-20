@@ -20,6 +20,16 @@
   --accent-deep: #3a0a08;
   --accent-glow: rgba(168, 48, 40, 0.22);
 
+  /* Carmesim para TEXTO (2026-08-20, Etapa 103).
+     `--accent` (#a83028) sobre o fundo quase preto da Mesa da **3,0:1** —
+     abaixo dos 4,5:1 que o WCAG AA pede para texto pequeno, e ele estava
+     sendo usado justamente nos rotulos de 9,3px (kickers, selos de papel).
+     Este tom da **6,5:1** medido, mantendo a familia carmesim.
+     Regra: `--accent` para PREENCHIMENTO e BORDA; `--accent-text` quando o
+     carmesim precisa ser lido. A Etapa 99 ja tinha chegado neste mesmo
+     valor a mao no painel do mapa — agora ele tem nome e um lugar so. */
+  --accent-text: #c97a70;
+
   /* ── BORDAS ─────────────────────────────────────────────── */
   --border:        rgba(212, 204, 186, 0.11);  /* +3% — compensa remoção do noise */
   --border-strong: rgba(212, 204, 186, 0.19);  /* +4% */

@@ -207,7 +207,7 @@
   text-transform: uppercase;
   /* Carmesim claro em vez de --text-soft (#8a8272, um bege apagado): o rotulo
      de secao passa a marcar o bloco em vez de sumir no fundo. */
-  color: #c97a70;
+  color: var(--accent-text);
 }
 
 .mesa-map-transform-row {
@@ -362,7 +362,7 @@
 /* A tecla citada no texto (Alt) marcada em carmesim: e a unica coisa
    acionavel dentro da frase. */
 .mesa-map-settings-hint strong {
-  color: #c97a70;
+  color: var(--accent-text);
   font-weight: var(--fw-semibold);
 }
 
@@ -473,13 +473,13 @@
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-faint, rgba(255, 248, 236, 0.18));
+  color: var(--text-soft));
 }
 
 .map-lib-empty p {
   font-family: var(--font-body, "Crimson Text", serif);
   font-size: 0.82rem;
-  color: var(--text-faint, rgba(255, 248, 236, 0.18));
+  color: var(--text-soft));
   max-width: 22ch;
   line-height: 1.45;
 }
@@ -641,7 +641,7 @@
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-faint, rgba(255, 248, 236, 0.22));
+  color: var(--text-soft));
   padding: 0 0 0.3rem 0;
   margin: 0;
 }
@@ -683,7 +683,7 @@
 .map-lib-connect-hint {
   font-family: var(--font-body, "Crimson Text", serif);
   font-size: 0.72rem;
-  color: var(--text-faint, rgba(255, 248, 236, 0.22));
+  color: var(--text-soft));
   line-height: 1.4;
   max-width: 22ch;
   margin: 0;
@@ -864,7 +864,7 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  color: var(--text-faint, rgba(255, 248, 236, 0.5));
+  color: var(--text-soft));
 }
 
 .map-lib-reconnect-name {
@@ -882,7 +882,7 @@
 .map-lib-reconnect-hint {
   font-family: var(--font-body, "Crimson Text", serif);
   font-size: 0.72rem;
-  color: var(--text-faint, rgba(255, 248, 236, 0.32));
+  color: var(--text-soft));
   line-height: 1.4;
   max-width: 24ch;
   margin: 0;
@@ -894,7 +894,7 @@
   cursor: pointer;
   font-family: var(--font-body, "Crimson Text", serif);
   font-size: 0.66rem;
-  color: var(--text-faint, rgba(255, 248, 236, 0.28));
+  color: var(--text-soft));
   text-decoration: underline;
   text-underline-offset: 2px;
   padding: 0;
@@ -903,7 +903,7 @@
 }
 
 .map-lib-reconnect-dismiss:hover {
-  color: var(--text-faint, rgba(255, 248, 236, 0.55));
+  color: var(--text));
 }
 
 /* ── TOKEN STYLE PICKER (settings panel) ────────────────────── */
