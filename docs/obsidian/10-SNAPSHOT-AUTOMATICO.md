@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-19 14:00:06 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-19 23:07:35 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,59 +13,55 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `c0d1fbd 2026-08-19 style(mesa): pop-up de marcadores proporcional ao inspetor (Etapa 95)`
+- Ultimo commit: `13c68c0 2026-08-19 feat(mesa): pastas de cena, um nivel (Etapa 96)`
 
 ### Alteracoes Locais
 
 ```text
  M .claude/settings.local.json
 M  DEV_STATUS.md
-M  SYSTEM_RULES.md
+ M VISUAL_RULES.md
 M  cloudflare/README.md
-M  cloudflare/src/index.js
-M  cloudflare/src/mesa.js
-M  css/mesa-scenes.css
-M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  echos.html
-M  ficha.html
-M  index.html
-M  js/api.js
-M  js/mesa-scenes.js
-M  mesa.html
-M  regras.html
-M  sugestoes.html
-M  tests/mesa-audit.spec.cjs
-M  tests/mesa-scenes.spec.cjs
-M  tools/build-pages.cjs
+ M css/mesa-inspector.css
+ M css/mesa-scenes.css
+ M css/mesa-stage.css
+ M css/tokens.css
+ M docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+ M echos.html
+ M ficha.html
+ M index.html
+ M mesa.html
+ M regras.html
+ M sugestoes.html
+ M tests/mesa-scenes.spec.cjs
+ M tools/build-pages.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
 
 ```text
 .claude/settings.local.json
+VISUAL_RULES.md
+css/mesa-inspector.css
+css/mesa-scenes.css
+css/mesa-stage.css
+css/tokens.css
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+echos.html
+ficha.html
+index.html
+mesa.html
+regras.html
+sugestoes.html
+tests/mesa-scenes.spec.cjs
+tools/build-pages.cjs
 ```
 
 ### Arquivos Em Stage
 
 ```text
 DEV_STATUS.md
-SYSTEM_RULES.md
 cloudflare/README.md
-cloudflare/src/index.js
-cloudflare/src/mesa.js
-css/mesa-scenes.css
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-echos.html
-ficha.html
-index.html
-js/api.js
-js/mesa-scenes.js
-mesa.html
-regras.html
-sugestoes.html
-tests/mesa-audit.spec.cjs
-tests/mesa-scenes.spec.cjs
-tools/build-pages.cjs
 ```
 
 ## Paginas Principais

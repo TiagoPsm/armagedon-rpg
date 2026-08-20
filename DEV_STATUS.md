@@ -10,9 +10,6 @@ Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencia
 
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
 
-- **[Tiago]** Teto de tamanho do token com a grade ligada: o token para por volta de 800% por causa do `_gridMaxCells` (metade do menor lado do mapa). Nao e bug — e decisao de regra de jogo, e esta esperando voce. — aberta em 2026-07-31 (Etapa 71)
-- **[Tiago]** Deploy do Worker para as pastas de cena: as rotas de `/api/mesa/scene-folders` e `/api/mesa/scenes/:id/folder` (Etapa 96) so existem depois de `npx wrangler deploy --config cloudflare/wrangler.toml`. Sem o deploy a barra de pastas aparece, mas criar pasta devolve erro. Dry-run ja conferido. — aberta em 2026-08-19 (Etapa 96)
-- **[Tiago]** Deploy do Worker para os cartoes de cena: `listMesaScenes` passou a devolver `mapUrl`/`tokenCount` (Etapa 89) e isso so vale depois de `npx wrangler deploy --config cloudflare/wrangler.toml`. Sem o deploy a gaveta funciona, mas todo cartao mostra o simbolo neutro e "0 tokens". Dry-run ja conferido. — aberta em 2026-08-18 (Etapa 89)
 - **[Tiago]** Credenciais do smoke em producao: `npm run test:mesa:online` precisa de `ARMAGEDON_SITE_URL`, `ARMAGEDON_API_BASE_URL` e usuario/senha de mestre e jogador no ambiente (mais `ARMAGEDON_ONLINE_RELAY_PROBE=1` para a sonda de realtime). Sem elas o spec se pula sozinho e nunca exercitamos producao de verdade. **Desde 2026-08-18 tem mais um teste esperando nessa fila**: o cenario de selecao da Etapa 88 (clique fora do mestre com jogador conectado, contra o Worker e o DO reais). — aberta em 2026-08-16 (conferencia da Etapa 81)
 
 ## Regra Obrigatoria de Documentacao
@@ -43,7 +40,59 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-19 — Etapa 96: pastas de cena)
+## Etapa Concluida (2026-08-19 — deploy das pastas/cartoes de cena + decisao do teto de token)
+
+- **Deploy**: `npx wrangler deploy --config cloudflare/wrangler.toml` publicado com version ID `81f01c5f-2fde-42da-bf52-0f8d10407c7f` (ver `cloudflare/README.md`). Leva ao ar as rotas de pastas de cena (Etapa 96) e o `mapUrl`/`tokenCount` de `listMesaScenes` (Etapa 89), ambos codificados mas presos atras de deploy. Dry-run limpo antes.
+- **Decisao do Tiago**: o teto de tamanho do token com a grade ligada (~800%, por causa do `_gridMaxCells`) fica como esta — nao e bug, e a regra de jogo confirmada. Pendencia fechada sem mudanca de codigo.
+- Fecha as tres pendencias registradas em 2026-07-31/2026-08-18/2026-08-19.
+
+## Ultima Etapa Concluida (2026-08-19 — Etapa 97: escala de controle)
+
+Pedido do Tiago: "deixar os botoes maiores e simetricos, com um padrao estabelecido".
+
+### O que a medicao mostrou
+
+Nao era so tamanho — era falta de padrao. So entre a gaveta de cenas e o inspetor conviviam **sete alturas** (21, 26, 27, 29, 30, 32 e 36px) e **seis tamanhos de fonte** (9,6 / 11 / 12 / 12,5 / 14,4 / 16px).
+
+O caso mais visivel: na barra de pastas, "Nova pasta" media **21px** ao lado de chips de **29px**, os dois na mesma linha. E o mesmo `.mini-btn` media 26px no inspetor e 21px na gaveta — porque `css/mesa-roster.css` sobrepoe o componente global.
+
+### A escala
+
+Fechada em tres, definida em `css/tokens.css`:
+
+| token | valor | uso |
+|---|---|---|
+| `--control-sm` | 28px | acao dentro de cartao, contexto denso |
+| `--control-md` | **32px** | PADRAO: botao de painel, chip, segmentado, stepper |
+| `--control-lg` | 40px | destaque: icone que abre painel, fechar |
+
+Mais `--fs-control: 0.7rem` (11,2px) para rotulo de controle — a Mesa vinha usando 9,6px dentro de botoes de 32px, e o texto ficava perdido no alvo.
+
+Escolha do 32 como padrao: o piso de acessibilidade para alvo de clique e 24px (WCAG 2.2 AA), entao 28 ja passa com folga; 32 e confortavel no mouse e ainda deixa **dois botoes lado a lado** na coluna de 235px do inspetor sem espremer o texto — o que 40px nao deixaria.
+
+### Onde foi aplicada
+
+Gaveta de cenas e inspetor, como combinado. As outras cinco paginas migram em etapa propria, com revisao tela a tela — os tokens ja estao definidos para elas adotarem.
+
+Depois da mudanca: **tres alturas** (28/32/40) e **um** tamanho de rotulo (11,2px). O que sobra fora disso e glifo de icone (o `−`/`+` do stepper em 14,4px e o `x` de fechar em 16px), nao rotulo.
+
+### O pop-up entrou junto — e quem avisou foi um teste
+
+O painel de marcadores ficou para tras (26px/9,6px) quando o inspetor subiu, e **o teste da Etapa 95 reprovou**: ele compara o "Limpar tudo" com os botoes do inspetor justamente para os dois nao divergirem. Corrigi o CSS do pop-up, nao o teste.
+
+### Verificacao
+
+Quatro testes novos em `tests/mesa-scenes.spec.cjs` (bloco "Escala de controle"): toda altura pertence a escala; nenhum controle abaixo de 28px; um unico tamanho de rotulo; e a barra de pastas sem misturar alturas na mesma linha — o caso que originou a etapa.
+
+Vermelho antes do verde: devolvendo os 21px aos botoes da barra de pastas, **os quatro reprovam**.
+
+Suites: `test:mesa:scenes` 18 -> 22, `test:mesa:audit` 186, mais `check:js`, `audit:static`, `audit:pendencias` e `build:pages`.
+
+### Arquivos
+
+`css/tokens.css`, `css/mesa-inspector.css`, `css/mesa-scenes.css`, `css/mesa-stage.css`, `tests/mesa-scenes.spec.cjs`, `mesa.html` (cache-busting), `tools/build-pages.cjs`.
+
+## Etapa Anterior (2026-08-19 — Etapa 96: pastas de cena)
 
 Segundo item do redesenho do sistema de cenas (o primeiro foi a gaveta, Etapa 89). Um nivel so, como combinado com o Tiago — arvore recursiva foi descartada de proposito: exige navegacao por teclado recursiva e abre casos chatos (mover pasta para dentro dela mesma, profundidade infinita).
 
