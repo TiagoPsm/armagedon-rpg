@@ -40,7 +40,50 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-20 — Etapa 104: os dois ultimos da Mesa)
+## Ultima Etapa Concluida (2026-08-20 — Etapa 105: token medido contra a superficie)
+
+Pedido do Tiago: fechar tambem os seis `.mini-btn` que estavam a 4,497:1.
+
+### O que os 0,003 estavam dizendo
+
+Parecia arredondamento; era diagnostico. Os seis nao eram seis casos — eram **um**: `--text-soft` foi calibrado contra o fundo da PAGINA e nao tem folga sobre superficie de acento.
+
+| Fundo | `--text-soft` da |
+|---|---|
+| preto (pagina) | 5,52:1 |
+| `--bg-card` (linha normal do roster) | ~5,4:1 |
+| **`--accent-deep`** (linha `[data-state="on-stage"]`) | **4,497:1** |
+
+Ou seja: os seis reprovados eram exatamente as linhas cujo token **ja esta em cena** — o estado destacado, que troca o fundo para `--accent-deep`. Linha normal passava.
+
+### A correcao
+
+Na superficie mais forte o texto sobe junto, em `--accent-text` — carmesim legivel, da mesma familia do fundo: **5,30:1** medido. O hover continua indo para `--text` (12,2:1), entao a resposta ao mouse nao se perdeu.
+
+O hover foi escrito explicitamente de proposito: `.roster-entry[data-state="on-stage"] .mini-btn` tem a MESMA especificidade de `.mini-btn:hover:not(:disabled)` (0,3,0 nas duas). Sem a linha extra, quem vence no hover passaria a depender da ordem dos arquivos — o tipo de acidente que so aparece meses depois.
+
+Nao mexi em `--text-soft` global: o token esta certo para o uso dele, e clarea-lo mudaria texto secundario nas seis paginas para resolver um caso de superficie.
+
+### Onde o contraste da Mesa fechou
+
+**8 → 2 reprovados, e os 2 sao do cabecalho do site** (`.nav-link` ativo e o `small` "Mesa virtual"), compartilhado pelas seis paginas.
+
+**Dentro da Mesa nao ha mais nenhum texto pequeno abaixo do minimo AA.** O placar da varredura, do inicio ao fim: **29 → 0** na Mesa.
+
+### Verificacao
+
+O teste novo pula sozinho se a cena semeada nao tiver linha em cena — melhor pular do que passar por vacuidade. Rodado com `--text-soft` no lugar: falhou com "botao da linha em cena abaixo do minimo AA".
+
+Bateria completa verde: `test:mesa:audit` (**207**), `test:mesa` (5), `test:mesa:scenemap` (6), `test:mesa:scenes` (22), `test:mesa:permissoes` (15), `test:mesa:tokens` (10), `test:ficha` (32), `test:controles` (6), `perf:mesa` (1), `check:js` (47), `audit:static`, `audit:pendencias`.
+
+Cache-bust `2026-08-20-contraste-4` em `css/mesa-roster.css`. **Sem deploy**: e tudo cliente.
+
+### Arquivos alterados
+
+- `css/mesa-roster.css`, `mesa.html` (cache-bust)
+- `tests/mesa-audit.spec.cjs` (1 teste novo), `DEV_STATUS.md`, `VISUAL_RULES.md`
+
+## Etapa Anterior (2026-08-20 — Etapa 104: os dois ultimos da Mesa)
 
 Pedido do Tiago: corrigir tambem os dois casos de contraste que a Etapa 103 deixou dentro da Mesa.
 

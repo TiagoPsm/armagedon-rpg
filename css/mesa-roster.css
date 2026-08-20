@@ -177,6 +177,24 @@
   background: var(--accent-deep);
 }
 
+/* Etapa 105: --text-soft foi calibrado contra o fundo da PAGINA (5,5:1
+   no preto, 5,4:1 no --bg-card das linhas normais). Nesta linha o fundo
+   e --accent-deep, e ele cai para 4,497:1 — um fio abaixo do minimo AA.
+   Nao e caso isolado: e --text-soft sem folga sobre superficie de acento.
+
+   A superficie ficou mais forte, entao o texto sobe junto — em carmesim
+   legivel, que e da mesma familia do fundo (5,30:1 medido).
+   O hover vem escrito de proposito: as duas regras tem a MESMA
+   especificidade da regra generica `.mini-btn:hover`, e sem esta linha o
+   vencedor passaria a depender da ordem dos arquivos. */
+.roster-entry[data-state="on-stage"] .mini-btn {
+  color: var(--accent-text);
+}
+
+.roster-entry[data-state="on-stage"] .mini-btn:hover:not(:disabled) {
+  color: var(--text);
+}
+
 .roster-entry-name {
   flex: 1;
   min-width: 0;

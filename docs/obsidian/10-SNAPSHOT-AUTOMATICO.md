@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-20 15:04:17 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-20 15:13:40 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,15 +13,14 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `e362f11 2026-08-20 fix(mesa): contraste do texto pequeno e novo token --accent-text (Etapa 103)`
+- Ultimo commit: `c0c7b4d 2026-08-20 fix(mesa): contraste do reset de escala e do "Limpar tudo" (Etapa 104)`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
 M  VISUAL_RULES.md
-M  css/mesa-drawing.css
-M  css/mesa-map.css
+M  css/mesa-roster.css
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
@@ -38,8 +37,7 @@ M  tests/mesa-audit.spec.cjs
 ```text
 DEV_STATUS.md
 VISUAL_RULES.md
-css/mesa-drawing.css
-css/mesa-map.css
+css/mesa-roster.css
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
 mesa.html
 tests/mesa-audit.spec.cjs

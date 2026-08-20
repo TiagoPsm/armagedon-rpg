@@ -6827,4 +6827,19 @@ test.describe("Contraste de texto pequeno (Etapa 103)", () => {
     const limpar = await contraste(page, ".draw-flyout-item--danger");
     if (limpar !== null) expect(limpar, "'Limpar tudo' ilegivel").toBeGreaterThanOrEqual(AA);
   });
+
+  /* Etapa 105: o caso mede o token contra a SUPERFICIE, nao contra a
+     pagina. --text-soft passa no preto e no --bg-card das linhas normais,
+     e cai para 4,497:1 na linha em cena, cujo fundo e --accent-deep. */
+  test("os botoes da linha JA EM CENA sao legiveis (Etapa 105)", async ({ page }) => {
+    await abrirMesa(page);
+    const emCena = await page.evaluate(() =>
+      document.querySelectorAll('.roster-entry[data-state="on-stage"] .mini-btn').length);
+    // Se a cena semeada nao tiver linha em cena, o teste nao tem o que
+    // provar — melhor pular do que passar por vacuidade.
+    test.skip(emCena === 0, "nenhuma linha em estado on-stage nesta cena");
+
+    const r = await contraste(page, '.roster-entry[data-state="on-stage"] .mini-btn');
+    expect(r, "botao da linha em cena abaixo do minimo AA").toBeGreaterThanOrEqual(AA);
+  });
 });

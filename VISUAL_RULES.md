@@ -71,6 +71,14 @@ Alvo de clique e a **linha inteira** (`min-height: var(--control-md)`), nao os 1
 
 `width: 248px` e o que destrava a regra da Etapa 94 ("controle de acao vai de borda a borda"). Sem largura o painel encolhe para o conteudo e um filho com `width: 100%` para no meio da coluna — o mesmo cuidado ja medido na Etapa 94.
 
+### Token de texto se mede contra a SUPERFICIE, nao contra a pagina (2026-08-20, Etapa 105)
+
+`--text-soft` foi calibrado contra o fundo da pagina: 5,52:1 no preto, ~5,4:1 no `--bg-card`. Sobre `--accent-deep` — o fundo da linha do roster cujo token ja esta em cena — ele cai para **4,497:1** e reprova.
+
+Regra: ao pintar texto sobre uma superficie elevada ou de acento, meca ali. "O token esta certo" nao e resposta — a razao depende do par, nao do token sozinho. Quando a superficie sobe de peso, o texto sobre ela sobe junto; aqui, `--text-soft` deu lugar a `--accent-text` (5,30:1), com o hover ainda em `--text`.
+
+**Cuidado de especificidade ao sobrescrever estado.** `.roster-entry[data-state="on-stage"] .mini-btn` empata em especificidade (0,3,0) com `.mini-btn:hover:not(:disabled)`. Empate resolve por ordem de arquivo — ou seja, o hover viraria refem da ordem dos `<link>`. Escreva o hover do caso especifico junto, sempre.
+
 ### Alfa e o jeito silencioso de reprovar contraste (2026-08-20, Etapa 104)
 
 Os quatro piores casos de contraste destas duas etapas tinham a cor CERTA e um alfa por cima: o rotulo do zoom (carmesim a 0.7), os rotulos da barra (0.38), o reset de escala (0.4) e "Limpar tudo" (0.65). Nenhum apareceria numa revisao que confere apenas "o token e o certo?".
