@@ -121,6 +121,35 @@ html {
   color: rgba(255, 248, 236, 0.78);
 }
 
+/* Etapa 102: o `outline: none` da base acima e INCONDICIONAL. Ele existe
+   para o clique de mouse nao deixar anel — e levou o teclado junto.
+
+   Medido com `:focus-visible` de fato ativo (o heuristico do navegador nao
+   liga com `el.focus()` de script, entao a primeira medicao dava falso
+   positivo e foi refeita): `.vtt-tb-btn` e `.vtt-layer-btn` nao mostravam
+   NADA ao receber foco, enquanto o resto da Mesa ao menos herdava o anel
+   padrao do navegador. Sao a barra de ferramentas e as camadas — a coluna
+   de navegacao principal da Mesa. Quem navega por teclado ficava sem saber
+   onde esta justamente na parte mais usada da tela.
+
+   Anel no padrao da casa (mesmo de `.mesa-transform-btn` e
+   `.inspector-seg-btn`), so no foco por teclado. `outline-offset` negativo
+   porque o botao ocupa a largura inteira de uma coluna de 60px: anel por
+   fora encostaria na borda da barra. */
+.vtt-tb-btn:focus-visible,
+.vtt-layer-btn:focus-visible {
+  outline: 2px solid rgba(214, 69, 80, 0.9);
+  outline-offset: -2px;
+}
+
+/* Zoom ja tinha anel, mas o PADRAO DO NAVEGADOR: fino, claro e alheio ao
+   tema escuro. Passa a usar o mesmo anel dos demais para o foco ter uma
+   aparencia so em toda a Mesa. */
+.vtt-zoom-btn:focus-visible {
+  outline: 2px solid rgba(214, 69, 80, 0.9);
+  outline-offset: 1px;
+}
+
 /* Botao de barra ainda nao armado (modulo em boot): a UI nao pode parecer
  * clicavel enquanto o clique nao faz nada. Vale para qualquer .vtt-tb-btn
  * que nasca `disabled` — hoje o do desenho. */

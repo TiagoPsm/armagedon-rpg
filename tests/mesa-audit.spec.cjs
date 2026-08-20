@@ -6645,3 +6645,80 @@ test.describe("Zoom do palco: teto e desvio da barra (Etapa 101)", () => {
     expect(r.escapou, "barra de zoom saiu do palco pela esquerda").toBe(false);
   });
 });
+
+/* ============================================================
+ * Etapa 102 — quem navega por teclado nao via onde estava.
+ *
+ * `.vtt-tb-btn, .vtt-layer-btn` traziam `outline: none` INCONDICIONAL na
+ * regra base — posto para o clique de mouse nao deixar anel, levou o
+ * teclado junto. Sao a barra de ferramentas e as camadas: a coluna de
+ * navegacao principal da Mesa. O resto dos controles ao menos herdava o
+ * anel padrao do navegador; esses nao mostravam nada.
+ *
+ * Nota de metodo: o heuristico de `:focus-visible` so liga apos um evento
+ * de teclado CONFIAVEL. `el.focus()` de script, sozinho, nao casa — foi o
+ * que deu falso positivo na primeira medicao manual. Por isso cada teste
+ * pressiona Tab de verdade (`page.keyboard.press`) antes de focar.
+ * ============================================================ */
+test.describe("Foco por teclado e visivel na Mesa (Etapa 102)", () => {
+  async function abrirMesa(page) {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.keyboard.press("Tab");   // liga a modalidade de teclado
+  }
+
+  /** Estilo do anel no momento do foco (getComputedStyle e objeto VIVO:
+   *  os valores sao copiados para string antes de qualquer blur). */
+  function anelDe(page, id) {
+    return page.evaluate((alvo) => {
+      const el = document.getElementById(alvo);
+      if (!el) return null;
+      el.focus();
+      const cs = getComputedStyle(el);
+      return {
+        casa:    el.matches(":focus-visible"),
+        estilo:  String(cs.outlineStyle),
+        largura: String(cs.outlineWidth),
+      };
+    }, id);
+  }
+
+  const NAVEGACAO = ["mesaSelectToolBtn", "mesaMoveToolBtn", "mesaInitiativeBtn"];
+
+  for (const id of NAVEGACAO) {
+    test(`${id} mostra anel ao receber foco por teclado`, async ({ page }) => {
+      await abrirMesa(page);
+      const anel = await anelDe(page, id);
+      expect(anel.casa, "o teste nao conseguiu ativar :focus-visible").toBe(true);
+      expect(anel.estilo, "controle sem anel de foco").not.toBe("none");
+      expect(parseFloat(anel.largura)).toBeGreaterThan(0);
+    });
+  }
+
+  test("os botoes de camada tambem mostram anel", async ({ page }) => {
+    await abrirMesa(page);
+    await page.evaluate(() => {
+      ["mesaLayerDmBtn", "mesaLayerMapBtn"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.hidden = false;
+      });
+    });
+    for (const id of ["mesaLayerDmBtn", "mesaLayerMapBtn"]) {
+      const anel = await anelDe(page, id);
+      expect(anel.estilo, `${id} sem anel de foco`).not.toBe("none");
+    }
+  });
+
+  test("o anel NAO aparece em foco de mouse", async ({ page }) => {
+    await abrirMesa(page);
+    // Clicar deve mudar de ferramenta sem deixar anel — era a razao de
+    // existir o `outline: none`, e ela continua valendo.
+    await page.locator("#mesaMoveToolBtn").click();
+    const estilo = await page.evaluate(() => {
+      const el = document.getElementById("mesaMoveToolBtn");
+      return { foco: document.activeElement === el, estilo: String(getComputedStyle(el).outlineStyle) };
+    });
+    if (estilo.foco) expect(estilo.estilo, "anel vazando no clique de mouse").toBe("none");
+  });
+});

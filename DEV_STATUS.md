@@ -40,7 +40,43 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-20 — Etapa 101: teto de zoom maior, barra sai da frente)
+## Ultima Etapa Concluida (2026-08-20 — Etapa 102: foco de teclado visivel na Mesa)
+
+Pedido do Tiago: "vamos continuar polindo a mesa" — sem alvo definido, entao a etapa comecou por MEDIR em vez de chutar.
+
+### O que a varredura descartou
+
+- **Alturas de controle**: 13 alturas distintas na Mesa, mas so **um** container com alturas misturadas entre irmaos — a paleta de cores do desenho (um swatch de 20px entre onze de 17px). Investigado: e o swatch ATIVO, com `transform: scale(1.15)` proposital. Nao e defeito e nao foi mexido. O criterio "uma altura por secao" (Etapa 92) esta sendo cumprido.
+
+### O defeito real: foco de teclado
+
+`.vtt-tb-btn, .vtt-layer-btn` traziam **`outline: none` incondicional** na regra base. Foi posto para o clique de mouse nao deixar anel — e levou o teclado junto. Sao a barra de ferramentas e os botoes de camada: a coluna de navegacao principal da Mesa. Quem navega por teclado ficava sem saber onde esta exatamente na parte mais usada da tela.
+
+O resto da Mesa nao tinha o problema: herdava o anel padrao do navegador. E `:focus-visible` **ja era padrao do projeto** (`mesa-map.css`, `mesa-inspector.css`, `mesa-scenes.css`, `ficha.css`, `components.css`) — os controles mais usados eram a excecao, nao a regra.
+
+Corrigido com o anel da casa (2px carmesim), so no foco por teclado. `outline-offset` negativo nos botoes da barra porque eles ocupam a largura inteira de uma coluna de 60px. Os botoes de zoom, que ja tinham anel, passaram do padrao do navegador (fino e alheio ao tema escuro) para o mesmo anel — foco com uma aparencia so em toda a Mesa.
+
+### Duas medicoes erradas no caminho (registradas para nao repetir)
+
+1. **`el.focus()` de script nao casa com `:focus-visible`.** O heuristico do navegador so liga apos evento de teclado CONFIAVEL. A primeira medicao dava "nenhum controle tem anel", incluindo os que tem — falso positivo. Refeita, o quadro correto apareceu: so a barra e as camadas estavam sem.
+2. **`getComputedStyle` devolve objeto VIVO.** Ler `cs.outlineStyle` depois de `el.blur()` entrega o estado sem foco. A medicao passou a copiar para string antes de qualquer blur.
+
+Os testes carregam as duas licoes: pressionam `Tab` de verdade (`page.keyboard.press`) e copiam os valores no instante do foco.
+
+### Verificacao
+
+Cinco testes novos, rodados contra o CSS sem a regra: os tres da navegacao falharam com "controle sem anel de foco". Um deles cobra o outro lado — clicar com o mouse **nao** pode deixar anel, que era a razao de existir o `outline: none`.
+
+Bateria completa verde: `test:mesa:audit` (**201**), `test:mesa` (5), `test:mesa:scenemap` (6), `test:mesa:scenes` (22), `test:mesa:permissoes` (15), `test:mesa:tokens` (10), `test:ficha` (32), `test:controles` (6), `perf:mesa` (1), `check:js` (47), `audit:static`, `audit:pendencias`.
+
+Cache-bust `2026-08-20-foco-1` em `css/mesa.css`. **Sem deploy**: e tudo cliente.
+
+### Arquivos alterados
+
+- `css/mesa.css` (anel de foco), `mesa.html` (cache-bust)
+- `tests/mesa-audit.spec.cjs` (bloco novo, 5 testes), `DEV_STATUS.md`, `VISUAL_RULES.md`
+
+## Etapa Anterior (2026-08-20 — Etapa 101: teto de zoom maior, barra sai da frente)
 
 Pedido do Tiago: aumentar o zoom maximo dos mapas para todos e mover a barra de zoom para o lado quando as configuracoes abrirem.
 

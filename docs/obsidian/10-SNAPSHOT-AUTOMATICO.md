@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-20 01:31:24 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-20 14:33:14 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,21 +13,17 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `3ea9831 2026-08-20 feat(mesa): escala de controle, painel do mapa e paleta carmesim (Etapas 97-99)`
+- Ultimo commit: `7970331 2026-08-20 feat(mesa): mapa so pela pasta conectada e zoom ate 500% (Etapas 100-101)`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
-M  SYSTEM_RULES.md
 M  VISUAL_RULES.md
-M  css/mesa-map.css
 M  css/mesa.css
 M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-map.js
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
-M  tests/mesa-permissions.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -40,15 +36,11 @@ M  tests/mesa-permissions.spec.cjs
 
 ```text
 DEV_STATUS.md
-SYSTEM_RULES.md
 VISUAL_RULES.md
-css/mesa-map.css
 css/mesa.css
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/mesa-map.js
 mesa.html
 tests/mesa-audit.spec.cjs
-tests/mesa-permissions.spec.cjs
 ```
 
 ## Paginas Principais

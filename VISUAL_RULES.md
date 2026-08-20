@@ -71,6 +71,17 @@ Alvo de clique e a **linha inteira** (`min-height: var(--control-md)`), nao os 1
 
 `width: 248px` e o que destrava a regra da Etapa 94 ("controle de acao vai de borda a borda"). Sem largura o painel encolhe para o conteudo e um filho com `width: 100%` para no meio da coluna — o mesmo cuidado ja medido na Etapa 94.
 
+### `outline: none` sem substituto e um controle invisivel ao teclado (2026-08-20, Etapa 102)
+
+`.vtt-tb-btn, .vtt-layer-btn` zeravam o outline na regra base para o clique de mouse nao deixar anel — e levaram o teclado junto. Eram a barra de ferramentas e as camadas: a navegacao principal da Mesa ficava sem nenhum sinal de foco.
+
+Regra: `outline: none` **so** acompanhado de um `:focus-visible` que devolva um anel. Nunca sozinho. `:focus-visible` (e nao `:focus`) e o que preserva a intencao original — mouse nao ganha anel, teclado ganha. O padrao da casa e `outline: 2px solid rgba(214, 69, 80, 0.9)`, com offset negativo quando o controle ocupa a largura inteira de uma coluna estreita.
+
+**Como medir foco sem se enganar** — duas armadilhas, as duas encontradas nesta etapa:
+
+- **`el.focus()` de script nao casa com `:focus-visible`.** O heuristico do navegador so liga depois de um evento de teclado CONFIAVEL; evento sintetico (`dispatchEvent`) nao serve. Medir assim diz "nenhum controle tem anel", inclusive dos que tem. Em teste, use `page.keyboard.press("Tab")` antes de focar.
+- **`getComputedStyle` devolve objeto VIVO.** Ler `cs.outlineStyle` depois do `blur()` entrega o estado sem foco. Copie para string no instante do foco.
+
 ### Dois flutuantes no mesmo canto: um sai, nao empilha (2026-08-20, Etapa 101)
 
 Barra de zoom e painel de configuracoes moravam os dois em `right: var(--hud-inset)`, e a barra tem `z-index` maior — ela cobria a coluna direita do painel, inclusive o "+" do stepper. Empilhar por z-index nao resolve: o de baixo continua inalcancavel.
