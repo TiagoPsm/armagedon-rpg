@@ -324,9 +324,15 @@ html {
 
 .vtt-zoom-ctrl {
   position: absolute;
-  top: calc(var(--hud-inset) * 2 + 48px); /* abaixo do overlay TR (~72px) */
+  /* Etapa 101: era `calc(var(--hud-inset) * 2 + 48px)` com o comentario
+     "abaixo do overlay TR (~72px)" — o mesmo numero medido a mao que a
+     Etapa 98 tirou do painel. Sobrava 2px de folga da barra do canto, e
+     qualquer crescimento dos controles a fazia encostar. Agora deriva do
+     overlay, igual ao painel, e os dois comecam alinhados. */
+  top: calc(var(--hud-inset) + var(--hud-overlay-h) + var(--sp-2));
   right: var(--hud-inset);
   z-index: 40;
+  transition: right 0.16s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -338,6 +344,26 @@ html {
   border-radius: var(--hud-radius);
   padding: 8px 6px;
   user-select: none;
+}
+
+/* Etapa 101: com o painel de configuracoes aberto, a barra de zoom sai da
+   frente em vez de ficar por cima dele. Os dois moram em `right: --hud-inset`
+   e a barra tem z-index maior, entao ela tapava a coluna da direita do
+   painel — inclusive o "+" do stepper.
+
+   `:has()` no ancestral comum (#mesaPanelStage), e nao uma classe marcada no
+   clique: assim o deslocamento acompanha o estado REAL do painel, venha ele
+   de `toggleMapSettings()` ou de qualquer outro caminho que mexa no
+   `hidden`. Sem `:has()` no navegador, o pior caso e o comportamento de
+   hoje — sobreposicao —, nunca um layout quebrado. */
+#mesaPanelStage:has(#mesaMapTransform:not([hidden])) .vtt-zoom-ctrl {
+  right: calc(var(--hud-inset) + var(--map-panel-w) + var(--sp-2));
+}
+
+/* O deslocamento e movimento funcional (diz de onde a barra foi), mas quem
+   pediu menos animacao recebe o salto direto. */
+@media (prefers-reduced-motion: reduce) {
+  .vtt-zoom-ctrl { transition: none; }
 }
 
 .vtt-zoom-label {
@@ -471,6 +497,13 @@ html {
      gaveta aparecesse (ela nasce `hidden`, entao o erro so apareceria para
      o mestre com cena carregada). */
   --hud-overlay-h: calc(var(--control-lg) + 1rem + 2px);
+
+  /* Largura do painel de configuracoes do mapa (Etapa 101). Vive aqui, e nao
+     solta no mesa-map.css, porque DOIS lugares dependem dela: o painel, que
+     a usa como largura, e a barra de zoom, que se desloca por ela quando o
+     painel abre. Repetir o 248px nos dois era garantir que um dia mudassem
+     so um e a barra parasse no meio do painel. */
+  --map-panel-w: 248px;
 }
 
 .vtt-overlay {

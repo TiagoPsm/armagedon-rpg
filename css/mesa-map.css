@@ -76,15 +76,24 @@
   color: var(--text);
 }
 
-/* Botão de abrir mapa — aparece só para o mestre */
-#mesaMapOpenBtn {
-  display: none;              /* mostrado via JS para o mestre */
+/* Etapa 100: status transitorio do mapa (carregando / enviando) desenhado
+   como CAMADA sobre o rotulo, nunca escrito no `textContent`. E o que
+   permite `renderMesaMapLayer()` continuar sendo o unico dono do texto: o
+   status entra e sai sem apagar o nome do mapa, e os dois estados podem se
+   sobrepor em qualquer ordem. `font-size: 0` esconde o texto proprio e faz
+   o elemento medir pelo status, sem posicionamento absoluto. */
+.mesa-map-label[data-status] {
+  font-size: 0;
+  color: var(--text-soft);
 }
 
-.is-master #mesaMapOpenBtn,
-[data-role="master"] #mesaMapOpenBtn {
-  display: inline-flex;
+.mesa-map-label[data-status]::after {
+  content: attr(data-status);
+  font-size: var(--fs-xs);
 }
+
+/* Etapa 100: as regras de #mesaMapOpenBtn sairam junto com o botao "Abrir
+   mapa". O mapa da cena vem da pasta conectada ou da biblioteca salva. */
 
 /* Botão de limpar mapa */
 #mesaMapClearBtn {
@@ -150,7 +159,7 @@
   top: calc(var(--hud-inset) + var(--hud-overlay-h) + var(--sp-2));
   right: var(--hud-inset);
   z-index: 30;
-  width: 248px;
+  width: var(--map-panel-w);   /* Etapa 101: token — a barra de zoom se desloca por ele */
   display: flex;
   flex-direction: column;
   /* Etapa 99: 16px -> 12px. A separacao entre secoes passou a ser feita por

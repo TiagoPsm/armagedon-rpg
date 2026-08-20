@@ -40,7 +40,97 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-20 — Etapa 99: o painel do mapa fala carmesim)
+## Ultima Etapa Concluida (2026-08-20 — Etapa 101: teto de zoom maior, barra sai da frente)
+
+Pedido do Tiago: aumentar o zoom maximo dos mapas para todos e mover a barra de zoom para o lado quando as configuracoes abrirem.
+
+### Teto de zoom: 300% -> 500%
+
+`ZOOM_MAX` 3.0 -> 5.0 em `js/mesa-map.js`. Vale para mestre e jogador — o zoom do palco e global, nao tem versao por papel. Piso segue em 25%.
+
+**O numero tinha um gemeo.** O teto vive em DOIS lugares: a constante no JS e o `max` do `#mesaZoomSlider` (em porcentagem) no `mesa.html`. Mudar so um deixaria o botao "+" passando de um limite que a barra nao alcanca, sem nada no codigo reclamar. Os dois foram atualizados e ha teste cobrando a igualdade — tambem do piso.
+
+### A barra saindo da frente
+
+Barra de zoom e painel de configuracoes nasceram os dois em `right: var(--hud-inset)`, e a barra tem `z-index` 40 contra 30 do painel: ela ficava POR CIMA da coluna direita do painel, incluindo o "+" do stepper. Com o painel aberto a barra passa para `right: calc(--hud-inset + --map-panel-w + --sp-2)` = 268px.
+
+- **`--map-panel-w` (novo, `css/mesa.css`)**: a largura do painel virou token porque agora DOIS lugares dependem dela — o painel, que a usa como largura, e a barra, que se desloca por ela. Repetir 248px nos dois era garantir que um dia mudassem so um e a barra parasse no meio do painel.
+- **`:has()` no ancestral comum**, e nao uma classe marcada no clique: o desvio acompanha o estado REAL do painel, venha de `toggleMapSettings()` ou de qualquer outro caminho. Sem `:has()` no navegador, o pior caso e o comportamento de hoje (sobreposicao), nunca layout quebrado. O padrao ja era usado no projeto (`.mesa-stage-wrap:has(...)` em mesa-map.css).
+- **`top` da barra tambem saiu do numero magico**: era `calc(var(--hud-inset) * 2 + 48px)` com o comentario "abaixo do overlay TR (~72px)" — o mesmo defeito que a Etapa 98 tirou do painel, e sobrava só 2px de folga da barra do canto. Agora deriva de `--hud-overlay-h`, e barra e painel comecam alinhados em 78px.
+
+### O que o teste flagrou
+
+O desvio tem `transition: right 0.16s`, entao a primeira versao do teste (que media no mesmo instante da abertura) **falhou de verdade**: por ~160ms a barra ainda esta a caminho, sobre o painel. O teste passou a esperar o movimento terminar — o que se cobra e onde ela PARA, nao onde passa. Transicao desligada em `prefers-reduced-motion`.
+
+### Verificacao
+
+Medido no navegador: teto 500 e piso 25 batendo entre slider e JS; `right` 12px fechado e 268px aberto, sem sobreposicao; a 760px e a 375px a barra continua dentro do palco.
+
+O teste de sobreposicao foi rodado contra o CSS sem a regra: falhou (`true` onde se espera `false`). Os quatro passam com ela.
+
+Bateria completa verde: `test:mesa:audit` (**196**), `test:mesa` (5), `test:mesa:scenemap` (6), `test:mesa:scenes` (22), `test:mesa:permissoes` (15), `test:mesa:tokens` (10), `test:ficha` (32), `test:controles` (6), `perf:mesa` (1), `check:js` (47), `audit:static`, `audit:pendencias`. Console limpo.
+
+Cache-bust `2026-08-20-zoom-1` em `css/mesa.css`, `css/mesa-map.css` e `js/mesa-map.js`. **Sem deploy**: e tudo cliente.
+
+### Arquivos alterados
+
+- `js/mesa-map.js` (ZOOM_MAX), `mesa.html` (max do slider, cache-bust)
+- `css/mesa.css` (`--map-panel-w`, desvio da barra, `top` por token), `css/mesa-map.css` (largura por token)
+- `tests/mesa-audit.spec.cjs` (bloco novo, 4 testes), `DEV_STATUS.md`, `VISUAL_RULES.md`
+
+## Etapa Anterior (2026-08-20 — Etapa 100: mapa da cena so pela pasta conectada)
+
+Pedido do Tiago: tirar a funcao de abrir um mapa proprio avulso; o mestre aponta uma pasta (com subpastas) e escolhe dali o mapa da cena.
+
+### O que a investigacao mostrou
+
+A funcionalidade pedida **ja existia inteira**: `connectLocalFolder()` abre o seletor de pasta nativo, guarda o handle no IDB e `_scanDir()` varre a pasta escolhida e **todas as subpastas** recursivamente. O que sobrava era o caminho paralelo — o botao "Abrir mapa" (`openAndSetLocalMap()`), que punha na mesa um arquivo avulso de qualquer lugar do disco. Era esse que devia sair, e so ele.
+
+Registro para nao repetir a confusao: "pasta referenciada no projeto" **nao** era uma pasta versionada no repositorio (`assets/` so tem logo e video). Era a pasta local do mestre, conectada pela propria interface.
+
+### O que saiu
+
+- `mesa.html`: botao `#mesaMapOpenBtn`.
+- `js/mesa-map.js`: `openAndSetLocalMap()`.
+- `css/mesa-map.css`: regras de `#mesaMapOpenBtn`.
+
+`pickLocalMapFile()` e `pickLocalMapFileFallback()` **ficaram** — `importMapToLibrary()` ainda usa as duas. Apagar por parecerem orfas quebraria o "Importar imagem".
+
+### O buraco que a remocao abria
+
+`setMesaMapLoading()` so escrevia no botao removido, **mas `setActiveMapFromLibrary()` continua chamando ela**. Sem repontar, ativar um mapa da biblioteca ficaria sem nenhum aviso durante a carga: a funcao sairia no `if (!el) return` e o clique pareceria nao ter feito nada.
+
+### O bug que a correcao criou (achado na validacao)
+
+Repontar para `#mesaMapLabel` copiando o `prevText` de `setMesaMapUploading()` **parecia** bastar e estava errado: punha TRES escritores no mesmo `textContent`. Os tres cruzamentos foram reproduzidos no navegador:
+
+1. **Dois `true` seguidos** (dois mapas clicados em sequencia) gravavam `prevText = "Carregando..."`, e o rotulo ficava preso nesse texto para sempre. O codigo original nao tinha esse defeito porque restaurava o literal "Abrir mapa" — o bug nasceu com a mudanca.
+2. **`uploadActiveMapToR2()` roda SEM `await`** dentro da janela de carga, entao carga e envio disputavam a mesma chave e um restaurava o texto do outro.
+3. **`renderMesaMapLayer()` troca o rotulo pelo NOME do mapa no meio da carga** — restaurar o snapshot depois devolvia "Sem mapa" por cima do nome recem-carregado.
+
+Correcao: o status virou **camada** (`data-status` + CSS `::after`), nao texto. `renderMesaMapLayer()` volta a ser o unico dono do `textContent`, e os dois estados coexistem e saem em qualquer ordem sem se apagarem. `setMesaMapUploading()` foi junto — o padrao antigo ja era fragil sozinho.
+
+Tres testes novos cobram o contrato, rodados contra a versao com defeito antes da correcao: dois falharam com exatamente os sintomas acima ("Carregando..." preso e "Sem mapa" por cima de "Cripta do Rei").
+
+### O risco real, coberto por teste
+
+O mapa agora so entra pela biblioteca, que vive no `#vttMapLibraryBlock` — revelado pelo botao de camada **MAPA** (`data-panel="map"`), nao pela barra do palco. Se esse caminho quebrar, o mestre fica **sem nenhuma forma de definir mapa**. O teste de permissoes do mestre passou a percorrer o caminho: clica em MAPA, confirma o bloco visivel e cobra "Conectar pasta" e "Importar imagem".
+
+As duas assercoes antigas sobre `#mesaMapOpenBtn` foram **repontadas, nao apagadas**: a do jogador virou `#mapLibFolderBtn` oculto (a intencao era "jogador nao adiciona mapa", e ela continua valendo no controle que herdou a funcao).
+
+### Verificacao
+
+Bateria completa das 12 suites, toda verde: `test:mesa:audit` (**192**), `test:mesa` (5), `test:mesa:scenemap` (6), `test:mesa:scenes` (22), `test:mesa:permissoes` (15), `test:mesa:tokens` (10), `test:ficha` (32), `test:controles` (6), `perf:mesa` (1), `check:js` (47), `audit:static`, `audit:pendencias`. `build:pages` gera o `_site` sem erro e o console da Mesa fica limpo no boot.
+
+Cache-bust `2026-08-20-semabrir-1` em `js/mesa-map.js` e `css/mesa-map.css`. **Sem deploy**: e tudo cliente.
+
+### Arquivos alterados
+
+- `mesa.html`, `js/mesa-map.js`, `css/mesa-map.css`
+- `tests/mesa-permissions.spec.cjs`, `tests/mesa-audit.spec.cjs` (bloco novo, 3 testes)
+- `DEV_STATUS.md`, `SYSTEM_RULES.md`
+
+## Etapa Anterior (2026-08-20 — Etapa 99: o painel do mapa fala carmesim)
 
 Pedido do Tiago: "enxergar melhor os elementos desse pop-up, deixe ele com tons de vermelho do site e compacte as informacoes ainda deixando elas organizadas".
 

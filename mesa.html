@@ -17,11 +17,11 @@
   <link rel="stylesheet" href="css/tokens.css?v=2026-08-19-painel-1" />
   <link rel="stylesheet" href="css/reset.css?v=2026-06-12-cache-fix-1" />
   <link rel="stylesheet" href="css/components.css?v=2026-06-12-modal-stack-1" />
-  <link rel="stylesheet" href="css/mesa.css?v=2026-08-19-painel-1" />
+  <link rel="stylesheet" href="css/mesa.css?v=2026-08-20-zoom-1" />
   <link rel="stylesheet" href="css/mesa-stage.css?v=2026-08-19-escala-1" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-06-16-fullbleed-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-08-19-escala-1" />
-  <link rel="stylesheet" href="css/mesa-map.css?v=2026-08-20-carmesim-1" />
+  <link rel="stylesheet" href="css/mesa-map.css?v=2026-08-20-zoom-1" />
   <link rel="stylesheet" href="css/mesa-drawing.css?v=2026-08-02-desenho-1" />
   <link rel="stylesheet" href="css/mesa-scenes.css?v=2026-08-19-escala-1" />
   <!-- Permissoes (Etapa 75): esconde tudo marcado com data-mesa-master-only
@@ -324,7 +324,7 @@
           <button class="vtt-zoom-btn" id="mesaZoomIn"    title="Aproximar" aria-label="Aproximar">+</button>
           <div class="vtt-zoom-track">
             <input class="vtt-zoom-slider" id="mesaZoomSlider" type="range"
-                   min="25" max="300" value="100" step="5"
+                   min="25" max="500" value="100" step="5"
                    orient="vertical" aria-label="Nível de zoom">
           </div>
           <button class="vtt-zoom-btn" id="mesaZoomOut"   title="Afastar"   aria-label="Afastar">−</button>
@@ -456,7 +456,10 @@
         </button>
         <div class="mesa-map-controls">
           <span id="mesaMapLabel" class="mesa-map-label">Sem mapa</span>
-          <button type="button" class="btn btn-ghost btn-small" id="mesaMapOpenBtn" onclick="openAndSetLocalMap()">Abrir mapa</button>
+<!-- Etapa 100: "Abrir mapa" removido. Abria UM arquivo avulso de qualquer
+           lugar do disco, caminho paralelo a pasta conectada (que ja varre a
+           pasta escolhida e todas as subpastas). O mapa da cena agora sai
+           sempre da pasta conectada ou da biblioteca salva. -->
           <button type="button" class="btn btn-ghost btn-small" id="mesaMapClearBtn" onclick="clearActiveMap()" hidden>Limpar mapa</button>
           <!-- Etapa 68: o botao "Ajustar/Ajustado" saiu daqui. O palco agora
                assume SEMPRE a proporcao do mapa; nao ha estado a alternar. -->
@@ -891,7 +894,7 @@
   <script src="js/mesa-inspector.js?v=2026-08-18-coluna-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
   <script src="js/mesa-core.js?v=2026-08-18-selecao-fora-do-fio" defer></script>
-  <script src="js/mesa-map.js?v=2026-08-18-mapa-por-cena-1" defer></script>
+  <script src="js/mesa-map.js?v=2026-08-20-zoom-1" defer></script>
   <script src="js/mesa-grid.js?v=2026-07-31-cells-1" defer></script>
   <script src="js/mesa-fog.js?v=2026-07-29-sharp-1" defer></script>
   <script src="js/mesa-scenes.js?v=2026-08-19-pastas-1" defer></script>

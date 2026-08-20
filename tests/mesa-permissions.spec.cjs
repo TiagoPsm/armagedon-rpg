@@ -85,7 +85,7 @@ test.describe("Permissoes da Mesa (Etapa 75)", () => {
     await expect(page.locator("#mesaInitiativeBtn")).toBeHidden();               // INIC.
     await expect(page.locator("#mesaLayerDmBtn")).toBeHidden();                  // MESTRE
     await expect(page.locator("#mesaLayerMapBtn")).toBeHidden();                 // MAPA
-    await expect(page.locator("#mesaMapOpenBtn")).toBeHidden();                  // ABRIR MAPA
+    await expect(page.locator("#mapLibFolderBtn")).toBeHidden();                 // CONECTAR PASTA
     await expect(page.locator("#mesaMapLabel")).toBeHidden();                    // SEM MAPA
     await expect(page.locator("#mesaMapSettingsBtn")).toBeHidden();              // engrenagem
     await expect(page.locator("#moveLockBtn")).toBeHidden();                     // TRAVAR MOVIMENTO
@@ -183,12 +183,21 @@ test.describe("Permissoes da Mesa (Etapa 75)", () => {
     await expect(page.locator("#mesaInitiativeBtn")).toBeVisible();
     await expect(page.locator("#mesaLayerDmBtn")).toBeVisible();
     await expect(page.locator("#mesaLayerMapBtn")).toBeVisible();
-    await expect(page.locator("#mesaMapOpenBtn")).toBeVisible();
     await expect(page.locator("#mesaMapSettingsBtn")).toBeVisible();
     await expect(page.locator("#resetMesaBtn")).toBeVisible();
     await expect(page.locator("#vttInspectorBlock")).toBeVisible();
     await expect(page.locator(".vtt-roster-tabs")).toBeVisible();
     await expect(page.locator("#rosterSearchField")).toBeVisible();
+
+    // Etapa 100: com "Abrir mapa" removido, quem poe mapa na cena e a
+    // biblioteca — que vive no bloco revelado pelo botao de camada MAPA
+    // (`data-panel="map"`), nao na barra do palco. Este trecho existe para
+    // provar que o mestre AINDA CHEGA la: se o caminho quebrar, o mestre
+    // fica sem nenhuma forma de definir mapa, que e o risco real da remocao.
+    await page.locator("#mesaLayerMapBtn").click();
+    await expect(page.locator("#vttMapLibraryBlock")).toBeVisible();
+    await expect(page.locator("#mapLibFolderBtn")).toBeVisible();   // conectar pasta
+    await expect(page.locator("#mapLibImportBtn")).toBeVisible();   // importar imagem
   });
 
   test("mestre: iniciar combate abre a rolagem e, depois dela, os controles de conducao", async ({ page }) => {

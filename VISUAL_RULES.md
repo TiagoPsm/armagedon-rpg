@@ -71,6 +71,19 @@ Alvo de clique e a **linha inteira** (`min-height: var(--control-md)`), nao os 1
 
 `width: 248px` e o que destrava a regra da Etapa 94 ("controle de acao vai de borda a borda"). Sem largura o painel encolhe para o conteudo e um filho com `width: 100%` para no meio da coluna — o mesmo cuidado ja medido na Etapa 94.
 
+### Dois flutuantes no mesmo canto: um sai, nao empilha (2026-08-20, Etapa 101)
+
+Barra de zoom e painel de configuracoes moravam os dois em `right: var(--hud-inset)`, e a barra tem `z-index` maior — ela cobria a coluna direita do painel, inclusive o "+" do stepper. Empilhar por z-index nao resolve: o de baixo continua inalcancavel.
+
+Regra: quando um painel abre sobre a area de outro controle flutuante, o controle **se desloca pela largura do painel**, e essa largura e um token (`--map-panel-w`), nunca um numero repetido nos dois arquivos.
+
+- **Detecte o estado com `:has()` no ancestral comum**, nao com uma classe marcada no clique. Assim o desvio acompanha o estado real do elemento, venha de qualquer caminho que mexa no `hidden`. Sem suporte a `:has()`, o pior caso e a sobreposicao de hoje — nunca um layout quebrado.
+- **Se houver transicao, o teste tem de esperar.** A primeira versao do teste desta etapa media no instante da abertura e falhou legitimamente: com `transition: right 0.16s`, a barra passa ~160ms sobre o painel. O que se cobra e onde o controle PARA. Transicao desligada em `prefers-reduced-motion`.
+
+### Limite duplicado entre JS e HTML precisa de teste (2026-08-20, Etapa 101)
+
+O teto do zoom vive em `ZOOM_MAX` (mesa-map.js) e no `max` do `#mesaZoomSlider` (mesa.html, em porcentagem). Sao duas fontes de verdade para o mesmo limite e nada no codigo liga uma a outra: se divergirem, o botao "+" passa de um teto que a barra nao alcanca, em silencio. Sempre que um limite tiver gemeo no HTML, escreva o teste que cobra a igualdade — o piso tambem.
+
 ### Painel flutuante da Mesa usa os tokens `--hud-*` (2026-08-20, Etapa 99)
 
 `css/mesa.css` define `--hud-bg`, `--hud-border`, `--hud-blur` e `--hud-radius` dizendo, no proprio comentario, que sao o "estilo compartilhado por todos os paineis flutuantes da mesa". O painel do mapa **nao usava nenhum deles**: fundo e raio proprios e borda `rgba(255,255,255,0.08)` — BRANCA, onde o padrao do HUD e carmesim (`rgba(168,48,40,0.22)`). Era a razao de ele parecer cinza e estrangeiro logo abaixo da barra do canto, que usa os tokens.

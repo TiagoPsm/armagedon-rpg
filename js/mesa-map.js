@@ -191,7 +191,13 @@ const mesaWsBuffer = {
 let _stageZoom     = 1.0;
 let _stagePan      = { x: 0, y: 0 };   // translação do palco em px de tela
 const ZOOM_MIN     = 0.25;
-const ZOOM_MAX     = 3.0;
+/* Etapa 101: 3.0 -> 5.0 (500%), para mestre e jogador — o zoom do palco e
+   global, nao tem versao por papel. ATENCAO: este numero tem um gemeo no
+   `max` do #mesaZoomSlider (em porcentagem) no mesa.html. Os dois PRECISAM
+   concordar: o slider recusa arrastar alem do proprio `max` mesmo com a
+   constante maior, e o resultado seria o botao "+" passando de um limite
+   que a barra nao alcanca. Ha teste cobrando a igualdade. */
+const ZOOM_MAX     = 5.0;
 const ZOOM_STEP    = 0.1;
 const ZOOM_DEFAULT = 1.0;
 
@@ -815,53 +821,11 @@ function pickLocalMapFileFallback() {
 
 /* ── ABRIR E DEFINIR MAPA (mestre) ──────────────────────────── */
 
-/**
- * Abre o seletor de arquivo, comprime para WebP, salva no IndexedDB
- * e define como mapa ativo. Se há jogadores online, inicia entrega P2P.
- */
-async function openAndSetLocalMap() {
-  if (!_requireMapMaster("abrir um mapa")) return;
-  const file = await pickLocalMapFile();
-  if (!file) return;
-
-  setMesaMapLoading(true);
-
-  try {
-    const mapId   = `map-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
-    const mapName = file.name.replace(/\.[^.]+$/, "");
-    const rawBlob = new Blob([await file.arrayBuffer()], { type: file.type });
-
-    // Comprimir antes de salvar — ocupa menos espaço no IndexedDB
-    const compressed = await compressToWebP(rawBlob);
-    const hash       = await computeBlobHash(compressed);
-
-    const mapEntry = {
-      id:             mapId,
-      name:           mapName,
-      blob:           compressed,   // salva a versão comprimida
-      hash,
-      createdAt:      Date.now(),
-    };
-
-    await saveMesaMapToDB(mapEntry);
-    await applyActiveMap(mapEntry);
-
-    // Armazenar na memória para evitar re-comprimir
-    mesaMapState.activeEntry = mapEntry;
-
-    if (mesaMapState.playersOnline) {
-      announceMapToPlayers(mapEntry);
-    }
-
-    // R2 + cena oficial (jogadores offline/futuros recebem no boot)
-    _ensureActiveMapPersisted();
-
-  } catch (err) {
-    console.error("[mesa-map] Falha ao abrir mapa:", err);
-  } finally {
-    setMesaMapLoading(false);
-  }
-}
+/* Etapa 100: `openAndSetLocalMap()` removida junto com o botao "Abrir mapa".
+   Era o unico caminho que punha na mesa um arquivo avulso de qualquer lugar
+   do disco, em paralelo a pasta conectada — que ja varre a pasta escolhida e
+   TODAS as subpastas (`_scanDir`) e permite escolher o mapa da cena.
+   `pickLocalMapFile()` continua viva: `importMapToLibrary()` ainda usa. */
 
 async function applyActiveMap(mapEntry) {
   if (mesaMapState.activeMapUrl) {
@@ -2199,23 +2163,54 @@ function _sendRealtime(payload) {
 
 /* ── UI HELPERS ─────────────────────────────────────────────── */
 
-function setMesaMapLoading(loading) {
-  const btn = document.getElementById("mesaMapOpenBtn");
-  if (!btn) return;
-  btn.disabled    = loading;
-  btn.textContent = loading ? "Carregando..." : "Abrir mapa";
-}
+/* Etapa 100: "Carregando..." era escrito no botao "Abrir mapa", que nao
+   existe mais. Sem repontar, `setActiveMapFromLibrary()` — que continua
+   chamando isto — ficaria sem nenhum aviso durante a carga.
 
-function setMesaMapUploading(uploading) {
+   Repontar para o rotulo do palco parecia bastar (era o que
+   `setMesaMapUploading` ja fazia), mas colocava TRES escritores no mesmo
+   `textContent`, e o padrao de guardar/restaurar `prevText` quebrava nos
+   tres cruzamentos, todos reproduzidos:
+
+   1. dois `true` seguidos (dois mapas clicados em sequencia) gravavam
+      prevText = "Carregando..." e o rotulo ficava preso nesse texto;
+   2. `uploadActiveMapToR2()` roda SEM await dentro da janela de carga, entao
+      carga e envio disputavam a mesma chave e um restaurava o texto do outro;
+   3. `renderMesaMapLayer()` troca o rotulo pelo NOME do mapa no meio da
+      carga — restaurar o snapshot depois devolvia "Sem mapa" por cima do
+      nome recem-carregado.
+
+   Por isso o status virou CAMADA, nao texto: `data-status` no rotulo, com o
+   CSS mostrando o status por cima. `renderMesaMapLayer()` continua sendo o
+   unico dono do `textContent`, e os dois estados podem coexistir e sair em
+   qualquer ordem sem se apagarem. */
+const _mesaMapStatusAtivo = new Map();   // chave -> texto exibido
+
+function _setMesaMapStatus(chave, ligado, texto) {
+  if (ligado) _mesaMapStatusAtivo.set(chave, texto);
+  else        _mesaMapStatusAtivo.delete(chave);
+
   const label = document.getElementById("mesaMapLabel");
   if (!label) return;
-  if (uploading) {
-    label.dataset.prevText = label.textContent;
-    label.textContent = "Enviando...";
+
+  if (_mesaMapStatusAtivo.size) {
+    // O ultimo a entrar e o que aparece; ao sair, o anterior reaparece.
+    label.dataset.status = Array.from(_mesaMapStatusAtivo.values()).pop();
   } else {
-    label.textContent = label.dataset.prevText || label.textContent;
-    delete label.dataset.prevText;
+    delete label.dataset.status;
   }
+}
+
+function setMesaMapLoading(loading) {
+  _setMesaMapStatus("carregando", loading, "Carregando...");
+}
+
+/* Etapa 100: passou a usar a mesma camada de status. O padrao antigo de
+   `prevText` aqui ja era fragil sozinho (dois `true` seguidos prendiam o
+   rotulo em "Enviando..."); com a carga usando o mesmo rotulo, virava
+   colisao garantida. */
+function setMesaMapUploading(uploading) {
+  _setMesaMapStatus("enviando", uploading, "Enviando...");
 }
 
 function toggleMapSettings() {

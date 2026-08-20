@@ -6492,3 +6492,156 @@ test.describe("Painel do mapa nao invade a barra do canto (Etapa 98)", () => {
     expect(await folga(page, true), "painel sobrepondo a barra em 900px").toBeGreaterThanOrEqual(0);
   });
 });
+
+/* ============================================================
+ * Etapa 100 — o rotulo do mapa tinha tres escritores.
+ *
+ * Ao remover "Abrir mapa", `setMesaMapLoading()` foi repontada do botao
+ * para o rotulo do palco — que ja tinha `setMesaMapUploading()` e
+ * `renderMesaMapLayer()` escrevendo nele. O padrao de guardar/restaurar
+ * `prevText` quebrava nos tres cruzamentos abaixo, todos alcancaveis:
+ * dois mapas clicados em sequencia; o upload para o R2, que roda SEM
+ * await dentro da janela de carga; e o nome do mapa, escrito no meio da
+ * carga e apagado pela restauracao.
+ *
+ * Corrigido tornando o status uma CAMADA (`data-status` + CSS), com o
+ * `textContent` tendo um dono so. Os testes cobram esse contrato.
+ * ============================================================ */
+test.describe("Rotulo do mapa: status e camada, nao texto (Etapa 100)", () => {
+  async function abrirMesa(page) {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+  }
+
+  test("dois carregamentos seguidos nao prendem o rotulo", async ({ page }) => {
+    await abrirMesa(page);
+    const estado = await page.evaluate(() => {
+      const lbl = document.getElementById("mesaMapLabel");
+      const antes = lbl.textContent;
+      setMesaMapLoading(true); setMesaMapLoading(true); setMesaMapLoading(false);
+      return { antes, status: lbl.dataset.status || null, texto: lbl.textContent };
+    });
+    expect(estado.status, "status preso apos dois carregamentos").toBeNull();
+    expect(estado.texto).toBe(estado.antes);
+  });
+
+  test("carga e envio se sobrepoem e saem em qualquer ordem", async ({ page }) => {
+    await abrirMesa(page);
+    const r = await page.evaluate(() => {
+      const lbl = document.getElementById("mesaMapLabel");
+      const ler = () => lbl.dataset.status || null;
+      setMesaMapLoading(true); setMesaMapUploading(true);
+      const ambos = ler();
+      setMesaMapLoading(false);          // sai o de DENTRO primeiro
+      const soEnvio = ler();
+      setMesaMapUploading(false);
+      return { ambos, soEnvio, fim: ler(), texto: lbl.textContent };
+    });
+    // Enquanto o envio segue ativo o aviso continua na tela...
+    expect(r.soEnvio).toBe("Enviando...");
+    // ...e quando o ultimo sai, nao sobra status nenhum.
+    expect(r.fim).toBeNull();
+  });
+
+  test("o nome do mapa escrito durante a carga sobrevive", async ({ page }) => {
+    await abrirMesa(page);
+    const r = await page.evaluate(() => {
+      const lbl = document.getElementById("mesaMapLabel");
+      setMesaMapLoading(true);
+      lbl.textContent = "Cripta do Rei";   // e o que renderMesaMapLayer() faz
+      setMesaMapLoading(false);
+      return { texto: lbl.textContent, status: lbl.dataset.status || null };
+    });
+    expect(r.texto, "restauracao apagou o nome do mapa").toBe("Cripta do Rei");
+    expect(r.status).toBeNull();
+  });
+});
+
+/* ============================================================
+ * Etapa 101 — teto de zoom maior e a barra saindo da frente.
+ *
+ * Dois riscos distintos, um teste para cada:
+ *
+ * 1. O teto do zoom mora em DOIS lugares — `ZOOM_MAX` no mesa-map.js e o
+ *    `max` do #mesaZoomSlider no mesa.html, em porcentagem. Se divergirem,
+ *    o botao "+" passa de um limite que a barra nao alcanca (ou o
+ *    contrario), e nada no codigo reclama.
+ *
+ * 2. A barra de zoom e o painel de configuracoes nasceram os dois em
+ *    `right: --hud-inset`, com a barra em z-index maior — ela tapava a
+ *    coluna direita do painel, inclusive o "+" do stepper.
+ * ============================================================ */
+test.describe("Zoom do palco: teto e desvio da barra (Etapa 101)", () => {
+  async function abrirMesa(page) {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+  }
+
+  test("o teto do slider e o do JS sao o mesmo numero", async ({ page }) => {
+    await abrirMesa(page);
+    const r = await page.evaluate(() => ({
+      slider: Number(document.getElementById("mesaZoomSlider").max),
+      js:     ZOOM_MAX * 100,
+      piso:   Number(document.getElementById("mesaZoomSlider").min),
+      pisoJs: ZOOM_MIN * 100,
+    }));
+    expect(r.slider, "teto do slider divergiu de ZOOM_MAX").toBe(r.js);
+    expect(r.piso,   "piso do slider divergiu de ZOOM_MIN").toBe(r.pisoJs);
+  });
+
+  test("o zoom chega ao teto novo e para nele", async ({ page }) => {
+    await abrirMesa(page);
+    const r = await page.evaluate(() => {
+      setStageZoom(99);              // muito alem do teto
+      const teto = Math.round(getStageZoom() * 100);
+      setStageZoom(0);               // muito abaixo do piso
+      const piso = Math.round(getStageZoom() * 100);
+      setStageZoom(1);
+      return { teto, piso };
+    });
+    expect(r.teto).toBe(500);
+    expect(r.piso).toBe(25);
+  });
+
+  test("a barra de zoom sai da frente do painel e volta ao fechar", async ({ page }) => {
+    await abrirMesa(page);
+    const sobrepoe = () => page.evaluate(() => {
+      const a = document.getElementById("mesaZoomCtrl").getBoundingClientRect();
+      const b = document.getElementById("mesaMapTransform").getBoundingClientRect();
+      return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+    });
+
+    await page.evaluate(() => {
+      document.getElementById("mesaMapTransform").hidden = false;
+      ["mesaGridGroup", "mesaFogGroup"].forEach(id => { document.getElementById(id).hidden = false; });
+    });
+
+    // O desvio tem `transition: right 0.16s`, entao medir no mesmo instante
+    // pega a barra AINDA no caminho — e foi o que este teste flagrou na
+    // primeira execucao. Esperamos o movimento terminar; o que se cobra e
+    // onde ela PARA, nao onde ela passa.
+    await page.waitForFunction(() =>
+      getComputedStyle(document.getElementById("mesaZoomCtrl")).right === "268px");
+    expect(await sobrepoe(), "barra de zoom por cima do painel aberto").toBe(false);
+
+    // Fechado, ela volta para a borda — o desvio nao pode ficar grudado.
+    await page.evaluate(() => { document.getElementById("mesaMapTransform").hidden = true; });
+    await page.waitForFunction(() =>
+      getComputedStyle(document.getElementById("mesaZoomCtrl")).right === "12px");
+  });
+
+  test("a barra nao escapa do palco em tela estreita", async ({ page }) => {
+    await abrirMesa(page);
+    await page.setViewportSize({ width: 760, height: 800 });
+    const r = await page.evaluate(() => {
+      document.getElementById("mesaMapTransform").hidden = false;
+      ["mesaGridGroup", "mesaFogGroup"].forEach(id => { document.getElementById(id).hidden = false; });
+      const a = document.getElementById("mesaZoomCtrl").getBoundingClientRect();
+      const c = document.getElementById("mesaPanelStage").getBoundingClientRect();
+      return { escapou: a.left < c.left - 1 };
+    });
+    expect(r.escapou, "barra de zoom saiu do palco pela esquerda").toBe(false);
+  });
+});
