@@ -42,7 +42,6 @@ const MESA_DOM_IDS = {
   rosterPanelKicker: "rosterPanelKicker",
   rosterPanelTitle: "rosterPanelTitle",
   stage: "mesaStage",
-  emptyState: "mesaEmptyState",
   tokenInspector: "tokenInspector",
   resetMesaBtn: "resetMesaBtn",
   mesaPanelStage: "mesaPanelStage"

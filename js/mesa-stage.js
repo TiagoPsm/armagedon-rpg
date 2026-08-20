@@ -13,14 +13,12 @@ function renderStage() {
 
 function renderDomStage() {
   const stage = getMesaDomRef("stage");
-  const emptyState = getMesaDomRef("emptyState");
-  if (!stage || !emptyState) return;
+  if (!stage) return;
   // Estilo unico (redondo); mantido no data attr para as regras de CSS
   stage.dataset.tokenStyle = "minimal";
 
   const renderedTokens = [...getRenderedTokens()].sort((a, b) => (a.order || 0) - (b.order || 0));
   const nextTokenIds = new Set(renderedTokens.map(token => token.id));
-  emptyState.hidden = renderedTokens.length > 0;
 
   mesaStageTokenElements.forEach((element, tokenId) => {
     if (!nextTokenIds.has(tokenId) || element.isConnected === false) {

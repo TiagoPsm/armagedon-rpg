@@ -16,6 +16,45 @@ C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
 
 A pasta antiga `rpg-campaign` nao deve ser usada para editar layout, CSS, HTML ou assets publicados.
 
+## Moldura de superficie vai por cima das camadas (2026-08-20, Etapa 110)
+
+A borda do palco nao pode morar na camada de FUNDO: grade, desenho e nevoa
+ocupam a mesma caixa inteira e a apagam. Ela vive numa camada propria acima da
+grade, dos desenhos e dos tokens — hoje `.mesa-stage-inner::after` em
+`z-index: 11`.
+
+Antes de pendurar uma moldura num elemento, confira se ele nao tem `z-index`
+proprio: com contexto de empilhamento, o filho fica preso abaixo do irmao que
+se queria cobrir.
+
+## Superficie com grade tem canto reto (2026-08-20, Etapa 108)
+
+O quadro do palco usa `border-radius: 0`. Onde uma grade e desenhada ate o
+vertice da caixa, qualquer raio corta a celula do canto e deixa linha para fora
+da borda pintada. Arredondamento fica para painel, card e botao — nao para
+superficie de jogo.
+
+## O quadro e a caixa, nao um desenho (2026-08-20, Etapa 107)
+
+Superficie visivel e superficie logica sao a MESMA caixa: `#mesaStageInner`.
+Quem muda o tamanho do palco e `applyStageFitBox()` — imagem do mapa quando ha
+mapa, quadrado de 92% do lado menor quando nao ha. `.mesa-stage-board` so
+pinta (`inset: 0`).
+
+Regra: nunca dimensionar uma camada do palco por CSS proprio. Se a borda
+desenhada nao for a borda da caixa, grade, desenho, nevoa e token vazam por
+ela — foi exatamente o que aconteceu na Etapa 106.
+
+## Palco vazio nao fala, mostra (2026-08-20, Etapa 106)
+
+A tela inicial da Mesa nao carrega texto explicativo. Sem mapa, o palco mostra
+so `.mesa-stage-board`: um quadrado centralizado, preto com degrade carmesim,
+borda `--border-accent` e halo `--accent-glow` — destaque suficiente para ler
+como superficie de jogo sem clarear o palco.
+
+Regra: instrucao de uso mora nos controles (titulo, tooltip, painel), nunca no
+palco. Quando um mapa entra, o quadro sai — a superficie de jogo e uma so.
+
 ## Escala de controle: tres alturas, uma fonte de rotulo (2026-08-19, Etapa 97)
 
 Altura de botao nao se escolhe caso a caso. A escala vive em `css/tokens.css`:

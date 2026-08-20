@@ -257,7 +257,55 @@
   background: hsl(204 78% 64%);
 }
 
-.mesa-empty-state,
+/* ── QUADRO PADRAO DO PALCO (Etapa 106) ──────────────────────
+ * Substituiu o bloco de texto "Nenhum token em cena.": a tela inicial da
+ * Mesa nao tem texto nenhum, so este quadrado centralizado. Cor da casa
+ * (preto + carmesim) com um degrade interno que o destaca do fundo do palco.
+ * z-index 1 = acima do mapa (0) e abaixo da grade funcional (7). */
+.mesa-stage-board {
+  /* Desde a Etapa 107 o quadro NAO se dimensiona sozinho: ele preenche
+   * #mesaStageInner, que applyStageFitBox() deixa quadrado e centralizado
+   * quando nao ha mapa. Assim a pintura e a superficie logica (grade,
+   * desenhos, nevoa, tokens) sao exatamente a mesma caixa. */
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  /* Sem borda propria (Etapa 110): a moldura mora em .mesa-stage-inner::after,
+   * acima da grade. Aqui embaixo (z-index 1) o #mesaGridCanvas passava por
+   * cima da linha e comia os cantos do quadro. */
+  /* Canto reto (Etapa 108): o #mesaGridCanvas ocupa a mesma caixa e desenha
+   * linhas ate o vertice. Com raio, a curva da borda cortava a celula do
+   * canto e a grade sobrava por fora do quadro. */
+  border-radius: 0;
+  background:
+    radial-gradient(ellipse 70% 70% at 50% 40%, rgba(168, 48, 40, 0.13), transparent 72%),
+    linear-gradient(160deg, #16090c 0%, #0d0709 55%, #120a0d 100%);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 22px 60px rgba(0, 0, 0, 0.55),
+    0 0 46px var(--accent-glow),
+    inset 0 0 70px rgba(0, 0, 0, 0.5);
+}
+
+/* Moldura do quadro (Etapa 110) — vermelho escuro, ACIMA da grade (7), dos
+ * desenhos (8) e dos tokens (10), abaixo da nevoa (26). Desenhar a borda no
+ * proprio quadro nao funcionava: os canvas cobrem a mesma caixa inteira, entao
+ * a linha da grade caia sobre a borda e os cantos sumiam. */
+[data-fit-board] .mesa-stage-inner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 11;
+  pointer-events: none;
+  border: 1px solid #6e1a14;
+}
+
+/* Mapa carregado → o quadro sai de cena (o mapa e a superficie de jogo). */
+#mesaMapLayer:not([hidden]) + .mesa-stage-board {
+  display: none;
+}
+
 .token-inspector-empty {
   display: grid;
   place-items: center;
@@ -269,25 +317,15 @@
   padding: 2rem;
 }
 
-.mesa-empty-state {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-}
-
-.mesa-empty-state[hidden],
 .token-inspector-empty[hidden] {
   display: none !important;
 }
 
-.mesa-empty-state strong,
 .token-inspector-empty strong {
   font-family: var(--font-title);
   font-size: 1.4rem;
 }
 
-.mesa-empty-state p,
 .token-inspector-empty p {
   max-width: 20rem;
   margin: 0;

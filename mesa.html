@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="css/reset.css?v=2026-06-12-cache-fix-1" />
   <link rel="stylesheet" href="css/components.css?v=2026-06-12-modal-stack-1" />
   <link rel="stylesheet" href="css/mesa.css?v=2026-08-20-contraste-2" />
-  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-08-19-escala-1" />
+  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-08-20-quadro-5" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-08-20-contraste-4" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-08-20-contraste-1" />
   <link rel="stylesheet" href="css/mesa-map.css?v=2026-08-20-contraste-3" />
@@ -288,6 +288,11 @@
         <div id="mesaStageInner" class="mesa-stage-inner">
           <!-- Camada de mapa — abaixo do grid e tokens -->
           <div id="mesaMapLayer" class="mesa-map-layer" aria-hidden="true" hidden></div>
+          <!-- Quadro padrao do palco (Etapa 106) — superficie de jogo quando nao
+               ha mapa carregado. Sem texto nenhum: some por CSS assim que o
+               #mesaMapLayer perde o [hidden]. Substituiu o antigo
+               #mesaEmptyState ("Nenhum token em cena."). -->
+          <div id="mesaStageBoard" class="mesa-stage-board" aria-hidden="true"></div>
           <div class="mesa-stage-grid" aria-hidden="true"></div>
           <div class="mesa-stage-glow" aria-hidden="true"></div>
           <!-- Grade funcional amarrada ao mapa (Etapa 42) — abaixo dos desenhos -->
@@ -312,10 +317,6 @@
                40% p/ mestre (opacidade CSS controlada por mesa-fog.js) -->
           <canvas id="mesaFogCanvas" aria-hidden="true"></canvas>
 
-          <div id="mesaEmptyState" class="mesa-empty-state" hidden>
-            <strong>Nenhum token em cena.</strong>
-            <p>Use a escalacao abaixo para colocar personagens, NPCs e monstros no palco.</p>
-          </div>
         </div>
 
         <!-- Controle de zoom — fora do inner, não escala com o palco -->
@@ -894,7 +895,7 @@
   <script src="js/mesa-inspector.js?v=2026-08-18-coluna-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
   <script src="js/mesa-core.js?v=2026-08-18-selecao-fora-do-fio" defer></script>
-  <script src="js/mesa-map.js?v=2026-08-20-zoom-1" defer></script>
+  <script src="js/mesa-map.js?v=2026-08-20-quadro-1" defer></script>
   <script src="js/mesa-grid.js?v=2026-07-31-cells-1" defer></script>
   <script src="js/mesa-fog.js?v=2026-07-29-sharp-1" defer></script>
   <script src="js/mesa-scenes.js?v=2026-08-19-pastas-1" defer></script>

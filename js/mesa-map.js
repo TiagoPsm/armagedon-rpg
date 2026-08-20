@@ -374,6 +374,9 @@ function isStageFitToMap() {
  * aplica ao #mesaStageInner. Sem mapa (ou sem dimensões medidas) devolve o
  * inner ao inset:0 do CSS.
  */
+/** Fracao do lado menor do palco ocupada pelo quadro padrao (Etapa 107). */
+const MESA_BOARD_FILL = 0.92;
+
 function applyStageFitBox() {
   const wrap  = document.getElementById("mesaStageWrap");
   const inner = document.getElementById("mesaStageInner");
@@ -383,16 +386,29 @@ function applyStageFitBox() {
   const ih = mesaMapState._imgH;
   const active = !!(mesaMapState.activeMapUrl && iw > 0 && ih > 0);
 
+  const cw = wrap.clientWidth  || 1;
+  const ch = wrap.clientHeight || 1;
+
   if (!active) {
-    inner.style.left = inner.style.top = "";
-    inner.style.right = inner.style.bottom = "";
-    inner.style.width = inner.style.height = "";
+    // Sem mapa (Etapa 107): a caixa do palco vira o QUADRO — um quadrado
+    // centralizado. Todas as camadas (grade, desenho, nevoa, tokens) vivem
+    // dentro de #mesaStageInner e usam FRACAO dele, entao ajustar a caixa e o
+    // unico ponto que prende as quatro ao quadro de uma vez. Antes o inner
+    // ocupava o wrap inteiro e o quadro era so pintura: a grade vazava e o
+    // token podia parar fora dele.
+    const side = Math.max(1, Math.round(Math.min(cw, ch) * MESA_BOARD_FILL));
+    inner.style.left   = `${Math.round((cw - side) / 2)}px`;
+    inner.style.top    = `${Math.round((ch - side) / 2)}px`;
+    inner.style.right  = "auto";
+    inner.style.bottom = "auto";
+    inner.style.width  = `${side}px`;
+    inner.style.height = `${side}px`;
     wrap.removeAttribute("data-fit-map");
+    wrap.setAttribute("data-fit-board", "");
     return;
   }
 
-  const cw = wrap.clientWidth  || 1;
-  const ch = wrap.clientHeight || 1;
+  wrap.removeAttribute("data-fit-board");
   const fit = Math.min(cw / iw, ch / ih);   // "contain": cabe inteiro
   const w = Math.max(1, Math.round(iw * fit));
   const h = Math.max(1, Math.round(ih * fit));
@@ -558,6 +574,8 @@ async function initMesaMap() {
     await _restoreConnectedFolder();
     bindMesaMapPresence();
     _observeStageResize();
+    // Sem mapa tambem ha caixa a aplicar (o quadro, Etapa 107).
+    applyMapTransform();
 
     if (mesaMapState.isMaster) {
       // data-role="master" + classe .is-master (compat) num lugar so.
@@ -973,13 +991,11 @@ function renderMesaMapLayer(blobUrl, mapName) {
 
   if (!layer) return;
 
-  const emptyState = document.getElementById("mesaEmptyState");
   const masterMode = typeof isMaster === "function" && isMaster();
 
   if (blobUrl) {
     layer.style.backgroundImage = `url("${blobUrl}")`;
     layer.removeAttribute("hidden");
-    if (emptyState) emptyState.hidden = true;
     applyMapTransform();
     // Exibe seção de escala/posição — só faz sentido com mapa ativo
     if (scaleGroup) scaleGroup.hidden = false;
@@ -1006,10 +1022,6 @@ function renderMesaMapLayer(blobUrl, mapName) {
       // Jogador: sem mapa → sem configurações → oculta tudo
       if (transformEl) { transformEl.hidden = true; }
       if (settingsBtn) { settingsBtn.hidden = true; settingsBtn.setAttribute("aria-expanded","false"); }
-    }
-    const mesaStage = document.getElementById("mesaStage");
-    if (emptyState && mesaStage && !mesaStage.children.length) {
-      emptyState.hidden = false;
     }
     // Mapa limpo: o palco volta a preencher o canvas e a grade e a névoa
     // voltam a ancorar no palco inteiro (sem mapa não há proporção a ajustar).

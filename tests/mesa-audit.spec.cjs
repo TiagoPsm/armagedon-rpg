@@ -2198,14 +2198,17 @@ test.describe("Token em NxN celulas (Etapa 42c)", () => {
       const cellPx = 0.08 * stage.offsetWidth;
       const el = document.querySelector('#mesaStage [data-token-id="ana"]');
       const base = el.offsetWidth;
-      const expected = cellPx / base;
       const scales = state.tokens.map(t => t.tokenScale);
-      return { expected, scales };
+      return { cellPx, base, scales };
     });
 
-    // Todos os tokens (88px ~ 1 celula com 12-13 colunas) uniformizados em 1x1
-    for (const s of result.scales) {
-      expect(Math.abs(s - result.expected)).toBeLessThan(0.02);
+    // Todos os tokens caem no MESMO N inteiro de celulas. Quanto vale N depende
+    // do lado do palco (desde a Etapa 107 o quadro e menor que o painel), mas
+    // "encaixado em NxN e uniforme" e a regra, e ela nao depende do tamanho.
+    const cells = result.scales.map(s => (s * result.base) / result.cellPx);
+    for (const c of cells) {
+      expect(Math.abs(c - Math.round(c))).toBeLessThan(0.02);
+      expect(Math.round(c)).toBe(Math.round(cells[0]));
     }
   });
 });
@@ -4175,9 +4178,10 @@ test.describe("Palco ajustado ao mapa + resolucao (Etapas 52-55)", () => {
       mesaMapState._imgH = 0;
       applyStageFitBox();
       const semMapa = {
-        inner:      [inner.clientWidth, inner.clientHeight],
-        leftInline: inner.style.left,
-        temAttr:    wrap.hasAttribute("data-fit-map")
+        inner:       [inner.clientWidth, inner.clientHeight],
+        leftInline:  inner.style.left,
+        temAttr:     wrap.hasAttribute("data-fit-map"),
+        temAttrQuad: wrap.hasAttribute("data-fit-board")
       };
       return { wrapBox, ajustado, semMapa };
     }, seedMapaAtivo.toString());
@@ -4195,10 +4199,13 @@ test.describe("Palco ajustado ao mapa + resolucao (Etapas 52-55)", () => {
     expect(r.ajustado.temAttr).toBe(true);
     expect(r.ajustado.fit).toBe(true);
 
-    // Sem mapa: palco inteiro e estilos inline limpos
-    expect(r.semMapa.inner).toEqual(r.wrapBox);
-    expect(r.semMapa.leftInline).toBe("");
+    // Sem mapa (Etapa 107): o palco vira o QUADRO — quadrado, centralizado,
+    // 92% do lado menor. Nao volta a ocupar o painel inteiro.
+    const lado = Math.round(Math.min(cw, ch) * 0.92);
+    expect(r.semMapa.inner).toEqual([lado, lado]);
+    expect(r.semMapa.leftInline).toBe(`${Math.round((cw - lado) / 2)}px`);
     expect(r.semMapa.temAttr).toBe(false);
+    expect(r.semMapa.temAttrQuad).toBe(true);
   });
 
   test("fracao do palco == fracao do mapa (tokens e desenhos alinhados)", async ({ page }) => {
@@ -4453,10 +4460,12 @@ test.describe("Ajuste do palco sempre ligado (Etapa 68)", () => {
       };
     }, seedMapaAtivo.toString());
 
-    // Sem medida nao ha ajuste — mas tambem nao fica a caixa do mapa anterior
+    // Sem medida nao ha ajuste — mas tambem nao fica a caixa do mapa anterior:
+    // o palco cai no quadro padrao (Etapa 107), nao no painel inteiro.
     expect(r.dims).toEqual([0, 0]);
     expect(r.temAttr).toBe(false);
-    expect(r.inner).toEqual(r.wrap);
+    const ladoQuadro = Math.round(Math.min(r.wrap[0], r.wrap[1]) * 0.92);
+    expect(r.inner).toEqual([ladoQuadro, ladoQuadro]);
   });
 
   test("jogador: mapa da cena com fit:false gravado ainda ajusta o palco", async ({ page }) => {

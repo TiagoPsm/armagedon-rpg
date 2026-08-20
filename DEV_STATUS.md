@@ -40,7 +40,127 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-20 — Etapa 105: token medido contra a superficie)
+## Ultima Etapa Concluida (2026-08-20 — Etapa 110: a moldura por cima da grade)
+
+O Tiago viu a grade passando por cima das pontas do quadro. Causa: a borda
+morava em `.mesa-stage-board` (z-index 1) e os canvas de grade (7) e desenho (8)
+cobrem exatamente a mesma caixa — a linha da grade caia sobre a borda e comia
+os cantos.
+
+- `css/mesa-stage.css`: a borda saiu do `.mesa-stage-board` e virou
+  `[data-fit-board] .mesa-stage-inner::after` — `inset: 0`, `z-index: 11`,
+  `pointer-events: none`, `1px solid #6e1a14`. Fica acima da grade, dos desenhos
+  e dos tokens (10) e abaixo da nevoa (26), que deve mesmo cobrir tudo.
+  O `::after` pendura no inner (e nao no quadro) de proposito: o quadro tem
+  `z-index: 1` e cria contexto de empilhamento, entao um filho dele nunca
+  subiria acima do canvas da grade.
+- Cache-busting: `mesa-stage.css?v=2026-08-20-quadro-5`.
+
+Verificado no navegador: moldura `rgb(110, 26, 20)` 1px em z-index 11, grade em
+7, quadro sem borda propria. `audit:static` verde.
+
+## Etapa Anterior (2026-08-20 — Etapa 109: borda do quadro em vermelho escuro)
+
+Pedido do Tiago. `css/mesa-stage.css`: `.mesa-stage-board` trocou
+`var(--border-accent)` (carmesim com 42% de alfa, que sobre o quase-preto do
+quadro lia como cinza-rosado) por `#6e1a14` — cor cheia, entre `--accent`
+(#a83028) e `--accent-deep` (#3a0a08). Cache-busting:
+`mesa-stage.css?v=2026-08-20-quadro-4`.
+
+Verificado no navegador: `border: 1px solid rgb(110, 26, 20)`, canto ainda reto.
+`audit:static` verde; nenhum teste da suite fixa essa cor.
+
+## Etapa Anterior (2026-08-20 — Etapa 108: canto reto e a suite alinhada ao quadro)
+
+Pedido do Tiago: o quadro sem pontas arredondadas, para encaixar com o grid.
+
+- `css/mesa-stage.css`: `.mesa-stage-board` com `border-radius: 0`. O
+  `#mesaGridCanvas` ocupa a mesma caixa e desenha linha ate o vertice; com raio,
+  a curva cortava a celula do canto e a grade sobrava fora do quadro.
+  Cache-busting: `mesa-stage.css?v=2026-08-20-quadro-3`.
+
+Correcao de rota: a regressao da Etapa 107 tinha ficado com 3 testes vermelhos
+(o `| tail` mascarou o codigo de saida e eles passaram batido no relato). Os
+tres cobriam a regra ANTIGA — "sem mapa o palco ocupa o painel inteiro" — que a
+propria Etapa 107 trocou a pedido. Foram reescritos para a regra nova, sem
+afrouxar nenhuma asercao:
+
+- `palco assume a proporcao exata da imagem...`: sem mapa agora exige quadrado
+  de 92% do lado menor, `left` inline centralizado e `data-fit-board` presente.
+- `falha ao medir a imagem nao deixa o palco num ajuste errado`: sem medida o
+  palco cai no quadro padrao, nao no painel inteiro.
+- `mudar o tamanho da celula re-conforma todos os tokens (mestre)`: a asercao
+  presumia "88px ~ 1 celula", verdade so no palco antigo (mais largo). Passou a
+  verificar a regra de fato — todo token encaixado em N INTEIRO de celulas e
+  todos no mesmo N — que independe do tamanho do palco.
+
+Verificado: `npm run test:mesa:audit` 207/207, `test:mesa` 5/5, `check:js`,
+`audit:static` e `audit:pendencias` verdes; no navegador, raio 0 no quadro, no
+inner e no canvas da grade.
+
+## Etapa Anterior (2026-08-20 — Etapa 107: o quadro virou a caixa do palco)
+
+Na Etapa 106 o quadro era so pintura: a grade varria o palco inteiro e o token
+podia parar fora dele. O Tiago pediu o oposto — token e grade so dentro do
+quadro.
+
+Como foi resolvido: `#mesaStageInner` ja e a caixa que TODAS as camadas usam
+como referencia (grade, desenho, nevoa e tokens guardam fracao dela), e
+`applyStageFitBox()` ja sabia encolher essa caixa para casar com a imagem do
+mapa. Bastou dar ao caso "sem mapa" o mesmo tratamento: a caixa vira um
+quadrado centralizado de `MESA_BOARD_FILL` (92%) do lado menor do palco. Uma
+mudanca, quatro camadas presas — sem clamp novo em lugar nenhum.
+
+- `js/mesa-map.js`: constante `MESA_BOARD_FILL`; ramo `!active` de
+  `applyStageFitBox()` agora dimensiona a caixa quadrada e marca
+  `data-fit-board` no wrap (o ramo do mapa limpa o atributo). `initMesaMap()`
+  chama `applyMapTransform()` no boot para a caixa existir ja no primeiro
+  render, sem mapa nenhum.
+- `css/mesa-stage.css`: `.mesa-stage-board` deixou de se dimensionar
+  (`top/left/transform/aspect-ratio` fora) e passou a `inset: 0` — a pintura e
+  a superficie logica sao a mesma caixa. A grade decorativa do `::after` saiu:
+  com a caixa certa, quem desenha a grade e o `#mesaGridCanvas`, e as duas
+  juntas ficavam sobrepostas.
+- Cache-busting: `mesa-stage.css?v=2026-08-20-quadro-2`,
+  `mesa-map.js?v=2026-08-20-quadro-1`.
+
+O arrasto de token ja clampava por tamanho (`usableWidth/usableHeight` em
+`updateDragPosition`), entao o token para inteiro na borda do quadro, sem
+vazar metade.
+
+Verificado no navegador: wrap 932x655 → inner, quadro e canvas da grade nos
+mesmos 603x603 centralizados, `data-fit-board` presente, os tres tokens da cena
+dentro da caixa e zero erro de console. `check:js`, `audit:static`,
+`audit:pendencias` e `test:mesa` (5/5) verdes.
+
+## Etapa Anterior (2026-08-20 — Etapa 106: quadro padrao do palco, sem texto)
+
+Pedido do Tiago: a tela inicial da Mesa nao pode ter texto nenhum — so um quadro
+padrao centralizado, nas cores da casa.
+
+O que mudou:
+
+- `mesa.html`: removido o bloco `#mesaEmptyState` ("Nenhum token em cena." + a
+  frase da escalacao). No lugar entrou `#mesaStageBoard`, uma div vazia
+  (`aria-hidden`) logo depois de `#mesaMapLayer`.
+- `css/mesa-stage.css`: `.mesa-stage-board` — quadrado centralizado
+  (`aspect-ratio: 1/1`, 86% da altura do palco), fundo em degrade preto/carmesim,
+  borda `--border-accent`, halo `--accent-glow` e grade decorativa no `::after`.
+  Some sozinho com `#mesaMapLayer:not([hidden]) + .mesa-stage-board` quando um
+  mapa entra em cena — quem manda na superficie passa a ser o mapa.
+  As regras antigas `.mesa-empty-state` sairam; `.token-inspector-empty`, que
+  compartilhava os seletores, continua igual.
+- `js/mesa-stage.js`, `js/mesa-map.js`, `js/mesa-core.js`: caiu toda a logica de
+  mostrar/esconder o empty state (inclusive a ref `emptyState` do mapa de DOM).
+  A visibilidade do quadro e 100% CSS.
+- Cache-busting: `css/mesa-stage.css?v=2026-08-20-quadro-1` em `mesa.html`.
+
+Verificado: `npm run check:js` (47 arquivos OK), `npm run audit:static` (OK) e a
+Mesa aberta em `localhost:8000` — quadro 563x563 renderizado, borda
+`rgba(168,48,40,.42)`, zero erro no console e nenhum texto no palco alem do nome
+dos tokens em cena.
+
+## Etapa Anterior (2026-08-20 — Etapa 105: token medido contra a superficie)
 
 Pedido do Tiago: fechar tambem os seis `.mini-btn` que estavam a 4,497:1.
 
