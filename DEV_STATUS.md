@@ -40,7 +40,48 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-20 — Etapa 112: ESCAL. sai da barra)
+## Ultima Etapa Concluida (2026-08-20 — Etapa 113: a ESCALA do mapa sai do painel)
+
+O Tiago mandou print do grupo "ESCALA" (- 100% + ↻ mais a dica "Arraste o mapa
+para reposicionar / Scroll para zoom") dizendo que nao funcionava direito. Nao
+funcionava mesmo, e o motivo estava a duas etapas de distancia: desde a Etapa
+53/68 o palco se ajusta a imagem e o pan/escala DO MAPA fica travado em
+identidade — mexer nele descolaria o mapa dos tokens e dos desenhos, que usam
+fracao do PALCO. `adjustMapScale()` ja retornava cedo em `isMapTransformLocked()`.
+
+O que mantinha o controle na tela: `renderMesaMapLayer()` chamava
+`applyMapTransform()` (que, via `_syncMapTransformControls()`, escondia o grupo
+quando travado) e LOGO DEPOIS forcava `scaleGroup.hidden = false`. Resultado
+medido no navegador: com mapa carregado e ainda nao medido, `travado: false` e
+grupo visivel; depois do probe, `travado: true` e grupo some. Se a medicao
+falhasse, o grupo ficava visivel para sempre e os botoes mexiam no fallback
+`background-size: 110% auto`, que nao corresponde ao mapa ajustado. Um controle
+que so aparece em estado transitorio ou de falha.
+
+Decisao do Tiago: remover o grupo. Quem aproxima e o ZOOM DO PALCO (slider +
+scroll), que escala mapa, tokens e desenhos juntos e preserva o alinhamento.
+
+- `mesa.html`: grupo `#mesaMapScaleGroup` e a dica `#mesaMapHint` removidos.
+- `js/mesa-map.js`: `_syncMapTransformControls()` e `adjustMapScale()` saem
+  (a primeira so escondia o que nao existe mais, a segunda ficou sem chamador);
+  `renderMesaMapLayer()` e `toggleMapSettings()` perdem as linhas que mexiam
+  nos dois elementos; `applyMapTransform()` perde a atualizacao do label.
+  `panMap()` fica: o arrasto ainda vale enquanto a imagem nao foi medida.
+- `css/mesa-map.css`: `.mesa-transform-reset` fica sem elemento e recebe nota
+  de que agora e so token de estilo. `.mesa-map-settings-hint` continua em uso
+  pela Grade.
+- `tests/mesa-audit.spec.cjs`: o caso da Etapa 53/68 nao chama mais
+  `adjustMapScale` e passou a exigir que `#mesaMapScaleGroup` **nao exista**;
+  o caso de contraste do reset (Etapa 104) continua guardado por `!== null`.
+- Cache-busting: `mesa-map.js?v=2026-08-20-escala-fora-1`,
+  `mesa-map.css?v=2026-08-20-escala-fora-1`.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`, `test:controles`
+(6/6), `test:mesa-permissions` (15/15), `test:mesa`, `test:mesa:audit`.
+Conferido no navegador: com mapa medido o painel mostra so Grade e Nevoa,
+`adjustMapScale` nao existe mais, zoom do palco vivo, console limpo.
+
+## Etapa Anterior (2026-08-20 — Etapa 112: ESCAL. sai da barra)
 
 Logo depois da Etapa 111 o Tiago viu que TOKENS e ESCAL. faziam a mesma coisa.
 Faziam mesmo: `PANEL_BLOCKS.scene` e `PANEL_BLOCKS.roster` revelavam ambos o

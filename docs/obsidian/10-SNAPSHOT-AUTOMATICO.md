@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-21 15:53:50 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-21 15:56:08 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,16 +13,17 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `897d646 2026-08-21 feat(mesa): botoes da barra viram alternadores (Etapa 111)`
+- Ultimo commit: `982c810 2026-08-21 refactor(mesa): remove o botao ESCAL. da barra (Etapa 112)`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
-M  VISUAL_RULES.md
+M  SYSTEM_RULES.md
+M  css/mesa-map.css
+M  js/mesa-map.js
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
-M  tests/mesa-permissions.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -35,10 +36,11 @@ M  tests/mesa-permissions.spec.cjs
 
 ```text
 DEV_STATUS.md
-VISUAL_RULES.md
+SYSTEM_RULES.md
+css/mesa-map.css
+js/mesa-map.js
 mesa.html
 tests/mesa-audit.spec.cjs
-tests/mesa-permissions.spec.cjs
 ```
 
 ## Paginas Principais

@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="css/mesa-stage.css?v=2026-08-20-quadro-5" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-08-20-contraste-4" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-08-20-contraste-1" />
-  <link rel="stylesheet" href="css/mesa-map.css?v=2026-08-20-contraste-3" />
+  <link rel="stylesheet" href="css/mesa-map.css?v=2026-08-20-escala-fora-1" />
   <link rel="stylesheet" href="css/mesa-drawing.css?v=2026-08-20-contraste-3" />
   <link rel="stylesheet" href="css/mesa-scenes.css?v=2026-08-19-escala-1" />
   <!-- Permissoes (Etapa 75): esconde tudo marcado com data-mesa-master-only
@@ -473,16 +473,15 @@
         <!-- O grupo "Palco / Ajustar ao mapa" (Etapa 54) saiu na Etapa 68:
              o ajuste virou invariante, sem controle. -->
 
-        <div class="mesa-map-transform-group" id="mesaMapScaleGroup" hidden>
-          <span class="mesa-map-transform-label">Escala</span>
-          <div class="mesa-map-transform-row">
-            <button type="button" class="mesa-transform-btn" onclick="adjustMapScale(-0.1)">&#8722;</button>
-            <span id="mesaMapScaleLabel" class="mesa-map-scale-val">100%</span>
-            <button type="button" class="mesa-transform-btn" onclick="adjustMapScale(0.1)">+</button>
-            <button type="button" class="mesa-transform-btn mesa-transform-reset" onclick="resetMapTransform()" title="Resetar posi&ccedil;&atilde;o e escala">&#8635;</button>
-          </div>
-        </div>
-        <p class="mesa-map-settings-hint" id="mesaMapHint" hidden>Arraste o mapa para reposicionar.<br>Scroll para zoom.</p>
+        <!-- O grupo "Escala" (e a dica "Arraste o mapa / Scroll para zoom")
+             saiu na Etapa 113. Era vestigio de antes do ajuste automatico:
+             desde a Etapa 53/68 o palco se ajusta a imagem e o pan/escala DO
+             MAPA fica travado em identidade (mexer nele descolaria o mapa dos
+             tokens e dos desenhos). Na pratica o grupo so aparecia na janela
+             entre carregar o mapa e medir a imagem — e ficava permanentemente
+             visivel, mexendo num fallback que nao corresponde ao mapa exibido,
+             se a medicao falhasse. Quem aproxima e o ZOOM DO PALCO, que escala
+             mapa, tokens e desenhos juntos. -->
 
         <!-- Grade funcional (Etapa 42) — controles do mestre -->
         <div class="mesa-map-transform-group" id="mesaGridGroup" hidden>
@@ -887,7 +886,7 @@
   <script src="js/mesa-inspector.js?v=2026-08-18-coluna-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
   <script src="js/mesa-core.js?v=2026-08-18-selecao-fora-do-fio" defer></script>
-  <script src="js/mesa-map.js?v=2026-08-20-quadro-1" defer></script>
+  <script src="js/mesa-map.js?v=2026-08-20-escala-fora-1" defer></script>
   <script src="js/mesa-grid.js?v=2026-07-31-cells-1" defer></script>
   <script src="js/mesa-fog.js?v=2026-07-29-sharp-1" defer></script>
   <script src="js/mesa-scenes.js?v=2026-08-19-pastas-1" defer></script>

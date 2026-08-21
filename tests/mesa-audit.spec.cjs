@@ -4234,10 +4234,11 @@ test.describe("Palco ajustado ao mapa + resolucao (Etapas 52-55)", () => {
         surface:      getMesaMapSurfaceFrac(),
         token:        mesaStageFracToMapFrac(0.25, 0.75),
         travado:      isMapTransformLocked(),
-        escalaOculta: document.getElementById("mesaMapScaleGroup").hidden
+        // Etapa 113: o grupo "Escala" saiu do painel — o controle que
+        // sobrava travado agora simplesmente nao existe.
+        escalaOculta: document.getElementById("mesaMapScaleGroup") === null
       };
-      // Controles de mapa devem ser inertes enquanto travado
-      adjustMapScale(0.5);
+      // O pan deve ser inerte enquanto travado
       panMap(999, 999);
       medido.aposMexer = {
         guardado: { ...mesaMapState.mapTransform },
@@ -6827,7 +6828,10 @@ test.describe("Contraste de texto pequeno (Etapa 103)", () => {
       });
     });
 
-    // Reset (↻) do d-pad de escala: era alfa 0.4 -> 3,63:1.
+    // Reset (↻) do d-pad de escala: era alfa 0.4 -> 3,63:1. O botao saiu
+    // com o grupo "Escala" na Etapa 113; contraste() devolve null e o caso
+    // passa pelos vizinhos. A regra do token continua valendo para quem
+    // reusar `.mesa-transform-reset`.
     const reset = await contraste(page, ".mesa-transform-reset");
     if (reset !== null) expect(reset, "reset de escala ilegivel").toBeGreaterThanOrEqual(AA);
 

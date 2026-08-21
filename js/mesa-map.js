@@ -985,8 +985,6 @@ function renderMesaMapLayer(blobUrl, mapName) {
   const label       = document.getElementById("mesaMapLabel");
   const clearBtn    = document.getElementById("mesaMapClearBtn");
   const transformEl = document.getElementById("mesaMapTransform");
-  const scaleGroup  = document.getElementById("mesaMapScaleGroup");
-  const hint        = document.getElementById("mesaMapHint");
   const settingsBtn = document.getElementById("mesaMapSettingsBtn");
 
   if (!layer) return;
@@ -997,18 +995,12 @@ function renderMesaMapLayer(blobUrl, mapName) {
     layer.style.backgroundImage = `url("${blobUrl}")`;
     layer.removeAttribute("hidden");
     applyMapTransform();
-    // Exibe seção de escala/posição — só faz sentido com mapa ativo
-    if (scaleGroup) scaleGroup.hidden = false;
-    if (hint) hint.hidden = false;
     if (settingsBtn) settingsBtn.hidden = false;
   } else {
     layer.style.backgroundImage    = "";
     layer.style.backgroundSize     = "cover";
     layer.style.backgroundPosition = "center";
     layer.setAttribute("hidden", "");
-    // Oculta controles específicos de mapa (escala, hint)
-    if (scaleGroup) scaleGroup.hidden = true;
-    if (hint) hint.hidden = true;
     if (masterMode) {
       // Mestre: mantém botão visível para acessar config de tokens
       if (settingsBtn) settingsBtn.hidden = false;
@@ -1070,10 +1062,6 @@ function applyMapTransform() {
   }
   layer.style.backgroundPosition = `calc(50% + ${x}px) calc(50% + ${y}px)`;
 
-  // Atualizar label de escala
-  const lbl = document.getElementById("mesaMapScaleLabel");
-  if (lbl) lbl.textContent = `${Math.round(s * 100)}%`;
-
   // Persistir por mapa. No modo fit o transform é identidade FORÇADA, não uma
   // escolha do mestre — salvar aqui apagaria o pan/zoom que ele havia ajustado
   // e que deve voltar intacto se o fit for desligado.
@@ -1085,10 +1073,6 @@ function applyMapTransform() {
       );
     } catch {}
   }
-
-  // Com o fit ligado, pan/escala do mapa não fazem mais nada: esconder o grupo
-  // evita um controle vivo que não responde.
-  _syncMapTransformControls();
 
   // Grade e névoa acompanham o mapa. Antes redesenhavam SINCRONAMENTE aqui, e
   // como o arrasto chama applyMapTransform a cada mousemove (dezenas por
@@ -1127,29 +1111,10 @@ function flushMapLayersRedraw() {
   _redrawMapLayers();
 }
 
-/**
- * Mostra/esconde os controles de pan e escala do mapa conforme o travamento.
- * Só age quando há mapa ativo — sem mapa, renderMesaMapLayer() já os oculta.
- */
-function _syncMapTransformControls() {
-  if (!mesaMapState.activeMapUrl) return;
-  const locked     = isMapTransformLocked();
-  const scaleGroup = document.getElementById("mesaMapScaleGroup");
-  const hint       = document.getElementById("mesaMapHint");
-  if (scaleGroup) scaleGroup.hidden = locked;
-  if (hint)       hint.hidden       = locked;
-}
-
-function adjustMapScale(delta) {
-  if (!_requireMapMaster("ajustar a escala do mapa")) return;
-  if (!mesaMapState.activeMapUrl) return;
-  // Fit ligado: escalar a imagem dentro da caixa a descolaria dos tokens.
-  if (isMapTransformLocked()) return;
-  mesaMapState.mapTransform.scale = Math.max(0.1, Math.min(8,
-    mesaMapState.mapTransform.scale + delta));
-  applyMapTransform();
-  broadcastMapTransform();
-}
+/* _syncMapTransformControls() e adjustMapScale() sairam na Etapa 113 junto
+   com o grupo "Escala" do painel: a primeira so escondia um controle que nao
+   existe mais, e a segunda ficou sem nenhum chamador. O pan (panMap) continua,
+   porque o arrasto do mapa ainda vale enquanto a imagem nao foi medida. */
 
 function panMap(dx, dy) {
   if (!mesaMapState.activeMapUrl) return;
@@ -2235,14 +2200,6 @@ function toggleMapSettings() {
   if (btn) {
     btn.setAttribute("aria-expanded", isOpen ? "false" : "true");
     btn.classList.toggle("is-active", !isOpen);
-  }
-  if (!isOpen && typeof isMaster === "function" && isMaster()) {
-    // Controles de mapa — visíveis apenas quando há mapa ativo
-    const hasMap = Boolean(mesaMapState.activeMapUrl);
-    const scaleGroup = document.getElementById("mesaMapScaleGroup");
-    const hint = document.getElementById("mesaMapHint");
-    if (scaleGroup) scaleGroup.hidden = !hasMap;
-    if (hint) hint.hidden = !hasMap;
   }
 }
 

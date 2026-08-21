@@ -414,7 +414,9 @@
   background: rgba(168, 48, 40, 0.35);
 }
 
-/* Botão reset (centro do d-pad) */
+/* Botão reset (centro do d-pad). Etapa 113: sem elemento no HTML desde que o
+   grupo "Escala" saiu — fica como token de estilo para o proximo botao
+   secundario dentro de um `.mesa-map-transform-row`. */
 /* O glifo segue o MESMO nivel de icone dos vizinhos (0,82rem). Ficar em
    0,85rem nao era escolha, era sobra: media 13,6px ao lado de 13,12px. */
 .mesa-transform-reset {
