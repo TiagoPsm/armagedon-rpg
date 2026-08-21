@@ -40,7 +40,115 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-21 — Etapa 116: "Meu token" para o jogador)
+## Ultima Etapa Concluida (2026-08-21 — Etapa 118: a versao do bundle sai do conteudo)
+
+O Tiago mandou a tela do MESTRE com o botao da camada mostrando os DOIS
+rotulos ao mesmo tempo — "TOKENS" e "MEU TOKEN", com os dois icones. No
+repositorio estava tudo certo: conferido no navegador nos dois papeis
+(mestre ve so "TOKENS"/retrato, jogador so "Meu token"/pino) e os tres testes
+da Etapa 116 passando.
+
+O defeito estava no ARTEFATO PUBLICADO. `tools/build-pages.cjs` concatena o
+CSS e o JS da Mesa e da Ficha em bundles, e a `?v=` desses bundles era uma
+CONSTANTE bumpada na mao (`FICHA_BUNDLE_VERSION` / `MESA_BUNDLE_VERSION`),
+parada em "2026-08-19-escala-1". Navegador e CDN guardam por URL: o site
+publicado seguiu entregando o bundle de CSS ANTIGO junto com o HTML NOVO. O
+HTML novo traz as duas variantes de rotulo; o CSS que esconde uma delas so
+existia no bundle novo, que ninguem baixou — dai os dois rotulos na tela.
+
+A regra de cache-busting do CLAUDE.md sempre falou do `?v=` das tags do
+repositorio. O `?v=` do bundle nao tinha dono e falhou em silencio, sem
+reprovar um unico teste — porque nenhum teste olhava para `_site/`.
+
+- `tools/build-pages.cjs`: as duas constantes sairam. `bundleFiles()` agora
+  devolve um **hash sha256 do conteudo** (12 chars) e e ele que vai para a
+  `?v=` do bundle. Mudou qualquer arquivo do bundle, muda a URL — por
+  construcao, nao por memoria. O build imprime as versoes de cada bundle.
+- `tests/build-pages.spec.cjs` + `npm run test:build`: tres casos sobre o
+  ARTEFATO, nao sobre o codigo — (1) mexer num arquivo do bundle muda a URL
+  publicada (confirmado REPROVANDO com o build anterior), (2) todo arquivo
+  css/js referenciado pelo HTML publicado existe em `_site/`, (3) o CSS que
+  decide o rotulo por papel chega ao bundle da Mesa.
+- `CLAUDE.md`: a regra de cache-busting agora diz que o `?v=` do bundle e
+  automatico e nao se mexe na mao.
+
+Observacao registrada, sem pendencia aberta: `js/mesa-permissions.js`,
+`js/mesa-initiative.js` e `js/mesa-markers.js` NAO entram no bundle da Mesa
+(ficam como tags individuais, com `?v=` proprio). Funciona — sao `defer`,
+entao a ordem de execucao segue a ordem do documento — mas em producao eles
+carregam DEPOIS do bundle, e no repositorio `mesa-permissions.js` carrega
+ANTES de `mesa-stage.js`. A ordem dos scripts e um contrato; se um dia algum
+desses tres passar a depender de rodar antes do bundle, isso quebra so em
+producao. O teste (2) acima ja garante que nenhum deles suma do artefato.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`, `test:build`
+(3), `test:controles` (6), `test:mesa` (5), `test:mesa:audit` (219).
+Conferido no navegador nos dois papeis, e no site publicado (foi la que o
+defeito apareceu).
+
+## Etapa Anterior (2026-08-21 — Etapa 117: redimensionar token sincroniza)
+
+Bug relatado pelo Tiago: quando o JOGADOR redimensionava o proprio token, o
+tamanho novo ficava so na tela dele — o mestre e os outros jogadores nao viam
+nada. Causa: `handleResizePointerUp()` (js/mesa-stage.js) terminava em
+`bumpMesaSceneVersion()` + `persistState()` e **nenhum broadcast**. Como
+persistir a cena e master-only (`canPersistRemoteMesaScene`), o resize do
+jogador nao tinha por onde sair da maquina. O do mestre tambem so aparecia nos
+outros no proximo carregamento da cena, nunca ao vivo.
+
+- `js/mesa-stage.js`: `handleResizePointerUp()` passou a transmitir o token
+  depois de encaixa-lo na grade — `broadcastMesaTokenMove(token)` para tokens
+  normais e `broadcastEchoTokenUpsert(token)` para Echo (o canal de movimento
+  so aceita token de jogador vindo de jogador; Echo tem canal proprio).
+- `js/mesa-core.js`: `mesa:token:move` passou a carregar `tokenScale`.
+  Redimensionar TAMBEM muda x/y (a ancora do arrasto fica parada), entao o
+  canal de movimento e o lugar natural para o tamanho — nenhum tipo novo no
+  Worker, e o payload ja e retransmitido intacto pelo Durable Object.
+- `js/mesa-core.js`: `applyMesaTokenMoveDelta()` aplica o `tokenScale` quando
+  vem no payload (ausente = mantem o tamanho atual, para clientes antigos), e
+  entra na comparacao que decide se houve mudanca.
+- `js/mesa-core.js`: ao receber um move de jogador com `tokenScale`, o MESTRE
+  persiste a cena — mesmo padrao ja usado para o Echo do jogador. Sem isso o
+  tamanho voltava ao antigo no F5.
+- `mesa.html`: cache-busting de `mesa-stage.js` e `mesa-core.js`
+  (`?v=2026-08-21-resize-sync-1`).
+- `tests/mesa-audit.spec.cjs`: quatro casos. Dois de peca (o delta SAI com
+  `tokenScale`; o delta que CHEGA aplica o tamanho e o payload sem `tokenScale`
+  nao zera nada) e dois de ponta a ponta, que sao a prova do conserto: o
+  ARRASTO REAL da alca no cliente do jogador emite o delta, e esse delta faz o
+  token CRESCER na tela do mestre. Confirmado que os quatro reprovam com
+  `js/mesa-stage.js` e `js/mesa-core.js` no estado anterior (git stash) e
+  passam com o conserto — o teste descreve o bug, nao a implementacao.
+
+Limite conhecido: com a trava global de movimento ligada, o resize do jogador
+nao propaga (o Durable Object recusa `mesa:token:move` de jogador travado).
+Coerente com "jogador nao mexe na cena", mas a alca continua visivel — se
+incomodar, o proximo passo e esconder a alca quando `state.playersMoveLocked`.
+
+- `tests/mesa-resize-worker.spec.cjs` + `npm run test:mesa:worker`: prova
+  contra o **Worker e o Durable Object rodando de verdade** (`wrangler dev
+  --local`, D1 local, `npx serve`). Dois casos: (1) dois NAVEGADORES, mestre e
+  jogador, ligados ao Worker — o jogador arrasta a alca e o token cresce na
+  tela do mestre; (2) dois WebSockets crus contra o DO — o `tokenScale`
+  atravessa o relay intacto, o ator vem carimbado, um delta forjado em token
+  alheio e recusado e nao vaza, a trava de movimento recusa o resize do
+  jogador, e o resize do mestre sempre passa. O spec se PULA sozinho sem as
+  variaveis de ambiente (`ARMAGEDON_LOCAL_WORKER`, `..._MASTER_PASSWORD`,
+  `..._PLAYER_PASSWORD`) — nunca reprova por falta de ambiente nem finge que
+  passou. O caso (1) foi confirmado REPROVANDO com o codigo anterior: o token
+  crescia na tela do jogador e ficava em 1 na do mestre, que e exatamente o
+  bug relatado.
+
+Nenhuma mudanca no Worker foi necessaria — `mesa:token:move` ja e
+retransmitido intacto pelo DO e a autorizacao de jogador (`canPlayerRelay
+TokenMove`) ja existia. **Nao precisa de deploy**; `wrangler deploy --dry-run`
+rodado so para conferir que o bundle continua de pe.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`, `test:controles`,
+`test:mesa` (5), `test:mesa:audit` (219, com os 4 novos) e `test:mesa:worker`
+(2, contra o Worker local).
+
+## Etapa Anterior (2026-08-21 — Etapa 116: "Meu token" para o jogador)
 
 O Tiago pediu que o botao da camada de tokens dissesse "Meu token" para o
 jogador, com icone diferente. Faz sentido alem do nome: "TOKENS" no plural

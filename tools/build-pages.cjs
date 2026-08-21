@@ -1,12 +1,24 @@
 const fs = require("node:fs");
 const path = require("node:path");
+const crypto = require("node:crypto");
 
 const repoRoot = path.resolve(__dirname, "..");
 const outDir = path.join(repoRoot, "_site");
 
-// Bump aqui quando mudar arquivos dos bundles
-const FICHA_BUNDLE_VERSION = "2026-08-19-escala-1";
-const MESA_BUNDLE_VERSION  = "2026-08-19-escala-1";
+/* A versao do bundle sai do CONTEUDO (hash), nunca mais de uma constante.
+ *
+ * O bug que isto conserta: as duas constantes de versao eram bumpadas na mao e
+ * ficaram paradas em "2026-08-19-escala-1". Como navegador e CDN guardam por
+ * URL, o site publicado seguiu servindo o bundle ANTIGO com o HTML NOVO. Foi
+ * assim que o botao da camada apareceu com os DOIS rotulos ao mesmo tempo
+ * ("TOKENS" e "MEU TOKEN"): o HTML ja trazia as duas variantes e o CSS que
+ * esconde uma delas so existia no bundle novo, que ninguem baixou. A regra de
+ * cache-busting do CLAUDE.md cobre o `?v=` das tags do repositorio — o do
+ * bundle nao tinha dono, e falhou em silencio. Hash resolve por construcao:
+ * mudou o conteudo, muda a URL. */
+function bundleVersion(content) {
+  return crypto.createHash("sha256").update(content).digest("hex").slice(0, 12);
+}
 
 const files = [
   "index.html", "ficha.html", "mesa.html", "regras.html", "sugestoes.html",
@@ -82,6 +94,7 @@ function bundleFiles(relativeFiles, targetRelativePath, separator) {
   }).join(separator);
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, content + "\n", "utf8");
+  return bundleVersion(content);
 }
 
 // Substitui tags CSS/JS individuais pelo bundle — suporta defer e ?v= cache-busting
@@ -120,19 +133,23 @@ files.forEach(copyFile);
 dirs.forEach(copyDir);
 
 console.log("Bundling ficha...");
-bundleFiles(fichaCssFiles, fichaCssBundle, "\n\n");
-bundleFiles(fichaJsFiles,  fichaJsBundle,  "\n;\n");
+const fichaCssVersion = bundleFiles(fichaCssFiles, fichaCssBundle, "\n\n");
+const fichaJsVersion  = bundleFiles(fichaJsFiles,  fichaJsBundle,  "\n;\n");
 rewriteHtmlBundles(path.join(outDir, "ficha.html"), {
-  cssFiles: fichaCssFiles, cssBundle: fichaCssBundle, cssVersion: FICHA_BUNDLE_VERSION,
-  jsFiles:  fichaJsFiles,  jsBundle:  fichaJsBundle,  jsVersion:  FICHA_BUNDLE_VERSION,
+  cssFiles: fichaCssFiles, cssBundle: fichaCssBundle, cssVersion: fichaCssVersion,
+  jsFiles:  fichaJsFiles,  jsBundle:  fichaJsBundle,  jsVersion:  fichaJsVersion,
 });
 
+console.log("  css v=" + fichaCssVersion + "  js v=" + fichaJsVersion);
+
 console.log("Bundling mesa...");
-bundleFiles(mesaCssFiles, mesaCssBundle, "\n\n");
-bundleFiles(mesaJsFiles,  mesaJsBundle,  "\n;\n");
+const mesaCssVersion = bundleFiles(mesaCssFiles, mesaCssBundle, "\n\n");
+const mesaJsVersion  = bundleFiles(mesaJsFiles,  mesaJsBundle,  "\n;\n");
 rewriteHtmlBundles(path.join(outDir, "mesa.html"), {
-  cssFiles: mesaCssFiles, cssBundle: mesaCssBundle, cssVersion: MESA_BUNDLE_VERSION,
-  jsFiles:  mesaJsFiles,  jsBundle:  mesaJsBundle,  jsVersion:  MESA_BUNDLE_VERSION,
+  cssFiles: mesaCssFiles, cssBundle: mesaCssBundle, cssVersion: mesaCssVersion,
+  jsFiles:  mesaJsFiles,  jsBundle:  mesaJsBundle,  jsVersion:  mesaJsVersion,
 });
+
+console.log("  css v=" + mesaCssVersion + "  js v=" + mesaJsVersion);
 
 console.log("\nArtifact ready:", path.relative(repoRoot, outDir));
