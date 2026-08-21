@@ -40,7 +40,49 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-21 — Etapa 118: a versao do bundle sai do conteudo)
+## Ultima Etapa Concluida (2026-08-21 — Etapa 119: a lista do bundle sai do HTML)
+
+Fechando a observacao deixada na Etapa 118. `tools/build-pages.cjs` mantinha
+DOIS arrays escritos a mao com os arquivos de cada bundle, e eles ja tinham
+divergido do HTML nas duas direcoes possiveis:
+
+- **Faltavam arquivos.** `mesa-permissions.js`, `mesa-initiative.js` e
+  `mesa-markers.js` (Mesa) e `ficha-echos.js` (Ficha) nao entravam no bundle e
+  sobravam como tags soltas DEPOIS dele. Como sao `defer`, a ordem de execucao
+  segue a do documento — entao no site publicado esses arquivos passavam a
+  rodar depois de TODO o resto, enquanto no repositorio `mesa-permissions.js`
+  roda ANTES de `mesa-stage.js`.
+- **A ordem divergia.** Em `ficha.html` o array comecava por `ui.js` e so
+  depois `runtime-config.js`, invertendo o HTML: no site publicado o
+  `window.ARMAGEDON_CONFIG` (URL da API) era definido DEPOIS de um modulo que
+  ja tinha carregado. Nunca quebrou porque `ui.js` nao le a config no load —
+  mas era sorte, nao desenho.
+
+"A ordem dos scripts e um contrato" (CLAUDE.md). Um contrato copiado a mao em
+dois lugares nao e contrato, e promessa.
+
+- `tools/build-pages.cjs`: os arrays sairam. `listasDoHtml()` extrai as tags
+  de `ficha.html` e `mesa.html` em ORDEM DE DOCUMENTO, e e essa lista que vira
+  bundle. Mesa: 21 JS + 11 CSS (era 18 + 10). Ficha: 16 JS (era 15).
+- `tools/build-pages.cjs`: o build agora RECUSA agrupar se houver uma tag que
+  nao entra no bundle (ou um `<script>` inline) no meio do bloco — juntar
+  nesse caso empurraria essa tag para depois do bundle, que e exatamente o
+  defeito desta etapa. Erro explicito em vez de artefato torto.
+- `tests/build-pages.spec.cjs`: mais cinco casos — o bundle tem os mesmos
+  arquivos NA MESMA ORDEM do HTML (Mesa e Ficha), nenhuma tag sobra fora do
+  bundle no artefato, e um `<script>` inline no meio do bloco faz o build
+  FALHAR em vez de reordenar. Os cinco reprovam com o build anterior.
+
+Conferido no artefato construido (`_site` servido de verdade): Mesa nos dois
+papeis (mestre so "TOKENS"/retrato, jogador so "Meu token"/pino), permissoes
+seguem fail-closed (13 elementos master-only visiveis para o mestre, 0 para o
+jogador), token renderizado, e Ficha carregando com a config da API no lugar.
+Zero erros de console nas duas paginas.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`, `test:build`
+(8), `test:controles` (6), `test:mesa` (5), `test:mesa:audit` (219).
+
+## Etapa Anterior (2026-08-21 — Etapa 118: a versao do bundle sai do conteudo)
 
 O Tiago mandou a tela do MESTRE com o botao da camada mostrando os DOIS
 rotulos ao mesmo tempo — "TOKENS" e "MEU TOKEN", com os dois icones. No

@@ -55,7 +55,7 @@ npx serve . --listen 8000
 
 ### No build step on the frontend
 
-Scripts load via `<script src="...">` tags in order. **Script order in `ficha.html` and `mesa.html` is a contract** — do not reorder without tracing all global dependencies. Functions called by inline `onclick` handlers must stay globally scoped.
+Scripts load via `<script src="...">` tags in order. **Script order in `ficha.html` and `mesa.html` is a contract** — do not reorder without tracing all global dependencies. The published bundles honour that contract by construction (since 2026-08-21, Etapa 119): `tools/build-pages.cjs` reads the tag list straight from each HTML in document order — there is no hand-written file list to keep in sync — and refuses to bundle if a non-bundled tag or inline `<script>` sits in the middle of the block, since grouping would push it after the bundle. `npm run test:build` guards it. Functions called by inline `onclick` handlers must stay globally scoped.
 
 ### Page → JS module mapping
 

@@ -33,29 +33,61 @@ const dirs = ["css", "js"];
 
 const fichaCssBundle = "css/ficha-page.bundle.css";
 const fichaJsBundle  = "js/ficha-page.bundle.js";
-const fichaCssFiles  = ["css/tokens.css","css/reset.css","css/components.css","css/ficha.css"];
-const fichaJsFiles   = [
-  "js/ui.js","js/runtime-config.js","js/api.js","js/auth.js","js/soul-essence.js",
-  "js/ficha-core.js","js/ficha-master.js","js/ficha-sheet.js","js/ficha-inventory.js",
-  "js/ficha-dice.js","js/ficha-habs.js","js/ficha-passives.js",
-  "js/ficha-memories.js","js/ficha-soul.js","js/ficha-init.js"
-];
+const mesaCssBundle  = "css/mesa-page.bundle.css";
+const mesaJsBundle   = "js/mesa-page.bundle.js";
 
-const mesaCssBundle = "css/mesa-page.bundle.css";
-const mesaJsBundle  = "js/mesa-page.bundle.js";
-const mesaCssFiles  = [
-  "css/tokens.css","css/reset.css","css/components.css","css/mesa.css",
-  "css/mesa-stage.css","css/mesa-roster.css","css/mesa-inspector.css","css/mesa-map.css",
-  "css/mesa-drawing.css","css/mesa-scenes.css"
-];
-// O Canvas renderer (mesa-renderer-v2.js + mesa-renderer-worker.js) foi removido
-// em 2026-06-30: o token da Mesa e sempre o estilo redondo (DOM), sem Canvas.
-const mesaJsFiles = [
-  "js/runtime-config.js","js/api.js","js/ui.js","js/auth.js",
-  "js/mesa-stage.js","js/mesa-roster.js","js/mesa-inspector.js",
-  "js/mesa-storage.js","js/mesa-core.js","js/mesa-map.js",
-  "js/mesa-grid.js","js/mesa-fog.js","js/mesa-scenes.js","js/mesa-ping.js","js/mesa-ruler.js","js/mesa-dice.js","js/mesa-drawing.js","js/mesa-select.js"
-];
+/* A LISTA de arquivos de cada bundle sai do proprio HTML, em ordem de
+ * documento (Etapa 119). Antes eram dois arrays escritos a mao aqui, e eles
+ * ja tinham divergido do HTML de duas maneiras:
+ *
+ *  - FALTAVAM arquivos. mesa-permissions.js, mesa-initiative.js e
+ *    mesa-markers.js (e ficha-echos.js) ficavam de fora do bundle e sobravam
+ *    como tags soltas DEPOIS dele. Funcionava por sorte: sao `defer`, entao a
+ *    ordem de execucao segue a do documento — mas em producao esses arquivos
+ *    rodavam depois de todo o resto, e no repositorio mesa-permissions.js
+ *    roda ANTES de mesa-stage.js.
+ *  - A ORDEM divergia. Em ficha.html o array comecava por ui.js e so depois
+ *    runtime-config.js, invertendo o HTML: no site publicado a configuracao da
+ *    API passava a ser definida DEPOIS de um modulo que ja tinha carregado.
+ *
+ * "A ordem dos scripts e um contrato" (CLAUDE.md). Um contrato copiado a mao
+ * em dois lugares nao e contrato, e promessa. Agora o HTML e a unica fonte.
+ */
+const TAG_CSS = /<link\s+rel="stylesheet"\s+href="((?:css|js)\/[^"?]+)(?:\?[^"]*)?"[^>]*\/>/g;
+const TAG_JS  = /<script\s+src="((?:css|js)\/[^"?]+)(?:\?[^"]*)?"(?:\s+defer)?\s*><\/script>/g;
+
+function coletarDoHtml(html, regex, rotulo, htmlPath) {
+  const achados = [];
+  for (const m of html.matchAll(regex)) {
+    achados.push({ file: m[1], inicio: m.index, fim: m.index + m[0].length });
+  }
+  if (achados.length === 0) return [];
+
+  /* O bundle substitui a PRIMEIRA tag e apaga as demais. Isso so preserva a
+   * ordem se as tags forem vizinhas: uma tag que nao entra no bundle (ou um
+   * <script> inline) no meio do bloco seria empurrada para depois dele —
+   * exatamente o defeito que esta etapa conserta. Entao o build RECUSA em vez
+   * de publicar um artefato com ordem diferente da do repositorio. */
+  const miolo = html.slice(achados[0].inicio, achados[achados.length - 1].fim);
+  const marcador = rotulo === "js" ? "<script" : "<link";
+  const total = (miolo.match(new RegExp(marcador, "g")) || []).length;
+  if (total !== achados.length) {
+    throw new Error(
+      "[bundle] " + path.basename(htmlPath) + ": ha um " + marcador +
+      " no meio do bloco de " + rotulo + " que nao entra no bundle. " +
+      "Agrupar mudaria a ordem de execucao — mova-o para fora do bloco."
+    );
+  }
+  return achados.map(a => a.file);
+}
+
+function listasDoHtml(htmlPath) {
+  const html = fs.readFileSync(htmlPath, "utf8");
+  return {
+    cssFiles: coletarDoHtml(html, TAG_CSS, "css", htmlPath),
+    jsFiles:  coletarDoHtml(html, TAG_JS,  "js",  htmlPath)
+  };
+}
 
 function removeDir(dir) {
   if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
@@ -132,24 +164,27 @@ fs.mkdirSync(outDir, { recursive: true });
 files.forEach(copyFile);
 dirs.forEach(copyDir);
 
-console.log("Bundling ficha...");
-const fichaCssVersion = bundleFiles(fichaCssFiles, fichaCssBundle, "\n\n");
-const fichaJsVersion  = bundleFiles(fichaJsFiles,  fichaJsBundle,  "\n;\n");
-rewriteHtmlBundles(path.join(outDir, "ficha.html"), {
-  cssFiles: fichaCssFiles, cssBundle: fichaCssBundle, cssVersion: fichaCssVersion,
-  jsFiles:  fichaJsFiles,  jsBundle:  fichaJsBundle,  jsVersion:  fichaJsVersion,
-});
+const ficha = listasDoHtml(path.join(repoRoot, "ficha.html"));
+const mesa  = listasDoHtml(path.join(repoRoot, "mesa.html"));
 
-console.log("  css v=" + fichaCssVersion + "  js v=" + fichaJsVersion);
+console.log("Bundling ficha...");
+const fichaCssVersion = bundleFiles(ficha.cssFiles, fichaCssBundle, "\n\n");
+const fichaJsVersion  = bundleFiles(ficha.jsFiles,  fichaJsBundle,  "\n;\n");
+rewriteHtmlBundles(path.join(outDir, "ficha.html"), {
+  cssFiles: ficha.cssFiles, cssBundle: fichaCssBundle, cssVersion: fichaCssVersion,
+  jsFiles:  ficha.jsFiles,  jsBundle:  fichaJsBundle,  jsVersion:  fichaJsVersion,
+});
+console.log("  css v=" + fichaCssVersion + " (" + ficha.cssFiles.length + " arquivos)" +
+            "  js v=" + fichaJsVersion + " (" + ficha.jsFiles.length + " arquivos)");
 
 console.log("Bundling mesa...");
-const mesaCssVersion = bundleFiles(mesaCssFiles, mesaCssBundle, "\n\n");
-const mesaJsVersion  = bundleFiles(mesaJsFiles,  mesaJsBundle,  "\n;\n");
+const mesaCssVersion = bundleFiles(mesa.cssFiles, mesaCssBundle, "\n\n");
+const mesaJsVersion  = bundleFiles(mesa.jsFiles,  mesaJsBundle,  "\n;\n");
 rewriteHtmlBundles(path.join(outDir, "mesa.html"), {
-  cssFiles: mesaCssFiles, cssBundle: mesaCssBundle, cssVersion: mesaCssVersion,
-  jsFiles:  mesaJsFiles,  jsBundle:  mesaJsBundle,  jsVersion:  mesaJsVersion,
+  cssFiles: mesa.cssFiles, cssBundle: mesaCssBundle, cssVersion: mesaCssVersion,
+  jsFiles:  mesa.jsFiles,  jsBundle:  mesaJsBundle,  jsVersion:  mesaJsVersion,
 });
-
-console.log("  css v=" + mesaCssVersion + "  js v=" + mesaJsVersion);
+console.log("  css v=" + mesaCssVersion + " (" + mesa.cssFiles.length + " arquivos)" +
+            "  js v=" + mesaJsVersion + " (" + mesa.jsFiles.length + " arquivos)");
 
 console.log("\nArtifact ready:", path.relative(repoRoot, outDir));
