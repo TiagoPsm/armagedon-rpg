@@ -40,7 +40,29 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-20 — Etapa 111: botoes da barra viram alternadores)
+## Ultima Etapa Concluida (2026-08-20 — Etapa 112: ESCAL. sai da barra)
+
+Logo depois da Etapa 111 o Tiago viu que TOKENS e ESCAL. faziam a mesma coisa.
+Faziam mesmo: `PANEL_BLOCKS.scene` e `PANEL_BLOCKS.roster` revelavam ambos o
+`vttRosterBlock`; a unica diferenca era que TOKENS ainda trocava a camada do
+palco e deixava o inspector aparecer. Ou seja, ESCAL. era um segundo botao para
+um painel que ja tinha dono. Decisao do Tiago: remover o ESCAL.
+
+- `mesa.html`: botao `.vtt-tb-btn[data-tool="roster"]` removido; chave
+  `roster` fora de `PANEL_BLOCKS`; o ramo de clique de FERRAMENTA saiu junto
+  (era o unico `data-tool` da barra) e com ele o loop que os marcava
+  `data-armed`. A escalacao continua exactamente onde estava: camada TOKENS.
+- `tests/mesa-permissions.spec.cjs`: as duas asserções sobre o botao ESCAL.
+  sairam. O bloco que ele abria continua master-only e segue conferido por
+  `#vttRosterBlock` e por `listMasterOnlyLeaks`.
+- `tests/mesa-audit.spec.cjs`: o terceiro caso da Etapa 111 (ferramenta e
+  camada nunca acesas juntas) virou o caso da Etapa 112 — trava a remocao e
+  denuncia qualquer `data-tool` futuro sem dono.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`, `test:controles`
+(6/6), `test:mesa` (5/5), `test:mesa-permissions` (15/15), `test:mesa:audit`.
+
+## Etapa Anterior (2026-08-20 — Etapa 111: botoes da barra viram alternadores)
 
 O Tiago pediu que os botoes de camada (TOKENS / MESTRE / MAPA) e as ferramentas
 da barra se comportassem como as ferramentas de desenho: clicar liga, clicar de

@@ -346,7 +346,7 @@ Tres detalhes que fazem essa regra funcionar e que nao podem ser trocados por co
 - **`<body data-role="player">` ja vem no HTML.** O padrao e fechado: se o JS falhar, atrasar ou for bloqueado, o jogador continua sem o chrome do mestre. O caminho inverso (revelar por engano) nao existe.
 - **Nada de regra por id.** A `.is-master #mesaMapOpenBtn` do `css/mesa-map.css` era o unico obstaculo entre o jogador e o botao "Abrir mapa" — sem `hidden`, sem trava na funcao. A classe `.is-master` continua no body so por compatibilidade; a fonte oficial e `data-role`.
 
-Visualmente o efeito e que a barra lateral do jogador fica com **TOKENS + desenho + dados + zoom** e nada mais: sem MESTRE/MAPA/ESCAL./INIC., sem a faixa de mapa no canto superior direito e sem os botoes do canto inferior direito. E uma barra mais curta de proposito — o jogador nao deve nem saber que aquelas ferramentas existem.
+Visualmente o efeito e que a barra lateral do jogador fica com **TOKENS + desenho + dados + zoom** e nada mais: sem MESTRE/MAPA/INIC. (o botao ESCAL. saiu da barra para todos na Etapa 112 — abria o mesmo painel que a camada TOKENS), sem a faixa de mapa no canto superior direito e sem os botoes do canto inferior direito. E uma barra mais curta de proposito — o jogador nao deve nem saber que aquelas ferramentas existem.
 
 ## Camada que cobre o palco nao captura o ponteiro (2026-08-02, Etapa 73)
 

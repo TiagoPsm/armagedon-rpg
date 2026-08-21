@@ -234,17 +234,9 @@
 
       <!-- Ferramentas -->
       <div class="vtt-tb-tools">
-        <!-- Escalacao e do mestre: o jogador nunca ve a lista de personagens
-             para colocar em cena (SYSTEM_RULES.md > Mesa Virtual). -->
-        <button class="vtt-tb-btn" data-tool="roster" title="Escalação — adicionar personagens à cena" aria-pressed="false" data-mesa-master-only>
-          <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-            <circle cx="7" cy="6" r="2.5"/>
-            <path d="M1.5 16.5c0-3 2.4-5.5 5.5-5.5s5.5 2.5 5.5 5.5" stroke-linecap="round"/>
-            <circle cx="14" cy="5" r="2"/>
-            <path d="M11.5 16.5c.4-2.6 2.5-4.5 4.5-4.5" stroke-linecap="round" stroke-dasharray="2 1.4"/>
-          </svg>
-          <span>ESCAL.</span>
-        </button>
+        <!-- ESCAL. saiu na Etapa 112: abria exactamente o mesmo bloco que a
+             camada TOKENS (vttRosterBlock), so que sem trocar a camada. Dois
+             botoes para o mesmo painel. A escalacao vive na camada TOKENS. -->
         <!-- Combate e conduzido pelo mestre: abrir/encerrar a iniciativa e
              master-only. O jogador entra pelo modal central de rolagem. -->
         <button class="vtt-tb-btn" id="mesaInitiativeBtn"
@@ -921,7 +913,6 @@
     var PANEL_BLOCKS = {
       scene:  ["vttRosterBlock"],
       map:    ["vttMapLibraryBlock"],
-      roster: ["vttRosterBlock"],
     };
     var ALL_BLOCKS = ["vttRosterBlock", "vttInspectorBlock", "vttMapLibraryBlock"];
     // Blocos de dono proprio: showPanel so ESCONDE; quem revela e o modulo.
@@ -936,7 +927,7 @@
     // sidebar. Usado quando o utilizador clica no botao que ja estava activo:
     // mesma logica das ferramentas de desenho — segundo clique desarma.
     function clearToolbarActive() {
-      document.querySelectorAll(".vtt-layer-btn[data-layer], .vtt-tb-btn[data-tool]")
+      document.querySelectorAll(".vtt-layer-btn[data-layer]")
         .forEach(function (b) {
           b.classList.remove("is-active");
           b.setAttribute("aria-pressed", "false");
@@ -1024,36 +1015,15 @@
         return;
       }
 
-      // Clique em botão de FERRAMENTA (apenas muda o painel, não a camada)
-      var toolBtn = e.target.closest(".vtt-tb-btn[data-tool]");
-      if (toolBtn) {
-        // Mesmo toggle das camadas: clicar na ferramenta activa fecha o painel.
-        if (toolBtn.classList.contains("is-active") && getOpenPanel()) {
-          clearToolbarActive();
-          showPanel(null);
-          return;
-        }
-        // Uma ferramenta abre o seu painel e desliga as camadas (e vice-versa).
-        document.querySelectorAll(".vtt-layer-btn[data-layer]").forEach(function (b) {
-          b.classList.remove("is-active");
-          b.setAttribute("aria-pressed", "false");
-        });
-        document.querySelectorAll(".vtt-tb-btn[data-tool]").forEach(function (b) {
-          var active = b.dataset.tool === toolBtn.dataset.tool;
-          b.classList.toggle("is-active", active);
-          b.setAttribute("aria-pressed", active ? "true" : "false");
-        });
-        showPanel(toolBtn.dataset.tool);
-      }
     });
 
-    // O delegado acima ja escuta estes botoes: marca-los como armados
-    // (Etapa 82) para a rede de seguranca do teste enxergar handler
+    // Nao ha mais nenhum `.vtt-tb-btn[data-tool]` na barra (Etapa 112): o unico
+    // era o ESCAL. Se algum voltar, precisa de dono proprio — o delegado acima
+    // so trata camadas, e `npm run test:controles` denuncia botao sem dono.
+
+    // O delegado acima cuida dos botoes de CAMADA (Etapa 84): marca-los como
+    // armados (Etapa 82) para a rede de seguranca do teste enxergar handler
     // delegado, que nao aparece nem como onclick inline nem no elemento.
-    document.querySelectorAll(".vtt-tb-btn[data-tool]").forEach(function (b) {
-      b.dataset.armed = "1";
-    });
-    // Mesmo delegado cuida dos botoes de CAMADA (Etapa 84).
     document.querySelectorAll(".vtt-layer-btn[data-layer]").forEach(function (b) {
       b.dataset.armed = "1";
     });

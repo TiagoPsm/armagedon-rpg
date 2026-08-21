@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-21 15:51:51 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-21 15:53:50 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,15 +13,16 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `9ad71b7 2026-08-20 feat(mesa): quadro padrao do palco sem texto (Etapas 106-110)`
+- Ultimo commit: `897d646 2026-08-21 feat(mesa): botoes da barra viram alternadores (Etapa 111)`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
-M  css/mesa.css
+M  VISUAL_RULES.md
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
+M  tests/mesa-permissions.spec.cjs
 ```
 
 ### Arquivos Modificados Sem Stage
@@ -34,9 +35,10 @@ M  tests/mesa-audit.spec.cjs
 
 ```text
 DEV_STATUS.md
-css/mesa.css
+VISUAL_RULES.md
 mesa.html
 tests/mesa-audit.spec.cjs
+tests/mesa-permissions.spec.cjs
 ```
 
 ## Paginas Principais

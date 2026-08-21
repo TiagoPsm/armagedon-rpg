@@ -6902,10 +6902,17 @@ test.describe("Barra da Mesa: botoes alternam e esvaziam a sidebar (Etapa 111)",
     expect(r.blocos, "bloco de dono proprio furou a sidebar vazia").toEqual([]);
   });
 
-  test("uma ferramenta e uma camada nunca ficam acesas juntas", async ({ page }) => {
+  /* Etapa 112: ESCAL. saiu da barra — abria o mesmo bloco que a camada
+     TOKENS. Este caso trava a remocao: um botao a mais para o mesmo painel
+     e a origem da confusao, e nao pode voltar sem querer. */
+  test("nao ha dois botoes para o mesmo painel da escalacao", async ({ page }) => {
     await abrirMesa(page);
-    await page.evaluate(() => document.querySelector('.vtt-tb-btn[data-tool="roster"]').click());
-    const r = await estado(page);
-    expect(r.ativos).toEqual(["roster"]);
+    const r = await page.evaluate(() => ({
+      escal: document.querySelectorAll('.vtt-tb-btn[data-tool="roster"]').length,
+      semDono: [...document.querySelectorAll(".vtt-tb-btn[data-tool]")]
+        .filter(b => !b.dataset.armed && !b.getAttribute("onclick")).map(b => b.dataset.tool),
+    }));
+    expect(r.escal, "o botao ESCAL. voltou a duplicar a camada TOKENS").toBe(0);
+    expect(r.semDono, "ferramenta na barra sem dono (no-op silencioso)").toEqual([]);
   });
 });

@@ -81,7 +81,8 @@ test.describe("Permissoes da Mesa (Etapa 75)", () => {
     expect(await listMasterOnlyLeaks(page)).toEqual([]);
 
     // Os tres da denuncia original, por id, um a um.
-    await expect(page.locator('.vtt-tb-btn[data-tool="roster"]')).toBeHidden();  // ESCAL.
+    // ESCAL. saiu da barra na Etapa 112; o bloco que ele abria continua
+    // master-only e e conferido logo abaixo por #vttRosterBlock.
     await expect(page.locator("#mesaInitiativeBtn")).toBeHidden();               // INIC.
     await expect(page.locator("#mesaLayerDmBtn")).toBeHidden();                  // MESTRE
     await expect(page.locator("#mesaLayerMapBtn")).toBeHidden();                 // MAPA
@@ -179,7 +180,6 @@ test.describe("Permissoes da Mesa (Etapa 75)", () => {
 
     expect(await page.evaluate(() => document.body.dataset.role)).toBe("master");
 
-    await expect(page.locator('.vtt-tb-btn[data-tool="roster"]')).toBeVisible();
     await expect(page.locator("#mesaInitiativeBtn")).toBeVisible();
     await expect(page.locator("#mesaLayerDmBtn")).toBeVisible();
     await expect(page.locator("#mesaLayerMapBtn")).toBeVisible();
