@@ -672,6 +672,11 @@ async function applyMesaRealtimeDelta(payload) {
   if (type === "mesa:token:move") {
     changed = applyMesaTokenMoveDelta(payload);
   }
+  // Redimensionamento de jogador precisa sobreviver ao F5: so o mestre pode
+  // dar PUT /mesa/scene, entao e ele quem grava a cena ao receber o delta.
+  const isPlayerResizeDelta = type === "mesa:token:move"
+    && payload?.tokenScale != null
+    && String(payload?.actor?.role || "") === "player";
 
   if (type === "mesa:token:remove") {
     changed = applyMesaTokenRemoveDelta(payload);
@@ -814,6 +819,9 @@ async function applyMesaRealtimeDelta(payload) {
       persistState();
     }
   }
+  if (isMaster() && isPlayerResizeDelta && changed && typeof persistState === "function") {
+    persistState();
+  }
 
   const membershipChanged = hasMesaTokenMembershipChanged(previousTokenIds, state.tokens);
   scheduleMesaRender({
@@ -841,10 +849,19 @@ function applyMesaTokenMoveDelta(payload) {
   const nextX = roundTo(clamp(Number(payload.x), 0, 100), 2);
   const nextY = roundTo(clamp(Number(payload.y), 0, 100), 2);
   const nextOrder = asPositiveInt(payload.order, token.order || 1);
-  if (token.x === nextX && token.y === nextY && token.order === nextOrder) return false;
+  // Clientes antigos nao mandam tokenScale — nesse caso o tamanho atual fica.
+  const nextScale = payload.tokenScale == null
+    ? clampMesaTokenScale(token.tokenScale)
+    : clampMesaTokenScale(payload.tokenScale);
+  if (
+    token.x === nextX && token.y === nextY
+    && token.order === nextOrder
+    && clampMesaTokenScale(token.tokenScale) === nextScale
+  ) return false;
   token.x = nextX;
   token.y = nextY;
   token.order = nextOrder;
+  token.tokenScale = nextScale;
   return true;
 }
 
@@ -2323,12 +2340,17 @@ function broadcastMesaTokenMove(token) {
   // Token da camada secreta do mestre NUNCA trafega pela rede (mesmo padrao
   // usado para os tracos de desenho da camada "dm" em mesa-drawing.js).
   if (token.layer === "dm") return false;
+  // tokenScale viaja junto (Etapa 117): redimensionar um token TAMBEM muda
+  // x/y (a ancora do arrasto fica parada), entao o canal de movimento e o
+  // lugar natural para o tamanho novo. Sem isso, o resize do jogador so
+  // existia na tela dele — nenhum broadcast saia de handleResizePointerUp.
   return sendMesaRealtimeDelta("mesa:token:move", {
     tokenId: token.id,
     characterKey: token.characterKey || token.id,
     x: roundTo(token.x, 2),
     y: roundTo(token.y, 2),
-    order: token.order || 1
+    order: token.order || 1,
+    tokenScale: clampMesaTokenScale(token.tokenScale)
   });
 }
 

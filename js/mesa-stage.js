@@ -1785,6 +1785,15 @@ function handleResizePointerUp() {
   if (typeof window.mesaConformTokenToGrid === "function") {
     window.mesaConformTokenToGrid(token, drag.tokenEl, { forceAlign: true });
   }
+  // Sem broadcast, o tamanho novo ficava so na tela de quem redimensionou:
+  // persistState e master-only, entao o resize do jogador nao chegava nem ao
+  // mestre nem aos outros jogadores. Echo usa o canal proprio de upsert
+  // (mesa:token:move so aceita token de jogador vindo de jogador).
+  if (token.type === "echo") {
+    if (typeof broadcastEchoTokenUpsert === "function") broadcastEchoTokenUpsert(token);
+  } else if (typeof broadcastMesaTokenMove === "function") {
+    broadcastMesaTokenMove(token);
+  }
   bumpMesaSceneVersion();
   persistState({ immediate: true });
   scheduleMesaRender({ stage: true, inspector: true });

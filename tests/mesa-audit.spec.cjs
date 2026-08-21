@@ -7065,3 +7065,133 @@ test.describe("Botao da camada de tokens por papel (Etapa 116)", () => {
     expect(r, "sem papel definido, apareceu a variante do mestre").toEqual(["P"]);
   });
 });
+
+/* ── Etapa 117: redimensionar token sincroniza ──
+   O bug: handleResizePointerUp so fazia bump + persistState, e persistir e
+   master-only — o tamanho novo do jogador nunca saia da tela dele. Os dois
+   casos cobrem as duas metades do conserto: o delta SAI com tokenScale, e o
+   delta que CHEGA aplica o tamanho. */
+test.describe("Redimensionar token sincroniza (Etapa 117)", () => {
+  test("o jogador transmite o tamanho novo do proprio token", async ({ page }) => {
+    await seedPlayerWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const enviado = await page.evaluate(() => {
+      const meu = state.tokens.find(t => t.type === "player");
+      if (!meu) return { erro: "sem token de jogador" };
+      state.playersMoveLocked = false;
+      const capturado = [];
+      const original = window.APP.sendRealtime;
+      window.APP.sendRealtime = env => { capturado.push(env); return true; };
+      const backend = window.AUTH.isBackendEnabled;
+      window.AUTH.isBackendEnabled = () => true;
+      meu.tokenScale = 3;
+      broadcastMesaTokenMove(meu);
+      window.APP.sendRealtime = original;
+      window.AUTH.isBackendEnabled = backend;
+      const payload = capturado[0]?.payload || capturado[0] || {};
+      return { tipo: payload.type, escala: payload.tokenScale };
+    });
+
+    expect(enviado.tipo).toBe("mesa:token:move");
+    expect(enviado.escala, "o delta saiu sem tokenScale — resize nao sincroniza").toBe(3);
+  });
+
+  test("o delta recebido muda o tamanho do token na tela", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const r = await page.evaluate(() => {
+      const alvo = state.tokens.find(t => t.id === "ana");
+      alvo.tokenScale = 1;
+      const mudou = applyMesaTokenMoveDelta({
+        tokenId: "ana", characterKey: "ana",
+        x: alvo.x, y: alvo.y, order: alvo.order || 1, tokenScale: 2.5
+      });
+      const escalaComScale = alvo.tokenScale;
+      // Cliente antigo (sem tokenScale) nao pode zerar o tamanho.
+      applyMesaTokenMoveDelta({ tokenId: "ana", characterKey: "ana", x: 10, y: 10, order: 1 });
+      return { mudou, escalaComScale, escalaSemScale: alvo.tokenScale };
+    });
+
+    expect(r.mudou).toBe(true);
+    expect(r.escalaComScale).toBe(2.5);
+    expect(r.escalaSemScale, "delta sem tokenScale apagou o tamanho").toBe(2.5);
+  });
+});
+
+/* Prova de ponta a ponta do mesmo conserto: o ARRASTO REAL da alca pelo
+   jogador tem de virar delta na rede, e esse delta tem de aumentar o token
+   na tela do mestre. Os dois testes acima cobrem as pecas; este cobre o
+   caminho que estava quebrado — handleResizePointerUp sem broadcast. */
+test.describe("Redimensionar token sincroniza de verdade (Etapa 117)", () => {
+  test("arrastar a alca no jogador emite o delta com o tamanho novo", async ({ page }) => {
+    await seedPlayerWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    await page.evaluate(() => {
+      window.__resizeSent = [];
+      window.APP = Object.assign({}, window.APP, {
+        sendRealtime: message => { window.__resizeSent.push(message); return true; }
+      });
+      window.AUTH = Object.assign({}, window.AUTH, { isBackendEnabled: () => true });
+      state.playersMoveLocked = false;
+      selectToken("ana");
+    });
+
+    const alca = page.locator('.mesa-token[data-token-id="ana"] .mesa-token-handle[data-handle="se"]');
+    await expect(alca, "o jogador nao tem alca no proprio token").toBeVisible();
+
+    const box = await alca.boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 120, box.y + 120, { steps: 8 });
+    await page.mouse.up();
+
+    const r = await page.evaluate(() => {
+      const moves = (window.__resizeSent || [])
+        .map(m => m?.payload || m)
+        .filter(m => String(m?.type) === "mesa:token:move" && String(m?.tokenId) === "ana");
+      return { moves, escalaLocal: findToken("ana").tokenScale };
+    });
+
+    expect(r.escalaLocal, "o arrasto nem aumentou o token localmente").toBeGreaterThan(1);
+    expect(r.moves.length, "nenhum delta saiu ao soltar a alca — bug original").toBeGreaterThan(0);
+    const ultimo = r.moves[r.moves.length - 1];
+    expect(ultimo.tokenScale, "o delta saiu sem o tamanho novo").toBeCloseTo(r.escalaLocal, 2);
+  });
+
+  test("o mestre recebe esse delta e o token cresce na tela dele", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    const r = await page.evaluate(async () => {
+      persistState = () => {};
+      sendMesaRealtimeDelta = () => true;
+      const medir = () => document.querySelector('.mesa-token[data-token-id="ana"]')
+        .getBoundingClientRect().width;
+      const antes = medir();
+      const t = findToken("ana");
+
+      await applyMesaRealtimeDelta({
+        type: "mesa:token:move",
+        clientId: "cliente-da-ana",
+        sceneVersion: state.sceneVersion,
+        tokenId: "ana", characterKey: "ana",
+        x: t.x, y: t.y, order: t.order || 1, tokenScale: 3,
+        actor: { username: "ana", role: "player" }
+      });
+
+      await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));
+      return { antes, depois: medir(), escala: findToken("ana").tokenScale };
+    });
+
+    expect(r.escala).toBe(3);
+    expect(r.depois, "o token nao cresceu na tela do mestre").toBeGreaterThan(r.antes * 2);
+  });
+});
