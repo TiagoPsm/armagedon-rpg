@@ -247,6 +247,8 @@ function renderPlayerSheetPanel(rosterList, rosterCountBadge) {
           ${renderPlayerResourceEditor("Integridade", "currentIntegrity", currentIntegrity, maxIntegrity, "integ", selectedKey)}
         </div>
 
+        ${renderPlayerLifeBarsToggle()}
+
         <a href="ficha.html" class="btn btn-primary btn-block player-open-sheet-btn">
           <span>Ficha Completa</span>
           <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h6.5V10"/><path d="M12.5 3.5 4 12"/></svg>
@@ -255,6 +257,25 @@ function renderPlayerSheetPanel(rosterList, rosterCountBadge) {
 
       ${renderPlayerEchosSection()}
     </section>
+  `;
+}
+
+/* Preferencia de exibicao das barras de vida (Etapa 114).
+   Fica no painel pessoal porque e ali que o jogador ja gerencia o proprio
+   token. Vale so para o palco DELE — o texto de apoio diz isso, para nao
+   parecer que ele esta escondendo a propria vida do mestre. O estado vem
+   sempre do localStorage (getMesaLifeBarsPref), entao o painel pode ser
+   re-renderizado a vontade sem perder a escolha. */
+function renderPlayerLifeBarsToggle() {
+  const on = typeof getMesaLifeBarsPref === "function" ? getMesaLifeBarsPref() : true;
+  return `
+    <div class="player-side-option">
+      <label class="mesa-grid-check">
+        <input type="checkbox" data-life-bars-toggle${on ? " checked" : ""}>
+        Mostrar barras de vida nos tokens
+      </label>
+      <p class="player-side-option-hint">Vale so para a sua tela.</p>
+    </div>
   `;
 }
 

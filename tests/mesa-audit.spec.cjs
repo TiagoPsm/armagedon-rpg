@@ -6920,3 +6920,67 @@ test.describe("Barra da Mesa: botoes alternam e esvaziam a sidebar (Etapa 111)",
     expect(r.semDono, "ferramenta na barra sem dono (no-op silencioso)").toEqual([]);
   });
 });
+
+/* ── Etapa 114: a esfera de status acima da barra de vida, e a barra opcional ──
+   O print do Tiago mostrava a esfera de marcadores POR CIMA da barra de vida.
+   Causa: as duas mediam em unidades diferentes — a barra escala junto com o
+   token (px de layout), a esfera e contra-escalada e a folga dela era de TELA.
+   Num token grande a barra alcancava a esfera. O caso mede em varias escalas,
+   que e onde o bug aparece: numa escala so ele passaria despercebido. */
+test.describe("Esfera de status x barra de vida (Etapa 114)", () => {
+  test("a esfera fica acima da barra em qualquer escala do token", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const medidas = await page.evaluate(() => {
+      const alvo = state.tokens.find(t => t.id === "ana");
+      const out = [];
+      for (const escala of [1, 3, 6]) {
+        alvo.tokenScale = escala;
+        renderStage();
+        selectToken("ana");
+        const el    = document.querySelector('.mesa-token[data-token-id="ana"]');
+        const barra = el.querySelector(".mesa-token-life").getBoundingClientRect();
+        const btn   = el.querySelector(".mesa-token-markers-btn").getBoundingClientRect();
+        out.push({ escala, folga: Math.round(barra.top - btn.bottom), sobrepoe: btn.bottom > barra.top + 0.5 });
+      }
+      return out;
+    });
+
+    for (const m of medidas) {
+      expect(m.sobrepoe, `esfera por cima da barra na escala ${m.escala}`).toBe(false);
+      // Folga de TELA constante: e o ponto do conserto, nao so "nao encosta".
+      expect(m.folga, `folga variou na escala ${m.escala}`).toBeGreaterThanOrEqual(8);
+      expect(m.folga, `folga variou na escala ${m.escala}`).toBeLessThanOrEqual(12);
+    }
+  });
+
+  test("o jogador liga e desliga as barras, e a escolha sobrevive ao F5", async ({ page }) => {
+    await seedPlayerWithScene(page, BASE_TOKENS);
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const check = page.locator("[data-life-bars-toggle]");
+    await expect(check, "opcao ausente no painel do jogador").toBeVisible();
+    await expect(check).toBeChecked();
+    await expect(page.locator(".mesa-token-life").first()).toBeVisible();
+
+    await check.uncheck();
+    await expect(page.locator(".mesa-token-life").first()).toBeHidden();
+    // Preferencia LOCAL: nada disso pode ter entrado na cena.
+    const vazouParaCena = await page.evaluate(() =>
+      JSON.stringify(state.tokens).includes("lifeBar") ||
+      JSON.stringify(state.tokens).includes("showLife"));
+    expect(vazouParaCena, "preferencia local vazou para a cena").toBe(false);
+
+    await page.reload();
+    await waitForMesaSettled(page);
+    await expect(page.locator("[data-life-bars-toggle]")).not.toBeChecked();
+    await expect(page.locator(".mesa-token-life").first()).toBeHidden();
+
+    await page.locator("[data-life-bars-toggle]").check();
+    await expect(page.locator(".mesa-token-life").first()).toBeVisible();
+  });
+});

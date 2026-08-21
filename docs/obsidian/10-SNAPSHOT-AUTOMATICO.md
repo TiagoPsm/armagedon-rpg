@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-21 15:56:08 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-21 15:56:48 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,15 +13,19 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `982c810 2026-08-21 refactor(mesa): remove o botao ESCAL. da barra (Etapa 112)`
+- Ultimo commit: `5c21b1a 2026-08-21 fix(mesa): remove o grupo ESCALA do painel do mapa (Etapa 113)`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
 M  SYSTEM_RULES.md
-M  css/mesa-map.css
-M  js/mesa-map.js
+M  VISUAL_RULES.md
+M  css/mesa-roster.css
+M  css/mesa-stage.css
+M  js/mesa-core.js
+M  js/mesa-roster.js
+M  js/mesa-stage.js
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
 ```
@@ -37,8 +41,12 @@ M  tests/mesa-audit.spec.cjs
 ```text
 DEV_STATUS.md
 SYSTEM_RULES.md
-css/mesa-map.css
-js/mesa-map.js
+VISUAL_RULES.md
+css/mesa-roster.css
+css/mesa-stage.css
+js/mesa-core.js
+js/mesa-roster.js
+js/mesa-stage.js
 mesa.html
 tests/mesa-audit.spec.cjs
 ```

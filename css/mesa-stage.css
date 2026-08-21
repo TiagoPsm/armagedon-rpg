@@ -396,6 +396,11 @@
    layout. Assim o snap-to-grid, o arrasto e a selecao (que usam o rect do
    elemento) centralizam o circulo na celula, sem o nome esticar a caixa. */
 .mesa-token.is-minimal {
+  /* Fonte unica da geometria da barra de vida (Etapa 114). A barra escala
+     junto com o token, entao estes sao px de LAYOUT — e o botao de
+     marcadores precisa dos MESMOS numeros para se ancorar acima dela. */
+  --token-life-gap: 5px;
+  --token-life-h: 5px;
   width: 88px;
   height: 88px;
   padding: 0;
@@ -496,11 +501,11 @@
    comportamento certo em qualquer zoom. */
 .mesa-token.is-minimal .mesa-token-life {
   position: absolute;
-  bottom: calc(100% + 5px);
+  bottom: calc(100% + var(--token-life-gap));
   left: 50%;
   transform: translateX(-50%);
   width: 78%;
-  height: 5px;
+  height: var(--token-life-h);
   border-radius: 999px;
   background: rgba(10, 6, 6, 0.82);
   border: 1px solid rgba(0, 0, 0, 0.55);
@@ -1325,6 +1330,26 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
    para nao cobrir a fileira de chips. */
 .mesa-token:has(.mesa-token-markers) .mesa-token-markers-btn:not(.is-inspector) {
   margin-bottom: 34px;
+}
+/* Barra de vida no caminho (Etapa 114): a esfera de status ficava POR CIMA
+   dela. O motivo e que as duas medem em unidades diferentes — a barra escala
+   junto com o token (px de LAYOUT), o botao e contra-escalado para ter sempre
+   o mesmo tamanho de tela, e a folga dele (`translateY(-10px)`) tambem e de
+   TELA. Num token grande a barra sobe alem dessa folga e alcanca o botao.
+   A ancora entao tem de ser de LAYOUT, com os mesmos numeros da barra: o
+   botao passa a comecar acima dela em qualquer escala, e o `translateY`
+   continua sendo so o respiro visual constante. */
+#mesaStageWrap:not([data-life-bars="off"]) .mesa-token:has(.mesa-token-life)
+  .mesa-token-markers-btn:not(.is-inspector) {
+  bottom: calc(100% + var(--token-life-gap) + var(--token-life-h));
+}
+
+/* Barras desligadas na preferencia local (Etapa 114). `display: none` e nao
+   `visibility`/opacidade: com a barra apenas invisivel, o `:has()` acima
+   continuaria valendo e a esfera de status ficaria flutuando no vazio que ela
+   deixou. O seletor acima ja e escopado no mesmo atributo pelo mesmo motivo. */
+#mesaStageWrap[data-life-bars="off"] .mesa-token-life {
+  display: none;
 }
 .mesa-token-markers-btn:hover {
   background: rgba(176, 48, 57, 0.55);

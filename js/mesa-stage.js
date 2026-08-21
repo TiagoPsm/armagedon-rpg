@@ -1864,6 +1864,45 @@ function renderToken(token) {
   return renderTokenMinimal(token);
 }
 
+/* ── PREFERENCIA LOCAL: BARRAS DE VIDA (Etapa 114) ───────────
+ *
+ * Quem ve decide, e a decisao NAO viaja. E preferencia de exibicao do proprio
+ * palco: nada entra na cena oficial, nada e transmitido, ninguem perde
+ * informacao por escolha alheia. Aplicada por atributo no wrap + CSS, e nao
+ * re-renderizando os tokens — ligar/desligar nao pode custar um render da
+ * cena inteira nem interromper um arrasto em curso.
+ */
+const MESA_LIFE_BARS_KEY = "mesaShowLifeBars";
+
+/** As barras de vida estao ligadas? Default: ligadas. */
+function getMesaLifeBarsPref() {
+  try { return localStorage.getItem(MESA_LIFE_BARS_KEY) !== "0"; } catch (e) { return true; }
+}
+
+/** Liga/desliga as barras de vida no palco DESTE cliente e persiste. */
+function setMesaLifeBarsPref(on) {
+  try { localStorage.setItem(MESA_LIFE_BARS_KEY, on ? "1" : "0"); } catch (e) {}
+  applyMesaLifeBarsPref();
+}
+
+/** Reflete a preferencia no DOM. Idempotente — pode ser chamada a vontade. */
+function applyMesaLifeBarsPref() {
+  const wrap = document.getElementById("mesaStageWrap");
+  if (!wrap) return;
+  if (getMesaLifeBarsPref()) wrap.removeAttribute("data-life-bars");
+  else wrap.setAttribute("data-life-bars", "off");
+}
+
+// O checkbox nasce dentro do painel do jogador, que e re-renderizado inteiro a
+// cada mudanca de estado — por isso o handler e delegado no documento, e nao
+// preso ao elemento. Botao dinamico nao precisa de `data-armed` (o dono ja
+// esta vivo quando ele aparece).
+document.addEventListener("change", function (event) {
+  const toggle = event.target.closest?.("[data-life-bars-toggle]");
+  if (!toggle) return;
+  setMesaLifeBarsPref(Boolean(toggle.checked));
+});
+
 /**
  * Barra de vida simplificada acima do token (Etapa 85).
  *

@@ -385,6 +385,9 @@ function bindEvents() {
   // "clicar fora desmarca". O wrap recebe ponteiro (é quem faz pan e
   // desenho), então o clique chega, e as guardas abaixo continuam valendo.
   const stageWrap = document.getElementById("mesaStageWrap");
+  // Preferencia local das barras de vida (Etapa 114): sem isto, quem tivesse
+  // desligado veria as barras de volta a cada F5 ate mexer no checkbox.
+  if (typeof applyMesaLifeBarsPref === "function") applyMesaLifeBarsPref();
   stageWrap?.addEventListener("click", function(event) {
     if (window._mesaStagePanMoved) return;
     if (typeof getMesaActiveLayer === "function" && getMesaActiveLayer() !== "tokens") return;

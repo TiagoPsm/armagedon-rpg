@@ -40,7 +40,48 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-20 — Etapa 113: a ESCALA do mapa sai do painel)
+## Ultima Etapa Concluida (2026-08-20 — Etapa 114: esfera de status acima da barra de vida, e barra opcional)
+
+Print do Tiago: a esfera de marcadores em cima da barra de vida do token. Mais
+o pedido de deixar o jogador escolher se ve as barras.
+
+**Por que encavalava.** As duas medem em unidades diferentes. A barra (Etapa 85)
+escala JUNTO com o token — e leitura da largura dele — entao seu afastamento e
+px de LAYOUT, multiplicado pela escala. A esfera (Etapas 67/71) e
+contra-escalada para ter sempre o mesmo tamanho de tela, e a folga dela
+(`translateY(-10px)`) tambem e de TELA. Num token grande a barra sobe alem
+dessa folga e alcanca a esfera; num token 1x nao. Por isso o bug so aparecia
+em token ampliado — e por isso o teste novo mede em TRES escalas.
+
+- `css/mesa-stage.css`: a geometria da barra virou fonte unica em
+  `--token-life-gap` / `--token-life-h` no `.mesa-token.is-minimal`, e a esfera
+  ancora com os MESMOS numeros (`bottom: calc(100% + gap + altura)`) quando o
+  token tem barra. O `translateY(-10px)` fica sendo so o respiro visual.
+  Medido: folga constante de 10px de tela nas escalas 1, 3 e 6.
+- **Opcao do jogador (preferencia LOCAL)**: `js/mesa-stage.js` ganhou
+  `getMesaLifeBarsPref` / `setMesaLifeBarsPref` / `applyMesaLifeBarsPref`
+  (chave `mesaShowLifeBars`, default ligado) e um handler delegado de `change`.
+  Nada entra na cena, nada e transmitido: quem ve decide para a propria tela, e
+  ninguem perde informacao por escolha alheia. Aplicada por
+  `data-life-bars="off"` no `#mesaStageWrap` + CSS — ligar/desligar nao custa um
+  render da cena nem interrompe arrasto.
+  O CSS usa `display: none`: com a barra apenas invisivel, o `:has()` da esfera
+  continuaria valendo e ela flutuaria no vazio deixado pela barra.
+- `js/mesa-roster.js` + `css/mesa-roster.css`: checkbox "Mostrar barras de vida
+  nos tokens" no painel pessoal, com a nota "Vale so para a sua tela" — sem ela
+  a opcao parece esconder a propria vida do mestre. Reusa `.mesa-grid-check`.
+- `js/mesa-core.js`: `applyMesaLifeBarsPref()` no boot — sem isso a escolha
+  voltava a ligada a cada F5.
+- `tests/mesa-audit.spec.cjs`: bloco "Etapa 114" com dois casos (folga em tres
+  escalas; liga/desliga + F5 + a preferencia NAO vaza para a cena). Conferido
+  que o primeiro caso falha com o CSS revertido.
+- Cache-busting: `mesa-stage.css`, `mesa-roster.css`, `mesa-stage.js`,
+  `mesa-roster.js`, `mesa-core.js` → `?v=2026-08-20-barra-vida-1`.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`, `test:controles`
+(6/6), `test:mesa` (5/5), `test:mesa-permissions` (15/15), `test:mesa:audit`.
+
+## Etapa Anterior (2026-08-20 — Etapa 113: a ESCALA do mapa sai do painel)
 
 O Tiago mandou print do grupo "ESCALA" (- 100% + ↻ mais a dica "Arraste o mapa
 para reposicionar / Scroll para zoom") dizendo que nao funcionava direito. Nao
@@ -121,11 +162,12 @@ novo desliga. Com nenhum botao ligado, a sidebar direita fica vazia.
   biblioteca de mapas) reapareciam sozinhos ao seleccionar um token com a barra
   toda desarmada — o mesmo padrao de "quem revela e o dono" da Etapa 75, so que
   agora com a ultima palavra no CSS.
+- Cache-busting: `mesa.css?v=2026-08-20-toggle-1`.
+
 - `tests/mesa-audit.spec.cjs`: bloco novo "Etapa 111" com tres casos —
   desarmar a camada esvazia a sidebar e devolve a camada `tokens`; o inspector
   nao volta sozinho com a barra desarmada; camada e ferramenta nunca acesas
   juntas.
-- Cache-busting: `mesa.css?v=2026-08-20-toggle-1`.
 
 Validado: `check:js` (47 ficheiros), `audit:static`, `audit:pendencias`,
 `test:controles` (6/6), `test:mesa` (5/5), `test:mesa:audit` (207/207 antes do
