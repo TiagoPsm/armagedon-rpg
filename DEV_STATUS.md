@@ -40,7 +40,29 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-20 — Etapa 114: esfera de status acima da barra de vida, e barra opcional)
+## Ultima Etapa Concluida (2026-08-21 — Etapa 115: o snapshot do Obsidian sai do versionamento)
+
+Depois de subir as Etapas 111-114 o repositorio continuava sujo em
+`docs/obsidian/10-SNAPSHOT-AUTOMATICO.md`, como acontecia apos TODO commit.
+Motivo: o hook regenera a nota carimbando o ultimo commit — que, no momento em
+que ela e escrita, e o ANTERIOR. A nota nunca pode conter o commit que a
+regenera, entao ela nasce desatualizada por construcao e reaparece modificada
+logo em seguida. Nao e bug do hook; e uma nota que nao cabe dentro do proprio
+commit. Decisao do Tiago: ignorar o arquivo.
+
+- `.gitignore`: `docs/obsidian/10-SNAPSHOT-AUTOMATICO.md`.
+- `git rm --cached` no arquivo: ele deixa de existir no repositorio publicado.
+  Quem clonar gera a sua rodando `tools/update-obsidian-context.ps1` (ou no
+  primeiro commit, pelo hook).
+- `.githooks/pre-commit`: o `git add` da nota SAIU. Era obrigatorio remover:
+  `git add` de arquivo ignorado falha, e o hook roda com `set -eu` — deixa-lo
+  ali abortaria todo commit do projeto. O hook continua gerando a nota.
+- Docs alinhadas: `README.md`, `CLAUDE.md`, `docs/obsidian/00-INICIO.md`.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`, e o proprio
+commit desta etapa como prova de que o hook nao aborta mais nada.
+
+## Etapa Anterior (2026-08-20 — Etapa 114: esfera de status acima da barra de vida, e barra opcional)
 
 Print do Tiago: a esfera de marcadores em cima da barra de vida do token. Mais
 o pedido de deixar o jogador escolher se ve as barras.

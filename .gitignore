@@ -13,3 +13,8 @@ cloudflare/.wrangler/
 
 # Videos locais (assets pesados fora do repo)
 *.mp4
+
+# Snapshot do Obsidian: gerado pelo hook a cada commit e sempre com o hash do
+# commit que acabou de nascer — nunca cabe dentro do proprio commit, entao
+# vivia eternamente "modificado". E contexto local, nao fonte.
+docs/obsidian/10-SNAPSHOT-AUTOMATICO.md

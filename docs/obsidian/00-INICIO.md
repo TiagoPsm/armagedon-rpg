@@ -36,7 +36,7 @@ Para ativar atualizacao automatica antes de cada commit neste checkout, rode uma
 .\tools\install-obsidian-hooks.ps1
 ```
 
-Depois disso, `.githooks/pre-commit` atualiza [[10-SNAPSHOT-AUTOMATICO]] e adiciona a nota ao commit automaticamente.
+Depois disso, `.githooks/pre-commit` atualiza [[10-SNAPSHOT-AUTOMATICO]] a cada commit. A nota NAO e versionada (esta no `.gitignore` desde 2026-08-21): ela e sempre local e reflete o estado da sua copia.
 
 Regra operacional: qualquer etapa com alteracao de arquivo deve terminar com [[10-SNAPSHOT-AUTOMATICO]] atualizado. O hook cobre commits; quando nao houver commit, rode o script manualmente antes de encerrar.
 

@@ -117,7 +117,7 @@ Scripts load via `<script src="...">` tags in order. **Script order in `ficha.ht
 | Visual decisions, CSS patterns | `VISUAL_RULES.md` |
 | Worker, D1, routes, Cloudflare deploy | `cloudflare/README.md` |
 
-The pre-commit hook (`tools/install-obsidian-hooks.ps1`) auto-updates `docs/obsidian/10-SNAPSHOT-AUTOMATICO.md` on every commit.
+The pre-commit hook (`tools/install-obsidian-hooks.ps1`) regenerates `docs/obsidian/10-SNAPSHOT-AUTOMATICO.md` on every commit. That file is **gitignored** (since 2026-08-21): it is stamped with the previous commit, so it could never be part of the commit that regenerates it and left the tree dirty after every single commit. It is local context for Obsidian, not source.
 
 ### One list of open pendencies
 

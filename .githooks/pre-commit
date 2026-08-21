@@ -16,4 +16,9 @@ else
 fi
 
 "$shell_bin" -NoProfile -ExecutionPolicy Bypass -File "$repo_root/tools/update-obsidian-context.ps1"
-git add "docs/obsidian/10-SNAPSHOT-AUTOMATICO.md"
+# Sem `git add`: o snapshot esta no .gitignore desde 2026-08-21. Ele so fica
+# pronto DEPOIS de gerado, ja carimbado com o commit anterior, e o hook nao tem
+# como carimbar o commit que ainda nao existe — por isso ele nunca fechava e o
+# repositorio ficava sujo apos cada commit. Continua sendo gerado aqui, para o
+# Obsidian; so nao e versionado. `git add` de arquivo ignorado falha, e com
+# `set -eu` isso abortaria o commit inteiro.

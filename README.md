@@ -66,7 +66,7 @@ Para garantir que o Obsidian seja alimentado antes de cada commit neste checkout
 .\tools\install-obsidian-hooks.ps1
 ```
 
-Esse instalador configura `core.hooksPath` para `.githooks`. A partir disso, `.githooks/pre-commit` roda `tools/update-obsidian-context.ps1` e adiciona `docs/obsidian/10-SNAPSHOT-AUTOMATICO.md` ao commit automaticamente.
+Esse instalador configura `core.hooksPath` para `.githooks`. A partir disso, `.githooks/pre-commit` roda `tools/update-obsidian-context.ps1` a cada commit. Desde 2026-08-21 a nota gerada **nao e versionada** (esta no `.gitignore`): ela carimba o commit ANTERIOR, entao nunca cabia dentro do commit que a regenera e deixava o repositorio sujo depois de cada commit. Quem clonar o repositorio gera a sua rodando o script.
 
 Regra operacional: toda etapa que alterar arquivos deve terminar com o snapshot do Obsidian atualizado. Se houver commit, o hook faz isso automaticamente. Se a etapa terminar sem commit, rode `.\tools\update-obsidian-context.ps1` antes de encerrar.
 
