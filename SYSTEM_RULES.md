@@ -62,7 +62,7 @@ Antes desta etapa a permissao da Mesa estava espalhada em quatro lugares que se 
 
 Exclusivo do mestre na Mesa (marcado com `data-mesa-master-only`): camadas MESTRE e MAPA, botao ESCAL. (escalacao), botao INIC. (ativar/encerrar combate), controles de conducao do combate, todo o chrome de mapa (rotulo, abrir, limpar, engrenagem, painel de escala/grade/nevoa/cenas), biblioteca de mapas, "Travar movimento", "Limpar cena", tabs e busca da escalacao, e o inspetor lateral.
 
-Compartilhado por design (jogador PODE): ver o palco, desenhar (camada unica, Etapa 73), pingar, usar a regua, rolar dados da Mesa, zoom/tela cheia, ligar/desligar as barras de vida NA PROPRIA TELA (Etapa 114 — preferencia local `mesaShowLifeBars`, nao entra na cena e nao e transmitida), rolar a PROPRIA iniciativa, mover o proprio token com a trava aberta, editar Vida/Integridade atuais do proprio token, invocar/retirar o proprio Echo.
+Compartilhado por design (jogador PODE): ver o palco, desenhar (camada unica, Etapa 73), pingar, usar a regua, rolar dados da Mesa, zoom/tela cheia, ver o botao da camada de tokens como "Meu token", com icone proprio (Etapa 116 — o jogador tem um personagem, nao uma lista), ligar/desligar as barras de vida NA PROPRIA TELA (Etapa 114 — preferencia local `mesaShowLifeBars`, nao entra na cena e nao e transmitida), rolar a PROPRIA iniciativa, mover o proprio token com a trava aberta, editar Vida/Integridade atuais do proprio token, invocar/retirar o proprio Echo.
 
 ### Painel do mestre na Ficha tambem e travado por funcao (2026-08-02)
 

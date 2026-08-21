@@ -40,7 +40,39 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-21 — Etapa 115: o snapshot do Obsidian sai do versionamento)
+## Ultima Etapa Concluida (2026-08-21 — Etapa 116: "Meu token" para o jogador)
+
+O Tiago pediu que o botao da camada de tokens dissesse "Meu token" para o
+jogador, com icone diferente. Faz sentido alem do nome: "TOKENS" no plural
+promete uma lista de tokens, e a lista (a escalacao) e master-only — o jogador
+so tem um personagem ali.
+
+- `mesa.html`: o botao ganhou `id="mesaLayerTokensBtn"` e duas variantes
+  declarativas — `data-role-icon` / `data-role-label` para "master" e "player".
+  O icone do jogador e um **pino de mapa** ("o meu, ali na cena"), contra o
+  retrato generico que representa a camada inteira para o mestre.
+- `css/mesa.css`: a variante do JOGADOR e o padrao; a do mestre so entra com
+  `body[data-role="master"]`. Fail-closed igual ao resto das permissoes —
+  `applyMesaRolePermissions()` so roda no DOMContentLoaded, e comecar pelo
+  mestre mostraria chrome de mestre a todos no piscar do boot.
+- `js/mesa-permissions.js`: `applyMesaTokensButtonRole()` troca `title` e
+  `aria-label`. CSS nao alcanca atributo: sem isto, quem usa leitor de tela ou
+  passa o mouse ouviria/veria o nome do outro papel.
+- Ajuste de layout: "MEU TOKEN" e o unico rotulo de DUAS palavras da barra e
+  media 56px num botao de 49px — o `overflow: hidden` do botao comia o fim da
+  palavra. Passou a quebrar em duas linhas em vez de encolher a fonte (o
+  tamanho igual ao dos vizinhos e o que mantem a barra coerente). O seletor
+  precisou ser `.vtt-layer-btn [data-role-label="player"]`: `.vtt-layer-btn
+  span` (0,1,1) vencia um seletor de atributo sozinho (0,1,0) e o `nowrap`
+  continuava valendo em silencio.
+- `tests/mesa-audit.spec.cjs`: bloco "Etapa 116" com tres casos — jogador,
+  mestre e o padrao sem papel definido; o do jogador tambem cobre o estouro.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`, `test:controles`,
+`test:mesa-permissions`, `test:mesa:audit`. Conferido no navegador nos dois
+papeis, sem erros de console.
+
+## Etapa Anterior (2026-08-21 — Etapa 115: o snapshot do Obsidian sai do versionamento)
 
 Depois de subir as Etapas 111-114 o repositorio continuava sujo em
 `docs/obsidian/10-SNAPSHOT-AUTOMATICO.md`, como acontecia apos TODO commit.

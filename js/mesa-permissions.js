@@ -152,10 +152,27 @@ function requireMesaMaster(cap, acao) {
  *
  * @param {string} [role] papel a aplicar; omitido = deduz de getMesaRole()
  */
+/* Rotulo acessivel do botao da camada de tokens (Etapa 116).
+ * O texto e o icone visiveis trocam por CSS (data-role-label/-icon), mas
+ * `title` e `aria-label` sao atributos: quem le por leitor de tela ou passa o
+ * mouse ouviria/veria o nome do outro papel se ninguem os trocasse aqui. */
+const MESA_TOKENS_BTN_TITLE = {
+  master: "Camada de Tokens — selecionar e mover fichas",
+  player: "Meu token — ver e ajustar o proprio personagem"
+};
+
+function applyMesaTokensButtonRole(resolved) {
+  const btn = document.getElementById("mesaLayerTokensBtn");
+  if (!btn) return;
+  btn.title = MESA_TOKENS_BTN_TITLE[resolved] || MESA_TOKENS_BTN_TITLE.player;
+  btn.setAttribute("aria-label", resolved === "master" ? "Camada de Tokens" : "Meu token");
+}
+
 function applyMesaRolePermissions(role) {
   if (!document.body) return;
   const resolved = String(role || getMesaRole()).trim().toLowerCase() === "master" ? "master" : "player";
   document.body.dataset.role = resolved;
+  applyMesaTokensButtonRole(resolved);
   // `.is-master` continua existindo por compatibilidade com regras de
   // CSS antigas (css/mesa-map.css); data-role e a fonte oficial.
   document.body.classList.toggle("is-master", resolved === "master");

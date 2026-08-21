@@ -750,6 +750,25 @@ Extensao da mesma regra para formularios. A Ficha aparecia inteira e editavel en
 - Sempre com **sinal visivel**: opacidade reduzida, `cursor: progress` e uma etiqueta dizendo o que esta acontecendo (`#sheetScreen[data-sheet-loading]::after` em css/ficha.css). Bloquear sem avisar troca um bug por outro — a tela fica so misteriosamente sem reagir.
 - Destravar sempre em `finally`: carga que falha nao pode deixar a tela travada para sempre.
 
+## Um Controle, Dois Papeis (Etapa 116)
+
+Quando o mesmo botao significa coisas diferentes para mestre e jogador, o nome
+e o icone mudam com o papel — e a troca e **declarativa**: duas variantes no
+HTML (`data-role-label` / `data-role-icon`) e o CSS escolhendo por
+`body[data-role]`. Nao renderizar por JS evita o piscar e mantem o markup
+legivel.
+
+- **O padrao e a variante do JOGADOR.** `applyMesaRolePermissions()` so roda no
+  DOMContentLoaded; comecar pelo mestre mostraria chrome de mestre a todos ate
+  la. Mesma logica fail-closed do resto das permissoes.
+- **`title` e `aria-label` NAO sao alcancados por CSS.** Trocar so o que se ve
+  deixa o leitor de tela e o tooltip falando pelo papel errado — esses dois vao
+  no `applyMesaRolePermissions()`.
+- **Rotulo de duas palavras cabe?** Os botoes da barra tem 49px e
+  `overflow: hidden`: um rotulo maior e cortado sem aviso. Quebre em duas
+  linhas antes de encolher a fonte — tamanho de texto diferente do vizinho
+  desmonta a barra, e o teste deve medir o estouro, nao so o texto.
+
 ## O Que Evitar
 
 - excesso de ornamento

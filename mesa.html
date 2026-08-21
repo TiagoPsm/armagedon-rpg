@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="css/tokens.css?v=2026-08-20-contraste-1" />
   <link rel="stylesheet" href="css/reset.css?v=2026-06-12-cache-fix-1" />
   <link rel="stylesheet" href="css/components.css?v=2026-06-12-modal-stack-1" />
-  <link rel="stylesheet" href="css/mesa.css?v=2026-08-20-toggle-1" />
+  <link rel="stylesheet" href="css/mesa.css?v=2026-08-21-meu-token-1" />
   <link rel="stylesheet" href="css/mesa-stage.css?v=2026-08-20-barra-vida-1" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-08-20-barra-vida-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-08-20-contraste-1" />
@@ -203,12 +203,29 @@
 
       <!-- Camadas do canvas -->
       <div class="vtt-tb-layers">
-        <button class="vtt-layer-btn is-active" data-layer="tokens" data-panel="scene" title="Camada de Tokens — selecionar e mover fichas" aria-pressed="true">
-          <svg class="vtt-tb-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+        <!-- Etapa 116: o mesmo botao, dois nomes. Para o mestre e a CAMADA de
+             tokens (ele governa todos); para o jogador e o painel do proprio
+             personagem, e "TOKENS" no plural prometia uma lista que ele nunca
+             ve (a escalacao e master-only, SYSTEM_RULES.md > Mesa Virtual).
+             A troca e declarativa (data-role-icon / data-role-label + CSS): o
+             JS so cuida do title/aria-label, que CSS nao alcanca.
+             A variante do JOGADOR e o padrao e a do mestre so aparece com
+             `body[data-role="master"]` — fail-closed, igual ao resto das
+             permissoes: antes de a sessao resolver, ninguem ve chrome de
+             mestre por um piscar. -->
+        <button class="vtt-layer-btn is-active" id="mesaLayerTokensBtn" data-layer="tokens" data-panel="scene" title="Meu token — ver e ajustar o proprio personagem" aria-pressed="true">
+          <svg class="vtt-tb-icon" data-role-icon="master" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
             <circle cx="10" cy="6.5" r="3"/>
             <path d="M3.5 18c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5" stroke-linecap="round"/>
           </svg>
-          <span>TOKENS</span>
+          <!-- Pino de mapa: "o meu, ali na cena" — o oposto do retrato generico
+               que representa a camada inteira para o mestre. -->
+          <svg class="vtt-tb-icon" data-role-icon="player" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M10 18s5.5-5.2 5.5-9a5.5 5.5 0 1 0-11 0c0 3.8 5.5 9 5.5 9z" stroke-linejoin="round"/>
+            <circle cx="10" cy="8.6" r="2"/>
+          </svg>
+          <span data-role-label="master">TOKENS</span>
+          <span data-role-label="player">Meu token</span>
         </button>
 
         <button class="vtt-layer-btn" id="mesaLayerDmBtn" data-layer="dm" data-panel="scene" title="Camada do Mestre — tokens e desenhos secretos (só o mestre vê)" aria-pressed="false" data-mesa-master-only hidden>
@@ -879,7 +896,7 @@
   <script src="js/auth.js?v=2026-06-13-login-form-1" defer></script>
   <!-- Permissoes da Mesa (Etapa 75): precisa vir ANTES de todo modulo mesa-*,
        porque eles chamam mesaCan()/requireMesaMaster()/applyMesaRolePermissions(). -->
-  <script src="js/mesa-permissions.js?v=2026-08-02-permissoes-1" defer></script>
+  <script src="js/mesa-permissions.js?v=2026-08-21-meu-token-1" defer></script>
   <!-- Ordem importante: dependências antes de mesa-core -->
   <script src="js/mesa-stage.js?v=2026-08-20-barra-vida-1" defer></script>
   <script src="js/mesa-roster.js?v=2026-08-20-barra-vida-1" defer></script>

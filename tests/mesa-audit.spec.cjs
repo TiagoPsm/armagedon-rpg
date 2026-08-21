@@ -6984,3 +6984,84 @@ test.describe("Esfera de status x barra de vida (Etapa 114)", () => {
     await expect(page.locator(".mesa-token-life").first()).toBeVisible();
   });
 });
+
+/* ── Etapa 116: o botao da camada de tokens fala com os dois papeis ──
+   "TOKENS" no plural prometia ao jogador uma lista que ele nunca ve. Para
+   ele o botao passa a ser "Meu token", com pino de mapa no lugar do retrato.
+   Os casos cobrem os tres modos de errar isto: mostrar a variante do papel
+   errado, deixar `title`/`aria-label` do outro papel (CSS nao alcanca
+   atributo) e estourar o rotulo de duas palavras para fora do botao. */
+test.describe("Botao da camada de tokens por papel (Etapa 116)", () => {
+  function lerBotao(page) {
+    return page.evaluate(() => {
+      const btn = document.getElementById("mesaLayerTokensBtn");
+      const vis = sel => [...btn.querySelectorAll(sel)]
+        .filter(el => getComputedStyle(el).display !== "none");
+      const r = btn.getBoundingClientRect();
+      const span = vis("span")[0];
+      const sr = span.getBoundingClientRect();
+      return {
+        papel:  document.body.dataset.role,
+        rotulo: span.textContent.trim(),
+        icone:  vis("svg").map(el => el.dataset.roleIcon),
+        title:  btn.title,
+        aria:   btn.getAttribute("aria-label"),
+        estoura: sr.width > r.width - 1,
+      };
+    });
+  }
+
+  test("jogador ve 'Meu token' com o icone proprio, e o rotulo cabe", async ({ page }) => {
+    await seedPlayerWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const r = await lerBotao(page);
+    expect(r.papel).toBe("player");
+    expect(r.rotulo).toBe("Meu token");
+    expect(r.icone, "icone do papel errado visivel").toEqual(["player"]);
+    expect(r.title).toContain("Meu token");
+    expect(r.aria).toBe("Meu token");
+    // Rotulo de duas palavras no unico botao estreito da barra: em uma linha
+    // ele media 56px num botao de 49px e o overflow do botao comia o fim.
+    expect(r.estoura, "rotulo estourou a largura do botao").toBe(false);
+  });
+
+  test("mestre continua vendo 'TOKENS' e a camada", async ({ page }) => {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const r = await lerBotao(page);
+    expect(r.papel).toBe("master");
+    expect(r.rotulo).toBe("TOKENS");
+    expect(r.icone).toEqual(["master"]);
+    expect(r.title).toContain("Camada de Tokens");
+    expect(r.aria).toBe("Camada de Tokens");
+    expect(r.estoura).toBe(false);
+  });
+
+  test("antes de a sessao resolver, a variante padrao e a do JOGADOR", async ({ page }) => {
+    // Fail-closed, como o resto das permissoes: se o CSS comecasse pelo
+    // mestre, todo mundo veria chrome de mestre no piscar do boot.
+    // Precisa da PAGINA carregada: e o css/mesa.css que decide isto.
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+
+    const r = await page.evaluate(() => {
+      const d = document.createElement("div");
+      d.innerHTML = '<span data-role-label="master">M</span><span data-role-label="player">P</span>';
+      document.body.appendChild(d);
+      const antes = document.body.dataset.role;
+      delete document.body.dataset.role;
+      const vis = [...d.querySelectorAll("span")]
+        .filter(el => getComputedStyle(el).display !== "none")
+        .map(el => el.textContent);
+      if (antes) document.body.dataset.role = antes;
+      d.remove();
+      return vis;
+    });
+    expect(r, "sem papel definido, apareceu a variante do mestre").toEqual(["P"]);
+  });
+});

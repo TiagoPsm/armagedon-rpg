@@ -844,6 +844,38 @@ html {
   margin: 0;
 }
 
+/* Rotulo e icone por PAPEL na barra (Etapa 116).
+   Padrao = variante do jogador; a do mestre so entra com data-role="master".
+   Fail-closed de proposito: `applyMesaRolePermissions()` roda no
+   DOMContentLoaded, e ate la o body ainda nao tem papel — comecar pelo mestre
+   mostraria chrome de mestre a todos por um instante. */
+[data-role-icon="master"],
+[data-role-label="master"] {
+  display: none;
+}
+
+body[data-role="master"] [data-role-icon="master"],
+body[data-role="master"] [data-role-label="master"] {
+  display: revert;
+}
+
+body[data-role="master"] [data-role-icon="player"],
+body[data-role="master"] [data-role-label="player"] {
+  display: none;
+}
+
+/* "MEU TOKEN" e o unico rotulo de DUAS palavras da barra: em uma linha ele
+   mede 56px num botao de 49px e o `overflow: hidden` do botao comeria o fim
+   da palavra. Quebra em duas linhas em vez de encolher a fonte — o rotulo
+   continua no mesmo tamanho dos vizinhos, que e o que mantem a barra coerente. */
+/* Especificidade: `.vtt-layer-btn span` (0,1,1) manda o `nowrap`; um seletor
+   de atributo sozinho (0,1,0) perderia a disputa em silencio. */
+.vtt-layer-btn [data-role-label="player"] {
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+}
+
 /* Nenhum botao da barra activo (Etapa 111): a sidebar fica vazia.
    Trava tambem os blocos de dono proprio (inspector, biblioteca), que se
    revelam sozinhos ao seleccionar um token — sem isto, um clique no palco
