@@ -844,6 +844,15 @@ html {
   margin: 0;
 }
 
+/* Nenhum botao da barra activo (Etapa 111): a sidebar fica vazia.
+   Trava tambem os blocos de dono proprio (inspector, biblioteca), que se
+   revelam sozinhos ao seleccionar um token — sem isto, um clique no palco
+   trazia meio painel de volta com a barra toda desarmada. */
+.vtt-sidebar[data-panel-off="1"] .vtt-sidebar-block,
+.vtt-sidebar[data-panel-off="1"] .vtt-sidebar-sep {
+  display: none !important;
+}
+
 /* Campo de busca dentro da sidebar */
 .search-field {
   display: flex;

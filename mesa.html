@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="css/tokens.css?v=2026-08-20-contraste-1" />
   <link rel="stylesheet" href="css/reset.css?v=2026-06-12-cache-fix-1" />
   <link rel="stylesheet" href="css/components.css?v=2026-06-12-modal-stack-1" />
-  <link rel="stylesheet" href="css/mesa.css?v=2026-08-20-contraste-2" />
+  <link rel="stylesheet" href="css/mesa.css?v=2026-08-20-toggle-1" />
   <link rel="stylesheet" href="css/mesa-stage.css?v=2026-08-20-quadro-5" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-08-20-contraste-4" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-08-20-contraste-1" />
@@ -927,7 +927,32 @@
     // Blocos de dono proprio: showPanel so ESCONDE; quem revela e o modulo.
     var OWNED_BLOCKS = { scene: ["vttInspectorBlock"] };
 
+    // Painel actualmente aberto (null = nenhum botao activo, sidebar vazia).
+    var _openPanel = null;
+
+    function getOpenPanel() { return _openPanel; }
+
+    // Desliga TODOS os botoes da barra (camadas e ferramentas) e fecha a
+    // sidebar. Usado quando o utilizador clica no botao que ja estava activo:
+    // mesma logica das ferramentas de desenho — segundo clique desarma.
+    function clearToolbarActive() {
+      document.querySelectorAll(".vtt-layer-btn[data-layer], .vtt-tb-btn[data-tool]")
+        .forEach(function (b) {
+          b.classList.remove("is-active");
+          b.setAttribute("aria-pressed", "false");
+        });
+    }
+
     function showPanel(panelName) {
+      _openPanel = panelName || null;
+      // Sem painel: a sidebar fica vazia. O atributo e a ultima palavra —
+      // blocos com dono proprio (inspector, iniciativa) podem revelar-se
+      // sozinhos mais tarde, e o CSS trava-os enquanto nada estiver activo.
+      var sidebar = document.querySelector(".vtt-sidebar");
+      if (sidebar) {
+        if (_openPanel) sidebar.removeAttribute("data-panel-off");
+        else sidebar.setAttribute("data-panel-off", "1");
+      }
       // Esconder todos
       ALL_BLOCKS.forEach(function (id) {
         var el = document.getElementById(id);
@@ -936,6 +961,7 @@
       // Separador só quando scene ativo
       var sep = document.querySelector(".vtt-sidebar-sep");
       if (sep) sep.hidden = panelName !== "scene";
+      if (!_openPanel) return;
       // Mostrar os do painel
       var blocks = PANEL_BLOCKS[panelName] || PANEL_BLOCKS.scene;
       blocks.forEach(function (id) {
@@ -972,6 +998,15 @@
       if (layerBtn) {
         var layer = layerBtn.dataset.layer;
         var panel = layerBtn.dataset.panel || "scene";
+        // Segundo clique no botao ja activo: desarma tudo e esvazia a sidebar.
+        // A camada do palco volta ao padrao ("tokens" = seleccionar/mover),
+        // tal como largar a caneta devolve o cursor normal.
+        if (layerBtn.classList.contains("is-active") && getOpenPanel()) {
+          if (typeof setMesaActiveLayer === "function") setMesaActiveLayer("tokens");
+          clearToolbarActive();
+          showPanel(null);
+          return;
+        }
         // Actualizar botões de camada
         document.querySelectorAll(".vtt-layer-btn[data-layer]").forEach(function (b) {
           var active = b.dataset.layer === layer;
@@ -992,6 +1027,17 @@
       // Clique em botão de FERRAMENTA (apenas muda o painel, não a camada)
       var toolBtn = e.target.closest(".vtt-tb-btn[data-tool]");
       if (toolBtn) {
+        // Mesmo toggle das camadas: clicar na ferramenta activa fecha o painel.
+        if (toolBtn.classList.contains("is-active") && getOpenPanel()) {
+          clearToolbarActive();
+          showPanel(null);
+          return;
+        }
+        // Uma ferramenta abre o seu painel e desliga as camadas (e vice-versa).
+        document.querySelectorAll(".vtt-layer-btn[data-layer]").forEach(function (b) {
+          b.classList.remove("is-active");
+          b.setAttribute("aria-pressed", "false");
+        });
         document.querySelectorAll(".vtt-tb-btn[data-tool]").forEach(function (b) {
           var active = b.dataset.tool === toolBtn.dataset.tool;
           b.classList.toggle("is-active", active);

@@ -1,6 +1,6 @@
 # Snapshot Automatico
 
-> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-20 15:52:44 -03:00.
+> Gerado por `tools/update-obsidian-context.ps1` em 2026-08-21 15:51:51 -03:00.
 > Nao edite esta nota manualmente; rode o script novamente para atualizar.
 
 ## Leitura Recomendada
@@ -13,18 +13,13 @@
 ## Git
 
 - Branch: `main`
-- Ultimo commit: `71aa0c1 2026-08-20 fix(mesa): contraste dos botoes na linha ja em cena (Etapa 105)`
+- Ultimo commit: `9ad71b7 2026-08-20 feat(mesa): quadro padrao do palco sem texto (Etapas 106-110)`
 
 ### Alteracoes Locais
 
 ```text
 M  DEV_STATUS.md
-M  VISUAL_RULES.md
-M  css/mesa-stage.css
-M  docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-M  js/mesa-core.js
-M  js/mesa-map.js
-M  js/mesa-stage.js
+M  css/mesa.css
 M  mesa.html
 M  tests/mesa-audit.spec.cjs
 ```
@@ -39,12 +34,7 @@ M  tests/mesa-audit.spec.cjs
 
 ```text
 DEV_STATUS.md
-VISUAL_RULES.md
-css/mesa-stage.css
-docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
-js/mesa-core.js
-js/mesa-map.js
-js/mesa-stage.js
+css/mesa.css
 mesa.html
 tests/mesa-audit.spec.cjs
 ```

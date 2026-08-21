@@ -40,7 +40,36 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-20 — Etapa 110: a moldura por cima da grade)
+## Ultima Etapa Concluida (2026-08-20 — Etapa 111: botoes da barra viram alternadores)
+
+O Tiago pediu que os botoes de camada (TOKENS / MESTRE / MAPA) e as ferramentas
+da barra se comportassem como as ferramentas de desenho: clicar liga, clicar de
+novo desliga. Com nenhum botao ligado, a sidebar direita fica vazia.
+
+- `mesa.html` (script "VTT Toolbar"): `showPanel(null)` passou a existir. O
+  delegado de clique agora deteta clique no botao ja activo e desarma tudo
+  (`clearToolbarActive()` limpa `is-active`/`aria-pressed` de camadas e
+  ferramentas) em vez de reabrir o mesmo painel. Ao desarmar uma camada, o
+  palco volta a camada padrao `tokens` (seleccionar/mover) — largar a
+  ferramenta devolve o cursor normal. Clicar numa ferramenta tambem desliga as
+  camadas, para nunca haver dois botoes acesos ao mesmo tempo.
+- `css/mesa.css`: `.vtt-sidebar[data-panel-off="1"]` esconde `.vtt-sidebar-block`
+  e `.vtt-sidebar-sep`. Sem esta trava, blocos de dono proprio (inspector,
+  biblioteca de mapas) reapareciam sozinhos ao seleccionar um token com a barra
+  toda desarmada — o mesmo padrao de "quem revela e o dono" da Etapa 75, so que
+  agora com a ultima palavra no CSS.
+- `tests/mesa-audit.spec.cjs`: bloco novo "Etapa 111" com tres casos —
+  desarmar a camada esvazia a sidebar e devolve a camada `tokens`; o inspector
+  nao volta sozinho com a barra desarmada; camada e ferramenta nunca acesas
+  juntas.
+- Cache-busting: `mesa.css?v=2026-08-20-toggle-1`.
+
+Validado: `check:js` (47 ficheiros), `audit:static`, `audit:pendencias`,
+`test:controles` (6/6), `test:mesa` (5/5), `test:mesa:audit` (207/207 antes do
+bloco novo, +3 casos verdes). Conferido tambem no navegador em localhost:8000
+com papel de mestre, sem erros de console.
+
+## Etapa Anterior (2026-08-20 — Etapa 110: a moldura por cima da grade)
 
 O Tiago viu a grade passando por cima das pontas do quadro. Causa: a borda
 morava em `.mesa-stage-board` (z-index 1) e os canvas de grade (7) e desenho (8)
@@ -133,7 +162,7 @@ mesmos 603x603 centralizados, `data-fit-board` presente, os tres tokens da cena
 dentro da caixa e zero erro de console. `check:js`, `audit:static`,
 `audit:pendencias` e `test:mesa` (5/5) verdes.
 
-## Etapa Anterior (2026-08-20 — Etapa 106: quadro padrao do palco, sem texto)
+## Etapa Historica (2026-08-20 — Etapa 106: quadro padrao do palco, sem texto)
 
 Pedido do Tiago: a tela inicial da Mesa nao pode ter texto nenhum — so um quadro
 padrao centralizado, nas cores da casa.

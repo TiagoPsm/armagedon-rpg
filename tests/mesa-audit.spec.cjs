@@ -6852,3 +6852,60 @@ test.describe("Contraste de texto pequeno (Etapa 103)", () => {
     expect(r, "botao da linha em cena abaixo do minimo AA").toBeGreaterThanOrEqual(AA);
   });
 });
+
+/* ── Etapa 111: os botoes da barra ligam e desligam ─────────────────
+   O pedido do Tiago: as camadas devem comportar-se como as ferramentas de
+   desenho — segundo clique desarma — e com nada armado a sidebar fica vazia.
+   O caso que interessa e o ultimo: blocos de dono proprio (inspector) nao
+   podem reaparecer sozinhos com a barra desarmada. */
+test.describe("Barra da Mesa: botoes alternam e esvaziam a sidebar (Etapa 111)", () => {
+  async function abrirMesa(page) {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+  }
+
+  function estado(page) {
+    return page.evaluate(() => ({
+      off: document.querySelector(".vtt-sidebar").getAttribute("data-panel-off"),
+      ativos: [...document.querySelectorAll(".vtt-layer-btn[data-layer], .vtt-tb-btn[data-tool]")]
+        .filter(b => b.classList.contains("is-active")).map(b => b.dataset.layer || b.dataset.tool),
+      blocos: [...document.querySelectorAll(".vtt-sidebar-block")]
+        .filter(b => b.offsetParent !== null).map(b => b.id),
+      camada: document.getElementById("mesaStageWrap").dataset.activeLayer,
+    }));
+  }
+
+  test("o segundo clique na camada desarma e esvazia a sidebar", async ({ page }) => {
+    await abrirMesa(page);
+    await page.evaluate(() => document.getElementById("mesaLayerMapBtn").click());
+    let r = await estado(page);
+    expect(r.ativos, "MAPA devia ficar aceso no primeiro clique").toEqual(["map"]);
+    expect(r.camada).toBe("map");
+
+    await page.evaluate(() => document.getElementById("mesaLayerMapBtn").click());
+    r = await estado(page);
+    expect(r.ativos, "nenhum botao devia continuar aceso").toEqual([]);
+    expect(r.blocos, "sidebar devia ficar vazia").toEqual([]);
+    expect(r.off, "faltou a trava data-panel-off").toBe("1");
+    expect(r.camada, "desarmar devia devolver a camada padrao").toBe("tokens");
+  });
+
+  test("com a barra desarmada, o inspetor nao volta sozinho", async ({ page }) => {
+    await abrirMesa(page);
+    // TOKENS ja abre aceso, entao UM clique e o clique que desarma.
+    await page.evaluate(() => {
+      document.querySelector('.vtt-layer-btn[data-layer="tokens"]').click();
+      if (typeof renderInspector === "function") renderInspector();
+    });
+    const r = await estado(page);
+    expect(r.blocos, "bloco de dono proprio furou a sidebar vazia").toEqual([]);
+  });
+
+  test("uma ferramenta e uma camada nunca ficam acesas juntas", async ({ page }) => {
+    await abrirMesa(page);
+    await page.evaluate(() => document.querySelector('.vtt-tb-btn[data-tool="roster"]').click());
+    const r = await estado(page);
+    expect(r.ativos).toEqual(["roster"]);
+  });
+});
