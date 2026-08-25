@@ -10,7 +10,8 @@ Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencia
 
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
 
-- **[Tiago]** Credenciais do smoke em producao: `npm run test:mesa:online` precisa de `ARMAGEDON_SITE_URL`, `ARMAGEDON_API_BASE_URL` e usuario/senha de mestre e jogador no ambiente (mais `ARMAGEDON_ONLINE_RELAY_PROBE=1` para a sonda de realtime). Sem elas o spec se pula sozinho e nunca exercitamos producao de verdade. **Desde 2026-08-18 tem mais um teste esperando nessa fila**: o cenario de selecao da Etapa 88 (clique fora do mestre com jogador conectado, contra o Worker e o DO reais). — aberta em 2026-08-16 (conferencia da Etapa 81)
+**Nenhuma pendencia aberta no momento** (25/08/2026). A ultima — credenciais
+do smoke de producao, aberta em 16/08 — foi fechada na Etapa 120.
 
 ## Regra Obrigatoria de Documentacao
 
@@ -40,7 +41,52 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-21 — Etapa 119: a lista do bundle sai do HTML)
+## Ultima Etapa Concluida (2026-08-25 — Etapa 120: producao exercitada, e repetivel)
+
+**Pendencia fechada**: "Credenciais do smoke em producao", aberta em
+2026-08-16 na conferencia da Etapa 81. O Tiago criou um jogador descartavel,
+exportou as quatro variaveis e rodou `npm run test:mesa:online` contra o site
+e a API oficiais: **4 de 4 passaram**, e na segunda rodada com
+`ARMAGEDON_ONLINE_RELAY_PROBE=1` tambem.
+
+O que ficou provado contra o Worker e o Durable Object REAIS, pela primeira
+vez desde que o spec existe:
+
+- Pages e API oficiais no ar; endpoints protegidos barram anonimo.
+- Mestre e jogador logam na API real, abrem a Mesa e conectam no WebSocket.
+- O cenario de selecao da Etapa 88 (clique fora do mestre nao volta sozinho
+  nem marca nada no jogador) — o teste que esperava nessa fila desde 18/08.
+- Com a sonda ligada, o TRANSITO: o mestre emite `mesa:token:move`, recebe o
+  ack do DO e o jogador recebe o delta; depois um traco novo pelo canal
+  `mesa:drawings:add` chega ao jogador; e a remocao limpa o traco da sonda. A
+  sonda e uma cascata — se qualquer elo falhar, estoura "Realtime timeout" em
+  12s. Passou em 4,6s.
+
+**Por que a pendencia durou nove dias**: nao faltava teste, faltava tirar o
+atrito. Quatro variaveis de ambiente por terminal novo e o suficiente para
+ninguem rodar — e nesse intervalo DOIS bugs que so existiam em producao
+(Etapas 118 e 119) passaram por toda a suite local sem uma falha. Fechar a
+pendencia sem remover o atrito seria reabri-la em silencio.
+
+- `tools/run-online-tests.ps1` + `npm run test:online`: le as credenciais de
+  um `.env` na raiz, liga a sonda por padrao e roda. `-SemSonda` desliga a
+  sonda; `-Conferir` mostra o que carregou sem executar nada (util para
+  validar o arquivo sem bater no rate-limit de login da producao). Nunca
+  imprime valor de senha, so o nome das variaveis carregadas.
+- `.gitignore`: `.env` entra na lista (so `server/.env` estava la). O modelo
+  versionado e `.env.example`, sem senha nenhuma.
+- O `.ps1` e ASCII puro de proposito: o Windows PowerShell 5.1 le script sem
+  BOM como ANSI, e um travessao no comentario quebrava o parser com
+  "cadeia de caracteres nao tem o terminador".
+
+Conferido: sem `.env` o script orienta a copiar o modelo e sai com 1; com
+senha faltando, diz qual falta e sai com 1; completo, carrega as quatro e
+respeita `-SemSonda`/`-Conferir`.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`,
+`test:mesa:online` (4/4, com e sem sonda, contra producao).
+
+## Etapa Anterior (2026-08-21 — Etapa 119: a lista do bundle sai do HTML)
 
 Fechando a observacao deixada na Etapa 118. `tools/build-pages.cjs` mantinha
 DOIS arrays escritos a mao com os arquivos de cada bundle, e eles ja tinham

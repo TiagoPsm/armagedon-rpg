@@ -15,6 +15,7 @@
     "test:mesa:permissoes": "playwright test tests/mesa-permissions.spec.cjs",
     "test:mesa:tokens": "playwright test tests/mesa-token-handles.spec.cjs",
     "test:mesa:online": "playwright test tests/mesa-online.spec.cjs",
+    "test:online": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/run-online-tests.ps1",
     "test:mesa:worker": "playwright test tests/mesa-resize-worker.spec.cjs",
     "test:build": "playwright test tests/build-pages.spec.cjs",
     "test:ficha": "playwright test tests/ficha.spec.cjs",

@@ -2,6 +2,10 @@ server/node_modules/
 node_modules/
 test-results/
 server/.env
+
+# Credenciais do smoke de producao (tools/run-online-tests.ps1).
+# O modelo versionado e o .env.example, sem senha nenhuma.
+.env
 server/*.log
 *.log
 _site/

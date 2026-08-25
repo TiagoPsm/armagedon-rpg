@@ -28,6 +28,10 @@ npm run test:controles
 # Build static artifact for GitHub Pages → _site/
 npm run build:pages
 
+# Smoke contra PRODUCAO (site e API oficiais) — credenciais no .env da raiz
+npm run test:online        # le o .env, liga a sonda de relay e roda
+                           # (.env.example tem o modelo; .env e gitignored)
+
 # Run Playwright test suites
 npm run test:mesa          # mesa unit/integration
 npm run test:mesa:audit    # regressao dos 11 bugs da auditoria (permissoes, camada dm, sync)
