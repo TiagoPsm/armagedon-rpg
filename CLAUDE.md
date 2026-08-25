@@ -28,9 +28,10 @@ npm run test:controles
 # Build static artifact for GitHub Pages → _site/
 npm run build:pages
 
-# Smoke contra PRODUCAO (site e API oficiais) — credenciais no .env da raiz
-npm run test:online        # le o .env, liga a sonda de relay e roda
-                           # (.env.example tem o modelo; .env e gitignored)
+# Smoke contra PRODUCAO (site e API oficiais)
+npm run test:online:setup  # uma vez: guarda as credenciais CIFRADAS (DPAPI) em
+                           # %LOCALAPPDATA%\armagedom — fora do OneDrive e do repo
+npm run test:online        # le o cofre, liga a sonda de relay e roda
 
 # Run Playwright test suites
 npm run test:mesa          # mesa unit/integration

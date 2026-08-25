@@ -10,8 +10,8 @@ Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencia
 
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
 
-**Nenhuma pendencia aberta no momento** (25/08/2026). A ultima — credenciais
-do smoke de producao, aberta em 16/08 — foi fechada na Etapa 120.
+- **[Tiago]** Rotacionar a senha do mestre: `npx wrangler secret put MASTER_BOOTSTRAP_PASSWORD --config cloudflare/wrangler.toml`, depois UM login no site com a senha nova (e o gatilho que faz `ensureMasterUser` regravar o hash) e `npm run test:online:setup` para atualizar o cofre. NAO tocar em `PASSWORD_PEPPER`: ele entra no hash de TODAS as senhas, e troca-lo derruba o login de todos os jogadores, que nao tem bootstrap para se recuperar como o mestre tem. — aberta em 2026-08-25 (Etapa 121)
+- **[Tiago]** `cloudflare/.dev.vars` guarda `PASSWORD_PEPPER`, `JWT_SECRET` e `MASTER_BOOTSTRAP_PASSWORD` em texto puro dentro do OneDrive. Decidir o destino: manter e aceitar a copia na nuvem, mover para fora do OneDrive, ou trocar por valores locais de brinquedo — o `wrangler dev --local` nao precisa dos segredos reais. Antes de qualquer coisa, guardar uma copia segura: secret do Cloudflare NAO pode ser lido de volta, e este arquivo pode ser a unica copia que resta. — aberta em 2026-08-25 (Etapa 121)
 
 ## Regra Obrigatoria de Documentacao
 
@@ -41,7 +41,64 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-25 — Etapa 120: producao exercitada, e repetivel)
+## Ultima Etapa Concluida (2026-08-25 — Etapa 121: a senha do smoke sai do texto puro)
+
+O Tiago levantou a preocupacao certa: "e possivel mudar a senha do mestre,
+tenho medo de poderem ver". A resposta e sim (o `MASTER_BOOTSTRAP_PASSWORD` e
+secret do Cloudflare, e `ensureMasterUser` rotaciona o hash sozinho no primeiro
+login com a senha nova). Mas antes de trocar valia mapear ONDE a senha estava.
+
+Levantamento feito, nao suposto:
+
+- **Historico do PowerShell: limpo.** Zero linhas com `ARMAGEDON_MASTER_PASSWORD`
+  no `ConsoleHost_history.txt`, contra 10 linhas com `ARMAGEDON` em geral — o
+  PSReadLine tem filtro embutido que nao grava comando com `password`, `token`
+  ou `secret`.
+- **Git: nunca commitada.** Conferido antes do push da Etapa 120.
+- **`.env` e `cloudflare/.dev.vars`: texto puro no disco** — e a pasta do
+  projeto vive dentro do **OneDrive**, entao esse texto puro sincroniza para a
+  nuvem. Era a exposicao real, e o `.env` da Etapa 120 tinha acabado de somar
+  uma copia nova a ela.
+
+O `.env` resolveu o atrito (Etapa 120) criando um problema menor mas real. Esta
+etapa fecha os dois ao mesmo tempo.
+
+- `tools/set-online-credentials.ps1` + `npm run test:online:setup`: pede as duas
+  contas com `Get-Credential` (digitacao oculta, fora do historico) e grava com
+  `Export-Clixml`, que cifra o SecureString via **DPAPI** — chave derivada da
+  conta do Windows daquela maquina. O arquivo vai para
+  `%LOCALAPPDATA%\armagedom\online-credentials.xml`: fora do OneDrive, fora do
+  repositorio, e inutil se copiado para outra maquina ou outro usuario. A ACL e
+  reescrita para so o dono ter acesso. `-Conferir` mostra os nomes de usuario
+  salvos; `-Apagar` remove o cofre.
+- `tools/run-online-tests.ps1`: passou a ter tres origens, nesta ordem — cofre
+  cifrado, variaveis ja no ambiente (o caminho de CI, com GitHub Secrets), e o
+  `.env` em texto puro. A terceira continua funcionando por compatibilidade,
+  mas imprime aviso em vermelho dizendo que a senha esta sincronizando para a
+  nuvem e como migrar. A senha so vira texto DENTRO do processo, o tempo de
+  repassar ao Playwright; nunca e impressa nem gravada.
+- `.env.example`: deixou de ser o caminho recomendado e passou a explicar por
+  que.
+
+Conferido: com o cofre presente ele vence o `.env` (precedencia certa); sem
+cofre e sem `.env`, o script orienta o cadastro e sai com 1; a senha gravada
+NAO aparece em texto dentro do arquivo do cofre (`Select-String` no valor
+conhecido nao acha); `-Apagar` e `-Conferir` respondem certo. Os testes usaram
+credenciais falsas e o cofre de teste foi removido no fim.
+
+Os dois `.ps1` sao ASCII puro pelo mesmo motivo da Etapa 120: o Windows
+PowerShell 5.1 le script sem BOM como ANSI e um travessao quebra o parser.
+
+Dois itens ficaram abertos e foram para a lista canonica no topo: a rotacao da
+senha em si (e do Tiago, envolve digitar a senha) e o `cloudflare/.dev.vars`,
+que segue com `PASSWORD_PEPPER` e `JWT_SECRET` em texto puro dentro do
+OneDrive. Esse arquivo NAO foi mexido de proposito: secret do Cloudflare nao
+pode ser lido de volta, entao ele pode ser a unica copia sobrevivente desses
+dois valores - apaga-lo as cegas seria perde-los para sempre.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`.
+
+## Etapa Anterior (2026-08-25 — Etapa 120: producao exercitada, e repetivel)
 
 **Pendencia fechada**: "Credenciais do smoke em producao", aberta em
 2026-08-16 na conferencia da Etapa 81. O Tiago criou um jogador descartavel,
