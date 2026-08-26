@@ -778,3 +778,16 @@ legivel.
 - alinhamentos quebrados
 - brilhos coloridos fora da paleta
 - aparencia de painel generico claro
+
+## Controles continuos no flyout de desenho (2026-08-25, Etapa 122)
+
+Grossura e opacidade usam `input[type=range]` com rotulo a esquerda e `output`
+a direita (`.draw-slider-row`), no lugar dos tres botoes fixos anteriores. A
+regra: **quando o intervalo util e continuo, o controle e continuo** — tres
+degraus (2/4/8) escondiam nove dos doze valores que o Worker aceita.
+
+O `input[type=color]` nativo e feio por padrao em todo navegador; ele e
+reduzido a um retangulo da propria cor (`::-webkit-color-swatch`,
+`::-moz-color-swatch` sem borda). O quadrado de preview ao lado da paleta
+mostra a cor JA com a opacidade aplicada — e o unico lugar onde da para ver o
+resultado antes de desenhar.

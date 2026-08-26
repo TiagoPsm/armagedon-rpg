@@ -2473,10 +2473,32 @@ function rememberMesaSceneSignature(payload, options = {}) {
   return signature;
 }
 
-// Normalização dos traços de desenho para o contrato da cena (mesmos caps do
-// Worker: 300 traços, 200 pontos por traço de lápis, frações com 4 casas).
-const MESA_MAX_SCENE_DRAWINGS = 300;
-const MESA_MAX_DRAWING_POINTS = 200;
+/* Normalizacao dos tracos para o contrato da cena.
+ *
+ * Os tetos NAO sao mais escritos aqui. Esta era a TERCEIRA copia dos mesmos
+ * numeros (Worker em cloudflare/src/mesa.js, modulo de desenho em
+ * js/mesa-drawing.js, e aqui) e foi a unica que a Etapa 74 esqueceu de
+ * atualizar quando subiu os limites: ficou em 300 tracos e 200 pontos contra
+ * os 1500 e 400 reais.
+ *
+ * O estrago era silencioso e exatamente o sintoma relatado pelo Tiago em
+ * 2026-08-25 — "conforme eu desenho alguns tracos vao se apagando". Toda
+ * gravacao da cena passava por aqui: o `slice(0, 300)` mantem os PRIMEIROS
+ * 300 e joga fora os mais novos, entao o traco recem-desenhado era o
+ * primeiro a morrer; e um traco de lapis com mais de 200 pontos perdia a
+ * cauda. Nada de erro, nada de aviso.
+ *
+ * Agora o valor vem do modulo de desenho em tempo de chamada (mesa-drawing.js
+ * carrega depois deste arquivo, entao ler no topo cairia na zona morta do
+ * `const`). O literal e so a rede de seguranca se o modulo nao existir. */
+function _tetoCenaTracos() {
+  try { return typeof DRAW_MAX_STROKES === "number" ? DRAW_MAX_STROKES : 1500; }
+  catch { return 1500; }
+}
+function _tetoCenaPontos() {
+  try { return typeof DRAW_MAX_POINTS === "number" ? DRAW_MAX_POINTS : 400; }
+  catch { return 400; }
+}
 const MESA_DRAW_TOOLS = new Set(["pencil", "line", "rect", "circle"]);
 
 function normalizeMesaSceneDrawings(list) {
@@ -2495,6 +2517,12 @@ function normalizeMesaSceneDrawings(list) {
         color: /^#[0-9a-f]{3,8}$/i.test(String(stroke.color || "")) ? String(stroke.color) : "#e84040",
         width: Math.max(1, Math.min(12, Number(stroke.width) || 3)),
         layer: stroke.layer === "dm" ? "dm" : "tokens",
+        // Autor: PRECISA sobreviver, pelo mesmo motivo documentado no Worker
+        // (normalizeSceneDrawing em cloudflare/src/mesa.js). Descartado aqui,
+        // todo traco voltava da cena como orfao e o jogador perdia o direito
+        // de apagar o proprio desenho depois de um F5 — a permissao da
+        // Etapa 76 ia junto com o campo.
+        author: String(stroke.author || "").trim().slice(0, 40).toLowerCase(),
         x1: frac(stroke.x1),
         y1: frac(stroke.y1),
         x2: frac(stroke.x2),
@@ -2504,7 +2532,7 @@ function normalizeMesaSceneDrawings(list) {
       if (tool === "pencil") {
         const points = Array.isArray(stroke.points) ? stroke.points : [];
         normalized.points = points
-          .slice(0, MESA_MAX_DRAWING_POINTS)
+          .slice(0, _tetoCenaPontos())
           .filter(point => Array.isArray(point) && point.length >= 2)
           .map(point => [frac(point[0]), frac(point[1])]);
         if (normalized.points.length < 2) return null;
@@ -2512,7 +2540,7 @@ function normalizeMesaSceneDrawings(list) {
       return normalized;
     })
     .filter(Boolean)
-    .slice(0, MESA_MAX_SCENE_DRAWINGS);
+    .slice(0, _tetoCenaTracos());
 }
 
 function normalizeMesaScenePayload(payload = {}) {

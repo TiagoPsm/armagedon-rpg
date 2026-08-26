@@ -7195,3 +7195,272 @@ test.describe("Redimensionar token sincroniza de verdade (Etapa 117)", () => {
     expect(r.depois, "o token nao cresceu na tela do mestre").toBeGreaterThan(r.antes * 2);
   });
 });
+
+/* ── Etapa 122: desenho — cor, opacidade, traco continuo e borracha ──
+   Quatro coisas que o modulo nao fazia e agora faz. Cada teste falha com o
+   codigo anterior por um motivo diferente, nao por um detalhe de forma. */
+test.describe("Desenho da Mesa (Etapa 122)", () => {
+  async function abrirMesaComDesenho(page) {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    // O desenho arma depois do resto do boot; sem esperar por isto o canvas
+    // ainda mede 300x150 (o default do elemento) e qualquer conta de pixel
+    // sai errada.
+    await page.waitForFunction(() =>
+      document.getElementById("mesaStageWrap")?.dataset.drawReady === "true");
+    return page;
+  }
+
+  test("a opacidade viaja dentro da cor e sobrevive ao contrato do Worker", async ({ page }) => {
+    await abrirMesaComDesenho(page);
+
+    const cor = await page.evaluate(() => {
+      _drawColor = "#40b8e8";
+      _drawAlpha = 0.6;
+      return _composeStrokeColor();
+    });
+    expect(cor, "a opacidade nao entrou na cor").toBe("#40b8e899");
+
+    // O Worker e quem decide se isso sobrevive ao F5: se normalizeMesaScene
+    // recusasse o hex de 8 digitos, o traco voltaria vermelho padrao.
+    const { normalizeMesaScene } = await import("../cloudflare/src/mesa.js");
+    const cena = normalizeMesaScene({
+      drawings: [{
+        id: "t1", tool: "pencil", color: cor, width: 6, layer: "tokens",
+        points: [[0.1, 0.1], [0.5, 0.5]]
+      }]
+    });
+    expect(cena.drawings[0].color, "o Worker descartou a cor com opacidade").toBe(cor);
+    expect(cena.drawings[0].width).toBe(6);
+  });
+
+  test("o risco continuo nao congela mais no teto de pontos", async ({ page }) => {
+    await abrirMesaComDesenho(page);
+
+    const r = await page.evaluate(() => {
+      _strokes = [];
+      setDrawTool("pencil");
+      const c = _drawCanvasEl;
+      const rect = c.getBoundingClientRect();
+      const ev = (t, x, y, alvo) => alvo.dispatchEvent(
+        new MouseEvent(t, { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, buttons: 1 }));
+
+      const x0 = rect.left + 20;
+      const y0 = rect.top + rect.height / 2;
+      ev("mousedown", x0, y0, c);
+      let ultimoX = x0;
+      // Movimento muito mais longo do que o teto de pontos aguenta ponto a ponto.
+      for (let i = 1; i <= 3000; i += 1) {
+        const x = x0 + (i % Math.floor(rect.width - 40));
+        const y = y0 + Math.sin(i / 9) * (rect.height / 3);
+        ev("mousemove", x, y, window);
+        ultimoX = x;
+      }
+      ev("mouseup", ultimoX, y0, window);
+
+      const s = _strokes[0];
+      const xs = s.points.map(p => p[0]);
+      return {
+        pontos: s.points.length,
+        teto: DRAW_MAX_POINTS,
+        extensao: Math.max(...xs) - Math.min(...xs),
+        bytes: JSON.stringify(s).length,
+        vazouCampoTemporario: "_alivio" in s
+      };
+    });
+
+    // O ponto do conserto: o traco acompanha a mao ate o fim do palco.
+    expect(r.extensao, "o traco parou de crescer no meio do movimento").toBeGreaterThan(0.8);
+    // E continua dentro do contrato: teto de pontos e cap de 32KB do DO.
+    expect(r.pontos).toBeLessThanOrEqual(r.teto);
+    expect(r.bytes).toBeLessThan(32 * 1024);
+    expect(r.vazouCampoTemporario, "campo de trabalho vazou para o payload").toBe(false);
+  });
+
+  test("simplificar tira o que nao muda a forma, e so isso", async ({ page }) => {
+    await abrirMesaComDesenho(page);
+    const r = await page.evaluate(() => {
+      const reta = [];
+      for (let i = 0; i < 50; i += 1) reta.push([i / 100, 0.5]);
+      const curva = [];
+      for (let i = 0; i < 50; i += 1) curva.push([i / 100, 0.5 + Math.sin(i / 3) * 0.05]);
+      return { reta: _simplifyPoints(reta, 0.0015).length, curva: _simplifyPoints(curva, 0.0015).length };
+    });
+    // Reta com 50 pontos e uma reta com 2.
+    expect(r.reta).toBe(2);
+    // Curva de verdade nao pode ser achatada: perderia o desenho.
+    expect(r.curva).toBeGreaterThan(20);
+  });
+
+  test("o painel de desenho so fecha no proprio botao", async ({ page }) => {
+    await abrirMesaComDesenho(page);
+
+    const r = await page.evaluate(() => {
+      const aberto = () => !document.getElementById("mesaDrawFlyout").hidden;
+      const passos = {};
+
+      document.getElementById("mesaDrawToggleBtn").click();
+      passos.abriuNoBotao = aberto();
+      document.querySelector('[data-draw-tool="pencil"]').click();
+      passos.aposEscolherFerramenta = aberto();
+
+      // Desenhar E clicar fora sao a mesma coisa para o DOM: o mouseup no
+      // palco vira um `click` que borbulha ate o document. Era esse clique
+      // que fechava o painel a cada traco terminado.
+      const c = _drawCanvasEl;
+      const rect = c.getBoundingClientRect();
+      const ev = (t, x, y, alvo) => alvo.dispatchEvent(
+        new MouseEvent(t, { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, buttons: 1 }));
+      const antes = _strokes.length;
+      ev("mousedown", rect.left + 60, rect.top + 60, c);
+      for (let i = 1; i <= 25; i += 1) ev("mousemove", rect.left + 60 + i * 6, rect.top + 60 + i * 3, window);
+      ev("mouseup", rect.left + 210, rect.top + 135, window);
+      c.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      passos.aposDesenhar = aberto();
+      passos.tracoNasceu = _strokes.length > antes;
+
+      // Mexer nos controles e clicar em qualquer outro lugar tambem nao fecha.
+      document.getElementById("mesaDrawWidth").dispatchEvent(new Event("input", { bubbles: true }));
+      document.body.click();
+      passos.aposControles = aberto();
+
+      document.getElementById("mesaDrawToggleBtn").click();
+      passos.fechouNoBotao = !aberto();
+      return passos;
+    });
+
+    expect(r.abriuNoBotao).toBe(true);
+    expect(r.aposEscolherFerramenta).toBe(true);
+    expect(r.tracoNasceu, "o gesto de teste nem desenhou").toBe(true);
+    // O ponto do conserto: terminar um traco nao pode fechar a paleta.
+    expect(r.aposDesenhar, "o painel fechou ao terminar o desenho").toBe(true);
+    expect(r.aposControles, "o painel fechou ao mexer nos controles").toBe(true);
+    expect(r.fechouNoBotao, "o botao da caneta deixou de fechar o painel").toBe(true);
+  });
+
+  /* O bug relatado pelo Tiago em 2026-08-25: "conforme eu desenho alguns
+     tracos vao se apagando". Causa: os tetos de desenho existiam em TRES
+     lugares (Worker, modulo de desenho e a normalizacao da cena em
+     mesa-core.js) e a Etapa 74 subiu dois deles, esquecendo o terceiro. Toda
+     gravacao da cena cortava em 300 tracos e 200 pontos — e o `slice` mantem
+     os PRIMEIROS, entao o traco recem-desenhado era o primeiro a morrer. */
+  test("gravar a cena nao come traco nem encurta risco", async ({ page }) => {
+    await abrirMesaComDesenho(page);
+
+    const r = await page.evaluate(() => {
+      const lista = [];
+      for (let n = 0; n < 320; n += 1) {
+        lista.push({ id: "s" + n, tool: "pencil", color: "#e84040", width: 3, layer: "tokens",
+          author: "mestre", x1: 0.1, y1: 0.1, x2: 0.2, y2: 0.2, points: [[0.1, 0.1], [0.2, 0.2]] });
+      }
+      const longo = [];
+      for (let i = 0; i < 380; i += 1) longo.push([i / 400, 0.5]);
+      lista.push({ id: "longo", tool: "pencil", color: "#40b8e880", width: 6, layer: "tokens",
+        author: "ana", x1: 0, y1: 0.5, x2: 0.95, y2: 0.5, points: longo });
+
+      const normalizado = normalizeMesaSceneDrawings(lista);
+      const oLongo = normalizado.find(s => s.id === "longo");
+      return {
+        entraram: lista.length,
+        sobreviveram: normalizado.length,
+        pontosDoLongo: oLongo ? oLongo.points.length : 0,
+        autor: oLongo ? oLongo.author : "",
+        cor: oLongo ? oLongo.color : ""
+      };
+    });
+
+    expect(r.sobreviveram, "a cena comeu tracos ao gravar").toBe(r.entraram);
+    expect(r.pontosDoLongo, "a cena encurtou o risco continuo").toBe(380);
+    // O autor decide quem pode apagar (Etapa 76): perdido na gravacao, o
+    // jogador nao apaga mais o proprio traco depois de um F5.
+    expect(r.autor, "a cena descartou o autor do traco").toBe("ana");
+    expect(r.cor, "a cena descartou a opacidade").toBe("#40b8e880");
+  });
+
+  test("os tetos de desenho batem nos tres lugares que os declaram", async () => {
+    const fs = require("node:fs");
+    const path = require("node:path");
+    const raiz = path.resolve(__dirname, "..");
+    const ler = rel => fs.readFileSync(path.join(raiz, rel), "utf8");
+    const numero = (texto, regex, nome) => {
+      const m = texto.match(regex);
+      expect(m, `nao achei ${nome}`).toBeTruthy();
+      return Number(m[1]);
+    };
+
+    const worker = ler("cloudflare/src/mesa.js");
+    const desenho = ler("js/mesa-drawing.js");
+    const core = ler("js/mesa-core.js");
+
+    const tracosWorker = numero(worker, /MAX_DRAWINGS\s*=\s*(\d+)/, "MAX_DRAWINGS do Worker");
+    const pontosWorker = numero(worker, /MAX_DRAW_POINTS\s*=\s*(\d+)/, "MAX_DRAW_POINTS do Worker");
+    const tracosCliente = numero(desenho, /DRAW_MAX_STROKES\s*=\s*(\d+)/, "DRAW_MAX_STROKES");
+    const pontosCliente = numero(desenho, /DRAW_MAX_POINTS\s*=\s*(\d+)/, "DRAW_MAX_POINTS");
+
+    expect(tracosCliente, "teto de tracos divergente entre cliente e Worker").toBe(tracosWorker);
+    expect(pontosCliente, "teto de pontos divergente entre cliente e Worker").toBe(pontosWorker);
+
+    // A terceira copia foi eliminada de proposito: mesa-core.js le os tetos do
+    // modulo de desenho em tempo de chamada. Se alguem reescrever um numero
+    // literal aqui, a divergencia volta a acontecer em silencio.
+    expect(core, "mesa-core.js voltou a declarar o proprio teto de tracos")
+      .not.toMatch(/MESA_MAX_SCENE_DRAWINGS\s*=\s*\d+/);
+    expect(core, "mesa-core.js voltou a declarar o proprio teto de pontos")
+      .not.toMatch(/MESA_MAX_DRAWING_POINTS\s*=\s*\d+/);
+  });
+
+  test("a borracha apaga so o pedaco tocado, e comita uma vez so", async ({ page }) => {
+    await abrirMesaComDesenho(page);
+
+    const r = await page.evaluate(() => {
+      window.__enviados = [];
+      window.APP = Object.assign({}, window.APP, {
+        sendRealtime: m => { window.__enviados.push(m?.payload || m); return true; }
+      });
+      window.AUTH = Object.assign({}, window.AUTH, { isBackendEnabled: () => true });
+
+      _strokes = [];
+      const pts = [];
+      for (let i = 0; i < 60; i += 1) pts.push([0.1 + i * 0.012, 0.5]);
+      _strokes.push({ id: "alvo", tool: "pencil", color: "#e84040", width: 3, layer: "tokens",
+        author: _drawAuthorKey(), x1: 0.1, y1: 0.5, x2: 0.8, y2: 0.5, points: pts });
+      _strokes.push({ id: "forma", tool: "rect", color: "#40b8e8", width: 3, layer: "tokens",
+        author: _drawAuthorKey(), x1: 0.2, y1: 0.2, x2: 0.4, y2: 0.4, points: null });
+
+      setDrawTool("eraser");
+      const c = _drawCanvasEl;
+      const rect = c.getBoundingClientRect();
+      const emTela = (fx, fy) => ({ x: rect.left + fx * rect.width, y: rect.top + fy * rect.height });
+      const ev = (t, p, alvo) => alvo.dispatchEvent(
+        new MouseEvent(t, { bubbles: true, cancelable: true, clientX: p.x, clientY: p.y, button: 0, buttons: 1 }));
+
+      const p1 = emTela(0.45, 0.5);
+      ev("mousedown", p1, c);
+      ev("mousemove", emTela(0.46, 0.5), window);
+      ev("mouseup", emTela(0.46, 0.5), window);
+
+      const pedacos = _strokes.filter(s => s.tool === "pencil");
+      return {
+        pedacos: pedacos.length,
+        pontosPorPedaco: pedacos.map(s => s.points.length),
+        idsNovos: pedacos.every(s => s.id !== "alvo"),
+        herdou: pedacos.every(s => s.color === "#e84040" && s.author === _drawAuthorKey()),
+        formaIntacta: _strokes.some(s => s.id === "forma"),
+        tipos: (window.__enviados || []).map(m => m.type)
+      };
+    });
+
+    // O ponto do conserto: encostar no meio do risco nao apaga o risco inteiro.
+    expect(r.pedacos, "a borracha comeu o traco inteiro").toBe(2);
+    r.pontosPorPedaco.forEach(n => expect(n).toBeGreaterThan(5));
+    expect(r.idsNovos, "pedaco reaproveitou o id do traco original").toBe(true);
+    expect(r.herdou, "pedaco perdeu cor ou autor").toBe(true);
+    // Forma nao se parte: metade de um retangulo nao e uma forma.
+    expect(r.formaIntacta, "a borracha tentou partir um retangulo").toBe(true);
+    // Um commit por ARRASTO, nao por quadro: partir a cada mousemove faria o
+    // Durable Object recusar em silencio (o defeito da Etapa 50).
+    const remove = r.tipos.filter(t => t === "mesa:drawings:remove").length;
+    expect(remove, "a borracha transmitiu uma remocao por quadro").toBe(1);
+  });
+});

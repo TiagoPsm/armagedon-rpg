@@ -39,11 +39,64 @@ const DRAW_MIN_POINT_DIST = 0.002;   // 0,2% do canvas entre pontos do lápis
 // passou de 256KB para 1MB junto. Um traço de lápis cheio (400 pontos) dá
 // ~7KB, bem abaixo do cap de 32KB por mensagem do DO, então o delta de UM
 // traço continua cabendo sempre.
+// Tolerancia base da simplificacao: 0,15% do palco. Abaixo disso o desvio
+// nao chega a um pixel na tela em zoom normal.
+const DRAW_SIMPLIFY_EPS = 0.0015;
 const DRAW_MAX_POINTS  = 400;        // = MAX_DRAW_POINTS do Worker
 const DRAW_MAX_STROKES = 1500;       // = MAX_DRAWINGS do Worker
 // Teto de segurança do full-state (só o reenvio a quem entra depois usa):
 // abaixo do cap de 32KB do DO, com folga para o envelope.
 const DRAW_FULL_STATE_MAX_CHARS = 30 * 1024;
+
+/* ── Simplificacao de curva (Etapa 122) ────────────────────────────
+ * O teto de DRAW_MAX_POINTS existe por causa do cap de 32KB por mensagem
+ * do Durable Object. Ate aqui, ao bater no teto o traco simplesmente
+ * PARAVA de crescer no meio do movimento: a mao continuava andando e a
+ * tinta acabava, sem aviso nenhum.
+ *
+ * Ramer-Douglas-Peucker resolve por outro lado: em vez de contar pontos,
+ * joga fora os que nao mudam a FORMA. Um risco longo desenhado depressa
+ * tem centenas de pontos quase colineares - descartar 60% deles nao muda
+ * um pixel na tela e devolve espaco para a mao continuar. Quando o teto
+ * chega, a gente rareia o proprio traco e segue desenhando; so quando
+ * nem rarear resolve e que ele para.
+ *
+ * Iterativo de proposito (pilha explicita): um traco de milhares de
+ * pontos estouraria a pilha de recursao do navegador. */
+function _perpDistance(p, a, b) {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const den = Math.hypot(dx, dy);
+  if (den < 1e-9) return Math.hypot(p[0] - a[0], p[1] - a[1]);
+  return Math.abs(dy * p[0] - dx * p[1] + b[0] * a[1] - b[1] * a[0]) / den;
+}
+
+function _simplifyPoints(points, epsilon) {
+  if (!Array.isArray(points) || points.length < 3) return points;
+  const manter = new Uint8Array(points.length);
+  manter[0] = 1;
+  manter[points.length - 1] = 1;
+
+  const pilha = [[0, points.length - 1]];
+  while (pilha.length) {
+    const [ini, fim] = pilha.pop();
+    if (fim <= ini + 1) continue;
+    let pior = 0;
+    let indice = -1;
+    for (let i = ini + 1; i < fim; i += 1) {
+      const d = _perpDistance(points[i], points[ini], points[fim]);
+      if (d > pior) { pior = d; indice = i; }
+    }
+    if (indice !== -1 && pior > epsilon) {
+      manter[indice] = 1;
+      pilha.push([ini, indice], [indice, fim]);
+    }
+  }
+
+  const saida = [];
+  for (let i = 0; i < points.length; i += 1) if (manter[i]) saida.push(points[i]);
+  return saida;
+}
 
 function _round4(value) {
   const factor = 10 ** DRAW_COORD_DECIMALS;
@@ -94,10 +147,40 @@ function _canEraseStroke(stroke) {
 }
 
 const PALETTE = [
-  "#e84040", "#e86820", "#e8c020", "#40c860",
-  "#40b8e8", "#4058e8", "#a040e8", "#e840a0",
-  "#ffffff", "#aaaaaa", "#555555", "#111111"
+  "#e84040", "#f0663a", "#e86820", "#e8a020", "#e8c020", "#c8d820",
+  "#8ac926", "#40c860", "#22b8a0", "#40b8e8", "#4058e8", "#7a52e0",
+  "#a040e8", "#e840a0", "#f07a9a", "#8b5a2b", "#c9a227", "#ffffff",
+  "#cccccc", "#888888", "#555555", "#111111"
 ];
+
+/* ── Opacidade por traco (Etapa 122) ───────────────────────────────
+ * A transparencia NAO virou campo novo: ela viaja dentro da propria cor,
+ * em hex de 8 digitos (#rrggbbaa). O Worker ja aceitava esse formato
+ * (`/^#[0-9a-f]{3,8}$/i` em normalizeSceneDrawing), entao opacidade
+ * atravessa realtime, cena e F5 sem uma linha de backend nem deploy.
+ * Campo novo exigiria mudar o contrato da cena e derrubaria a cor de
+ * quem estivesse com o cliente antigo. */
+const DRAW_ALPHA_MIN = 0.1;
+// Traco antigo (cor de 6 digitos) continua com o alfa fixo historico: sem
+// isto, todo desenho ja existente ficaria opaco de uma hora para outra.
+const DRAW_LEGACY_ALPHA = 0.88;
+let _drawAlpha = 1;
+
+function _hexAlpha(alpha) {
+  const v = Math.round(Math.max(DRAW_ALPHA_MIN, Math.min(1, alpha)) * 255);
+  return v.toString(16).padStart(2, "0");
+}
+
+/** Cor que vai para o traco: com alfa embutido so quando nao e opaca. */
+function _composeStrokeColor() {
+  const base = /^#[0-9a-f]{6}$/i.test(_drawColor) ? _drawColor : "#e84040";
+  return _drawAlpha >= 0.999 ? base : base + _hexAlpha(_drawAlpha);
+}
+
+/** Alfa de canvas para um traco ja existente. */
+function _strokeBaseAlpha(color) {
+  return /^#[0-9a-f]{8}$/i.test(String(color || "")) ? 1 : DRAW_LEGACY_ALPHA;
+}
 
 // ── Init ───────────────────────────────────────────────────────────
 function initMesaDrawing() {
@@ -340,6 +423,7 @@ function _onDrawStart(e) {
   const { px, py } = _toPercent(pos.x, pos.y);
 
   if (_activeTool === "eraser") {
+    _iniciarSessaoBorracha();
     _eraseAt(pos.x, pos.y);
     return;
   }
@@ -347,7 +431,7 @@ function _onDrawStart(e) {
   _activeStroke = {
     id:     Math.random().toString(36).slice(2),
     tool:   _activeTool,
-    color:  _drawColor,
+    color:  _composeStrokeColor(),
     width:  _drawWidth,
     // Camada única, compartilhada por mestre e jogadores (Etapa 73).
     layer:  "tokens",
@@ -381,10 +465,30 @@ function _onDrawMove(e) {
     if (last && Math.hypot(px - last[0], py - last[1]) < DRAW_MIN_POINT_DIST) return;
     // Cap igual ao do Worker: sem ele, o traço na tela teria mais pontos do que
     // o traço salvo e o desenho "mudaria sozinho" no próximo reload.
-    if (pts.length >= DRAW_MAX_POINTS) return;
+    //
+    // Etapa 122: bater no teto nao para mais o traço. Primeiro tentamos
+    // RAREAR os pontos que nao mudam a forma (ver _simplifyPoints); cada
+    // rodada usa uma tolerancia maior que a anterior. So quando nem isso
+    // abre espaco util e que a tinta acaba de verdade.
+    if (pts.length >= DRAW_MAX_POINTS && !_aliviarPontos(_activeStroke)) return;
     pts.push([px, py]);
   }
   renderDrawings();
+}
+
+/**
+ * Rareia o traço em curso para caber mais movimento. Devolve true quando
+ * abriu espaço util (>= 10% do teto), false quando nao ha mais o que tirar.
+ */
+function _aliviarPontos(stroke) {
+  if (!stroke || !Array.isArray(stroke.points)) return false;
+  const antes = stroke.points.length;
+  stroke._alivio = (stroke._alivio || 0) + 1;
+  const epsilon = DRAW_SIMPLIFY_EPS * Math.pow(1.8, stroke._alivio - 1);
+  const rarefeito = _simplifyPoints(stroke.points, epsilon);
+  if (antes - rarefeito.length < DRAW_MAX_POINTS * 0.1) return false;
+  stroke.points = rarefeito;
+  return true;
 }
 
 function _onDrawEnd() {
@@ -392,11 +496,25 @@ function _onDrawEnd() {
   _isDrawing = false;
   setTimeout(() => { window._mesaStagePanMoved = false; }, 0);
 
+  // Borracha: um unico commit com tudo o que o arrasto inteiro mexeu.
+  if (_activeTool === "eraser") {
+    _fecharSessaoBorracha();
+    return;
+  }
+
   if (_activeStroke && _activeTool !== "eraser") {
     // Lápis: garantir pelo menos 2 pontos (evita ponto sem renderizar)
     if (_activeTool === "pencil") {
       const pts = _activeStroke.points;
       if (pts.length === 1) pts.push([_round4(pts[0][0] + 0.001), _round4(pts[0][1] + 0.001)]);
+      // Passada final de economia: tira o que nao muda a forma antes de
+      // gravar e transmitir. Menos bytes no fio e na cena, mesmo desenho.
+      if (pts.length > 2) {
+        const enxuto = _simplifyPoints(pts, DRAW_SIMPLIFY_EPS);
+        if (enxuto.length >= 2) _activeStroke.points = enxuto;
+      }
+      // Campo de trabalho: nao pode viajar no payload nem entrar na cena.
+      delete _activeStroke._alivio;
     }
     if (_strokes.length >= DRAW_MAX_STROKES) {
       window.UI?.toast?.(
@@ -420,13 +538,103 @@ function _onDrawEnd() {
 // Só apaga o que o ator tem direito de apagar (Etapa 76): jogador alcança
 // os próprios traços, mestre alcança todos. Traço alheio sob o cursor é
 // simplesmente ignorado — a borracha passa por cima sem efeito.
+/* ── Borracha de verdade (Etapa 122) ───────────────────────────────
+ * Antes, encostar num traço apagava o traço INTEIRO: um risco de dez
+ * segundos sumia porque a borracha tocou a ponta dele. Agora ela apaga
+ * so o pedaço tocado e o que sobra vira um ou dois traços novos — o
+ * comportamento que todo mundo espera de uma borracha.
+ *
+ * Vale so para o lápis: partir um retângulo ou uma elipse nao produz uma
+ * forma, produz lixo. Forma continua saindo inteira.
+ *
+ * O commit acontece no FIM do arrasto, nao a cada mousemove: partir a
+ * cada quadro geraria dezenas de mensagens por segundo e o Durable Object
+ * recusaria em silêncio (o defeito da Etapa 50). Durante o arrasto tudo é
+ * local; ao soltar, sai UM remove com todos os ids e um add por pedaço.
+ */
+let _eraseSession = null;
+
+function _iniciarSessaoBorracha() {
+  _eraseSession = { removidos: new Map(), criados: new Map() };
+}
+
+function _registrarRemocao(stroke) {
+  if (!_eraseSession) return;
+  const id = String(stroke.id);
+  // Pedaço criado nesta mesma sessão e apagado em seguida nunca existiu
+  // para os outros clientes: cancela em vez de transmitir add + remove.
+  if (_eraseSession.criados.has(id)) _eraseSession.criados.delete(id);
+  else _eraseSession.removidos.set(id, stroke);
+}
+
+function _registrarCriacao(stroke) {
+  if (_eraseSession) _eraseSession.criados.set(String(stroke.id), stroke);
+}
+
+function _fecharSessaoBorracha() {
+  const sessao = _eraseSession;
+  _eraseSession = null;
+  if (!sessao) return;
+
+  const removidos = [...sessao.removidos.values()];
+  const criados   = [...sessao.criados.values()];
+  if (!removidos.length && !criados.length) return;
+
+  if (removidos.length) _commitStrokeRemove(removidos);
+  criados.forEach(_commitStrokeAdd);
+  if (!removidos.length) _persistDrawingsAndScene();
+}
+
+/**
+ * Corta de um traço de lápis os pontos sob a borracha. Devolve os pedaços
+ * que sobraram (0, 1 ou mais), cada um com id proprio.
+ */
+function _cortarPontos(stroke, mx, my) {
+  const raio = ERASE_RADIUS;
+  const pedacos = [];
+  let atual = [];
+
+  stroke.points.forEach(([px, py]) => {
+    const { x, y } = _fromPercent(px, py);
+    if (Math.hypot(x - mx, y - my) < raio) {
+      if (atual.length >= 2) pedacos.push(atual);
+      atual = [];
+      return;
+    }
+    atual.push([px, py]);
+  });
+  if (atual.length >= 2) pedacos.push(atual);
+
+  return pedacos.map(pontos => ({
+    ...stroke,
+    id: Math.random().toString(36).slice(2),
+    points: pontos
+  }));
+}
+
 function _eraseAt(x, y) {
-  const erased = _strokes.filter(s => _hitTest(s, x, y) && _canEraseStroke(s));
-  if (!erased.length) return;
-  const erasedIds = new Set(erased.map(s => String(s.id)));
-  _strokes = _strokes.filter(s => !erasedIds.has(String(s.id)));
+  const alvos = _strokes.filter(s => _hitTest(s, x, y) && _canEraseStroke(s));
+  if (!alvos.length) return;
+
+  const removidos = new Set();
+  const novos = [];
+
+  alvos.forEach(stroke => {
+    removidos.add(String(stroke.id));
+    _registrarRemocao(stroke);
+    if (stroke.tool !== "pencil" || !Array.isArray(stroke.points)) return;
+    _cortarPontos(stroke, x, y).forEach(pedaco => {
+      novos.push(pedaco);
+      _registrarCriacao(pedaco);
+    });
+  });
+
+  _strokes = _strokes.filter(s => !removidos.has(String(s.id)));
+  // O teto de traços vale igual aqui: partir muito um desenho denso poderia
+  // multiplicar traços sem limite.
+  const cabe = Math.max(0, DRAW_MAX_STROKES - _strokes.length);
+  novos.slice(0, cabe).forEach(pedaco => _strokes.push(pedaco));
   renderDrawings();
-  _commitStrokeRemove(erased);
 }
 
 function _hitTest(s, mx, my) {
@@ -471,7 +679,10 @@ function _renderStroke(s) {
   ctx.lineWidth   = s.width;
   ctx.lineCap     = "round";
   ctx.lineJoin    = "round";
-  ctx.globalAlpha = 0.88;
+  // Cor com alfa embutido (8 digitos) ja carrega a transparencia; cor antiga
+  // (6 digitos) mantem o alfa fixo historico.
+  const alfaBase  = _strokeBaseAlpha(s.color);
+  ctx.globalAlpha = alfaBase;
 
   switch (s.tool) {
 
@@ -507,9 +718,9 @@ function _renderStroke(s) {
       const rx = x1, ry = y1, rw = x2 - x1, rh = y2 - y1;
       ctx.beginPath();
       ctx.rect(rx, ry, rw, rh);
-      ctx.globalAlpha = 0.13;
+      ctx.globalAlpha = alfaBase * 0.15;
       ctx.fill();
-      ctx.globalAlpha = 0.88;
+      ctx.globalAlpha = alfaBase;
       ctx.stroke();
       break;
     }
@@ -521,9 +732,9 @@ function _renderStroke(s) {
       const cy = (y1 + y2) / 2;
       ctx.beginPath();
       ctx.ellipse(cx, cy, Math.max(radiusX, 1), Math.max(radiusY, 1), 0, 0, Math.PI * 2);
-      ctx.globalAlpha = 0.13;
+      ctx.globalAlpha = alfaBase * 0.15;
       ctx.fill();
-      ctx.globalAlpha = 0.88;
+      ctx.globalAlpha = alfaBase;
       ctx.stroke();
       break;
     }
@@ -719,15 +930,19 @@ function _bindToolbarButtons() {
     });
   });
 
-  // Fechar ao clicar fora do flyout
-  document.addEventListener("click", e => {
-    if (!_flyoutOpen) return;
-    const flyout    = document.getElementById("mesaDrawFlyout");
-    const toggleBtn = document.getElementById("mesaDrawToggleBtn");
-    if (flyout && !flyout.contains(e.target) && !e.target.closest("#mesaDrawToggleBtn")) {
-      _closeFlyout();
-    }
-  });
+  /* O painel NAO fecha ao clicar fora (Etapa 122).
+   *
+   * Ate aqui, qualquer clique fora dele fechava — e desenhar e clicar fora.
+   * Ou seja: cada traco terminado fechava o painel, e trocar de cor ou de
+   * grossura exigia reabrir tudo de novo. Para uma ferramenta de uso
+   * continuo isso e o oposto do util.
+   *
+   * Agora o painel e um interruptor honesto: abre e fecha no proprio botao
+   * da caneta. Escape continua fechando (saida de teclado, e um gesto
+   * deliberado, nao um clique acidental no palco), e escolher a mao ou a
+   * selecao tambem fecha — desenho e selecao sao mutuamente exclusivos
+   * (mesa-select.js chama _closeFlyout na troca).
+   */
 
   // Limpar tudo
   const clearBtn = document.getElementById("mesaDrawClearBtn");
@@ -747,30 +962,62 @@ function _buildColorPicker() {
     swatch.setAttribute("aria-label", "Cor " + color);
     if (color === _drawColor) swatch.classList.add("is-active");
 
-    swatch.addEventListener("click", () => {
-      _drawColor = color;
-      document.querySelectorAll(".draw-swatch").forEach(s =>
-        s.classList.toggle("is-active", s.title === color)
-      );
-      // Atualiza preview da cor atual
-      const preview = document.getElementById("mesaDrawColorPreview");
-      if (preview) preview.style.background = color;
-    });
+    swatch.addEventListener("click", () => _aplicarCor(color));
     container.appendChild(swatch);
   });
 
-  // Atualiza preview inicial
-  const preview = document.getElementById("mesaDrawColorPreview");
-  if (preview) preview.style.background = _drawColor;
+  // Cor livre (Etapa 122): tres botoes de grossura viraram controle
+  // continuo, e a paleta ganhou um seletor de cor ao lado.
+  const custom = document.getElementById("mesaDrawColorCustom");
+  if (custom) {
+    custom.value = /^#[0-9a-f]{6}$/i.test(_drawColor) ? _drawColor : "#e84040";
+    custom.addEventListener("input", () => _aplicarCor(custom.value, { daPaleta: false }));
+  }
 
-  // Botões de largura
-  document.querySelectorAll("[data-draw-width]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      _drawWidth = Number(btn.dataset.drawWidth);
-      document.querySelectorAll("[data-draw-width]").forEach(b =>
-        b.classList.toggle("is-active", b.dataset.drawWidth === btn.dataset.drawWidth)
-      );
+  const widthEl = document.getElementById("mesaDrawWidth");
+  const widthOut = document.getElementById("mesaDrawWidthOut");
+  if (widthEl) {
+    widthEl.value = String(_drawWidth);
+    if (widthOut) widthOut.textContent = String(_drawWidth);
+    widthEl.addEventListener("input", () => {
+      // O teto de 12 e o do Worker (clamp em normalizeSceneDrawing): passar
+      // disso desenharia grosso na tela e voltaria fino depois do F5.
+      _drawWidth = Math.max(1, Math.min(12, Number(widthEl.value) || 1));
+      if (widthOut) widthOut.textContent = String(_drawWidth);
+      _atualizarPreviewCor();
     });
-    if (Number(btn.dataset.drawWidth) === _drawWidth) btn.classList.add("is-active");
-  });
+  }
+
+  const alphaEl = document.getElementById("mesaDrawAlpha");
+  const alphaOut = document.getElementById("mesaDrawAlphaOut");
+  if (alphaEl) {
+    alphaEl.value = String(Math.round(_drawAlpha * 100));
+    alphaEl.addEventListener("input", () => {
+      _drawAlpha = Math.max(DRAW_ALPHA_MIN, Math.min(1, (Number(alphaEl.value) || 100) / 100));
+      if (alphaOut) alphaOut.textContent = Math.round(_drawAlpha * 100) + "%";
+      _atualizarPreviewCor();
+    });
+  }
+
+  _atualizarPreviewCor();
+}
+
+/** Preview mostra a cor COM a opacidade e a grossura atuais. */
+function _atualizarPreviewCor() {
+  const preview = document.getElementById("mesaDrawColorPreview");
+  if (!preview) return;
+  preview.style.background = _composeStrokeColor();
+  preview.style.setProperty("--preview-width", _drawWidth + "px");
+  preview.title = `Cor ${_drawColor} - ${Math.round(_drawAlpha * 100)}% - ${_drawWidth}px`;
+}
+
+function _aplicarCor(color, { daPaleta } = { daPaleta: true }) {
+  if (!/^#[0-9a-f]{6}$/i.test(String(color))) return;
+  _drawColor = String(color).toLowerCase();
+  document.querySelectorAll(".draw-swatch").forEach(sw =>
+    sw.classList.toggle("is-active", daPaleta && sw.title === _drawColor)
+  );
+  const custom = document.getElementById("mesaDrawColorCustom");
+  if (custom && custom.value.toLowerCase() !== _drawColor) custom.value = _drawColor;
+  _atualizarPreviewCor();
 }

@@ -203,44 +203,88 @@
 }
 
 /* Largura do traço */
-.draw-width-row {
+/* ── Controles continuos (Etapa 122) ────────────────────────────────
+   Os tres botoes de grossura viraram um slider: a espessura util vai de 1
+   a 12 (o teto que o Worker clampa), e tres degraus fixos deixavam de fora
+   quase tudo no meio. Ao lado dele, opacidade e cor livre. */
+.draw-slider-row {
   display: flex;
-  gap: 5px;
   align-items: center;
+  gap: 0.4rem;
+  padding: 0.18rem 0.1rem;
+  cursor: pointer;
 }
 
-.draw-width-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.draw-slider-label {
+  font-family: var(--font-ui);
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  min-width: 4.2rem;
+}
+
+.draw-slider-row input[type="range"] {
   flex: 1;
-  height: 26px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  min-width: 0;
+  height: 3px;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.draw-slider-row input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--accent, #d65c5c);
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+.draw-slider-row input[type="range"]::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--accent, #d65c5c);
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+.draw-slider-row output {
+  font-family: var(--font-ui);
+  font-size: 0.56rem;
+  font-weight: 700;
+  color: var(--text-soft, #cfcfcf);
+  min-width: 2.4rem;
+  text-align: right;
+}
+
+/* Seletor de cor livre: o campo nativo e feio por padrao em todo navegador,
+   entao ele vira so um quadrado da cor escolhida. */
+.draw-custom-row input[type="color"] {
+  flex: 1;
+  min-width: 0;
+  height: 18px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 3px;
   background: transparent;
   cursor: pointer;
-  color: rgba(255, 248, 236, 0.45);
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-}
-.draw-width-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 248, 236, 0.85);
-}
-.draw-width-btn.is-active {
-  background: rgba(168, 48, 40, 0.18);
-  border-color: rgba(168, 48, 40, 0.35);
-  color: #e8b4b0;
 }
 
-.draw-width-line {
-  display: block;
-  width: 18px;
-  background: currentColor;
-  border-radius: 999px;
+.draw-custom-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+.draw-custom-row input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 2px;
 }
-.draw-width-line.thin   { height: 1.5px; }
-.draw-width-line.medium { height: 3px;   }
-.draw-width-line.thick  { height: 6px;   }
+.draw-custom-row input[type="color"]::-moz-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
 
 /* ─── Cursor no stage quando ferramenta ativa ────────────────── */
 

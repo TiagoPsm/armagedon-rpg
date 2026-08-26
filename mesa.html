@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-08-20-barra-vida-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-08-20-contraste-1" />
   <link rel="stylesheet" href="css/mesa-map.css?v=2026-08-20-escala-fora-1" />
-  <link rel="stylesheet" href="css/mesa-drawing.css?v=2026-08-20-contraste-3" />
+  <link rel="stylesheet" href="css/mesa-drawing.css?v=2026-08-25-desenho-1" />
   <link rel="stylesheet" href="css/mesa-scenes.css?v=2026-08-19-escala-1" />
   <!-- Permissoes (Etapa 75): esconde tudo marcado com data-mesa-master-only
        enquanto o body nao estiver com data-role="master". Carrega DEPOIS dos
@@ -408,17 +408,29 @@
             <div id="mesaDrawColorPreview" title="Cor atual"></div>
             <div class="draw-palette" id="mesaDrawColorPalette"></div>
           </div>
-          <div class="draw-width-row">
-            <button class="draw-width-btn is-active" data-draw-width="2" title="Fino">
-              <span class="draw-width-line thin"></span>
-            </button>
-            <button class="draw-width-btn" data-draw-width="4" title="Médio">
-              <span class="draw-width-line medium"></span>
-            </button>
-            <button class="draw-width-btn" data-draw-width="8" title="Grosso">
-              <span class="draw-width-line thick"></span>
-            </button>
-          </div>
+
+          <!-- Cor livre (Etapa 122): a paleta cobre o dia a dia, o seletor
+               cobre o resto. O valor entra na mesma variavel da paleta. -->
+          <label class="draw-slider-row draw-custom-row" for="mesaDrawColorCustom">
+            <span class="draw-slider-label">Cor livre</span>
+            <input type="color" id="mesaDrawColorCustom" value="#e84040"
+                   aria-label="Escolher cor livre" />
+          </label>
+
+          <label class="draw-slider-row" for="mesaDrawWidth">
+            <span class="draw-slider-label">Grossura</span>
+            <input type="range" id="mesaDrawWidth" min="1" max="12" step="1" value="3"
+                   aria-label="Grossura do traco" />
+            <output id="mesaDrawWidthOut" for="mesaDrawWidth">3</output>
+          </label>
+
+          <label class="draw-slider-row" for="mesaDrawAlpha">
+            <span class="draw-slider-label">Opacidade</span>
+            <input type="range" id="mesaDrawAlpha" min="10" max="100" step="5" value="100"
+                   aria-label="Opacidade do traco" />
+            <output id="mesaDrawAlphaOut" for="mesaDrawAlpha">100%</output>
+          </label>
+
           <div class="draw-flyout-divider"></div>
         </div>
 
@@ -902,7 +914,7 @@
   <script src="js/mesa-roster.js?v=2026-08-20-barra-vida-1" defer></script>
   <script src="js/mesa-inspector.js?v=2026-08-18-coluna-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
-  <script src="js/mesa-core.js?v=2026-08-21-resize-sync-1" defer></script>
+  <script src="js/mesa-core.js?v=2026-08-25-desenho-2" defer></script>
   <script src="js/mesa-map.js?v=2026-08-20-escala-fora-1" defer></script>
   <script src="js/mesa-grid.js?v=2026-07-31-cells-1" defer></script>
   <script src="js/mesa-fog.js?v=2026-07-29-sharp-1" defer></script>
@@ -910,7 +922,7 @@
   <script src="js/mesa-ping.js?v=2026-07-27-ping-1" defer></script>
   <script src="js/mesa-ruler.js?v=2026-07-27-ruler-1" defer></script>
   <script src="js/mesa-dice.js?v=2026-08-16-armados-1" defer></script>
-  <script src="js/mesa-drawing.js?v=2026-08-16-drawboot-1" defer></script>
+  <script src="js/mesa-drawing.js?v=2026-08-25-desenho-2" defer></script>
   <script src="js/mesa-select.js?v=2026-08-16-armados-1" defer></script>
   <script src="js/mesa-initiative.js?v=2026-08-02-sync-1" defer></script>
   <!-- Depois de mesa-stage.js (whitelist/toggle) e mesa-inspector.js (linha do inspetor) -->

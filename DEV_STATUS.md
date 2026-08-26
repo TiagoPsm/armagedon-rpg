@@ -10,7 +10,6 @@ Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencia
 
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
 
-- **[Tiago]** Rotacionar a senha do mestre: `npx wrangler secret put MASTER_BOOTSTRAP_PASSWORD --config cloudflare/wrangler.toml`, depois UM login no site com a senha nova (e o gatilho que faz `ensureMasterUser` regravar o hash) e `npm run test:online:setup` para atualizar o cofre. NAO tocar em `PASSWORD_PEPPER`: ele entra no hash de TODAS as senhas, e troca-lo derruba o login de todos os jogadores, que nao tem bootstrap para se recuperar como o mestre tem. — aberta em 2026-08-25 (Etapa 121)
 - **[Tiago]** `cloudflare/.dev.vars` guarda `PASSWORD_PEPPER`, `JWT_SECRET` e `MASTER_BOOTSTRAP_PASSWORD` em texto puro dentro do OneDrive. Decidir o destino: manter e aceitar a copia na nuvem, mover para fora do OneDrive, ou trocar por valores locais de brinquedo — o `wrangler dev --local` nao precisa dos segredos reais. Antes de qualquer coisa, guardar uma copia segura: secret do Cloudflare NAO pode ser lido de volta, e este arquivo pode ser a unica copia que resta. — aberta em 2026-08-25 (Etapa 121)
 
 ## Regra Obrigatoria de Documentacao
@@ -41,7 +40,98 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-25 — Etapa 121: a senha do smoke sai do texto puro)
+## Ultima Etapa Concluida (2026-08-25 — Etapa 122: desenho, parte 1 — cor, opacidade, risco continuo e borracha)
+
+Primeira metade do pedido do Tiago ("melhorar a funcionalidade de desenho por
+completo"). Esta etapa e tudo o que cabe DENTRO do contrato atual do Worker —
+zero deploy, zero mudanca de schema. Cone, seta e texto ficam para a Etapa 123,
+que mexe na whitelist `DRAW_TOOLS` e por isso exige publicar o Worker.
+
+- **Paleta 12 -> 22 cores** e seletor de cor livre (`<input type="color">`).
+- **Opacidade por traco**, sem campo novo no contrato: a transparencia viaja
+  DENTRO da cor, em hex de 8 digitos (`#rrggbbaa`). O Worker ja aceitava esse
+  formato (`/^#[0-9a-f]{3,8}$/i` em `normalizeSceneDrawing`), entao ela
+  atravessa realtime, cena e F5 sem tocar no backend. Campo novo exigiria
+  mudar o contrato e apagaria a cor de quem estivesse no cliente antigo.
+  Traco antigo (6 digitos) mantem o alfa fixo historico de 0,88 — sem isso,
+  todo desenho ja existente ficaria opaco de uma hora para outra.
+- **Grossura vira controle continuo** (1 a 12) no lugar de tres botoes fixos.
+  O teto de 12 e o do Worker: passar disso desenharia grosso e voltaria fino
+  no F5.
+- **Risco continuo deixa de congelar.** Era o defeito mais visivel: ao bater em
+  `DRAW_MAX_POINTS` (400) o traco simplesmente PARAVA de crescer no meio do
+  movimento — a mao andava e a tinta acabava, sem aviso. Agora, ao encostar no
+  teto, o proprio traco e rareado por Ramer-Douglas-Peucker (pontos que nao
+  mudam a FORMA sao descartados) e o desenho continua. Medido: um arrasto de
+  3000 movimentos agora atravessa 95,6% da largura do palco, gravado em 121
+  pontos e 2KB — contra o cap de 32KB por mensagem do Durable Object. Antes,
+  esse mesmo gesto morria aos 400 pontos.
+- **Borracha de verdade**: apaga so o pedaco tocado e o resto vira um ou dois
+  tracos novos, com id proprio e a mesma cor e autor. Vale so para o lapis —
+  partir um retangulo nao produz uma forma, produz lixo. O commit acontece no
+  FIM do arrasto, nao a cada quadro: partir a cada `mousemove` geraria dezenas
+  de mensagens por segundo e o DO recusaria em silencio (o defeito da Etapa
+  50). Pedaco criado e apagado no mesmo arrasto se cancela em vez de virar
+  add + remove no fio.
+
+- **O painel de desenho parou de fechar sozinho.** Ate aqui, qualquer clique
+  fora dele fechava — e desenhar E clicar fora: o `mouseup` no palco vira um
+  `click` que borbulha ate o `document`. Na pratica, cada traco terminado
+  fechava a paleta, e trocar de cor ou grossura exigia reabrir tudo. Agora o
+  painel e um interruptor honesto: abre e fecha no proprio botao da caneta.
+  Escape continua fechando (gesto deliberado de teclado, nao clique acidental)
+  e escolher a mao ou a selecao tambem fecha, porque desenho e selecao sao
+  mutuamente exclusivos (`mesa-select.js` ja chamava `_closeFlyout`).
+
+### Bug encontrado no meio da etapa: "alguns tracos vao se apagando"
+
+Relatado pelo Tiago ao testar o desenho novo. NAO era da Etapa 122 — era um
+defeito antigo que o risco continuo longo tornou obvio.
+
+Os tetos de desenho existiam em TRES lugares: `cloudflare/src/mesa.js`
+(Worker), `js/mesa-drawing.js` (modulo) e `normalizeMesaSceneDrawings` em
+`js/mesa-core.js` (gravacao da cena). A Etapa 74 subiu os limites de 300/200
+para 1500/400 nos dois primeiros e **esqueceu o terceiro**. Toda gravacao da
+cena passava por esse funil:
+
+- `slice(0, 300)` mantem os PRIMEIROS 300 tracos — ou seja, o traco
+  recem-desenhado era o primeiro a ser descartado;
+- traco de lapis com mais de 200 pontos perdia a cauda;
+- e o campo `author` nao era copiado, entao todo traco voltava da cena como
+  orfao e o jogador perdia o direito de apagar o proprio desenho depois de um
+  F5 (a permissao da Etapa 76 ia junto com o campo).
+
+Medido antes do conserto: 321 tracos entram, 300 saem; um traco de 380 pontos
+some inteiro. Depois: 321 entram, 321 saem, 380 pontos preservados, autor e
+opacidade intactos.
+
+O conserto tira a terceira copia de circulacao: `mesa-core.js` le os tetos do
+modulo de desenho em tempo de chamada (`_tetoCenaTracos`/`_tetoCenaPontos` —
+leitura tardia porque `mesa-drawing.js` carrega depois, e ler no topo cairia na
+zona morta do `const`). Dois testes novos seguram: um prova que gravar a cena
+nao come traco nem encurta risco; o outro compara os numeros declarados nos
+arquivos e reprova se `mesa-core.js` voltar a declarar teto proprio.
+
+Arquivos: `js/mesa-drawing.js`, `js/mesa-core.js`, `mesa.html` (controles +
+cache-busting), `css/mesa-drawing.css` (sliders e seletor de cor).
+
+`tests/mesa-audit.spec.cjs`: sete casos — opacidade sobrevive ao
+`normalizeMesaScene` do Worker de verdade; o risco continuo atravessa o palco
+sem estourar o teto de pontos nem o cap de 32KB; simplificar achata uma reta de
+50 pontos para 2 mas preserva uma curva; a borracha parte o lapis em dois,
+mantem a forma inteira e transmite UMA remocao por arrasto; e o painel
+sobrevive a desenhar, a mexer nos controles e a clicar fora, fechando so no
+botao da caneta; a cena preserva todos os tracos, os pontos, o autor e a
+opacidade; e os tetos batem nos arquivos que os declaram. Os sete reprovam com
+o codigo anterior.
+
+Conferido no navegador: alfa de 60% sai exato na tela (153/255) na cor
+escolhida, e o campo de trabalho `_alivio` nao vaza para o payload.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`,
+`test:controles` (6), `test:mesa:audit`.
+
+## Etapa Anterior (2026-08-25 — Etapa 121: a senha do smoke sai do texto puro)
 
 O Tiago levantou a preocupacao certa: "e possivel mudar a senha do mestre,
 tenho medo de poderem ver". A resposta e sim (o `MASTER_BOOTSTRAP_PASSWORD` e
@@ -88,6 +178,12 @@ credenciais falsas e o cofre de teste foi removido no fim.
 
 Os dois `.ps1` sao ASCII puro pelo mesmo motivo da Etapa 120: o Windows
 PowerShell 5.1 le script sem BOM como ANSI e um travessao quebra o parser.
+
+**Baixa registrada em 2026-08-25 (Etapa 122)**: a rotacao da senha do mestre
+foi CUMPRIDA na propria sessao — `wrangler secret put MASTER_BOOTSTRAP_PASSWORD`,
+login no site com a senha nova (gatilho que fez `ensureMasterUser` regravar o
+hash), cofre atualizado e `npm run test:online` autenticando em producao com
+ela. Saiu da lista viva; segue aberto so o `cloudflare/.dev.vars`.
 
 Dois itens ficaram abertos e foram para a lista canonica no topo: a rotacao da
 senha em si (e do Tiago, envolve digitar a senha) e o `cloudflare/.dev.vars`,
