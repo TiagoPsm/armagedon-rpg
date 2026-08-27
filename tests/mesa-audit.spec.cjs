@@ -5105,7 +5105,10 @@ test.describe("Desenho no palco (Etapa 73)", () => {
       setDrawTool("line");
       const canvas = document.getElementById("mesaDrawCanvas");
       const r = canvas.getBoundingClientRect();
-      const ev = (t, x, y) => new MouseEvent(t, { clientX: x, clientY: y, bubbles: true, button: 0 });
+      // Etapa 129: o desenho ouve POINTER events (mouse, dedo e caneta no
+      // mesmo caminho), entao o gesto fabricado aqui e de ponteiro.
+      const ev = (t, x, y) => new PointerEvent(t.replace("mouse", "pointer"),
+        { clientX: x, clientY: y, bubbles: true, button: 0, buttons: 1, isPrimary: true, pointerId: 1 });
       canvas.dispatchEvent(ev("mousedown", r.left + 30, r.top + 30));
       window.dispatchEvent(ev("mousemove", r.left + 120, r.top + 90));
       window.dispatchEvent(ev("mouseup", r.left + 120, r.top + 90));
@@ -5132,7 +5135,10 @@ test.describe("Desenho no palco (Etapa 73)", () => {
       setDrawTool("line");
       const canvas = document.getElementById("mesaDrawCanvas");
       const r = canvas.getBoundingClientRect();
-      const ev = (tipo, x, y) => new MouseEvent(tipo, { clientX: x, clientY: y, bubbles: true, button: 0 });
+      // Etapa 129: o desenho ouve POINTER events (mouse, dedo e caneta no
+      // mesmo caminho), entao o gesto fabricado aqui e de ponteiro.
+      const ev = (tipo, x, y) => new PointerEvent(tipo.replace("mouse", "pointer"),
+        { clientX: x, clientY: y, bubbles: true, button: 0, buttons: 1, isPrimary: true, pointerId: 1 });
       canvas.dispatchEvent(ev("mousedown", r.left + 40, r.top + 40));
       window.dispatchEvent(ev("mousemove", r.left + 160, r.top + 120));
       window.dispatchEvent(ev("mouseup", r.left + 160, r.top + 120));
@@ -7244,7 +7250,8 @@ test.describe("Desenho da Mesa (Etapa 122)", () => {
       const c = _drawCanvasEl;
       const rect = c.getBoundingClientRect();
       const ev = (t, x, y, alvo) => alvo.dispatchEvent(
-        new MouseEvent(t, { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, buttons: 1 }));
+        new PointerEvent(t.replace("mouse", "pointer"), { bubbles: true, cancelable: true,
+          clientX: x, clientY: y, button: 0, buttons: 1, isPrimary: true, pointerId: 1 }));
 
       const x0 = rect.left + 20;
       const y0 = rect.top + rect.height / 2;
@@ -7311,7 +7318,8 @@ test.describe("Desenho da Mesa (Etapa 122)", () => {
       const c = _drawCanvasEl;
       const rect = c.getBoundingClientRect();
       const ev = (t, x, y, alvo) => alvo.dispatchEvent(
-        new MouseEvent(t, { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, buttons: 1 }));
+        new PointerEvent(t.replace("mouse", "pointer"), { bubbles: true, cancelable: true,
+          clientX: x, clientY: y, button: 0, buttons: 1, isPrimary: true, pointerId: 1 }));
       const antes = _strokes.length;
       ev("mousedown", rect.left + 60, rect.top + 60, c);
       for (let i = 1; i <= 25; i += 1) ev("mousemove", rect.left + 60 + i * 6, rect.top + 60 + i * 3, window);
@@ -7433,7 +7441,8 @@ test.describe("Desenho da Mesa (Etapa 122)", () => {
       const rect = c.getBoundingClientRect();
       const emTela = (fx, fy) => ({ x: rect.left + fx * rect.width, y: rect.top + fy * rect.height });
       const ev = (t, p, alvo) => alvo.dispatchEvent(
-        new MouseEvent(t, { bubbles: true, cancelable: true, clientX: p.x, clientY: p.y, button: 0, buttons: 1 }));
+        new PointerEvent(t.replace("mouse", "pointer"), { bubbles: true, cancelable: true,
+          clientX: p.x, clientY: p.y, button: 0, buttons: 1, isPrimary: true, pointerId: 1 }));
 
       const p1 = emTela(0.45, 0.5);
       ev("mousedown", p1, c);
@@ -7531,7 +7540,8 @@ test.describe("Formas novas de desenho (Etapa 123)", () => {
       const rect = c.getBoundingClientRect();
       const ctx = c.getContext("2d");
       const ev = (t, x, y, alvo) => alvo.dispatchEvent(
-        new MouseEvent(t, { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, buttons: 1 }));
+        new PointerEvent(t.replace("mouse", "pointer"), { bubbles: true, cancelable: true,
+          clientX: x, clientY: y, button: 0, buttons: 1, isPrimary: true, pointerId: 1 }));
       const pintados = () => {
         const d = ctx.getImageData(0, 0, c.width, c.height).data;
         let n = 0;

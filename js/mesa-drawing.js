@@ -398,13 +398,33 @@ function _fromPercent(px, py) {
   return { x: px * w, y: py * h };
 }
 
-// ── Eventos de desenho ─────────────────────────────────────────────
+/* ── Eventos de desenho: Pointer Events (Etapa 129) ────────────────
+ * Eram mouse events, e no tablet o desenho simplesmente nao existia: o
+ * navegador nao emite `mousedown` para o dedo antes de decidir que o gesto
+ * NAO e rolagem, e quando emite (compatibilidade) o traco ja perdeu o comeco.
+ * Pointer Events cobrem mouse, dedo e caneta com um handler so.
+ *
+ * Tres cuidados que o mouse nao exigia:
+ *
+ * 1. `setPointerCapture` — o dedo sai do canvas no meio do traco (o palco e
+ *    menor que o gesto) e sem captura os eventos param de chegar.
+ * 2. `preventDefault()` no pointerdown — alem de impedir a rolagem, e o que
+ *    SUPRIME os eventos de mouse de compatibilidade. Sem isso o `mousedown`
+ *    sintetico do navegador subia ate o palco e o pan do mapa comecava junto
+ *    com o traco (o `stopPropagation` daqui nao alcanca evento sintetico).
+ * 3. UM ponteiro por vez — o segundo dedo nao inicia um segundo traco; ele e
+ *    o comeco de um gesto de pinca (ver mesa-map.js), que ABORTA o traco. */
+let _drawPointerId = null;
+
 function _bindDrawEvents() {
   if (!_drawCanvasEl) return;
 
-  _drawCanvasEl.addEventListener("mousedown", _onDrawStart);
-  window.addEventListener("mousemove",  _onDrawMove);
-  window.addEventListener("mouseup",    _onDrawEnd);
+  _drawCanvasEl.addEventListener("pointerdown", _onDrawStart);
+  window.addEventListener("pointermove",  _onDrawMove);
+  window.addEventListener("pointerup",    _onDrawEnd);
+  // O navegador cancela o ponteiro quando decide que o gesto e dele (rolagem,
+  // pinca do sistema). Traco pela metade nao vira desenho: e descartado.
+  window.addEventListener("pointercancel", _abortarDesenhoAtual);
 
   // Clique direito cancela a ferramenta atual
   _drawCanvasEl.addEventListener("contextmenu", e => {
@@ -441,8 +461,16 @@ function _bindDrawEvents() {
 }
 
 function _onDrawStart(e) {
-  if (!_activeTool || e.button !== 0) return;
+  if (!_activeTool || e.button !== 0 || !e.isPrimary) return;
+  // Um traco por vez: com um ponteiro ja desenhando, o segundo e gesto de
+  // camera, nao tinta.
+  if (_drawPointerId !== null) return;
   e.stopPropagation();
+  // Ver o bloco de _bindDrawEvents: isto tambem mata o mousedown sintetico
+  // que faria o palco panar junto com o traco.
+  e.preventDefault();
+  _drawPointerId = e.pointerId;
+  try { _drawCanvasEl.setPointerCapture(e.pointerId); } catch { /* ponteiro ja solto */ }
   _isDrawing = true;
   window._mesaStagePanMoved = true; // impede deselect de token
 
@@ -472,6 +500,7 @@ function _onDrawStart(e) {
 
 function _onDrawMove(e) {
   if (!_isDrawing) return;
+  if (_drawPointerId !== null && e.pointerId !== _drawPointerId) return;
 
   const pos = _canvasPos(e);
   const { px, py } = _toPercent(pos.x, pos.y);
@@ -507,6 +536,30 @@ function _onDrawMove(e) {
  * Rareia o traço em curso para caber mais movimento. Devolve true quando
  * abriu espaço util (>= 10% do teto), false quando nao ha mais o que tirar.
  */
+/** Solta a captura do ponteiro do traco. Idempotente. */
+function _soltarPonteiroDoDesenho() {
+  if (_drawPointerId === null) return;
+  try { _drawCanvasEl?.releasePointerCapture(_drawPointerId); } catch { /* ja solto */ }
+  _drawPointerId = null;
+}
+
+/* Aborta o traco em curso SEM gravar.
+ *
+ * Dois caminhos chegam aqui: o `pointercancel` do navegador e o gesto de
+ * pinca do mesa-map.js, que chama isto pelo `window` quando o segundo dedo
+ * encosta. Descartar e o certo: metade de um traco que o usuario nem quis
+ * ficaria no quadro de todo mundo. */
+function _abortarDesenhoAtual() {
+  if (!_isDrawing && !_activeStroke) { _soltarPonteiroDoDesenho(); return; }
+  _soltarPonteiroDoDesenho();
+  _isDrawing = false;
+  _activeStroke = null;
+  if (_activeTool === "eraser") _fecharSessaoBorracha();
+  renderDrawings();
+  setTimeout(() => { window._mesaStagePanMoved = false; }, 0);
+}
+window.mesaAbortDrawingGesture = _abortarDesenhoAtual;
+
 function _aliviarPontos(stroke) {
   if (!stroke || !Array.isArray(stroke.points)) return false;
   const antes = stroke.points.length;
@@ -518,8 +571,10 @@ function _aliviarPontos(stroke) {
   return true;
 }
 
-function _onDrawEnd() {
+function _onDrawEnd(e) {
   if (!_isDrawing) return;
+  if (e && _drawPointerId !== null && e.pointerId !== _drawPointerId) return;
+  _soltarPonteiroDoDesenho();
   _isDrawing = false;
   setTimeout(() => { window._mesaStagePanMoved = false; }, 0);
 

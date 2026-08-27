@@ -30,6 +30,12 @@ let _rbActive = false;
 let _rbStartX = 0, _rbStartY = 0;
 let _rbEndX   = 0, _rbEndY   = 0;
 
+/* Ponteiro dono de cada gesto (Etapa 129). Com dedo, varios ponteiros vivem
+   ao mesmo tempo: sem estes ids, o segundo dedo movia a caixa que o primeiro
+   estava arrastando. */
+let _rbPointerId   = null;
+let _dragPointerId = null;
+
 // Move / resize drag
 let _dragMode    = null;   // null | "move" | "resize"
 let _dragHandle  = null;   // "nw"|"n"|"ne"|"w"|"e"|"sw"|"s"|"se"
@@ -443,6 +449,43 @@ function _broadcastAndRender() {
   if (typeof scheduleMesaRender === "function") scheduleMesaRender({ stage: true });
 }
 
+/** Solta as capturas de ponteiro da selecao. Idempotente. */
+function _soltarPonteirosDaSelecao(wrap, band) {
+  if (_rbPointerId !== null) {
+    try { wrap?.releasePointerCapture(_rbPointerId); } catch { /* ja solto */ }
+    _rbPointerId = null;
+  }
+  if (_dragPointerId !== null) {
+    const box = document.getElementById("mesaSelectionBox");
+    try { box?.releasePointerCapture(_dragPointerId); } catch { /* ja solto */ }
+    box?.querySelectorAll(".sel-handle").forEach(h => {
+      try { h.releasePointerCapture(_dragPointerId); } catch { /* ja solto */ }
+    });
+    _dragPointerId = null;
+  }
+  if (band) { /* a faixa some em quem chamou */ }
+}
+
+/* Aborta faixa e arrasto SEM aplicar nada.
+ *
+ * Diferente do fim normal do gesto: aqui nao ha broadcast nem selecao por
+ * area. E o caminho do `pointercancel` e do segundo dedo (pinca) — um gesto
+ * que o usuario nao terminou nao pode mover token dos outros. */
+function _abortarSelecao(wrap, band) {
+  const tinhaAlgo = _rbActive || _dragMode !== null;
+  _soltarPonteirosDaSelecao(wrap, band);
+  if (_rbActive) {
+    _rbActive = false;
+    band?.classList.remove("is-active");
+  }
+  if (_dragMode !== null) {
+    _dragMode = null;
+    _dragHandle = null;
+    _dragBounds = null;
+  }
+  if (tinhaAlgo) _refreshSelectionBox();
+}
+
 // ── Rubber-band helper ───────────────────────────────────────
 
 function _updateBandEl(band) {
@@ -501,11 +544,15 @@ function initMesaSelect() {
   // ── SELECTION BOX: drag-to-move ──────────────────────────
   const box = document.getElementById("mesaSelectionBox");
   if (box) {
-    box.addEventListener("mousedown", e => {
-      if (e.button !== 0 || _interactionMode !== "select") return;
+    box.addEventListener("pointerdown", e => {
+      if (e.button !== 0 || !e.isPrimary || _interactionMode !== "select") return;
       if (e.target.classList.contains("sel-handle")) return;
+      // preventDefault tambem SUPRIME o mousedown de compatibilidade — sem
+      // isso o pan do palco (mesa-map.js) comecava junto com o arrasto.
       e.preventDefault();
       e.stopPropagation();
+      _dragPointerId = e.pointerId;
+      try { box.setPointerCapture(e.pointerId); } catch { /* ponteiro ja solto */ }
       _dragMode    = "move";
       _dragClientX = e.clientX;
       _dragClientY = e.clientY;
@@ -513,10 +560,12 @@ function initMesaSelect() {
     });
 
     box.querySelectorAll(".sel-handle").forEach(h => {
-      h.addEventListener("mousedown", e => {
-        if (e.button !== 0 || _interactionMode !== "select") return;
+      h.addEventListener("pointerdown", e => {
+        if (e.button !== 0 || !e.isPrimary || _interactionMode !== "select") return;
         e.preventDefault();
         e.stopPropagation();
+        _dragPointerId = e.pointerId;
+        try { h.setPointerCapture(e.pointerId); } catch { /* ponteiro ja solto */ }
         _dragMode    = "resize";
         _dragHandle  = h.dataset.handle;
         _dragClientX = e.clientX;
@@ -526,11 +575,22 @@ function initMesaSelect() {
     });
   }
 
-  // ── RUBBER BAND: mousedown em espaço vazio ───────────────
-  wrap.addEventListener("mousedown", e => {
-    if (e.button !== 0 || _interactionMode !== "select") return;
-    if (e.target.closest("input, button, a, [data-token-id], .mesa-token, #mesaSelectionBox")) return;
+  /* O navegador cancela o ponteiro quando toma o gesto para si; o segundo
+     dedo tambem cancela, pela mao do mesa-map.js (pinca). Nos dois casos a
+     faixa e o arrasto morrem sem aplicar nada. */
+  window.addEventListener("pointercancel", () => _abortarSelecao(wrap, band));
+  window.mesaAbortSelectionGesture = () => _abortarSelecao(wrap, band);
 
+  // ── RUBBER BAND: ponteiro primario em espaço vazio ───────
+  wrap.addEventListener("pointerdown", e => {
+    if (e.button !== 0 || !e.isPrimary || _interactionMode !== "select") return;
+    if (e.target.closest("input, button, a, [data-token-id], .mesa-token, #mesaSelectionBox")) return;
+    // Uma faixa por vez: o segundo dedo e gesto de camera (pinca), nao outra
+    // faixa. Quem cancela esta e o mesa-map.js, por mesaAbortSelectionGesture.
+    if (_rbActive || _dragMode !== null) return;
+
+    _rbPointerId = e.pointerId;
+    try { wrap.setPointerCapture(e.pointerId); } catch { /* ponteiro ja solto */ }
     const wr = wrap.getBoundingClientRect();
     _rbStartX = e.clientX - wr.left;
     _rbStartY = e.clientY - wr.top;
@@ -543,8 +603,10 @@ function initMesaSelect() {
     e.preventDefault();
   });
 
-  // ── GLOBAL MOUSEMOVE ─────────────────────────────────────
-  window.addEventListener("mousemove", e => {
+  // ── PONTEIRO EM MOVIMENTO (janela) ───────────────────────
+  window.addEventListener("pointermove", e => {
+    if (_rbActive && _rbPointerId !== null && e.pointerId !== _rbPointerId) return;
+    if (!_rbActive && _dragPointerId !== null && e.pointerId !== _dragPointerId) return;
     if (_rbActive) {
       const wr = wrap.getBoundingClientRect();
       _rbEndX = e.clientX - wr.left;
@@ -585,8 +647,11 @@ function initMesaSelect() {
     _refreshSelectionBox();
   });
 
-  // ── GLOBAL MOUSEUP ───────────────────────────────────────
-  window.addEventListener("mouseup", () => {
+  // ── PONTEIRO SOLTO (janela) ──────────────────────────────
+  window.addEventListener("pointerup", e => {
+    if (_rbActive && _rbPointerId !== null && e && e.pointerId !== _rbPointerId) return;
+    if (!_rbActive && _dragPointerId !== null && e && e.pointerId !== _dragPointerId) return;
+    _soltarPonteirosDaSelecao(wrap, band);
     if (_rbActive) {
       _rbActive = false;
       band.classList.remove("is-active");

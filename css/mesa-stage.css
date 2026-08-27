@@ -10,6 +10,10 @@
   position: relative;
   min-height: clamp(600px, calc(100vh - 180px), 1200px);
   contain: layout paint;
+  /* O palco trata os proprios gestos (Etapa 129): sem isto o navegador rola
+     ou dá zoom na PAGINA ao primeiro movimento do dedo e cancela o ponteiro
+     no meio do traco. Vale para desenho, faixa de selecao, pan e pinca. */
+  touch-action: none;
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 30px;
   background:

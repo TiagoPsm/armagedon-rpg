@@ -2,7 +2,7 @@
 
 > **Data:** 2026-08-27 · **Revisão 2** (a 1ª é de 2026-07-05) · **Escopo:** compara o **código atual** do repositório `rpg-campaign-git-sync` (commit de referência `cb0192b`, Etapa 127) com o **estado do Roll20** (pós-Jumpgate) verificado em fontes oficiais em 2026-07-05. Onde a documentação interna do projeto diverge do código, este documento segue o código (ver §10).
 >
-> **O que mudou nesta revisão:** a coluna Armagedom foi remedida item a item contra o código. A revisão 1 congelou o retrato na Etapa ~37; de lá para cá entraram **grade funcional com snap** (42), **ping** (43), **régua** (44), **dados na Mesa com rolagem do servidor e rolagem secreta do mestre** (45, 79), **Fog of War** (47), **múltiplas cenas com pastas** (48-49, 89-97), **marcadores de condição** (46, 64), **mapa por cena com transform** (90, 113), **desenho com cone, seta, cor livre, opacidade e borracha parcial** (122-123, 126) e **busca com tags nas regras**. O escore geral saiu de **≈51% para ≈62%**. Nenhuma nota do Roll20 foi alterada.
+> **O que mudou nesta revisão:** a coluna Armagedom foi remedida item a item contra o código (e o item 6.1, mobile/touch, foi atualizado de novo na Etapa 129, que terminou a migração para Pointer Events). A revisão 1 congelou o retrato na Etapa ~37; de lá para cá entraram **grade funcional com snap** (42), **ping** (43), **régua** (44), **dados na Mesa com rolagem do servidor e rolagem secreta do mestre** (45, 79), **Fog of War** (47), **múltiplas cenas com pastas** (48-49, 89-97), **marcadores de condição** (46, 64), **mapa por cena com transform** (90, 113), **desenho com cone, seta, cor livre, opacidade e borracha parcial** (122-123, 126) e **busca com tags nas regras**. O escore geral saiu de **≈51% para ≈62%**. Nenhuma nota do Roll20 foi alterada.
 >
 > **Nota de renderização:** os diagramas Mermaid renderizam no github.com, VS Code e Obsidian; **não** renderizam no GitHub Pages padrão (Jekyll).
 
@@ -10,7 +10,7 @@
 
 ## 1. Resumo executivo
 
-- **Escore geral de similaridade: ≈ 62%** (58 sub-itens em 6 categorias ponderadas; metodologia na §2). Era 51% na revisão 1 (2026-07-05). Similaridade ≠ qualidade: vários zeros são escolha de escopo.
+- **Escore geral de similaridade: ≈ 63%** (58 sub-itens em 6 categorias ponderadas; metodologia na §2). Era 51% na revisão 1 (2026-07-05) e 62% antes da Etapa 129 (toque). Similaridade ≠ qualidade: vários zeros são escolha de escopo.
 - **Onde o Armagedom já compete de igual para igual:** infraestrutura de sync/permissões (autorização dupla UI + Durable Object, ACKs, validação server-side), vínculo token↔ficha em tempo real, camada secreta do mestre, zoom/pan/seleção/desenho, dados rolados no servidor (públicos e secretos), iniciativa, e o conjunto ficha + painel do mestre.
 - **O que fechou desde a revisão 1:** as três lacunas que abriam o documento anterior foram atacadas — **Fog of War** existe (pincel cobrir/revelar, base da cena, mestre enxerga através), **rolagem na Mesa** existe e é sorteada pelo Durable Object com `crypto.getRandomValues` (pública, secreta do mestre, histórico de 20), e a **grade virou funcional** com snap opcional. Entraram também múltiplas cenas com pastas, ping, régua, marcadores de condição e mapa por cena.
 - **As 3 maiores lacunas de hoje** (por peso × gap): **(1) Visão dinâmica** — Visão/segredo está em 42%: iluminação dinâmica e visão por token seguem inexistentes (no Roll20 exigem Plus/Pro); **(2) conteúdo compartilhado** — handouts e export/import de ficha e cena continuam em zero, e a rolagem feita na ficha ainda não chega à mesa; **(3) automação programável** — macros, tabelas roláveis, cartas e API são zero (decisão consciente, ver §9.2).
@@ -148,14 +148,14 @@ O grupo joga com Discord; estes itens ficam registrados apenas para completude d
 
 | # | Sub-item | Roll20 | Armagedom | Observação |
 |---|---|---|---|---|
-| 6.1 | Mobile/touch | **2** — app delistado (fev/2026); navegador móvel recomendado; fichas otimizadas, tabletop completo fraco em phone[^25][^26] | **1** — responsivo até 480px e **parte** da mesa já fala Pointer Events (arrastar token, ping, régua, névoa, painéis); **desenho e seleção por área continuam presos a mouse events**, então não respondem ao toque | Meio caminho: o token se move no dedo, o desenho não. Nenhum dos dois resolve bem o tabletop em celular |
+| 6.1 | Mobile/touch | **2** — app delistado (fev/2026); navegador móvel recomendado; fichas otimizadas, tabletop completo fraco em phone[^25][^26] | **2** — responsivo até 480px e **mesa inteira em Pointer Events** (Etapa 129): um dedo desenha, seleciona por área ou pana conforme o modo; dois dedos são câmera (arrasta + pinça de zoom); `touch-action: none` no palco e captura de ponteiro. Coberto por `tests/mesa-toque.spec.cjs`, com toque real via CDP | Falta o que depende de hover (dicas e cursores) e alvos de toque de 44px; o tabletop em si já se joga no tablet |
 | 6.2 | Offline/local | **0** — exige conexão | **2** — fallback completo em localStorage quando a API cai; sem merge ao reconectar | **Diferencial do Armagedom** (fora da fórmula) |
 | 6.3 | Desempenho de renderização | **2** — Jumpgate melhorou (60 FPS default)[^1] | **2** — DOM renderer leve, render incremental por assinatura, limite de 120 tokens validado no Worker | Escalas diferentes, ambos adequados ao uso |
 | 6.4 | Acessibilidade | **1** — limitada | **1** — aria parcial, `prefers-reduced-motion`, contraste AA no texto principal; steppers 30px < 44px | Empate em "parcial" |
 | 6.5 | Compatibilidade de navegadores | **3** — Chrome/Firefox/Edge suportados oficialmente | **2** — funciona nos navegadores modernos; sem matriz de teste formal | |
 | 6.6 | Peso/otimização de assets | **2** — assets pesados, cotas por plano[^30] | **3** — WebP, minify CSS/JS, cache-busting `?v=`, sem bundler, `audit:static` valida referências | Armagedom superior (cap em 100%) |
 
-**Cobertura C6 = 0,83** (4,17 ÷ 5 pontuáveis)
+**Cobertura C6 = 0,93** (4,67 ÷ 5 pontuáveis) — era 0,83 na revisão 1
 
 ### 3.7 C7 — Infra, segurança e permissões (peso 4)
 
@@ -225,7 +225,7 @@ Visão de varredura rápida (justificativas na §3). Legenda: nota 0–3; `DIF` 
 | C5 | 5.11 | Marketplace | 3 | 0 | Lacuna (N/A estrutural) |
 | C5 | 5.12 | Permissões por personagem | 3 | 2 | Parcial |
 | C5 | 5.13 | Avatares/arte | 3 | 2 | Parcial |
-| C6 | 6.1 | Mobile/touch | 2 | 1 | Parcial |
+| C6 | 6.1 | Mobile/touch | 2 | 2 | Paridade ↑ |
 | C6 | 6.2 | Offline/local | 0 | 2 | **DIF** |
 | C6 | 6.3 | Desempenho | 2 | 2 | Paridade |
 | C6 | 6.4 | Acessibilidade | 1 | 1 | Paridade |
@@ -256,11 +256,11 @@ Visão de varredura rápida (justificativas na §3). Legenda: nota 0–3; `DIF` 
 | C2 Visão e segredo | 4 | 0,42 (1,67/4) | 1,67 | 6,9% | 0,25 |
 | C3 Automação | 4 | 0,48 (4,33/9) | 1,93 | 8,0% | 0,26 |
 | C7 Infra/segurança | 4 | 0,67 (6,00/9) | 2,67 | 11,1% | 0,61 |
-| C6 Plataforma | 2 | 0,83 (4,17/5) | 1,67 | 6,9% | 0,83 |
+| C6 Plataforma | 2 | 0,93 (4,67/5) | 1,87 | 7,8% | 0,83 |
 | C4 Comunicação | 0 | — (informativa) | — | — | — |
-| **Escore geral** | **24** | | **14,94 ÷ 24** | **≈ 62%** | **≈ 51%** |
+| **Escore geral** | **24** | | **15,14 ÷ 24** | **≈ 63%** | **≈ 51%** |
 
-**Leitura:** o Armagedom cobre hoje cerca de **dois terços** do que o Roll20 oferece nas categorias que importam para esta campanha. O salto de 51% para 62% veio quase todo das duas categorias que a revisão 1 apontou como piores: **visão/segredo subiu de 25% para 42%** (Fog of War) e **automação de 26% para 48%** (rolagem na Mesa, pública e secreta). O **núcleo tático virou a categoria mais forte depois da plataforma** (76%), com cenas múltiplas, grade funcional, snap e marcadores de condição.
+**Leitura:** o Armagedom cobre hoje cerca de **dois terços** do que o Roll20 oferece nas categorias que importam para esta campanha. O salto de 51% para 63% veio quase todo das duas categorias que a revisão 1 apontou como piores: **visão/segredo subiu de 25% para 42%** (Fog of War) e **automação de 26% para 48%** (rolagem na Mesa, pública e secreta). O **núcleo tático virou a categoria mais forte depois da plataforma** (76%), com cenas múltiplas, grade funcional, snap e marcadores de condição.
 
 O que sobrou de fraco é de outra natureza: em C2 falta **visão dinâmica** (iluminação e visão por token), que no Roll20 é recurso pago e no Armagedom seria a peça mais cara do projeto; em C3, macros/tabelas/cartas/API são **decisão consciente** de não fazer (§9.2); e em C5 o que trava a nota são três itens baratos e ainda em zero — rolagem da ficha na mesa, handouts e export/import.
 
@@ -440,7 +440,7 @@ flowchart TD
 | **Desempenho** | Jumpgate: engine nova, FPS limit 60 default[^1] | DOM renderer com render incremental, throttle de drag 50ms, mapa WebP ≤4096px por orçamento de bytes, limite de 120 tokens | Ambos adequados; escalas incomparáveis |
 | **Compatibilidade** | Chrome/Firefox/Edge oficiais | Navegadores modernos; sem matriz formal de teste | |
 | **Offline** | Inexistente | localStorage cobre mesa e fichas | Diferencial (§5.2) |
-| **Mobile** | App delistado (fev/2026); browser p/ fichas[^25][^26] | Responsivo até 480px; token, ping, régua e névoa já em Pointer Events; desenho e seleção ainda em mouse events | Fraco nos dois; no Armagedom falta terminar a migração para Pointer Events |
+| **Mobile** | App delistado (fev/2026); browser p/ fichas[^25][^26] | Responsivo até 480px; **mesa inteira em Pointer Events** — um dedo conforme o modo, dois dedos de câmera com pinça (Etapa 129) | O Armagedom passou o Roll20 no tabletop em tablet; falta o que depende de hover e alvos de 44px |
 | **Auditabilidade** | Sem auditoria exposta | `transfer_audit` + `soul_audit` imutáveis | Diferencial (§5.2) |
 
 ---
@@ -500,14 +500,14 @@ flowchart TD
 
 ### 9.2 Lacunas priorizadas (peso da categoria × tamanho do gap)
 
-**Cumpridas desde a revisão 1** (eram as prioridades 1, 2, 3, 7 e 8): Fog of War, rolagem pública e secreta na Mesa, snap-to-grid com grade configurável, múltiplas cenas com pastas e marcadores de condição. Foi esse bloco que levou o escore de 51% a 62%.
+**Cumpridas desde a revisão 1** (eram as prioridades 1, 2, 3, 7 e 8): Fog of War, rolagem pública e secreta na Mesa, snap-to-grid com grade configurável, múltiplas cenas com pastas e marcadores de condição. Foi esse bloco que levou o escore de 51% a 62%. A prioridade 4 desta lista (Pointer Events) caiu logo em seguida, na Etapa 129, levando a 63%.
 
 | Prioridade | Lacuna | Categoria (peso) | Por quê |
 |---|---|---|---|
 | 1 | **Rolagem da ficha transmitida à mesa** | C5 (5) | O item mais barato que restou: o canal (`mesa:dice:request`) e o motor (`ficha-dice.js`) já existem e seguem as mesmas regras — falta o botão na ficha mandar para a Mesa em vez de rolar no canto. Leva 5.3 de 1→3 |
 | 2 | **Export/import JSON de ficha e cena** | C5/C7 | Único item que hoje é **risco**, não funcionalidade: não há cópia dos dados fora do D1. Barato — cena e ficha já são JSON normalizado. Cobre 5.10 e melhora 7.10 |
 | 3 | **Handouts / notas compartilhadas** | C5 (5) | Zero absoluto (5.9) e encaixa no modelo de permissão que já existe (camada dm, visibilidade por token): imagem ou texto entregue a um jogador específico |
-| 4 | **Terminar a migração para Pointer Events** | C6 (2) | Meio caminho andado: token, ping, régua e névoa já respondem ao toque; desenho e seleção não. É trocar `mousedown/mousemove` por `pointer*` em `mesa-drawing.js` e `mesa-select.js` |
+| ~~4~~ | ~~**Terminar a migração para Pointer Events**~~ | C6 (2) | **CUMPRIDA na Etapa 129** — desenho, seleção, pan e pinça de zoom no dedo; C6 subiu de 0,83 para 0,93 |
 | 5 | **Auras nos tokens** | C1 (5) | O que falta para 1.7 virar 3, e resolve "quem está dentro do cone/da explosão" — o cone de desenho já existe desde a Etapa 123 |
 | 6 | **Chat de texto com sussurro** | C4 (0 — informativa) | Fora da pontuação por decisão do grupo (Discord), mas é a lacuna mais sentida numa sessão remota; o canal do realtime já está pronto, seria mais um `RELAY_TYPE` |
 | 7 | **Versionamento otimista de ficha** | C7 (4) | `sceneVersion` já existe para cena; aplicar o mesmo padrão ao `PUT /characters` fecha 7.6 (hoje last-write-wins sem aviso) |
@@ -519,7 +519,7 @@ Macros, tabelas roláveis, cartas e API de scripts (C3) seguem fora do top 10 co
 
 ### 9.3 Meta de escore
 
-Executando as prioridades 1–5, a cobertura estimada sobe: C5 0,64→0,80 (rolagem da ficha, export, handouts), C7 0,67→0,72 (backup), C1 0,76→0,81 (auras), C6 0,83→1,00 (toque) → **escore geral de ~62% para ~70%**, mantendo os diferenciais e sem tocar na peça cara (visão dinâmica).
+Executando as prioridades restantes 1, 2, 3 e 5, a cobertura estimada sobe: C5 0,64→0,80 (rolagem da ficha, export, handouts), C7 0,67→0,72 (backup), C1 0,76→0,81 (auras) → **escore geral de ~63% para ~70%**, mantendo os diferenciais e sem tocar na peça cara (visão dinâmica).
 
 Para passar de ~70% seria preciso atacar C2 (iluminação e visão por token) ou C3 (macros, tabelas, cartas) — os dois blocos que o projeto adiou por escolha, não por acidente.
 

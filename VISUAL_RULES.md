@@ -836,3 +836,15 @@ de 5px de tela virou 12px num token 6x. Contorno de elemento contra-escalado
 vai em `box-shadow` (pintura, aceita fracao, nao entra na caixa), como ja
 fazia `.mesa-token-selbox`.
 
+## Superficie que trata o proprio gesto declara `touch-action: none` (2026-08-27, Etapa 129)
+
+O `.mesa-stage-wrap` desenha, seleciona, pana e da zoom com o dedo. Sem
+`touch-action: none` o navegador assume que o primeiro movimento e rolagem da
+pagina, rola, e **cancela o ponteiro no meio do gesto** — o traco morre pela
+metade e a culpa parece do codigo.
+
+A regra vale para qualquer superficie que passe a tratar gesto proprio: ou ela
+declara `touch-action: none`, ou o navegador leva o gesto embora. E o par
+obrigatorio de `setPointerCapture`: um garante que os eventos continuem
+chegando, o outro que eles cheguem desde o comeco.
+

@@ -40,7 +40,65 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-27 — Etapa 128: o comparativo com o Roll20 volta a bater com o codigo)
+## Ultima Etapa Concluida (2026-08-27 — Etapa 129: a Mesa inteira responde ao dedo)
+
+A migracao para Pointer Events estava pela metade desde sempre: arrastar
+token, ping, regua e nevoa ja respondiam ao dedo; **desenho e selecao ouviam
+`mousedown`**, e pan e zoom dependiam de botao direito e roda do mouse — dois
+controles que simplesmente nao existem num tablet. Na pratica: dava para mover
+token no dedo e mais nada.
+
+**Por que mouse event nao serve para dedo.** O navegador so emite os eventos
+de mouse de compatibilidade DEPOIS de decidir que o gesto nao e rolagem — e
+quando emite, o comeco do traco ja se perdeu. Pointer Events chegam na hora e
+cobrem mouse, dedo e caneta no mesmo handler.
+
+**A regra do gesto, uma so para toda a Mesa:**
+
+- **um dedo** faz o que o botao esquerdo faz no modo atual — pan no modo mao,
+  faixa de selecao no modo seta, traco com uma ferramenta armada;
+- **dois dedos** sao sempre camera: arrastam o palco e a distancia entre eles
+  da o zoom (a pinca), em qualquer modo.
+
+O segundo dedo ABORTA o que o primeiro estava fazendo: o traco ou a faixa sao
+descartados, nao gravados pela metade. Metade de um risco que ninguem quis nao
+pode ficar no quadro de todo mundo — `mesaAbortDrawingGesture` e
+`mesaAbortSelectionGesture` sao os dois ganchos que o mesa-map.js chama.
+
+**Tres detalhes que o mouse nao exigia:**
+
+1. `setPointerCapture` — o dedo sai do canvas no meio do traco e, sem captura,
+   os eventos param de chegar.
+2. `preventDefault()` no pointerdown — alem de impedir a rolagem, e o que
+   SUPRIME os eventos de mouse de compatibilidade. Sem isso o `mousedown`
+   sintetico subia ate o palco e o pan comecava junto com o traco (o
+   `stopPropagation` nao alcanca evento sintetico).
+3. `touch-action: none` no `.mesa-stage-wrap` — senao o navegador rola a
+   pagina no primeiro movimento e cancela o ponteiro no meio do gesto.
+
+Arquivos: `js/mesa-drawing.js`, `js/mesa-select.js`, `js/mesa-map.js` (pan por
+ponteiro + pinca), `css/mesa-stage.css`, `mesa.html` (cache-busting dos
+quatro).
+
+`tests/mesa-toque.spec.cjs` (NOVO, 5 casos): toque **de verdade**, via
+`Input.dispatchTouchEvent` do CDP com `hasTouch` ligado — evento sintetico nao
+serviria, porque nao passa pela decisao de gesto do navegador, que e onde o
+defeito morava. Cobre: o palco declara `touch-action: none`; um dedo desenha a
+lapis com trajeto; um dedo puxa a faixa e seleciona os dois tracos; dois dedos
+dao zoom E arrastam o palco sem deixar traco pela metade; e o token anda no
+dedo sem virar desenho.
+
+Os cinco testes de desenho que fabricavam `MouseEvent` passaram a fabricar
+`PointerEvent` — mesmas asserções, idioma do gesto atualizado. O bloco "gesto
+real" da Etapa 123 (mouse de verdade do Playwright) continua guardando o
+caminho do mouse.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`, `test:build`
+(8), `test:controles` (6), `test:mesa` (5), `test:mesa:audit` (237),
+`test:mesa:tokens` (10), `test:mesa:scenes` (22), `test:mesa:scenemap` (6),
+`test:mesa:permissoes` (15), `perf:mesa` (1) e o novo `mesa-toque` (5).
+
+## Etapa Anterior (2026-08-27 — Etapa 128: o comparativo com o Roll20 volta a bater com o codigo)
 
 `docs/COMPARATIVO-ROLL20.md` estava congelado no retrato de 2026-07-05 (Etapa
 ~37) e pontuava como ZERO coisas que existem ha semanas: Fog of War, dados na

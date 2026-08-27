@@ -1549,24 +1549,96 @@ function bindMapInteractions() {
   // Expõe flag para o handler de deselect em mesa-stage.js
   window._mesaStagePanMoved = false;
 
-  wrap.addEventListener("mousedown", function(e) {
-    // Modo "select": pan no RMB | Modo "move": pan no LMB (padrão)
+  /* ── Toque (Etapa 129) ───────────────────────────────────────────────
+   * Regra unica, para nao ter dois idiomas na mesma tela:
+   *   UM dedo   = o que o botao esquerdo faz no modo atual (pan no modo
+   *               "mao", faixa de selecao no modo "seta", traco com uma
+   *               ferramenta armada);
+   *   DOIS dedos = camera, SEMPRE: arrasta o palco e a distancia entre os
+   *               dedos da o zoom.
+   * Sem a regra dos dois dedos o tablet ficava sem pan e sem zoom — nao ha
+   * botao direito nem roda do mouse no dedo, que eram os dois unicos
+   * caminhos ate aqui.
+   *
+   * O listener e de CAPTURA: precisa ver o segundo dedo ANTES do canvas de
+   * desenho, para abortar o traco que o primeiro comecou. */
+  const _dedos = new Map();          // pointerId -> { x, y }
+  let _pinca = null;                 // { dist, zoom, cx, cy }
+  let _panPointerId = null;
+
+  const _distanciaEntreDedos = () => {
+    const [a, b] = [..._dedos.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
+  const _centroDosDedos = () => {
+    const [a, b] = [..._dedos.values()];
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  };
+
+  wrap.addEventListener("pointerdown", function(e) {
+    if (e.pointerType !== "touch") return;
+    _dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (_dedos.size !== 2) return;
+    // Segundo dedo: a camera assume. O traco e a faixa de selecao que o
+    // primeiro dedo tinha comecado sao DESCARTADOS, nao gravados pela metade.
+    window.mesaAbortDrawingGesture?.();
+    window.mesaAbortSelectionGesture?.();
+    dragging = false;
+    _panPointerId = null;
+    const centro = _centroDosDedos();
+    _pinca = { dist: _distanciaEntreDedos() || 1, zoom: _stageZoom, cx: centro.x, cy: centro.y };
+  }, true);
+
+  const _fimDoDedo = function(e) {
+    if (e.pointerType !== "touch") return;
+    _dedos.delete(e.pointerId);
+    if (_dedos.size < 2) _pinca = null;
+  };
+  wrap.addEventListener("pointerup", _fimDoDedo, true);
+  wrap.addEventListener("pointercancel", _fimDoDedo, true);
+
+  wrap.addEventListener("pointerdown", function(e) {
+    // Mouse: modo "select" pana no RMB, modo "move" pana no LMB (padrão).
+    // Toque: um dedo so pana no modo "move" — no modo "select" ele desenha a
+    // faixa (mesa-select.js) e com ferramenta armada ele desenha (mesa-drawing).
     const _imode = window._mesaInteractionMode || "select";
-    const _panBtn = _imode === "select" ? 2 : 0;
-    if (e.button !== _panBtn) return;
+    if (e.pointerType === "touch") {
+      if (_dedos.size > 1) return;                  // dois dedos = pinca
+      if (_imode !== "move") return;
+      if (wrap.dataset.drawActive) return;          // ferramenta armada desenha
+    } else {
+      const _panBtn = _imode === "select" ? 2 : 0;
+      if (e.button !== _panBtn) return;
+    }
     if (e.target.closest("input, button, a, select, textarea")) return;
     // Em camada tokens: só inicia pan se NÃO está em cima de um token
     // (tokens têm pointer-events desativados na camada mapa, então não há conflito)
     if (e.target.closest(".mesa-token")) return;
     dragging = true;
+    _panPointerId = e.pointerId;
     _panMoved = false;
     window._mesaStagePanMoved = false;
     lastX = e.clientX;
     lastY = e.clientY;
   });
 
-  window.addEventListener("mousemove", function(e) {
+  window.addEventListener("pointermove", function(e) {
+    // Pinça: dois dedos mandam na camera, e o pan de um dedo fica de fora.
+    if (e.pointerType === "touch" && _dedos.has(e.pointerId)) {
+      _dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (_pinca && _dedos.size >= 2) {
+        const dist = _distanciaEntreDedos() || 1;
+        setStageZoom(_pinca.zoom * (dist / _pinca.dist));
+        const centro = _centroDosDedos();
+        panStage(centro.x - _pinca.cx, centro.y - _pinca.cy);
+        _pinca.cx = centro.x;
+        _pinca.cy = centro.y;
+        window._mesaStagePanMoved = true;
+        return;
+      }
+    }
     if (!dragging) return;
+    if (_panPointerId !== null && e.pointerId !== _panPointerId) return;
     const dx = e.clientX - lastX;
     const dy = e.clientY - lastY;
     if (!_panMoved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
@@ -1585,14 +1657,17 @@ function bindMapInteractions() {
     }
   });
 
-  window.addEventListener("mouseup", function() {
+  const _fimDoPan = function() {
     if (dragging) {
       dragging = false;
+      _panPointerId = null;
       wrap.style.cursor = "";
       // Reseta o flag de pan após o ciclo de eventos (para o click handler ver)
       setTimeout(function() { window._mesaStagePanMoved = false; }, 0);
     }
-  });
+  };
+  window.addEventListener("pointerup", _fimDoPan);
+  window.addEventListener("pointercancel", _fimDoPan);
 
   // Cursor hint: grab ao passar sobre área vazia
   wrap.addEventListener("mouseover", function(e) {
