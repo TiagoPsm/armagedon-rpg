@@ -7852,3 +7852,196 @@ test.describe("Ferramenta de texto retirada (Etapa 126)", () => {
     expect(erros, "um rotulo antigo quebrou o desenho").toEqual([]);
   });
 });
+
+/* -- Etapa 130: opacidade 100% e a ponta da seta --
+ *
+ * Dois relatos do Tiago olhando o mesmo print: a seta com a ponta errada e
+ * "a opacidade 100% nao funciona, fica transparente".
+ *
+ * O alfa era o caso mais traicoeiro: `_composeStrokeColor` so embutia o alfa
+ * quando a cor NAO era opaca, entao 100% saia como hex de 6 digitos — que e
+ * exatamente a marca do traco LEGADO (anterior a Etapa 122), pintado com
+ * DRAW_LEGACY_ALPHA = 0,88. Escolher 100% dava 88%. Os testes de opacidade
+ * que existiam mediam 60% e passavam.
+ *
+ * A licao que estes casos trancam: teste de opacidade tem de medir o PIXEL,
+ * nao a string da cor. */
+test.describe("Traco: opacidade e ponta da seta (Etapa 130)", () => {
+  async function abrirMesa(page) {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() =>
+      document.getElementById("mesaStageWrap")?.dataset.drawReady === "true");
+  }
+
+  test("100% de opacidade pinta pixel OPACO", async ({ page }) => {
+    await abrirMesa(page);
+
+    const medida = await page.evaluate(() => {
+      const c = _drawCanvasEl;
+      const ctx = c.getContext("2d");
+      // Alfa mais alto pintado no canvas, ignorando a borda antisserrilhada.
+      const alfaMaximo = () => {
+        const d = ctx.getImageData(0, 0, c.width, c.height).data;
+        let max = 0;
+        for (let i = 3; i < d.length; i += 4) if (d[i] > max) max = d[i];
+        return max;
+      };
+      const pintar = alfa => {
+        _strokes = [];
+        _drawColor = "#40b8e8";
+        _drawAlpha = alfa;
+        _strokes.push({
+          id: "t" + alfa, tool: "line", color: _composeStrokeColor(), width: 8,
+          layer: "tokens", author: _drawAuthorKey(),
+          x1: 0.2, y1: 0.5, x2: 0.8, y2: 0.5, points: null
+        });
+        renderDrawings();
+        return alfaMaximo();
+      };
+
+      const cheio = pintar(1);
+      const corCheia = _strokes[0].color;
+      const meio = pintar(0.5);
+
+      // Traco LEGADO (cor de 6 digitos, anterior a Etapa 122) tem de seguir
+      // com os 0,88 historicos: o conserto nao pode mudar desenho antigo.
+      _strokes = [{
+        id: "velho", tool: "line", color: "#40b8e8", width: 8, layer: "tokens",
+        author: _drawAuthorKey(), x1: 0.2, y1: 0.5, x2: 0.8, y2: 0.5, points: null
+      }];
+      renderDrawings();
+      const legado = alfaMaximo();
+
+      return { cheio, meio, legado, corCheia };
+    });
+
+    expect(medida.cheio, "100% de opacidade saiu transparente na tela").toBe(255);
+    expect(medida.corCheia, "a cor de 100% precisa declarar o proprio alfa").toBe("#40b8e8ff");
+    // E a escala continua valendo: 50% pinta bem menos que 100%.
+    expect(medida.meio, "50% deveria pintar bem mais claro que 100%").toBeLessThan(160);
+    expect(medida.meio).toBeGreaterThan(90);
+    // Traco antigo continua exatamente onde estava (0,88 x 255 = 224).
+    expect(Math.abs(medida.legado - 224), "o traco legado mudou de aparencia")
+      .toBeLessThanOrEqual(2);
+  });
+
+  test("a seta termina EM ponta, e a cabeca nao vira farpa", async ({ page }) => {
+    await abrirMesa(page);
+
+    const r = await page.evaluate(() => {
+      const c = _drawCanvasEl;
+      const ctx = c.getContext("2d");
+      const dpr = c.width / (c.offsetWidth || 1);
+
+      // Seta horizontal, grossa: e onde o defeito aparecia.
+      _strokes = [{
+        id: "s1", tool: "arrow", color: "#ffffffff", width: 12, layer: "tokens",
+        author: _drawAuthorKey(), x1: 0.25, y1: 0.5, x2: 0.75, y2: 0.5, points: null
+      }];
+      renderDrawings();
+
+      const d = ctx.getImageData(0, 0, c.width, c.height).data;
+      const opaco = (x, y) => d[((y * c.width) + x) * 4 + 3] > 40;
+
+      let maxX = -1;
+      for (let x = c.width - 1; x >= 0 && maxX < 0; x -= 1) {
+        for (let y = 0; y < c.height; y += 1) if (opaco(x, y)) { maxX = x; break; }
+      }
+      // Altura pintada numa coluna: no corpo e a espessura; perto da base da
+      // cabeca e a base do triangulo.
+      const alturaEm = x => {
+        let n = 0;
+        for (let y = 0; y < c.height; y += 1) if (opaco(x, y)) n += 1;
+        return n / dpr;
+      };
+
+      const pontaPedida = _fromPercent(0.75, 0.5).x * dpr;
+      const corpoX = Math.round(_fromPercent(0.35, 0.5).x * dpr);
+      // A coluna MAIS ALTA do desenho e a base da cabeca. Onde ela cai conta
+      // tanto quanto o quanto ela mede: cabeca e o que fica junto da ponta.
+      let larguraMax = 0, larguraMaxX = 0;
+      for (let x = 0; x < c.width; x += 1) {
+        const h = alturaEm(x);
+        if (h > larguraMax) { larguraMax = h; larguraMaxX = x; }
+      }
+
+      // A MESMA seta a 50%: corpo e cabeca nao podem se sobrepor, senao a
+      // tinta e aplicada duas vezes e a emenda sai a 75% — uma faixa mais
+      // escura no meio da seta.
+      _strokes = [{ ..._strokes[0], id: "s1b", color: "#ffffff80" }];
+      renderDrawings();
+      const d2 = ctx.getImageData(0, 0, c.width, c.height).data;
+      let alfaMaxMeio = 0;
+      for (let i = 3; i < d2.length; i += 4) if (d2[i] > alfaMaxMeio) alfaMaxMeio = d2[i];
+
+      return {
+        excessoAlemDaPonta: (maxX - pontaPedida) / dpr,
+        larguraCorpo: alturaEm(corpoX),
+        larguraDaCabeca: larguraMax,
+        distanciaDaCabecaAtePonta: (maxX - larguraMaxX) / dpr,
+        alfaMaxMeio
+      };
+    });
+
+    // A ponta e o fim: o `lineCap: round` do corpo nao pode passar dela (era
+    // meia espessura alem — 6px numa seta de 12).
+    expect(r.excessoAlemDaPonta, "o corpo da seta vazou alem da ponta")
+      .toBeLessThanOrEqual(1.5);
+    // O corpo sai com a espessura pedida...
+    expect(Math.abs(r.larguraCorpo - 12), "o corpo da seta saiu fora da espessura")
+      .toBeLessThanOrEqual(3);
+    // ...e existe uma CABECA bem mais larga que o corpo...
+    expect(r.larguraDaCabeca, "a seta ficou sem cabeca (ou virou farpa)")
+      .toBeGreaterThan(r.larguraCorpo * 1.5);
+    // ...colada na ponta, e nao no meio do risco.
+    expect(r.distanciaDaCabecaAtePonta, "a cabeca da seta nao esta junto da ponta")
+      .toBeLessThanOrEqual(r.larguraDaCabeca * 1.6);
+    // Sem emenda: a 50%, nenhum pixel pode passar de 50% (0,5 x 255 = 128).
+    expect(r.alfaMaxMeio, "corpo e cabeca se sobrepoem e a emenda sai mais escura")
+      .toBeLessThanOrEqual(133);
+  });
+
+  test("seta curta ainda tem cabeca, e ela nao engole a seta", async ({ page }) => {
+    await abrirMesa(page);
+
+    const r = await page.evaluate(() => {
+      const c = _drawCanvasEl;
+      const ctx = c.getContext("2d");
+      const dpr = c.width / (c.offsetWidth || 1);
+      _strokes = [{
+        id: "s2", tool: "arrow", color: "#ffffffff", width: 10, layer: "tokens",
+        author: _drawAuthorKey(), x1: 0.45, y1: 0.5, x2: 0.52, y2: 0.5, points: null
+      }];
+      renderDrawings();
+      const d = ctx.getImageData(0, 0, c.width, c.height).data;
+      let pintados = 0;
+      for (let i = 3; i < d.length; i += 4) if (d[i] > 40) pintados += 1;
+      const inicio = _fromPercent(0.45, 0.5).x * dpr;
+      const fim = _fromPercent(0.52, 0.5).x * dpr;
+      let minX = c.width, maxX = -1;
+      for (let x = 0; x < c.width; x += 1) {
+        for (let y = 0; y < c.height; y += 1) {
+          if (d[((y * c.width) + x) * 4 + 3] > 40) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            break;
+          }
+        }
+      }
+      return {
+        pintados,
+        sobra: (maxX - fim) / dpr,
+        recuo: (minX - inicio) / dpr
+      };
+    });
+
+    expect(r.pintados, "a seta curta nao pintou nada").toBeGreaterThan(0);
+    expect(r.sobra, "a seta curta vazou alem da ponta").toBeLessThanOrEqual(1.5);
+    // O comeco continua sendo o comeco (a cabeca nao pode comer a seta toda).
+    expect(Math.abs(r.recuo), "a seta curta nao comeca onde foi pedida")
+      .toBeLessThanOrEqual(6);
+  });
+});
+

@@ -40,7 +40,57 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-27 — Etapa 129: a Mesa inteira responde ao dedo)
+## Ultima Etapa Concluida (2026-08-27 — Etapa 130: 100% de opacidade pinta 100%, e a seta ganha ponta)
+
+Dois relatos do Tiago olhando o mesmo print: a seta com a ponta errada e "a
+opacidade 100% nao funciona, fica transparente".
+
+**1. 100% saia a 88%.** `_composeStrokeColor` so embutia o alfa na cor quando
+ela NAO era opaca — entao 100% saia como hex de 6 digitos. Só que 6 digitos e
+exatamente a marca do traco LEGADO (anterior a Etapa 122), que o desenho pinta
+com `DRAW_LEGACY_ALPHA` = 0,88 para nao mudar de aparencia de uma hora para
+outra. Os dois casos eram indistinguiveis pela cor, e o traco novo herdava a
+transparencia do antigo. Agora a cor SEMPRE declara o proprio alfa, `ff`
+inclusive: traco novo diz quanto quer, traco velho continua calado e mantem os
+0,88 de sempre. O Worker ja aceitava 8 digitos desde a Etapa 122, entao nao
+houve contrato novo nem deploy.
+
+Por que nenhum teste pegou: os casos de opacidade que existiam mediam a
+STRING da cor a 60%. Cor certa, pixel errado. Os novos medem o PIXEL.
+
+**2. A seta nao tinha ponta.** Tres defeitos empilhados:
+
+- o corpo ia ate a ponta e o `lineCap: "round"` continuava meia espessura
+  ALEM dela — numa seta grossa, uma bola saindo do bico do triangulo;
+- a cabeca era montada com angulo fixo sobre o comprimento total, saindo
+  estreita e comprida: uma farpa colada no risco;
+- e crescia com o comprimento (`comprimento * 0.3`), entao seta longa ganhava
+  cabeca desproporcional.
+
+Agora a cabeca e proporcional a ESPESSURA (`width * 3.4 + 6`, o que faz uma
+seta parecer uma seta em qualquer tamanho), so encolhe quando a seta e curta
+demais para comporta-la (teto de metade do comprimento), e o triangulo e
+isosceles montado sobre o eixo. O corpo para meia espessura ANTES da base, de
+modo que a ponta arredondada termine EM CIMA dela: sem sobra, sem falha e —
+detalhe que so aparece com opacidade parcial — **sem emenda**, porque a area
+onde corpo e cabeca se sobrepunham recebia tinta duas vezes e num traco a 50%
+saia a 75%.
+
+Arquivos: `js/mesa-drawing.js`, `mesa.html` (cache-busting).
+
+`tests/mesa-audit.spec.cjs`: tres casos novos, todos medindo PIXEL — 100% pinta
+alfa 255 (e a cor declara `ff`), 50% pinta bem mais claro, traco legado segue
+nos 0,88 historicos (224); a seta nao vaza alem da ponta, tem cabeca mais larga
+que o corpo colada na ponta, e a 50% nenhum pixel passa de 128 (sem emenda); e
+a seta curta continua com cabeca sem engolir o proprio comeco.
+
+Medido no navegador antes e depois: 100% ia a 224 e agora vai a 255; a 50% a
+emenda ia a 192 e agora fica em 128.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`, `test:build`
+(8), `test:mesa` (5), `test:mesa:audit` (240), `mesa-toque` (5).
+
+## Etapa Anterior (2026-08-27 — Etapa 129: a Mesa inteira responde ao dedo)
 
 A migracao para Pointer Events estava pela metade desde sempre: arrastar
 token, ping, regua e nevoa ja respondiam ao dedo; **desenho e selecao ouviam

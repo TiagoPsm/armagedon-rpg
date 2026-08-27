@@ -198,10 +198,22 @@ function _hexAlpha(alpha) {
   return v.toString(16).padStart(2, "0");
 }
 
-/** Cor que vai para o traco: com alfa embutido so quando nao e opaca. */
+/* Cor que vai para o traco: SEMPRE com alfa embutido, inclusive `ff`.
+ *
+ * Ate a Etapa 130 o alfa so entrava quando a cor NAO era opaca — e 100% de
+ * opacidade saia como hex de 6 digitos. So que 6 digitos e exatamente a marca
+ * do traco LEGADO (anterior a Etapa 122), que o desenho pinta com
+ * DRAW_LEGACY_ALPHA = 0,88 para nao mudar de aparencia de uma hora para
+ * outra. Resultado relatado pelo Tiago: escolher 100% e ver o traco sair
+ * transparente. Os dois casos eram indistinguiveis pela cor.
+ *
+ * Emitir `ff` resolve sem tocar em nada mais: traco novo declara o proprio
+ * alfa, traco velho continua sem declarar e mantem os 0,88 de sempre. O
+ * Worker ja aceitava 8 digitos desde a Etapa 122 (`/^#[0-9a-f]{3,8}$/i`),
+ * entao nao ha deploy nem migracao no caminho. */
 function _composeStrokeColor() {
   const base = /^#[0-9a-f]{6}$/i.test(_drawColor) ? _drawColor : "#e84040";
-  return _drawAlpha >= 0.999 ? base : base + _hexAlpha(_drawAlpha);
+  return base + _hexAlpha(_drawAlpha);
 }
 
 /** Alfa de canvas para um traco ja existente. */
@@ -837,18 +849,58 @@ function _renderStroke(s) {
       break;
     }
 
+    /* Seta (Etapa 123, refeita na Etapa 130).
+     *
+     * O que estava errado, na ordem em que aparece na tela:
+     *
+     * 1. O corpo ia ate a PONTA (x2,y2) e o `lineCap: "round"` continuava
+     *    meia espessura ALEM dela — num traco grosso a ponta virava uma bola
+     *    saindo do bico do triangulo. Agora o corpo para na BASE da cabeca.
+     * 2. A cabeca era medida a partir dos cantos, com angulo fixo de 0,45 rad
+     *    aplicado ao comprimento total: o triangulo saia estreito e comprido,
+     *    parecendo uma farpa colada no risco em vez de uma ponta.
+     * 3. Ela crescia com o comprimento (`comprimento * 0.3`), entao uma seta
+     *    longa ganhava uma cabeca enorme e desproporcional.
+     *
+     * Agora a cabeca e proporcional a ESPESSURA (e o que faz uma seta parecer
+     * uma seta em qualquer tamanho), so encolhe quando a seta e curta demais
+     * para comporta-la, e o triangulo e isosceles montado sobre o eixo. */
     case "arrow": {
       const ang = Math.atan2(y2 - y1, x2 - x1);
       const comprimento = Math.hypot(x2 - x1, y2 - y1);
-      const cabeca = Math.max(ARROW_HEAD_MIN, Math.min(comprimento * 0.3, s.width * 4 + 8));
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
+      if (comprimento < 0.5) break;   // clique sem arrasto: nada a desenhar
+      // Cabeca pela espessura; em seta curta, no maximo metade do caminho.
+      const cabeca = Math.max(
+        ARROW_HEAD_MIN,
+        Math.min(s.width * 3.4 + 6, comprimento * 0.5)
+      );
+      const meiaBase = cabeca * 0.5;
+      // Base da cabeca sobre o eixo, e o perpendicular do eixo.
+      const bx = x2 - Math.cos(ang) * cabeca;
+      const by = y2 - Math.sin(ang) * cabeca;
+      const px = -Math.sin(ang);
+      const py =  Math.cos(ang);
+
+      /* O corpo para meia espessura ANTES da base: com `lineCap: round` a
+         ponta arredondada avanca exatamente essa meia espessura, entao ela
+         termina EM CIMA da base — sem sobra e sem falha.
+         Importa mais do que parece: onde corpo e cabeca se sobrepunham, a
+         tinta era aplicada duas vezes e num traco a 50% aquela faixa saia a
+         75%. Uma seta com uma emenda mais escura no meio. */
+      const recuo = s.width * 0.5;
+      const corpoX = x2 - Math.cos(ang) * (cabeca + recuo);
+      const corpoY = y2 - Math.sin(ang) * (cabeca + recuo);
+      if (comprimento > cabeca + recuo) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(corpoX, corpoY);
+        ctx.stroke();
+      }
+
       ctx.beginPath();
       ctx.moveTo(x2, y2);
-      ctx.lineTo(x2 - Math.cos(ang - 0.45) * cabeca, y2 - Math.sin(ang - 0.45) * cabeca);
-      ctx.lineTo(x2 - Math.cos(ang + 0.45) * cabeca, y2 - Math.sin(ang + 0.45) * cabeca);
+      ctx.lineTo(bx + px * meiaBase, by + py * meiaBase);
+      ctx.lineTo(bx - px * meiaBase, by - py * meiaBase);
       ctx.closePath();
       ctx.fill();
       break;

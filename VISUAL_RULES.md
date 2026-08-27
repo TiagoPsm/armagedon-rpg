@@ -848,3 +848,21 @@ declara `touch-action: none`, ou o navegador leva o gesto embora. E o par
 obrigatorio de `setPointerCapture`: um garante que os eventos continuem
 chegando, o outro que eles cheguem desde o comeco.
 
+## Opacidade se mede no PIXEL, nunca na string da cor (2026-08-27, Etapa 130)
+
+Um traco a 100% de opacidade saiu 12% transparente por semanas. A cor estava
+certa (`#40b8e8`), o slider estava certo, e os testes de opacidade — que
+comparavam a string da cor — passavam. O que faltava era medir o que chegou na
+tela: `getImageData` e olhar o canal alfa.
+
+A causa vale como regra propria: **estado que nao se declara acaba herdando o
+padrao de outro**. A cor de 6 digitos significava duas coisas ao mesmo tempo —
+"traco novo, opaco" e "traco antigo, 88%" — e o desenho nao tinha como
+distinguir. Fazer o traco novo declarar sempre o proprio alfa (`ff` inclusive)
+separou os dois sem tocar em desenho nenhum ja existente.
+
+E, em forma composta de corpo + cabeca (a seta), **as partes nao podem se
+sobrepor**: com opacidade parcial a area comum recebe tinta duas vezes e vira
+uma emenda mais escura. O corpo para meia espessura antes da base para a ponta
+arredondada terminar exatamente nela.
+
