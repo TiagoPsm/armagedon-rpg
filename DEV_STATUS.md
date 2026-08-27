@@ -40,7 +40,43 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-27 — Etapa 127: a barra de vida vira enfeite de tela, e o teste da Etapa 71 volta ao verde)
+## Ultima Etapa Concluida (2026-08-27 — Etapa 128: o comparativo com o Roll20 volta a bater com o codigo)
+
+`docs/COMPARATIVO-ROLL20.md` estava congelado no retrato de 2026-07-05 (Etapa
+~37) e pontuava como ZERO coisas que existem ha semanas: Fog of War, dados na
+Mesa, ping, regua, multiplas cenas, snap-to-grid. Um documento de decisao
+apontando para o passado e pior do que documento nenhum — ele estava na lista
+de "corrigir" da varredura da Etapa 126.
+
+A coluna Armagedom foi remedida item a item CONTRA O CODIGO (nenhuma nota do
+Roll20 mudou; as fontes seguem as de 2026-07-05, declaradas no cabecalho).
+Subiram: cenas multiplas 0->2, grade 1->2, snap 0->2, marcadores 1->2, Fog of
+War 0->2, rolagem publica 0->3, rolagem secreta 0->3, regras com busca 1->2,
+snapshots 0->1, ping 0->3 e regua 0->2 (os dois na categoria informativa).
+Desenho segue 2, agora com cone e seta e sem a ferramenta de texto (Etapa 126).
+
+**Escore geral: 51% -> 62%.** As duas piores categorias da revisao anterior
+foram justamente as que subiram: visao/segredo 25%->42% e automacao 26%->48%.
+A aritmetica foi conferida com script (14,94 / 24).
+
+O roadmap da secao 9.2 foi refeito: as prioridades 1, 2, 3, 7 e 8 da revisao
+anterior estao cumpridas. As novas cinco primeiras sao rolagem da ficha
+transmitida a mesa, export/import JSON (unico item que hoje e RISCO e nao
+funcionalidade: nao ha copia dos dados fora do D1), handouts, terminar a
+migracao para Pointer Events (token, ping, regua e nevoa ja respondem ao
+toque; desenho e selecao nao) e auras nos tokens.
+
+Na secao 10, duas das tres discrepancias de documentacao apontadas em 2026-07-05
+foram marcadas como CORRIGIDAS (CLAUDE.md e DEV_STATUS.md). Sobra
+`docs/obsidian/07-MESA.md`, que ainda descreve o renderer Canvas/Worker
+removido na Etapa 33 — ultimo resquicio, registrado la.
+
+Arquivos: `docs/COMPARATIVO-ROLL20.md`.
+
+Validado: `audit:pendencias`, `audit:static`, `check:js` (nada de codigo mudou
+nesta etapa) e conferencia aritmetica do escore por script.
+
+## Etapa Anterior (2026-08-27 — Etapa 127: a barra de vida vira enfeite de tela, e o teste da Etapa 71 volta ao verde)
 
 O unico teste vermelho da suite ficou verde sem uma linha de teste alterada:
 `test:mesa:tokens` -> "botao de marcadores e etiqueta ficam a distancia fixa
