@@ -396,11 +396,16 @@
    layout. Assim o snap-to-grid, o arrasto e a selecao (que usam o rect do
    elemento) centralizam o circulo na celula, sem o nome esticar a caixa. */
 .mesa-token.is-minimal {
-  /* Fonte unica da geometria da barra de vida (Etapa 114). A barra escala
-     junto com o token, entao estes sao px de LAYOUT — e o botao de
-     marcadores precisa dos MESMOS numeros para se ancorar acima dela. */
+  /* Fonte unica da geometria da barra de vida (Etapa 114, revista na 127).
+     A ESPESSURA e a FOLGA da barra sao px de TELA: entram sempre divididas
+     por `--token-chrome-counter`, como as alcas e a esfera de status. So a
+     LARGURA continua presa ao token (78% dele). */
   --token-life-gap: 5px;
   --token-life-h: 5px;
+  /* Contra-escala do enfeite do token: desfaz o `scale()` do proprio token e
+     o zoom do palco, para o desenho ter o mesmo tamanho de tela em qualquer
+     combinacao dos dois. */
+  --token-chrome-counter: calc(1 / (var(--token-scale, 1) * var(--stage-zoom, 1)));
   width: 88px;
   height: 88px;
   padding: 0;
@@ -496,20 +501,34 @@
    (Etapa 71). Uma barra em fluxo normal esticaria essa caixa e faria o
    token deixar de casar com a celula.
 
-   Escala junto com o token (nao se contra-escala como as alcas): a barra
-   e leitura da largura do token, entao acompanhar o tamanho dele e o
-   comportamento certo em qualquer zoom. */
+   A LARGURA acompanha o token (78% dele): a barra e leitura da largura, e
+   encolher junto e o comportamento certo. Ja a ESPESSURA e a FOLGA sao de
+   TELA desde a Etapa 127 — eram px de layout, e o `scale()` do token as
+   multiplicava: num token 8x a barra virava uma laje de 40px de tela a 40px
+   de distancia, e empurrava a esfera de status junto (era o teste vermelho da
+   Etapa 71, "distancia fixa do token"). Enfeite de token tem espessura de
+   tela; so o que MEDE o token e que escala com ele. */
 .mesa-token.is-minimal .mesa-token-life {
   position: absolute;
-  bottom: calc(100% + var(--token-life-gap));
+  bottom: 100%;
   left: 50%;
-  transform: translateX(-50%);
+  /* A folga entra DEPOIS da contra-escala (mais a direita = aplicada
+     primeiro): dividida aqui, multiplicada pelo token, da 5px de tela. */
+  transform: translateX(-50%)
+             translateY(calc(-1 * var(--token-life-gap) * var(--token-chrome-counter)));
   width: 78%;
-  height: var(--token-life-h);
+  height: calc(var(--token-life-h) * var(--token-chrome-counter));
   border-radius: 999px;
   background: rgba(10, 6, 6, 0.82);
-  border: 1px solid rgba(0, 0, 0, 0.55);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  /* Contorno em box-shadow, nao em `border` (mesma razao da caixa de selecao,
+     mais acima): borda e LAYOUT e o navegador arredonda espessura fracionaria
+     para 1px inteiro — com `box-sizing: border-box` isso virava piso de altura
+     e a barra media 2px de layout (12px de tela num token 6x) em vez dos 5px
+     de tela pedidos. box-shadow e pintura: aceita espessura fracionaria e nao
+     entra na caixa. */
+  box-shadow:
+    0 0 0 calc(1px * var(--token-chrome-counter)) rgba(0, 0, 0, 0.55),
+    0 calc(1px * var(--token-chrome-counter)) calc(3px * var(--token-chrome-counter)) rgba(0, 0, 0, 0.6);
   overflow: hidden;
   pointer-events: none;
   z-index: 2;
@@ -1331,17 +1350,26 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
 .mesa-token:has(.mesa-token-markers) .mesa-token-markers-btn:not(.is-inspector) {
   margin-bottom: 34px;
 }
-/* Barra de vida no caminho (Etapa 114): a esfera de status ficava POR CIMA
-   dela. O motivo e que as duas medem em unidades diferentes — a barra escala
-   junto com o token (px de LAYOUT), o botao e contra-escalado para ter sempre
-   o mesmo tamanho de tela, e a folga dele (`translateY(-10px)`) tambem e de
-   TELA. Num token grande a barra sobe alem dessa folga e alcanca o botao.
-   A ancora entao tem de ser de LAYOUT, com os mesmos numeros da barra: o
-   botao passa a comecar acima dela em qualquer escala, e o `translateY`
-   continua sendo so o respiro visual constante. */
+/* Barra de vida no caminho (Etapa 114, revista na 127): a esfera de status
+   ficava POR CIMA dela.
+
+   A Etapa 114 resolveu ancorando o botao em px de LAYOUT (`bottom: calc(100%
+   + gap + altura)`), os mesmos numeros da barra. Funcionava, mas o layout
+   escala com o token: num token 8x o botao ia parar a 80px de tela do
+   circulo — exatamente o defeito que a Etapa 71 tinha consertado, e que
+   voltou pela porta dos fundos. O teste "distancia fixa do token" ficou
+   vermelho por isso.
+
+   Agora que a barra tem espessura e folga de TELA (ver .mesa-token-life), a
+   conta fecha nas duas: o botao continua ancorado em `bottom: 100%` e so
+   soma, DENTRO da contra-escala, a altura da barra mais a folga dela. O
+   respiro final e o mesmo -10px de sempre. Total: 20px de tela acima do
+   token, em qualquer escala e qualquer zoom. */
 #mesaStageWrap:not([data-life-bars="off"]) .mesa-token:has(.mesa-token-life)
   .mesa-token-markers-btn:not(.is-inspector) {
-  bottom: calc(100% + var(--token-life-gap) + var(--token-life-h));
+  transform: translateX(-50%)
+             scale(var(--token-chrome-counter))
+             translateY(calc(-10px - var(--token-life-gap) - var(--token-life-h)));
 }
 
 /* Barras desligadas na preferencia local (Etapa 114). `display: none` e nao

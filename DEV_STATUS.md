@@ -10,7 +10,6 @@ Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencia
 
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
 
-- **[Tiago]** Teste vermelho anterior a esta sessao: `npm run test:mesa:tokens` reprova em "botao de marcadores e etiqueta ficam a distancia fixa do token (Etapa 71)" — 20px de folga na escala 1 contra 40px na escala 3. A Etapa 114 ancorou o botao acima da barra de vida em px de LAYOUT (`bottom: calc(100% + var(--token-life-gap) + var(--token-life-h))`), que escala com o token, e a barra passou a ficar entre o botao e a caixa. Escolher: consertar o CSS para a folga voltar a ser constante em px de tela (medindo a partir da barra), ou reescrever o teste para descrever a regra nova da Etapa 114. Conferido que reprova tambem na Etapa 121, antes de qualquer mudanca desta sessao. — aberta em 2026-08-26 (varredura da Etapa 123)
 - **[Tiago]** `cloudflare/.dev.vars` guarda `PASSWORD_PEPPER`, `JWT_SECRET` e `MASTER_BOOTSTRAP_PASSWORD` em texto puro dentro do OneDrive. Decidir o destino: manter e aceitar a copia na nuvem, mover para fora do OneDrive, ou trocar por valores locais de brinquedo — o `wrangler dev --local` nao precisa dos segredos reais. Antes de qualquer coisa, guardar uma copia segura: secret do Cloudflare NAO pode ser lido de volta, e este arquivo pode ser a unica copia que resta. — aberta em 2026-08-25 (Etapa 121)
 
 ## Regra Obrigatoria de Documentacao
@@ -41,7 +40,63 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-27 — Etapa 126: a ferramenta de texto sai da Mesa)
+## Ultima Etapa Concluida (2026-08-27 — Etapa 127: a barra de vida vira enfeite de tela, e o teste da Etapa 71 volta ao verde)
+
+O unico teste vermelho da suite ficou verde sem uma linha de teste alterada:
+`test:mesa:tokens` -> "botao de marcadores e etiqueta ficam a distancia fixa
+do token (Etapa 71)".
+
+**O conflito.** Duas regras verdadeiras se contradiziam:
+
+- Etapa 71: o enfeite do token (alcas, esfera de status, etiqueta de tamanho)
+  fica a uma distancia FIXA EM PIXELS DE TELA, em qualquer escala. Antes o
+  botao ia parar a 80px do circulo num token 8x.
+- Etapa 114: a esfera de status nao pode cobrir a barra de vida. Como a barra
+  media em px de LAYOUT (escalava junto com o token), a solucao foi ancorar o
+  botao nos MESMOS numeros da barra — tambem em px de layout.
+
+O conserto da 114 reabriu o defeito da 71 pela porta dos fundos: com a ancora
+em layout, a distancia do botao voltou a crescer com a escala. Medido: 20px de
+tela na escala 1 contra 160px na escala 8.
+
+**A decisao.** A barra de vida passou a medir como todo o resto do enfeite:
+LARGURA presa ao token (78% dele — a barra e leitura da largura, encolher
+junto e o certo), mas ESPESSURA e FOLGA em px de tela, divididas por
+`--token-chrome-counter` (a mesma contra-escala das alcas, que desfaz o
+`scale()` do token e o zoom do palco). Num token 8x a barra era uma laje de
+40px de tela a 40px de distancia; agora sao 5px e 5px, como na escala 1.
+
+Com a barra parada, a ancora do botao pode voltar a `bottom: 100%`, somando a
+altura e a folga da barra DENTRO da contra-escala. As duas regras passam a
+valer juntas: 20px de tela acima do token, 10px de folga da barra, em qualquer
+escala e qualquer zoom.
+
+**Armadilha que custou uma medicao.** `border: calc(1px * counter)` nao
+resolve: o navegador arredonda espessura de borda fracionaria para 1px INTEIRO
+e, com `box-sizing: border-box`, isso vira piso de altura — a barra media 2px
+de layout (12px de tela num token 6x) em vez dos 5px pedidos. O contorno
+passou para `box-shadow`, que e pintura: aceita espessura fracionaria e nao
+entra na caixa. A mesma nota ja existia em `.mesa-token-selbox`, uma tela
+acima no arquivo.
+
+Arquivos: `css/mesa-stage.css` (geometria da barra + ancora do botao),
+`mesa.html` (cache-busting da folha).
+
+Medido no navegador, escalas 1/2/4/6/8 e tambem com zoom de palco 2,5x:
+espessura da barra 5px, barra 5px acima do token, botao 20px acima, folga de
+10px entre os dois — constantes. Com as barras desligadas o botao volta aos
+10px da regra base.
+
+Nenhum teste foi tocado: o teste e a especificacao, e os dois lados
+(`test:mesa:tokens` e o caso da Etapa 114 no audit, que exige folga de tela de
+8 a 12px) agora passam ao mesmo tempo.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`, `test:build`
+(8), `test:controles` (6), `test:mesa` (5), `test:mesa:audit` (237),
+`test:mesa:tokens` (10), `test:mesa:scenes` (22), `test:mesa:permissoes` (15).
+**A suite inteira esta verde** — nao ha mais teste vermelho conhecido.
+
+## Etapa Anterior (2026-08-27 — Etapa 126: a ferramenta de texto sai da Mesa)
 
 Decisao do Tiago, depois de tres etapas seguidas de conserto na mesma
 ferramenta (123 escrever, 124 editar e mover, 125 redimensionar e quebrar):

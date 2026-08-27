@@ -813,3 +813,26 @@ Fica tambem o detalhe que a barra ensinou: `hidden` num elemento com
 `display: flex` NAO esconde nada, a regra de display vence o padrao do
 navegador. Linha de barra que entra e sai precisa da contrapartida explicita
 no CSS.
+
+## Enfeite do token mede em pixels de TELA; so o que le o token escala (2026-08-27, Etapa 127)
+
+Tudo que orbita o token — alcas, esfera de status, etiqueta de tamanho e,
+desde esta etapa, a ESPESSURA e a FOLGA da barra de vida — tem tamanho e
+distancia constantes em px de tela, via `--token-chrome-counter`
+(`calc(1 / (var(--token-scale) * var(--stage-zoom)))`). O que continua preso
+ao token e so o que o MEDE: a largura da barra (78% dele).
+
+A regra existe porque a alternativa ja falhou duas vezes com o mesmo sintoma:
+enfeite ancorado em px de layout e multiplicado pelo `scale()` do token, e num
+token 8x o botao de marcadores ia parar a 80px do circulo (Etapa 71) — e
+voltou a ir quando a Etapa 114 reancorou o botao pelos numeros da barra, que
+tambem eram de layout. Enfeite que escala nao e enfeite maior: e enfeite
+longe.
+
+**Nunca use `border` para contorno contra-escalado.** O navegador arredonda
+espessura de borda fracionaria para 1px inteiro e, com `box-sizing:
+border-box`, esse arredondamento vira piso de altura — foi assim que a barra
+de 5px de tela virou 12px num token 6x. Contorno de elemento contra-escalado
+vai em `box-shadow` (pintura, aceita fracao, nao entra na caixa), como ja
+fazia `.mesa-token-selbox`.
+
