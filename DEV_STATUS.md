@@ -10,7 +10,6 @@ Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencia
 
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
 
-- **[Tiago]** Deploy do Worker pendente para o contrato de desenho: `cloudflare/src/mesa.js` aceita as ferramentas `cone` e `arrow` (Etapa 123) e NAO aceita mais `text` (retirada na Etapa 126). Nada disso vale em producao antes de `npx wrangler deploy --config cloudflare/wrangler.toml` (com `--dry-run` antes). Ate la, cone e seta somem no F5 e um rotulo de texto gravado antes continua vivo no banco (invisivel, porque o cliente ja nao o desenha). Registrar o version ID em `cloudflare/README.md`. — aberta em 2026-08-27 (Etapa 125, atualizada na Etapa 126)
 - **[Tiago]** Teste vermelho anterior a esta sessao: `npm run test:mesa:tokens` reprova em "botao de marcadores e etiqueta ficam a distancia fixa do token (Etapa 71)" — 20px de folga na escala 1 contra 40px na escala 3. A Etapa 114 ancorou o botao acima da barra de vida em px de LAYOUT (`bottom: calc(100% + var(--token-life-gap) + var(--token-life-h))`), que escala com o token, e a barra passou a ficar entre o botao e a caixa. Escolher: consertar o CSS para a folga voltar a ser constante em px de tela (medindo a partir da barra), ou reescrever o teste para descrever a regra nova da Etapa 114. Conferido que reprova tambem na Etapa 121, antes de qualquer mudanca desta sessao. — aberta em 2026-08-26 (varredura da Etapa 123)
 - **[Tiago]** `cloudflare/.dev.vars` guarda `PASSWORD_PEPPER`, `JWT_SECRET` e `MASTER_BOOTSTRAP_PASSWORD` em texto puro dentro do OneDrive. Decidir o destino: manter e aceitar a copia na nuvem, mover para fora do OneDrive, ou trocar por valores locais de brinquedo — o `wrangler dev --local` nao precisa dos segredos reais. Antes de qualquer coisa, guardar uma copia segura: secret do Cloudflare NAO pode ser lido de volta, e este arquivo pode ser a unica copia que resta. — aberta em 2026-08-25 (Etapa 121)
 
@@ -92,6 +91,13 @@ pelo realtime — sem erro de pagina.
 
 Validado: `check:js` (47), `audit:static`, `audit:pendencias`, `test:build`
 (8), `test:controles` (6), `test:mesa` (5), `test:mesa:audit` (237).
+
+**Deploy feito (2026-08-27)**: Worker `armagedon-api` publicado com version ID
+`53e1c74a-53b0-488d-bde5-5013a68527f9` — leva ao ar `cone` e `arrow` na
+whitelist `DRAW_TOOLS` e confirma que `text` nunca chegou a producao (a
+ferramenta viveu so no repositorio, entre as Etapas 123 e 125). Dry-run limpo
+antes; `/api/health` 200 depois. **Fecha a pendencia de deploy** aberta na
+Etapa 125.
 
 ## Etapa Anterior (2026-08-27 — Etapa 125: o rotulo ganha tamanho e quebra de linha)
 
