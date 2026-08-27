@@ -2499,7 +2499,10 @@ function _tetoCenaPontos() {
   try { return typeof DRAW_MAX_POINTS === "number" ? DRAW_MAX_POINTS : 400; }
   catch { return 400; }
 }
-const MESA_DRAW_TOOLS = new Set(["pencil", "line", "rect", "circle"]);
+// Espelho de DRAW_TOOLS do Worker (cloudflare/src/mesa.js). Ferramenta que
+// nao estiver aqui e descartada ao gravar a cena — foi assim que a whitelist
+// virou o portao das formas novas da Etapa 123.
+const MESA_DRAW_TOOLS = new Set(["pencil", "line", "rect", "circle", "cone", "arrow"]);
 
 function normalizeMesaSceneDrawings(list) {
   if (!Array.isArray(list)) return [];

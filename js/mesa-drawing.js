@@ -41,6 +41,13 @@ const DRAW_MIN_POINT_DIST = 0.002;   // 0,2% do canvas entre pontos do lápis
 // traço continua cabendo sempre.
 // Tolerancia base da simplificacao: 0,15% do palco. Abaixo disso o desvio
 // nao chega a um pixel na tela em zoom normal.
+/* ── Formas novas (Etapa 123) ──────────────────────────────────────
+ * cone e arrow nao precisaram de campo novo: reaproveitam x1,y1 (origem) e
+ * x2,y2 (ponta). O cone abre CONE_HALF_ANGLE para cada lado da direcao
+ * arrastada — 26,5 graus, que da os 53 graus do cone classico de RPG. */
+const CONE_HALF_ANGLE = 26.5 * Math.PI / 180;
+const ARROW_HEAD_MIN = 10;   // px de tela: ponta legivel mesmo em seta curta
+
 const DRAW_SIMPLIFY_EPS = 0.0015;
 const DRAW_MAX_POINTS  = 400;        // = MAX_DRAW_POINTS do Worker
 const DRAW_MAX_STROKES = 1500;       // = MAX_DRAWINGS do Worker
@@ -109,13 +116,33 @@ function _round4(value) {
  * gravados como "dm" (que nunca saíram do navegador do mestre) passam a
  * valer como compartilhados na primeira leitura. O campo `layer`
  * continua no payload porque o Worker o normaliza. */
+/* Ferramentas que este modulo sabe DESENHAR.
+ *
+ * Espelha `DRAW_TOOLS` do Worker e `MESA_DRAW_TOOLS` do js/mesa-core.js. Serve
+ * de porta de entrada: traco de ferramenta desconhecida nao entra em
+ * `_strokes` — e o caso dos rotulos de `text` de cenas gravadas entre as
+ * Etapas 123 e 125, ja sem ferramenta desde a Etapa 126. Sem esta porta eles
+ * ficariam na memoria sem pintar nada: invisiveis, inalcancaveis pela
+ * borracha e ocupando o teto de tracos, e a cena divergiria do que o Worker
+ * grava. */
+const DRAW_RENDERABLE_TOOLS = new Set(["pencil", "line", "rect", "circle", "cone", "arrow"]);
+
+function _isDrawableStroke(stroke) {
+  if (!stroke || typeof stroke !== "object") return false;
+  const tool = typeof stroke.tool === "string" ? stroke.tool : "";
+  // Traco NOMEANDO uma ferramenta que este modulo nao desenha fica de fora.
+  // Traco sem `tool` continua entrando como sempre entrou: quem decide o que
+  // e forma valida na cena e a whitelist do Worker, nao esta porta.
+  return !tool || DRAW_RENDERABLE_TOOLS.has(tool);
+}
+
 function _asSharedStroke(stroke) {
   return stroke && stroke.layer !== "tokens" ? { ...stroke, layer: "tokens" } : stroke;
 }
 
 function _asSharedStrokes(list) {
   return (Array.isArray(list) ? list : [])
-    .filter(s => s && typeof s === "object")
+    .filter(_isDrawableStroke)
     .map(_asSharedStroke);
 }
 
@@ -647,9 +674,18 @@ function _hitTest(s, mx, my) {
     });
   }
 
-  // Formas: testar centro + borda aproximada
   const { x: x1, y: y1 } = _fromPercent(s.x1, s.y1);
   const { x: x2, y: y2 } = _fromPercent(s.x2, s.y2);
+
+  // Cone e seta: o alvo e a linha origem->ponta, nao o retangulo em volta.
+  if (s.tool === "cone" || s.tool === "arrow") {
+    const dx = x2 - x1, dy = y2 - y1;
+    const comp2 = dx * dx + dy * dy;
+    const t = comp2 < 1e-6 ? 0 : Math.max(0, Math.min(1, ((mx - x1) * dx + (my - y1) * dy) / comp2));
+    return Math.hypot(x1 + t * dx - mx, y1 + t * dy - my) < r + (s.tool === "cone" ? 12 : 0);
+  }
+
+  // Demais formas: centro + borda aproximada
   const cx = (x1 + x2) / 2;
   const cy = (y1 + y2) / 2;
   const half = Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1)) / 2;
@@ -725,6 +761,44 @@ function _renderStroke(s) {
       break;
     }
 
+    case "cone": {
+      // Triangulo com a ponta na origem: o arrasto define direcao e alcance.
+      const ang = Math.atan2(y2 - y1, x2 - x1);
+      const alcance = Math.hypot(x2 - x1, y2 - y1);
+      const a1 = ang - CONE_HALF_ANGLE;
+      const a2 = ang + CONE_HALF_ANGLE;
+      // Lado do triangulo, nao o raio: sem isso o cone fica curto demais
+      // perto da borda arrastada.
+      const lado = alcance / Math.cos(CONE_HALF_ANGLE);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x1 + Math.cos(a1) * lado, y1 + Math.sin(a1) * lado);
+      ctx.lineTo(x1 + Math.cos(a2) * lado, y1 + Math.sin(a2) * lado);
+      ctx.closePath();
+      ctx.globalAlpha = alfaBase * 0.15;
+      ctx.fill();
+      ctx.globalAlpha = alfaBase;
+      ctx.stroke();
+      break;
+    }
+
+    case "arrow": {
+      const ang = Math.atan2(y2 - y1, x2 - x1);
+      const comprimento = Math.hypot(x2 - x1, y2 - y1);
+      const cabeca = Math.max(ARROW_HEAD_MIN, Math.min(comprimento * 0.3, s.width * 4 + 8));
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - Math.cos(ang - 0.45) * cabeca, y2 - Math.sin(ang - 0.45) * cabeca);
+      ctx.lineTo(x2 - Math.cos(ang + 0.45) * cabeca, y2 - Math.sin(ang + 0.45) * cabeca);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    }
+
     case "circle": {
       const radiusX = Math.abs(x2 - x1) / 2;
       const radiusY = Math.abs(y2 - y1) / 2;
@@ -785,7 +859,8 @@ function setDrawingsFromRemote(strokes, actor) {
 // Chega um traço solto de outro cliente (mesa:drawings:add). Idempotente: um
 // id já conhecido é ignorado, então reenvio/duplicata não desenha duas vezes.
 function applyMesaDrawingAddFromRemote(stroke) {
-  if (!stroke || typeof stroke !== "object") return;
+  // Mesma porta do snapshot: ferramenta que este modulo nao desenha nao entra.
+  if (!_isDrawableStroke(stroke)) return;
   const id = String(stroke.id || "");
   if (!id || _strokes.some(s => String(s.id) === id)) return;
   if (_strokes.length >= DRAW_MAX_STROKES) return;

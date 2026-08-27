@@ -156,7 +156,16 @@ function normalizeSceneFog(fog) {
 // Desenhos oficiais da cena: traços em frações 0–1 do palco, mesmos campos do
 // mesa-drawing.js. Caps evitam inflar o D1; a camada "dm" é filtrada no GET
 // para não-mestres (mesmo contrato dos tokens secretos).
-const DRAW_TOOLS = new Set(["pencil", "line", "rect", "circle"]);
+/* Ferramentas aceitas na cena (Etapa 123; texto retirado na Etapa 126).
+ *
+ * Esta lista e o portao: forma fora dela e DESCARTADA em silencio ao salvar —
+ * apareceria na tela de quem desenhou e sumiria no F5. Por isso cone e seta so
+ * puderam existir junto com um deploy do Worker.
+ *
+ * cone e arrow reaproveitam x1,y1 -> x2,y2 (origem e ponta), sem campo novo.
+ * Nenhuma forma tem campo proprio: `text`, `size` e `wrap` sairam com a
+ * ferramenta de texto na Etapa 126 e nao ha mais o que preservar aqui. */
+const DRAW_TOOLS = new Set(["pencil", "line", "rect", "circle", "cone", "arrow"]);
 // Etapa 74: tetos ampliados (300→1500 traços, 200→400 pontos), junto com o
 // corpo do PUT /mesa/scene (256KB→1MB em index.js). Devem seguir iguais aos do
 // cliente (js/mesa-drawing.js), senão o que fica na tela diverge do que salva.

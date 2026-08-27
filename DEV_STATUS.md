@@ -10,6 +10,8 @@ Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencia
 
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
 
+- **[Tiago]** Deploy do Worker pendente para o contrato de desenho: `cloudflare/src/mesa.js` aceita as ferramentas `cone` e `arrow` (Etapa 123) e NAO aceita mais `text` (retirada na Etapa 126). Nada disso vale em producao antes de `npx wrangler deploy --config cloudflare/wrangler.toml` (com `--dry-run` antes). Ate la, cone e seta somem no F5 e um rotulo de texto gravado antes continua vivo no banco (invisivel, porque o cliente ja nao o desenha). Registrar o version ID em `cloudflare/README.md`. — aberta em 2026-08-27 (Etapa 125, atualizada na Etapa 126)
+- **[Tiago]** Teste vermelho anterior a esta sessao: `npm run test:mesa:tokens` reprova em "botao de marcadores e etiqueta ficam a distancia fixa do token (Etapa 71)" — 20px de folga na escala 1 contra 40px na escala 3. A Etapa 114 ancorou o botao acima da barra de vida em px de LAYOUT (`bottom: calc(100% + var(--token-life-gap) + var(--token-life-h))`), que escala com o token, e a barra passou a ficar entre o botao e a caixa. Escolher: consertar o CSS para a folga voltar a ser constante em px de tela (medindo a partir da barra), ou reescrever o teste para descrever a regra nova da Etapa 114. Conferido que reprova tambem na Etapa 121, antes de qualquer mudanca desta sessao. — aberta em 2026-08-26 (varredura da Etapa 123)
 - **[Tiago]** `cloudflare/.dev.vars` guarda `PASSWORD_PEPPER`, `JWT_SECRET` e `MASTER_BOOTSTRAP_PASSWORD` em texto puro dentro do OneDrive. Decidir o destino: manter e aceitar a copia na nuvem, mover para fora do OneDrive, ou trocar por valores locais de brinquedo — o `wrangler dev --local` nao precisa dos segredos reais. Antes de qualquer coisa, guardar uma copia segura: secret do Cloudflare NAO pode ser lido de volta, e este arquivo pode ser a unica copia que resta. — aberta em 2026-08-25 (Etapa 121)
 
 ## Regra Obrigatoria de Documentacao
@@ -40,7 +42,289 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-25 — Etapa 122: desenho, parte 1 — cor, opacidade, risco continuo e borracha)
+## Ultima Etapa Concluida (2026-08-27 — Etapa 126: a ferramenta de texto sai da Mesa)
+
+Decisao do Tiago, depois de tres etapas seguidas de conserto na mesma
+ferramenta (123 escrever, 124 editar e mover, 125 redimensionar e quebrar):
+"na verdade acho melhor apenas deletar a funcionalidade de texto". A
+ferramenta saiu inteira, do botao ao contrato do Worker.
+
+**Cone e seta ficaram.** Elas nasceram na mesma Etapa 123, mas sao formas de
+arrasto como qualquer outra e nunca deram trabalho — nada nelas dependia do
+texto.
+
+O que saiu:
+
+- `mesa.html`: botao **Texto** do flyout de desenho e a linha **Quebra**
+- `js/mesa-drawing.js`: campo flutuante (`_abrirEntradaDeTexto` e o resto do
+  ciclo abrir/confirmar/cancelar), o duplo clique que reabria a edicao, o ramo
+  de texto no mousedown, a caixa do rotulo (`mesaTextStrokeBounds`), a quebra
+  (`mesaTextLines`), o redimensionamento (`mesaTextResize`), o desenho do
+  rotulo no canvas e a familia de fonte resolvida para o canvas — que existia
+  so por causa dele
+- `js/mesa-select.js`: os dois ramos de texto (caixa do rotulo na selecao e
+  redimensionamento por alca)
+- `js/mesa-core.js` e `cloudflare/src/mesa.js`: `text` saiu das duas
+  whitelists, junto com `size`, `wrap` e o limite de 120 caracteres
+- `css/mesa-drawing.css`: estilo do campo flutuante
+
+**Porta de entrada nova, pequena.** `_asSharedStrokes` e
+`applyMesaDrawingAddFromRemote` passaram a recusar traco que NOMEIA uma
+ferramenta que o modulo nao desenha. Sem isso, os rotulos gravados entre as
+Etapas 123 e 125 continuariam entrando em `_strokes`: invisiveis (nao ha mais
+`case "text"` no desenho), inalcancaveis pela borracha e ocupando o teto de
+1500 tracos. Traco SEM `tool` continua entrando como sempre entrou — quem
+decide o que e forma valida na cena e a whitelist do Worker, nao esta porta.
+
+**Rotulo antigo desaparece, de proposito.** Sem ferramenta nao ha como
+edita-lo, e a whitelist ja o descarta na gravacao; deixa-lo pintado seria
+mostrar um traco que ninguem alcanca. Quem tiver rotulo numa cena salva vai
+ve-lo sumir no proximo carregamento.
+
+`tests/mesa-audit.spec.cjs`: os blocos de texto das Etapas 123, 124 e 125
+sairam (13 casos), os testes de cone/seta perderam o rotulo das listas, e
+entrou o bloco **"Ferramenta de texto retirada (Etapa 126)"**, que tranca a
+retirada pelos tres lados por onde ela poderia voltar pela metade: a barra nao
+tem mais o botao nem o controle de quebra (e as outras sete ferramentas
+continuam la), clicar e dar duplo clique no palco nunca abre campo de
+digitacao, e um rotulo de cena antiga nao volta nem pelo snapshot da cena nem
+pelo realtime — sem erro de pagina.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`, `test:build`
+(8), `test:controles` (6), `test:mesa` (5), `test:mesa:audit` (237).
+
+## Etapa Anterior (2026-08-27 — Etapa 125: o rotulo ganha tamanho e quebra de linha)
+
+**REVERTIDA na Etapa 126** — a ferramenta de texto inteira saiu da Mesa. O
+bloco abaixo fica como registro do que existiu.
+
+
+Pedido do Tiago: "quero que tenha as funcionalidades basicas de texto como
+redimensionar por arraste e ajustar o limite de quebra de linha". Duas
+faltas, medidas antes de mexer:
+
+**1. Arrastar as alcas nao redimensionava nada.** `_applyResizeDelta`
+(js/mesa-select.js) escala `x1..x2` de cada traco selecionado. Num rotulo
+esses campos sao a ANCORA, e so ela: a caixa se mexia, o texto saia do mesmo
+tamanho. O gesto existia e nao fazia nada visivel.
+
+**2. O rotulo era sempre de UMA linha.** Um texto longo virava uma tira
+atravessando o palco inteiro; o Worker ainda troca `\n` por espaco, entao nem
+escrevendo em varias linhas dava para contornar.
+
+O traco de texto ganhou dois campos, espelhados no Worker:
+
+- `size` — corpo da fonte em px de canvas. Nasce de `_fonteDoTexto(width)`,
+  entao rotulo antigo (sem o campo) continua saindo exatamente igual.
+- `wrap` — largura maxima da linha em FRACAO da largura do palco, como todo o
+  resto do modulo de desenho. `0` (ou ausente) = linha unica, o comportamento
+  anterior. Por fracao, e nao por numero de caracteres, para a caixa
+  acompanhar o zoom junto com o traco.
+
+Quem manda no arrasto e a ALCA usada, e nao o gesto inteiro: alca de cima ou
+de baixo mexe no corpo da fonte; alca de lado aperta so o limite de quebra,
+com a fonte parada; alca de canto cresce o bloco inteiro (fonte e limite
+juntos). E a unica leitura que nao mente sobre o que cada alca faz.
+
+A barra de desenho ganhou o controle **Quebra** (0-100% da largura do palco,
+`0` mostra "sem"), visivel apenas com a ferramenta de texto armada — deixa-lo
+aceso com o lapis seria prometer algo que nenhuma outra forma faz. O campo de
+digitacao nasce com a largura do limite escolhido, entao o que se digita ja
+ocupa o espaco que o rotulo vai ocupar.
+
+Uma funcao so quebra o texto (`mesaTextLines`), usada pelo desenho E pela
+caixa (`mesaTextStrokeBounds`): se cada lado quebrasse por conta propria, a
+selecao apontaria para um retangulo que nao existe na tela. Palavra maior que
+a caixa quebra por caractere — senao o limite viraria decoracao justamente no
+caso em que ele importa.
+
+**Precisa de deploy do Worker.** `normalizeSceneDrawing` descarta em silencio
+campo que nao conhece: sem o deploy, o rotulo redimensionado aparece certo
+para quem mexeu e volta ao tamanho antigo no F5 — o mesmo que aconteceu com
+`text` na Etapa 123.
+
+Arquivos: `js/mesa-drawing.js`, `js/mesa-select.js`, `cloudflare/src/mesa.js`,
+`mesa.html` (controle novo + cache-busting), `css/mesa-drawing.css`.
+
+`tests/mesa-audit.spec.cjs`: cinco casos com mouse, teclado e controles da
+barra REAIS (a alca de baixo aumenta a fonte e o texto pintado no canvas
+cresce junto; a alca lateral aperta a quebra sem tocar na fonte; o controle da
+barra quebra em varias linhas e respeita o limite pedido; o controle so
+aparece para texto; editar uma letra preserva tamanho e quebra) e tres contra
+o normalizador do Worker (round-trip, valores fora da faixa aparados, rotulo
+antigo sem os campos novos continua valido).
+
+Achado do caminho: a mira do arrasto precisa vir de `locator.hover()`. Com o
+ponto calculado por `boundingBox()` ou `getBoundingClientRect`, o mousedown do
+Playwright caia em `.mesa-stage-inner` mesmo com `elementsFromPoint` mostrando
+a alca no topo da pilha naquele exato ponto — o gesto virava faixa de selecao
+e o teste acusava um bug que era da mira, nao do codigo.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`, `test:build`
+(8), `test:controles` (6), `test:mesa` (5), `test:mesa:audit` (250).
+
+## Etapa Anterior (2026-08-26 — Etapa 124: o rotulo deixa de ser pedra)
+
+Terceiro relato do Tiago sobre a ferramenta de texto: "agora e possivel
+escrever mas ainda sim esta bem bugado, onde eu nao consigo editar ou
+manipular o texto depois de escreve-lo". Duas causas independentes.
+
+**1. Nao havia edicao nenhuma.** Escrito, escrito estava — corrigir uma letra
+exigia apagar e escrever de novo. Agora, com a ferramenta de texto armada,
+clicar EM CIMA de um rotulo existente reabre o campo com o texto dentro, ja
+selecionado. Cor, grossura, autor e posicao do original sao preservados: quem
+so quer corrigir uma letra nao espera que a etiqueta mude de aparencia por
+causa da ferramenta selecionada agora. Escape na edicao devolve o texto
+original intacto.
+
+A primeira tentativa foi DUPLO clique, e nao funcionava — medido: de um duplo
+clique so chegava `mousedown:1` ao canvas. O campo nasce sob o cursor e engole
+o resto do gesto: o segundo mousedown, o mouseup e o proprio `dblclick` caem
+dentro do `<input>`. Clique simples sobre o rotulo resolve com menos regra e e
+mais facil de descobrir. O `dblclick` continua existindo, no DOCUMENTO, para o
+caso de nenhuma ferramenta armada.
+
+**2. Para a selecao, o rotulo era um PONTO.** `_strokeBounds`
+(js/mesa-select.js) usa `x1..x2`, que num texto sao o mesmo valor, e caia na
+garantia de area minima: 0,5% do palco. Pegar a etiqueta exigia acertar quase
+o pixel da ancora — na pratica, o texto virava pedra. Agora existe uma medida
+oficial do rotulo (`mesaTextStrokeBounds`, em js/mesa-drawing.js), que mede a
+largura real pelo canvas (`measureText`) e e usada pelos TRES caminhos:
+borracha, selecao e mover. Medido: a caixa passou de 0,5% para ~25% da largura
+do palco num rotulo de nove letras.
+
+Arquivos: `js/mesa-drawing.js`, `js/mesa-select.js`, `mesa.html`
+(cache-busting dos dois).
+
+`tests/mesa-audit.spec.cjs`: tres casos, todos com mouse e teclado REAIS —
+clicar no rotulo reabre a edicao e substituir o texto nao duplica nem muda
+aparencia; Escape preserva o original; e a selecao enxerga a caixa inteira e
+move o rotulo pelo arrasto.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`,
+`test:mesa:audit` (242).
+
+## Etapa Anterior (2026-08-26 — Etapa 123: cone, seta e texto no palco)
+
+Segunda metade do pedido do Tiago. Estas tres formas ficaram fora da Etapa 122
+porque atravessam a fronteira do Worker: a whitelist `DRAW_TOOLS` DESCARTA em
+silencio a forma que nao conhece, entao uma seta apareceria na tela de quem
+desenhou e sumiria no F5. **Esta etapa exige deploy do Worker.**
+
+- **Cone** (area de efeito): a ponta fica onde voce clica e o arrasto define
+  direcao e alcance. Abre 26,5 graus para cada lado — os 53 graus do cone
+  classico de RPG. O lado do triangulo e calculado por
+  `alcance / cos(meio-angulo)`, senao o cone fica curto perto da borda
+  arrastada. Sem campo novo: reaproveita `x1,y1` (origem) e `x2,y2` (ponta).
+- **Seta**: linha mais cabeca preenchida, com tamanho de cabeca proporcional a
+  grossura e piso de 10px para continuar legivel em seta curta. Tambem sem
+  campo novo.
+- **Texto**: a unica que precisou de campo — `text`, limitado a 120 caracteres,
+  espelhado no Worker e no cliente. O clique abre um `<input>` flutuante NO
+  PONTO CLICADO, com a cor e o tamanho que o rotulo vai ter; Enter confirma,
+  Escape cancela, clicar fora confirma. Foi feito assim em vez de `prompt()`,
+  que bloqueia a aba, ignora o estilo do resto e some no mobile. O rotulo sai
+  com contorno escuro por tras, para ficar legivel tanto sobre mapa claro
+  quanto sobre o palco preto.
+- **Borracha** ganhou mira propria para as formas novas: cone e seta miram a
+  linha origem->ponta (nao a caixa em volta), e o texto usa uma caixa
+  proporcional ao rotulo — o teste de centro + raio das outras formas pegaria
+  muito acima e muito abaixo de um rotulo longo e baixo.
+
+Arquivos: `cloudflare/src/mesa.js` (whitelist + campo `text` + `MAX_DRAW_TEXT`),
+`js/mesa-core.js` (espelho da whitelist e do campo na gravacao da cena),
+`js/mesa-drawing.js`, `mesa.html` (tres botoes + cache-busting),
+`css/mesa-drawing.css` (campo de texto).
+
+**Cinco bugs meus, achados durante a etapa:**
+
+1. O campo de texto nunca saia da tela: `_abrirEntradaDeTexto` criava o
+   `<input>` mas nao guardava a referencia, entao `_fecharEntradaDeTexto` nao
+   tinha o que fechar e cada clique novo empilhava mais um campo.
+2. Escape ainda criava o rotulo. Remover um elemento FOCADO dispara `blur`, e o
+   `blur` confirmava justamente o que o Escape acabou de recusar. O teste
+   manual no navegador nao pegou (naquele contexto o campo nao recebia foco e o
+   blur nunca vinha); quem pegou foi o teste automatizado. Conserto: cancelar
+   DESARMA o confirmar antes de fechar, e quem fecha por fora (trocar de
+   ferramenta) passa pelo mesmo gancho.
+3. **O rotulo saia minusculo** — relatado pelo Tiago como "a ferramenta de
+   texto ainda nao esta funcionando". `ctx.font` recebia
+   `700 ${px}px var(--font-ui, ...)`, e o canvas NAO resolve variavel CSS: a
+   string e invalida e o navegador a ignora em silencio, mantendo a fonte
+   padrao "10px sans-serif". O traco nascia certo no estado e ilegivel na
+   tela. Meus tres testes anteriores contavam PIXELS PINTADOS, e texto
+   minusculo tambem pinta pixels — por isso todos passaram. Conserto:
+   `_familiaDaFonte()` resolve a variavel uma vez no elemento e guarda o valor
+   literal (`"Cinzel", serif`). Medido depois: grossura 3 pinta 16px de altura
+   (fonte 18), grossura 12 pinta 37px (fonte 40); antes eram 10px fixos em
+   qualquer configuracao. O teste novo mede TAMANHO, nao existencia: revertendo
+   so a linha da fonte, ele reprova apontando 14px onde deviam ser ~40.
+4. **Clicar com a ferramenta de texto nao fazia nada** — segundo relato do
+   Tiago ("ainda nao consigo escrever na cena"). A acao PADRAO do mousedown
+   move o foco para o elemento clicado; esse foco novo disparava `blur` no
+   campo recem-criado, que confirmava vazio e se removia no mesmo instante.
+   Conserto: `e.preventDefault()` no ramo do texto, o `blur` so passa a valer
+   DEPOIS de um `focus` de verdade, e um `setTimeout(0)` devolve o foco se
+   algo ainda o roubar.
+   **Por que sete testes verdes nao pegaram**: todos montavam os eventos na
+   mao (`new MouseEvent`), e evento sintetico NAO executa acao padrao do
+   navegador. A suite testava um mundo onde o foco nunca se mexe.
+5. **Clicar em outro ponto apagava o rotulo digitado.** Ao consertar o item 2
+   eu fiz "fechar por fora = cancelar", entao abrir a segunda etiqueta
+   descartava a primeira em silencio. A regra passou a ser unica e explicita:
+   **so o Escape cancela**; blur, clique em outro ponto e troca de ferramenta
+   CONFIRMAM o que ja foi digitado.
+
+**Licao registrada**: para gesto de usuario, teste tem de usar mouse e teclado
+de verdade (`page.mouse` / `page.keyboard`), nao `dispatchEvent`. O bloco
+"Desenho: gesto real (Etapa 123)" faz isso — arma a ferramenta pela interface,
+clica, digita — e e o unico que teria pego os itens 4 e 5.
+
+`tests/mesa-audit.spec.cjs`: quatro casos — o Worker de verdade aceita cone,
+seta e texto, apara o rotulo, recusa texto vazio e recusa ferramenta
+desconhecida; a gravacao da cena no cliente espelha isso (se recusasse, o
+mestre apagaria as formas novas no primeiro salvamento); cone e seta nascem do
+arrasto e a borracha acerta a seta sem levar o cone junto; e o texto nasce do
+campo, nao duplica no blur, nao nasce no Escape nem em branco. Os quatro
+reprovam com o codigo anterior.
+
+**Validacao extra (a pedido do Tiago)**: treze casos no total para a Etapa 123.
+Tres deles usam mouse e teclado REAIS do Playwright (escrever no palco, clicar
+fora para confirmar, arrastar lapis e cone). Os outros cobrem o CAMINHO,
+nao so as pecas isoladas — as formas novas sobrevivem ao ciclo
+cena -> gravar -> restaurar com cor, opacidade, autor e texto intactos; um
+traco que chega por `mesa:drawings:add` desenha na tela de quem recebe e nao
+duplica no reenvio; o jogador apaga a propria forma nova e nao a do mestre (a
+regra da Etapa 76 vale para cone, seta e texto); um rotulo colado com 400
+caracteres e cortado em 120 tanto ao nascer quanto ao gravar; e Ctrl+Z desfaz
+cone e texto como desfaz qualquer traco.
+
+**Compatibilidade**: cliente antigo (bundle em cache) nao conhece as formas
+novas e as descartaria ao gravar a cena. O risco e pequeno desde a Etapa 118
+(a URL do bundle muda com o conteudo, entao ninguem fica preso a um bundle
+velho), mas e o motivo de publicar o site e o Worker juntos.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`,
+`test:controles` (6), `test:mesa` (5), `test:mesa:audit`, `test:build` (8),
+`test:mesa:permissoes` (15), `test:mesa:scenes` (22), `test:mesa:scenemap` (6),
+`wrangler deploy --dry-run`. **Deploy do Worker pendente — e do Tiago.**
+
+**Teste vermelho ANTERIOR encontrado na varredura** (nao e desta etapa, nao foi
+tocado): `test:mesa:tokens` reprova em "botao de marcadores e etiqueta ficam a
+distancia fixa do token (Etapa 71)" — folga de 20px na escala 1 contra 40px na
+escala 3. Conferido em tres pontos: reprova com as mudancas desta etapa, sem
+elas, e tambem na Etapa 121. A causa e a Etapa 114: para a esfera de status
+ficar ACIMA da barra de vida, a ancora do botao virou
+`bottom: calc(100% + var(--token-life-gap) + var(--token-life-h))`, que e px de
+LAYOUT e portanto multiplica pela escala do token. Com a barra entre o botao e
+a caixa, a distancia CRESCE junto com a barra — o invariante da Etapa 71
+("folga constante em px de tela") deixou de valer por decisao de desenho da
+Etapa 114, e ninguem rodou essa suite desde entao. Decisao pendente do Tiago:
+ou o codigo volta a garantir folga constante (medindo a partir da barra, nao da
+caixa), ou o teste passa a descrever a regra nova. Ele fica na lista de
+pendencias vivas ate essa escolha.
+
+## Etapa Anterior (2026-08-25 — Etapa 122: desenho, parte 1 — cor, opacidade, risco continuo e borracha)
 
 Primeira metade do pedido do Tiago ("melhorar a funcionalidade de desenho por
 completo"). Esta etapa e tudo o que cabe DENTRO do contrato atual do Worker —

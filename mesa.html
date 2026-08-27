@@ -390,6 +390,24 @@
           <span>Elipse</span>
         </button>
 
+        <!-- Cone de area de efeito (Etapa 123): a ponta fica onde voce
+             clica e o arrasto define direcao e alcance. -->
+        <button class="draw-flyout-item" data-draw-tool="cone" aria-pressed="false">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+               stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10 3l6 13H4l6-13z"/>
+          </svg>
+          <span>Cone</span>
+        </button>
+
+        <button class="draw-flyout-item" data-draw-tool="arrow" aria-pressed="false">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+               stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="3" y1="16" x2="15" y2="4"/><path d="M9 4h6v6"/>
+          </svg>
+          <span>Seta</span>
+        </button>
+
         <button class="draw-flyout-item" data-draw-tool="eraser" aria-pressed="false">
           <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor"
                stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -914,7 +932,7 @@
   <script src="js/mesa-roster.js?v=2026-08-20-barra-vida-1" defer></script>
   <script src="js/mesa-inspector.js?v=2026-08-18-coluna-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
-  <script src="js/mesa-core.js?v=2026-08-25-desenho-2" defer></script>
+  <script src="js/mesa-core.js?v=2026-08-26-formas-1" defer></script>
   <script src="js/mesa-map.js?v=2026-08-20-escala-fora-1" defer></script>
   <script src="js/mesa-grid.js?v=2026-07-31-cells-1" defer></script>
   <script src="js/mesa-fog.js?v=2026-07-29-sharp-1" defer></script>
@@ -922,7 +940,7 @@
   <script src="js/mesa-ping.js?v=2026-07-27-ping-1" defer></script>
   <script src="js/mesa-ruler.js?v=2026-07-27-ruler-1" defer></script>
   <script src="js/mesa-dice.js?v=2026-08-16-armados-1" defer></script>
-  <script src="js/mesa-drawing.js?v=2026-08-25-desenho-2" defer></script>
+  <script src="js/mesa-drawing.js?v=2026-08-27-sem-texto-1" defer></script>
   <script src="js/mesa-select.js?v=2026-08-16-armados-1" defer></script>
   <script src="js/mesa-initiative.js?v=2026-08-02-sync-1" defer></script>
   <!-- Depois de mesa-stage.js (whitelist/toggle) e mesa-inspector.js (linha do inspetor) -->

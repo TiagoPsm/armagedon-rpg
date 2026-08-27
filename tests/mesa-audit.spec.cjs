@@ -7464,3 +7464,381 @@ test.describe("Desenho da Mesa (Etapa 122)", () => {
     expect(remove, "a borracha transmitiu uma remocao por quadro").toBe(1);
   });
 });
+
+/* ── Etapa 123: cone e seta (o texto saiu na Etapa 126) ──
+   As duas formas atravessam a fronteira do Worker: a whitelist DRAW_TOOLS
+   descarta em silencio o que nao conhece, entao uma forma nova apareceria na
+   tela de quem desenhou e sumiria no F5. Os testes cobrem os dois lados. */
+test.describe("Formas novas de desenho (Etapa 123)", () => {
+  async function abrirMesaComDesenho(page) {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() =>
+      document.getElementById("mesaStageWrap")?.dataset.drawReady === "true");
+    return page;
+  }
+
+  test("o Worker aceita cone e seta — e recusa o que nao conhece", async () => {
+    const { normalizeMesaScene } = await import("../cloudflare/src/mesa.js");
+    const cena = normalizeMesaScene({
+      drawings: [
+        { id: "c1", tool: "cone",  color: "#e8402080", width: 4, layer: "tokens", x1: 0.2, y1: 0.2, x2: 0.5, y2: 0.6 },
+        { id: "a1", tool: "arrow", color: "#40b8e8",   width: 3, layer: "tokens", x1: 0.1, y1: 0.1, x2: 0.8, y2: 0.4 },
+        { id: "t1", tool: "text",  color: "#ffffff",   width: 5, layer: "tokens", x1: 0.3, y1: 0.3, text: "Porta trancada" },
+        { id: "x1", tool: "estrela", color: "#ffffff", width: 5, layer: "tokens", x1: 0.3, y1: 0.3 }
+      ]
+    });
+
+    const porId = Object.fromEntries(cena.drawings.map(d => [d.id, d]));
+    expect(porId.c1?.tool, "cone nao sobreviveu ao Worker").toBe("cone");
+    expect(porId.a1?.tool, "seta nao sobreviveu ao Worker").toBe("arrow");
+    // Opacidade continua viajando na cor, tambem nas formas novas.
+    expect(porId.c1?.color).toBe("#e8402080");
+    // A ferramenta de texto foi RETIRADA na Etapa 126: `text` virou uma
+    // ferramenta desconhecida como qualquer outra, e o Worker a recusa. Se
+    // voltar a passar, rotulo de cena antiga ressuscita sem ninguem para
+    // edita-lo ou apaga-lo pela barra.
+    expect(porId.t1, "o Worker ainda aceita a ferramenta de texto").toBeUndefined();
+    expect(porId.x1, "o Worker aceitou uma ferramenta que nao conhece").toBeUndefined();
+  });
+
+  test("a gravacao da cena no cliente espelha o Worker", async ({ page }) => {
+    await abrirMesaComDesenho(page);
+    const r = await page.evaluate(() => {
+      const lista = [
+        { id: "c1", tool: "cone",  color: "#e86820b3", width: 3, layer: "tokens", author: "mestre", x1: 0.2, y1: 0.2, x2: 0.5, y2: 0.6 },
+        { id: "a1", tool: "arrow", color: "#40b8e8",   width: 4, layer: "tokens", author: "mestre", x1: 0.1, y1: 0.1, x2: 0.8, y2: 0.4 },
+        { id: "t1", tool: "text",  color: "#ffffff",   width: 6, layer: "tokens", author: "ana", x1: 0.3, y1: 0.3, text: "Armadilha" }
+      ];
+      const n = normalizeMesaSceneDrawings(lista);
+      return { ferramentas: n.map(d => d.tool), temTexto: n.some(d => d.id === "t1") };
+    });
+    // Se o espelho do cliente recusasse as formas novas, o mestre apagaria
+    // cone e seta da cena oficial no primeiro salvamento. E ele tem de
+    // recusar `text` junto com o Worker (Etapa 126) — se um dos dois aceitar,
+    // os dois lados divergem e o traco pisca entre existir e nao existir.
+    expect(r.ferramentas).toEqual(["cone", "arrow"]);
+    expect(r.temTexto, "o cliente ainda aceita a ferramenta de texto").toBe(false);
+  });
+
+  test("cone e seta nascem do arrasto, e a borracha acerta os dois", async ({ page }) => {
+    await abrirMesaComDesenho(page);
+    const r = await page.evaluate(() => {
+      _strokes = [];
+      renderDrawings();
+      const c = _drawCanvasEl;
+      const rect = c.getBoundingClientRect();
+      const ctx = c.getContext("2d");
+      const ev = (t, x, y, alvo) => alvo.dispatchEvent(
+        new MouseEvent(t, { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, buttons: 1 }));
+      const pintados = () => {
+        const d = ctx.getImageData(0, 0, c.width, c.height).data;
+        let n = 0;
+        for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n += 1;
+        return n;
+      };
+
+      setDrawTool("cone");
+      ev("mousedown", rect.left + 150, rect.top + 120, c);
+      ev("mousemove", rect.left + 330, rect.top + 260, window);
+      ev("mouseup", rect.left + 330, rect.top + 260, window);
+      const aposCone = pintados();
+
+      setDrawTool("arrow");
+      ev("mousedown", rect.left + 420, rect.top + 120, c);
+      ev("mousemove", rect.left + 640, rect.top + 250, window);
+      ev("mouseup", rect.left + 640, rect.top + 250, window);
+      const aposSeta = pintados();
+
+      setDrawTool("eraser");
+      _iniciarSessaoBorracha();
+      _eraseAt(530, 185);   // no meio da seta
+      _eraseSession = null;
+
+      return {
+        criados: aposCone > 0 && aposSeta > aposCone,
+        sobrou: _strokes.map(s => s.tool)
+      };
+    });
+
+    expect(r.criados, "cone ou seta nao pintaram nada no canvas").toBe(true);
+    // A borracha mira a linha origem->ponta, nao a caixa em volta: encostar
+    // no meio da seta apaga a seta, e so ela.
+    expect(r.sobrou).toEqual(["cone"]);
+  });
+
+});
+
+/* ── Etapa 123 (validacao extra) ──
+   Os testes acima cobrem cada peca isolada. Estes cobrem o CAMINHO: o traco
+   sai da mao, atravessa a gravacao da cena, o realtime e as permissoes, e
+   volta igual. Cada um mira uma forma diferente de perder o desenho. */
+test.describe("Desenho: caminho completo (Etapa 123)", () => {
+  const CENA_COM_FORMAS = [
+    { id: "d-cone",  tool: "cone",   color: "#e86820b3", width: 3, layer: "tokens", author: "mestre",
+      x1: 0.2, y1: 0.2, x2: 0.5, y2: 0.6, points: null },
+    { id: "d-seta",  tool: "arrow",  color: "#40b8e8",   width: 4, layer: "tokens", author: "mestre",
+      x1: 0.1, y1: 0.1, x2: 0.8, y2: 0.4, points: null },
+    { id: "d-lapis", tool: "pencil", color: "#8ac92680", width: 2, layer: "tokens", author: "ana",
+      x1: 0.1, y1: 0.9, x2: 0.4, y2: 0.9, points: [[0.1, 0.9], [0.25, 0.88], [0.4, 0.9]] }
+  ];
+
+  async function abrirMesaComDesenho(page, papel = "master") {
+    if (papel === "master") await seedMasterWithScene(page, BASE_TOKENS);
+    else await seedPlayerWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() =>
+      document.getElementById("mesaStageWrap")?.dataset.drawReady === "true");
+    return page;
+  }
+
+  test("as formas novas sobrevivem ao ciclo cena -> gravar -> restaurar", async ({ page }) => {
+    await abrirMesaComDesenho(page);
+
+    const r = await page.evaluate(cena => {
+      // 1. Traços na mão do usuário.
+      _strokes = cena.map(s => ({ ...s }));
+      // 2. Gravação da cena (o funil que comia traço antes da Etapa 122).
+      const gravado = normalizeMesaSceneDrawings(_strokes);
+      // 3. Volta pelo caminho real do boot: a cena manda os traços de volta.
+      _strokes = [];
+      applyMesaSceneDrawingsFromSnapshot(gravado);
+      renderDrawings();
+
+      const porId = Object.fromEntries(_strokes.map(s => [s.id, s]));
+      return {
+        ids: _strokes.map(s => s.id).sort(),
+        corDoCone: porId["d-cone"]?.color,
+        autorDoLapis: porId["d-lapis"]?.author,
+        pontosDoLapis: porId["d-lapis"]?.points?.length,
+        corDoLapis: porId["d-lapis"]?.color
+      };
+    }, CENA_COM_FORMAS);
+
+    expect(r.ids, "alguma forma se perdeu no ciclo da cena")
+      .toEqual(["d-cone", "d-lapis", "d-seta"]);
+    // Opacidade viaja na cor: se algum elo do caminho a descartasse, o traco
+    // voltaria opaco (ou vermelho padrao).
+    expect(r.corDoCone).toBe("#e86820b3");
+    expect(r.corDoLapis).toBe("#8ac92680");
+    // Autor decide quem pode apagar (Etapa 76).
+    expect(r.autorDoLapis, "o autor se perdeu no ciclo").toBe("ana");
+    expect(r.pontosDoLapis).toBe(3);
+  });
+
+  test("forma nova chega pelo realtime e desenha na tela de quem recebe", async ({ page }) => {
+    await abrirMesaComDesenho(page);
+
+    const r = await page.evaluate(cena => {
+      _strokes = [];
+      renderDrawings();
+      const c = _drawCanvasEl;
+      const ctx = c.getContext("2d");
+      const pintados = () => {
+        const d = ctx.getImageData(0, 0, c.width, c.height).data;
+        let n = 0;
+        for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n += 1;
+        return n;
+      };
+
+      const antes = pintados();
+      // Exatamente o que o Durable Object entrega em mesa:drawings:add.
+      cena.forEach(stroke => applyMesaDrawingAddFromRemote(stroke));
+      const depois = pintados();
+
+      // Idempotencia: reenvio do mesmo id nao pode duplicar.
+      cena.forEach(stroke => applyMesaDrawingAddFromRemote(stroke));
+
+      return {
+        antes, depois,
+        quantidade: _strokes.length,
+        ferramentas: _strokes.map(s => s.tool).sort()
+      };
+    }, CENA_COM_FORMAS);
+
+    expect(r.quantidade, "reenvio do mesmo traco duplicou").toBe(3);
+    expect(r.ferramentas).toEqual(["arrow", "cone", "pencil"]);
+    expect(r.depois, "as formas que chegaram pela rede nao pintaram nada").toBeGreaterThan(r.antes);
+  });
+
+  test("o jogador apaga a propria forma nova, e nao a do mestre", async ({ page }) => {
+    await abrirMesaComDesenho(page, "player");
+
+    const r = await page.evaluate(cena => {
+      _strokes = cena.map(s => ({ ...s }));
+      // A sessao esta como "ana": d-lapis e dela; cone e seta sao do mestre.
+      return {
+        eu: _drawAuthorKey(),
+        meuLapis: _canEraseStroke(_strokes.find(s => s.id === "d-lapis")),
+        coneDoMestre: _canEraseStroke(_strokes.find(s => s.id === "d-cone")),
+        setaDoMestre: _canEraseStroke(_strokes.find(s => s.id === "d-seta"))
+      };
+    }, CENA_COM_FORMAS);
+
+    expect(r.eu).toBe("ana");
+    expect(r.meuLapis, "o jogador nao consegue apagar o proprio traco").toBe(true);
+    // A regra da Etapa 76 tem de valer para as formas novas tambem.
+    expect(r.coneDoMestre, "o jogador apagou o cone do mestre").toBe(false);
+    expect(r.setaDoMestre, "o jogador apagou a seta do mestre").toBe(false);
+  });
+
+  test("desfazer alcanca as formas novas", async ({ page }) => {
+    await abrirMesaComDesenho(page);
+
+    const r = await page.evaluate(() => {
+      _strokes = [];
+      const meu = _drawAuthorKey();
+      _strokes.push({ id: "z1", tool: "cone", color: "#e86820", width: 3, layer: "tokens",
+        author: meu, x1: 0.2, y1: 0.2, x2: 0.5, y2: 0.6, points: null });
+      _strokes.push({ id: "z2", tool: "arrow", color: "#ffffff", width: 5, layer: "tokens",
+        author: meu, x1: 0.3, y1: 0.3, x2: 0.6, y2: 0.5, points: null });
+      renderDrawings();
+
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true }));
+      const aposUm = _strokes.map(s => s.id);
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true }));
+      return { aposUm, aposDois: _strokes.map(s => s.id) };
+    });
+
+    // Ctrl+Z desfaz o proprio ultimo traco, seja qual for a ferramenta.
+    expect(r.aposUm, "Ctrl+Z nao desfez a seta").toEqual(["z1"]);
+    expect(r.aposDois, "Ctrl+Z nao desfez o cone").toEqual([]);
+  });
+});
+
+/* ── Etapa 123: gesto REAL, nao evento sintetico ──
+ *
+ * Por que este bloco existe: os testes acima montam os eventos na mao
+ * (`new MouseEvent(...)`). Evento sintetico NAO executa a acao padrao do
+ * navegador, e ja houve defeito que so aparecia por causa dela — a extinta
+ * ferramenta de texto perdia o foco do campo no mousedown e nao fazia nada
+ * na tela, com sete testes verdes na suite.
+ *
+ * Aqui tudo passa pelo mouse e pelo teclado de verdade do Playwright, e a
+ * ferramenta e armada pela INTERFACE, como o Tiago faz. */
+test.describe("Desenho: gesto real (Etapa 123)", () => {
+  async function abrirMesa(page) {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() =>
+      document.getElementById("mesaStageWrap")?.dataset.drawReady === "true");
+  }
+
+  async function armarFerramenta(page, nome) {
+    const flyoutAberto = await page.evaluate(() =>
+      !document.getElementById("mesaDrawFlyout").hidden);
+    if (!flyoutAberto) await page.click("#mesaDrawToggleBtn");
+    await page.click(`[data-draw-tool="${nome}"]`);
+  }
+
+  test("lapis e cone nascem de um arrasto real", async ({ page }) => {
+    await abrirMesa(page);
+    const caixa = await page.locator("#mesaDrawCanvas").boundingBox();
+
+    await armarFerramenta(page, "pencil");
+    await page.mouse.move(caixa.x + 60, caixa.y + 60);
+    await page.mouse.down();
+    for (let i = 1; i <= 20; i += 1) {
+      await page.mouse.move(caixa.x + 60 + i * 8, caixa.y + 60 + Math.sin(i / 3) * 25);
+    }
+    await page.mouse.up();
+
+    await armarFerramenta(page, "cone");
+    await page.mouse.move(caixa.x + 120, caixa.y + 200);
+    await page.mouse.down();
+    await page.mouse.move(caixa.x + 280, caixa.y + 320, { steps: 8 });
+    await page.mouse.up();
+
+    const r = await page.evaluate(() => ({
+      ferramentas: _strokes.map(s => s.tool),
+      pontosDoLapis: _strokes.find(s => s.tool === "pencil")?.points?.length || 0
+    }));
+
+    expect(r.ferramentas, "o arrasto real nao criou lapis e cone").toEqual(["pencil", "cone"]);
+    expect(r.pontosDoLapis, "o traco a mao livre saiu sem pontos").toBeGreaterThan(2);
+  });
+});
+
+/* -- Etapa 126: a ferramenta de texto foi RETIRADA --
+ *
+ * Depois de tres etapas seguidas de conserto (123 escrever, 124 editar e
+ * mover, 125 redimensionar e quebrar), o Tiago decidiu tirar a ferramenta do
+ * ar. Este bloco existe para a retirada nao ser desfeita sem querer: um
+ * pedaco que sobreviva — o botao na barra, o campo flutuante, ou a ferramenta
+ * passando pela whitelist — traz de volta metade do comportamento, que e pior
+ * do que os dois extremos.
+ *
+ * Rotulo de cena antiga desaparece de proposito: sem a ferramenta nao ha como
+ * edita-lo, e a whitelist ja o descarta na gravacao — deixa-lo aparecer na
+ * tela seria mostrar um traco que ninguem alcanca. */
+test.describe("Ferramenta de texto retirada (Etapa 126)", () => {
+  async function abrirMesa(page) {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+    await page.waitForFunction(() =>
+      document.getElementById("mesaStageWrap")?.dataset.drawReady === "true");
+  }
+
+  test("a barra de desenho nao tem mais texto nem quebra de linha", async ({ page }) => {
+    await abrirMesa(page);
+    await page.click("#mesaDrawToggleBtn");
+
+    await expect(page.locator('[data-draw-tool="text"]'),
+      "o botao da ferramenta de texto voltou para a barra").toHaveCount(0);
+    await expect(page.locator("#mesaDrawWrapRow"),
+      "o controle de quebra de linha voltou para a barra").toHaveCount(0);
+
+    // As formas que ficaram continuam todas la.
+    const ferramentas = await page.evaluate(() =>
+      [...document.querySelectorAll("[data-draw-tool]")].map(b => b.dataset.drawTool));
+    expect(ferramentas).toEqual(["pencil", "line", "rect", "circle", "cone", "arrow", "eraser"]);
+  });
+
+  test("clicar no palco nunca abre campo de digitacao", async ({ page }) => {
+    const erros = [];
+    page.on("pageerror", e => erros.push(String(e)));
+    await abrirMesa(page);
+    await page.click("#mesaDrawToggleBtn");
+    await page.click('[data-draw-tool="pencil"]');
+
+    const caixa = await page.locator("#mesaDrawCanvas").boundingBox();
+    await page.mouse.click(caixa.x + caixa.width * 0.4, caixa.y + caixa.height * 0.4);
+    await page.mouse.dblclick(caixa.x + caixa.width * 0.4, caixa.y + caixa.height * 0.4);
+
+    await expect(page.locator(".mesa-draw-text-input"),
+      "o campo flutuante de texto voltou a aparecer").toHaveCount(0);
+    expect(erros, "erro de pagina depois de tirar a ferramenta de texto").toEqual([]);
+  });
+
+  test("rotulo de cena antiga nao volta pela cena nem pelo realtime", async ({ page }) => {
+    const erros = [];
+    page.on("pageerror", e => erros.push(String(e)));
+    await abrirMesa(page);
+
+    const r = await page.evaluate(() => {
+      const antigo = { id: "velho", tool: "text", color: "#ffffff", width: 6, layer: "tokens",
+        author: "mestre", x1: 0.3, y1: 0.3, x2: 0.3, y2: 0.3, points: null, text: "Armadilha" };
+      const cone = { id: "cone", tool: "cone", color: "#e86820", width: 3, layer: "tokens",
+        author: "mestre", x1: 0.2, y1: 0.2, x2: 0.5, y2: 0.6, points: null };
+
+      _strokes = [];
+      applyMesaSceneDrawingsFromSnapshot([antigo, cone]);
+      renderDrawings();
+      const pelaCena = _strokes.map(s => s.id);
+
+      _strokes = [];
+      applyMesaDrawingAddFromRemote(antigo);
+      applyMesaDrawingAddFromRemote(cone);
+      renderDrawings();
+      return { pelaCena, peloRealtime: _strokes.map(s => s.id) };
+    });
+
+    expect(r.pelaCena, "rotulo de cena antiga voltou pelo snapshot").toEqual(["cone"]);
+    expect(r.peloRealtime, "rotulo de cena antiga voltou pelo realtime").toEqual(["cone"]);
+    expect(erros, "um rotulo antigo quebrou o desenho").toEqual([]);
+  });
+});

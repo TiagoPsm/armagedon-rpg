@@ -791,3 +791,25 @@ reduzido a um retangulo da propria cor (`::-webkit-color-swatch`,
 `::-moz-color-swatch` sem borda). O quadrado de preview ao lado da paleta
 mostra a cor JA com a opacidade aplicada — e o unico lugar onde da para ver o
 resultado antes de desenhar.
+
+## Fonte em canvas nao aceita variavel CSS (2026-08-26, Etapa 123)
+
+`ctx.font = "700 25px var(--font-ui, ...)"` e string INVALIDA: o canvas usa o
+parser de fonte do CSS, que so resolve variaveis no contexto de um elemento.
+O navegador ignora em silencio e mantem `10px sans-serif` — o texto aparece,
+minusculo, e nada avisa. Resolva a variavel antes
+(`getComputedStyle(document.body).getPropertyValue("--font-ui")`) e passe o
+valor literal. Teste de canvas com texto deve medir TAMANHO do que foi pintado;
+contar pixels nao distingue rotulo certo de rotulo microscopico.
+
+## Fonte em canvas: a regra fica, o caso de uso foi embora (2026-08-27, Etapa 126)
+
+A ferramenta de texto do palco saiu (ver DEV_STATUS, Etapa 126) e com ela o
+campo flutuante `.mesa-draw-text-input` e o controle de quebra de linha. A
+regra da secao anterior — `ctx.font` nao aceita `var(--...)` — continua valendo
+para qualquer texto que volte a ser pintado em canvas.
+
+Fica tambem o detalhe que a barra ensinou: `hidden` num elemento com
+`display: flex` NAO esconde nada, a regra de display vence o padrao do
+navegador. Linha de barra que entra e sai precisa da contrapartida explicita
+no CSS.

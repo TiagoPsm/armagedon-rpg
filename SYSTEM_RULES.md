@@ -351,3 +351,7 @@ Para cada nova etapa:
 6. atualizacao dos arquivos `.md` de referencia
 
 Se uma etapa mexer no site e nao atualizar documentacao, ela deve ser considerada incompleta.
+
+- **Formas de desenho (2026-08-26, Etapa 123)**: as ferramentas aceitas na cena sao `pencil`, `line`, `rect`, `circle`, `cone` e `arrow` — a whitelist `DRAW_TOOLS` vive em `cloudflare/src/mesa.js` e e ESPELHADA em `MESA_DRAW_TOOLS` (js/mesa-core.js). Forma fora da lista e descartada em silencio ao gravar: aparece na tela de quem desenhou e some no F5. Cone e seta nao tem campo proprio (usam `x1,y1` como origem e `x2,y2` como ponta); o cone abre 53 graus no total. Nenhuma forma tem campo proprio (a ferramenta de texto, que tinha, saiu na Etapa 126). Opacidade continua viajando dentro da cor, em hex de 8 digitos, para todas as formas.
+
+- **Ferramenta de texto RETIRADA (2026-08-27, Etapa 126)**: a Mesa nao escreve mais rotulo no palco. `text` saiu da whitelist do Worker (`DRAW_TOOLS`) e do espelho do cliente (`MESA_DRAW_TOOLS`), junto com os campos `text`, `size` e `wrap` — as ferramentas de desenho sao `pencil`, `line`, `rect`, `circle`, `cone`, `arrow` e a borracha. Rotulo gravado entre as Etapas 123 e 125 e descartado na entrada (`_asSharedStrokes`) e some da tela; sem ferramenta nao havia como edita-lo ou apaga-lo pela barra.
