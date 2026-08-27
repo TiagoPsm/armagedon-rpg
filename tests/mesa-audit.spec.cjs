@@ -8045,3 +8045,163 @@ test.describe("Traco: opacidade e ponta da seta (Etapa 130)", () => {
   });
 });
 
+/* -- Etapa 131: a regua passa a ter escala, e a marcacao fica legivel --
+ *
+ * `MESA_RULER_METERS_PER_CELL = 1.5` era uma CONSTANTE. A regua ja lia o
+ * tamanho da celula da cena (cellFrac), entao a conta em celulas estava
+ * certa — mas a traducao para metros era sempre a mesma. Na pratica: o mesmo
+ * mapa servia para o interior de uma carruagem e para um vale, e a regua
+ * respondia a mesma coisa nos dois.
+ *
+ * A marcacao tinha um segundo problema, da familia da Etapa 127: o overlay e
+ * filho do #mesaStageInner, que o zoom escala — a 40% a linha saia com menos
+ * de 1px e o rotulo ilegivel; a 250% virava tarja. Enfeite mede-se em TELA. */
+test.describe("Regua: escala por cena e marcacao (Etapa 131)", () => {
+  async function abrirMesa(page) {
+    await seedMasterWithScene(page, BASE_TOKENS);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+  }
+
+  /** Mede com Shift+arrastar de verdade e devolve o texto do rotulo. */
+  async function medirComGesto(page, escala) {
+    return page.evaluate(async metros => {
+      if (metros !== null) updateMesaGrid({ metersPerCell: metros });
+      const inner = document.getElementById("mesaStageInner");
+      const r = inner.getBoundingClientRect();
+      const ponto = (fx, fy) => ({ clientX: r.left + fx * r.width, clientY: r.top + fy * r.height });
+      const ev = (tipo, p, extra) => new PointerEvent(tipo, {
+        bubbles: true, cancelable: true, button: 0, buttons: 1, isPrimary: true,
+        pointerId: 1, shiftKey: true, ...p, ...extra
+      });
+      inner.dispatchEvent(ev("pointerdown", ponto(0.3, 0.4)));
+      window.dispatchEvent(ev("pointermove", ponto(0.6, 0.6)));
+      const texto = document.querySelector(".mesa-ruler-label")?.textContent || "";
+      window.dispatchEvent(ev("pointerup", ponto(0.6, 0.6)));
+      return texto;
+    }, escala);
+  }
+
+  test("a regua mede pela escala da CENA, e nao por uma constante", async ({ page }) => {
+    await abrirMesa(page);
+
+    const padrao = await medirComGesto(page, null);      // 1,5 m historico
+    const dobro  = await medirComGesto(page, 3);         // 3 m por celula
+    const reino  = await medirComGesto(page, 500);       // mapa de reino
+
+    const metros = txt => Number(String(txt).split("·")[1].trim().replace(" m", "").replace(",", "."));
+    const celulas = txt => Number(String(txt).split("·")[0].replace("cél", "").trim().replace(",", "."));
+
+    expect(padrao, "a regua nao mediu nada").toContain("cél");
+    // A contagem de CELULAS nao muda com a escala — so a traducao para metros.
+    expect(celulas(dobro)).toBeCloseTo(celulas(padrao), 1);
+    expect(metros(dobro) / metros(padrao), "a escala da cena nao mudou a medida")
+      .toBeCloseTo(2, 1);
+    // Acima de 1 km a leitura troca de unidade: "3600,0 m" nao diz nada.
+    expect(reino, "a regua deveria falar em km num mapa de reino").toContain("km");
+  });
+
+  test("a escala viaja na cena — inclusive com a grade desligada", async ({ page }) => {
+    await abrirMesa(page);
+
+    const payload = await page.evaluate(() => {
+      updateMesaGrid({ enabled: false, snap: false, metersPerCell: 3 });
+      const comEscala = getMesaGridScenePayload();
+      updateMesaGrid({ metersPerCell: 1.5 });
+      return { comEscala, padrao: getMesaGridScenePayload() };
+    });
+
+    // Grade desligada COM escala propria ainda precisa viajar: a regua vale
+    // sem linha desenhada, e perder a escala no F5 seria o mesmo defeito.
+    expect(payload.comEscala, "a escala se perdeu com a grade desligada").not.toBeNull();
+    expect(payload.comEscala.metersPerCell).toBe(3);
+    // Ja a escala PADRAO com tudo desligado nao precisa ocupar a cena.
+    expect(payload.padrao, "cena ganhou grade so para guardar a escala padrao").toBeNull();
+
+    // E o Worker tem de deixar passar: campo que ele nao conhece e descartado
+    // em silencio, e a escala voltaria aos 1,5 m no F5.
+    const { normalizeMesaScene } = await import("../cloudflare/src/mesa.js");
+    const salvo = normalizeMesaScene({
+      tokens: [],
+      grid: { enabled: false, snap: false, cellFrac: 0.05, metersPerCell: 3 }
+    });
+    expect(salvo.grid, "o Worker descartou a grade que so carregava a escala").not.toBeNull();
+    expect(salvo.grid.metersPerCell, "o Worker descartou a escala da cena").toBe(3);
+
+    const absurdo = normalizeMesaScene({
+      tokens: [], grid: { enabled: true, cellFrac: 0.05, metersPerCell: 999999 }
+    });
+    expect(absurdo.grid.metersPerCell, "escala absurda passou inteira").toBe(5000);
+  });
+
+  test("a marcacao tem tamanho de TELA, em qualquer zoom", async ({ page }) => {
+    await abrirMesa(page);
+
+    const medidas = await page.evaluate(async () => {
+      const inner = document.getElementById("mesaStageInner");
+      const out = [];
+      for (const zoom of [0.4, 1, 2.5]) {
+        setStageZoom(zoom);
+        document.getElementById("mesaRulerOverlay")?.remove();
+        const r = inner.getBoundingClientRect();
+        const ponto = (fx, fy) => ({ clientX: r.left + fx * r.width, clientY: r.top + fy * r.height });
+        const ev = (tipo, p) => new PointerEvent(tipo, {
+          bubbles: true, cancelable: true, button: 0, buttons: 1, isPrimary: true,
+          pointerId: 1, shiftKey: true, ...p
+        });
+        inner.dispatchEvent(ev("pointerdown", ponto(0.3, 0.4)));
+        window.dispatchEvent(ev("pointermove", ponto(0.6, 0.6)));
+        const label = document.querySelector(".mesa-ruler-label");
+        const linha = document.querySelector(".mesa-ruler-line");
+        const caixa = label.getBoundingClientRect();
+        out.push({
+          zoom,
+          alturaDoRotulo: Math.round(caixa.height * 10) / 10,
+          /* stroke-width declarado x zoom = espessura em px de TELA.
+             O valor computado vem como "calc(8.75px)" — o navegador resolve a
+             var() mas mantem o calc() em volta, entao parseFloat devolveria
+             NaN e o teste passaria por acidente. */
+          espessuraNaTela: Math.round(
+            Number((getComputedStyle(linha).strokeWidth.match(/([\d.]+)px/) || [])[1]) * zoom * 10) / 10
+        });
+        window.dispatchEvent(ev("pointerup", ponto(0.6, 0.6)));
+      }
+      setStageZoom(1);
+      return out;
+    });
+
+    const base = medidas[0];
+    for (const m of medidas) {
+      expect(m.alturaDoRotulo, `o rotulo mudou de tamanho no zoom ${m.zoom}`)
+        .toBeCloseTo(base.alturaDoRotulo, 0);
+      expect(m.espessuraNaTela, `a linha mudou de espessura no zoom ${m.zoom}`)
+        .toBeCloseTo(base.espessuraNaTela, 1);
+    }
+    // E a marcacao ficou MAIOR, que foi o pedido: rotulo com corpo de leitura
+    // e linha de 3,5px de tela (era 2,5 e encolhia com o zoom).
+    expect(base.alturaDoRotulo, "o rotulo da regua continua miudo").toBeGreaterThanOrEqual(26);
+    expect(base.espessuraNaTela, "a linha da regua continua fina").toBeGreaterThanOrEqual(3);
+  });
+
+  test("o stepper da escala sobe e desce pelo mesmo caminho", async ({ page }) => {
+    await abrirMesa(page);
+    const caminho = await page.evaluate(() => {
+      updateMesaGrid({ metersPerCell: 1.5 });
+      const subida = [];
+      for (let i = 0; i < 5; i += 1) { adjustMesaGridScale(1); subida.push(getMesaGridState().metersPerCell); }
+      const descida = [];
+      for (let i = 0; i < 5; i += 1) { adjustMesaGridScale(-1); descida.push(getMesaGridState().metersPerCell); }
+      const rotulo = { m1500: formatMesaGridScale(1500), m12: formatMesaGridScale(12), m15: formatMesaGridScale(1.5) };
+      updateMesaGrid({ metersPerCell: 1.5 });
+      return { subida, descida, rotulo };
+    });
+
+    // Passo fixo nao serve para as duas pontas (0,5 m ate 1 km seriam 2000
+    // cliques), entao ele cresce por faixa — e tem de VOLTAR igual.
+    expect(caminho.subida).toEqual([2, 2.5, 3, 4, 5]);
+    expect(caminho.descida, "descer nao refez o caminho da subida")
+      .toEqual([4, 3, 2.5, 2, 1.5]);
+    expect(caminho.rotulo).toEqual({ m1500: "1,5 km", m12: "12", m15: "1,5" });
+  });
+});
+

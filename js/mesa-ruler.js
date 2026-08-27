@@ -12,7 +12,9 @@
 const MESA_RULER_TYPE = "mesa:ruler";
 // Broadcast a 10Hz — mesmo ritmo do drag de token, folga no rate limit do DO
 const MESA_RULER_BROADCAST_MS = 100;
-// 1 célula = 1,5 m (escala humana clássica de mesa). Constante do sistema.
+// Escala PADRAO: 1 célula = 1,5 m (escala humana clássica de mesa). Desde a
+// Etapa 131 isto e so o fallback — quem manda e `metersPerCell` da grade da
+// CENA, para o mesmo mapa poder ser uma carruagem ou um vale.
 const MESA_RULER_METERS_PER_CELL = 1.5;
 // Régua remota some sozinha se o emissor sumir sem mandar active:false
 const MESA_RULER_REMOTE_TTL_MS = 4000;
@@ -51,6 +53,12 @@ function _rulerCellStagePx(inner) {
  * Distância entre dois pontos (fração do palco) em células e metros.
  * Calculada em px de layout (imune ao zoom, células quadradas em px).
  */
+function _rulerMetersPerCell() {
+  const grid = typeof window.getMesaGridState === "function" ? window.getMesaGridState() : null;
+  const escala = Number(grid?.metersPerCell);
+  return Number.isFinite(escala) && escala > 0 ? escala : MESA_RULER_METERS_PER_CELL;
+}
+
 function measureMesaRuler(fx1, fy1, fx2, fy2) {
   const inner = _rulerInner();
   if (!inner) return null;
@@ -58,14 +66,21 @@ function measureMesaRuler(fx1, fy1, fx2, fy2) {
   const dyPx = (fy2 - fy1) * (inner.offsetHeight || 1);
   const distPx = Math.hypot(dxPx, dyPx);
   const cells = distPx / _rulerCellStagePx(inner);
-  return { cells, meters: cells * MESA_RULER_METERS_PER_CELL };
+  return { cells, meters: cells * _rulerMetersPerCell() };
+}
+
+/* Distancia em texto curto. Acima de 1 km a leitura em metros vira ruido
+   ("3200,0 m" nao diz nada de imediato), entao troca de unidade. */
+function _formatRulerDistance(meters) {
+  if (meters >= 1000) return (meters / 1000).toFixed(meters >= 10000 ? 0 : 1).replace(".", ",") + " km";
+  if (meters >= 100) return meters.toFixed(0) + " m";
+  return meters.toFixed(1).replace(".", ",") + " m";
 }
 
 function _formatRulerLabel(measure) {
   if (!measure) return "";
   const cells = measure.cells.toFixed(1).replace(".", ",");
-  const meters = measure.meters.toFixed(1).replace(".", ",");
-  return `${cells} cél · ${meters} m`;
+  return `${cells} cél · ${_formatRulerDistance(measure.meters)}`;
 }
 
 /* ── Render (SVG overlay + chip de rótulo) ──────────────────── */

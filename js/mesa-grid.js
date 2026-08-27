@@ -31,8 +31,16 @@ const MESA_GRID_DEFAULTS = Object.freeze({
   offsetXFrac: 0,      // deslocamento dentro da célula (0–1)
   offsetYFrac: 0,
   color: "#ffffff",
-  opacity: 0.18
+  opacity: 0.18,
+  /* Escala da cena (Etapa 131): quanto vale UMA celula no mundo do jogo, em
+     metros. Era uma constante de 1,5 m dentro da regua — o que mentia em toda
+     cena que nao fosse um combate corpo a corpo: o mesmo mapa servia para uma
+     carruagem e para um vale, e a regua respondia a mesma coisa nos dois.
+     Mora na grade porque e a MESMA unidade: a celula e o que a regua conta. */
+  metersPerCell: 1.5
 });
+const MESA_GRID_METERS_MIN = 0.1;
+const MESA_GRID_METERS_MAX = 5000;
 
 const MESA_GRID_CELL_MIN  = 0.01;
 const MESA_GRID_CELL_MAX  = 0.25;
@@ -59,7 +67,10 @@ function normalizeMesaGridState(grid) {
     offsetXFrac: Math.round(clampNum(grid.offsetXFrac, 0, 1, 0) * 10000) / 10000,
     offsetYFrac: Math.round(clampNum(grid.offsetYFrac, 0, 1, 0) * 10000) / 10000,
     color: /^#[0-9a-f]{3,8}$/i.test(String(grid.color || "")) ? String(grid.color) : MESA_GRID_DEFAULTS.color,
-    opacity: Math.round(clampNum(grid.opacity, 0.05, 0.8, MESA_GRID_DEFAULTS.opacity) * 100) / 100
+    opacity: Math.round(clampNum(grid.opacity, 0.05, 0.8, MESA_GRID_DEFAULTS.opacity) * 100) / 100,
+    // Cena antiga nao tem o campo: cai nos 1,5 m historicos, e nada muda.
+    metersPerCell: Math.round(clampNum(grid.metersPerCell, MESA_GRID_METERS_MIN, MESA_GRID_METERS_MAX,
+      MESA_GRID_DEFAULTS.metersPerCell) * 100) / 100
   };
 }
 
@@ -72,7 +83,11 @@ function getMesaGridState() {
 // Consumido por createMesaScenePayloadFromState (mesa-core.js). Grade toda
 // desligada vira null — cenas antigas e o dedupe de assinatura não mudam.
 function getMesaGridScenePayload() {
-  if (!_gridState.enabled && !_gridState.snap) return null;
+  // Grade desligada mas escala mudada ainda precisa viajar (Etapa 131): a
+  // regua vale com ou sem grade desenhada, e perder a escala no F5 seria o
+  // mesmo defeito de antes com outra roupa.
+  const escalaPadrao = _gridState.metersPerCell === MESA_GRID_DEFAULTS.metersPerCell;
+  if (!_gridState.enabled && !_gridState.snap && escalaPadrao) return null;
   return { ..._gridState };
 }
 
@@ -515,6 +530,40 @@ function _syncGridSettingsUI() {
     // Exibe como número de colunas na largura do mapa — mais intuitivo que %.
     sizeLbl.textContent = String(Math.round(1 / _gridState.cellFrac));
   }
+  const escalaLbl = document.getElementById("mesaGridScaleLabel");
+  if (escalaLbl) escalaLbl.textContent = formatMesaGridScale(_gridState.metersPerCell);
+}
+
+/** "1,5" · "12" · "1 km" — o rotulo curto do stepper de escala. */
+function formatMesaGridScale(metros) {
+  const n = Number(metros) || MESA_GRID_DEFAULTS.metersPerCell;
+  if (n >= 1000) return (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1).replace(".", ",") + " km";
+  if (n >= 10) return String(Math.round(n));
+  return n.toFixed(1).replace(".", ",");
+}
+
+/* Passo do stepper de escala: cresce junto com a escala.
+ *
+ * Passo fixo nao serve para as duas pontas — 0,5 m e o passo certo para uma
+ * masmorra e absurdo para um mapa de reino (seriam 2000 cliques ate 1 km). */
+function _passoDaEscala(atual) {
+  if (atual < 3) return 0.5;
+  if (atual < 10) return 1;
+  if (atual < 50) return 5;
+  if (atual < 200) return 25;
+  if (atual < 1000) return 100;
+  return 500;
+}
+
+function adjustMesaGridScale(direction) {
+  if (!_isGridMaster()) return;
+  const atual = _gridState.metersPerCell;
+  // Descer usa o passo da FAIXA DE BAIXO, senao 3 m desceria para 2 e 2 para
+  // 1,5 com passos diferentes do que subiu — o stepper nao voltaria pelo
+  // mesmo caminho.
+  const passo = direction > 0 ? _passoDaEscala(atual) : _passoDaEscala(atual - 0.001);
+  const alvo = direction > 0 ? atual + passo : atual - passo;
+  updateMesaGrid({ metersPerCell: Math.round(alvo * 100) / 100 });
 }
 
 // direction > 0 = mais colunas (células menores); < 0 = menos colunas.
@@ -564,6 +613,8 @@ window.applyMesaSceneGridFromSnapshot = applyMesaSceneGridFromSnapshot;
 window.setMesaGridFromRemote          = setMesaGridFromRemote;
 window.updateMesaGrid                 = updateMesaGrid;
 window.adjustMesaGridCell             = adjustMesaGridCell;
+window.adjustMesaGridScale            = adjustMesaGridScale;
+window.formatMesaGridScale            = formatMesaGridScale;
 window.mesaSnapTokenToGrid            = mesaSnapTokenToGrid;
 window.mesaFitTokenToGrid             = mesaFitTokenToGrid;
 window.mesaPreviewGridScale           = mesaPreviewGridScale;

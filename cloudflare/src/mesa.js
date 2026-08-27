@@ -244,7 +244,11 @@ function normalizeSceneMap(map) {
 // grade junto sem re-sincronizar nada. Visível a todos (sem camada "dm").
 function normalizeSceneGrid(grid) {
   if (!grid || typeof grid !== "object") return null;
-  if (grid.enabled !== true && grid.snap !== true) return null;
+  // Grade desligada, mas com escala propria, ainda vale como grade: a regua
+  // funciona sem linha desenhada (Etapa 131).
+  const escalaPropria = Number.isFinite(Number(grid.metersPerCell))
+    && Math.abs(Number(grid.metersPerCell) - 1.5) > 0.001;
+  if (grid.enabled !== true && grid.snap !== true && !escalaPropria) return null;
   const color = /^#[0-9a-f]{3,8}$/i.test(String(grid.color || "")) ? String(grid.color) : "#ffffff";
   return {
     enabled: grid.enabled === true,
@@ -253,7 +257,12 @@ function normalizeSceneGrid(grid) {
     offsetXFrac: Math.round(clamp(grid.offsetXFrac ?? 0, 0, 1) * 10000) / 10000,
     offsetYFrac: Math.round(clamp(grid.offsetYFrac ?? 0, 0, 1) * 10000) / 10000,
     color,
-    opacity: Math.round(clamp(grid.opacity ?? 0.18, 0.05, 0.8) * 100) / 100
+    opacity: Math.round(clamp(grid.opacity ?? 0.18, 0.05, 0.8) * 100) / 100,
+    /* Escala da cena (Etapa 131): quanto vale uma celula em metros, o numero
+       que a regua usa. Campo que este arquivo nao conhece e descartado em
+       silencio, entao sem ele a escala escolhida pelo mestre voltaria aos
+       1,5 m no F5. Cena antiga nao tem o campo e cai no default do cliente. */
+    metersPerCell: Math.round(clamp(grid.metersPerCell ?? 1.5, 0.1, 5000) * 100) / 100
   };
 }
 

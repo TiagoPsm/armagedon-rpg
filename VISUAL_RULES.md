@@ -866,3 +866,19 @@ sobrepor**: com opacidade parcial a area comum recebe tinta duas vezes e vira
 uma emenda mais escura. O corpo para meia espessura antes da base para a ponta
 arredondada terminar exatamente nela.
 
+## A regua tambem e enfeite: mede-se em tela (2026-08-27, Etapa 131)
+
+O overlay da regua e filho do `#mesaStageInner`, que o zoom do palco escala.
+Resultado: a 40% a linha saia com menos de 1px e o rotulo ilegivel; a 250%
+virava tarja. Mesma regra da Etapa 127 — **o que serve para LER o palco mede-se
+em px de tela**; so o que representa o mundo escala com ele.
+
+Linha, pontas e rotulo sao contra-escalados por `--stage-zoom` (sem
+`--token-scale`: a regua nao pertence a token nenhum). Vale tambem o tamanho
+minimo de leitura: o rotulo passou de 0,74rem para 0,95rem com peso 700 — chip
+de medida e informacao de combate, nao legenda.
+
+Detalhe de implementacao: em SVG, `stroke-width` e `r` aceitam `calc()` com
+`var()` — e `getComputedStyle` devolve `"calc(8.75px)"`, com o calc em volta.
+Teste que fizer `parseFloat` nesse valor recebe `NaN` e passa por acidente.
+

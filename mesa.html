@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="css/reset.css?v=2026-06-12-cache-fix-1" />
   <link rel="stylesheet" href="css/components.css?v=2026-06-12-modal-stack-1" />
   <link rel="stylesheet" href="css/mesa.css?v=2026-08-21-meu-token-1" />
-  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-08-27-toque-1" />
+  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-08-27-regua-1" />
   <link rel="stylesheet" href="css/mesa-roster.css?v=2026-08-20-barra-vida-1" />
   <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-08-20-contraste-1" />
   <link rel="stylesheet" href="css/mesa-map.css?v=2026-08-20-escala-fora-1" />
@@ -546,6 +546,14 @@
             <span class="mesa-map-scale-val"><span id="mesaGridSizeLabel">20</span><span class="mesa-map-scale-unit">colunas</span></span>
             <button type="button" class="mesa-transform-btn" onclick="adjustMesaGridCell(1)" title="C&eacute;lulas menores" aria-label="C&eacute;lulas menores">+</button>
           </div>
+          <!-- Escala da cena (Etapa 131): quanto vale UMA celula no mundo do
+               jogo. E o numero que a regua usa; era 1,5 m fixo no codigo e
+               mentia em qualquer cena que nao fosse combate corpo a corpo. -->
+          <div class="mesa-map-transform-row is-stepper">
+            <button type="button" class="mesa-transform-btn" onclick="adjustMesaGridScale(-1)" title="Escala menor por c&eacute;lula" aria-label="Escala menor por c&eacute;lula">&#8722;</button>
+            <span class="mesa-map-scale-val"><span id="mesaGridScaleLabel">1,5</span><span class="mesa-map-scale-unit">m/c&eacute;l</span></span>
+            <button type="button" class="mesa-transform-btn" onclick="adjustMesaGridScale(1)" title="Escala maior por c&eacute;lula" aria-label="Escala maior por c&eacute;lula">+</button>
+          </div>
           <!-- Etapa 99: eram 3 linhas em 248px. Mesmos dois fatos (encaixe em
                celulas inteiras + escape pelo Alt), sem as palavras que so
                repetiam o que os controles acima ja dizem. -->
@@ -934,11 +942,11 @@
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
   <script src="js/mesa-core.js?v=2026-08-26-formas-1" defer></script>
   <script src="js/mesa-map.js?v=2026-08-27-toque-1" defer></script>
-  <script src="js/mesa-grid.js?v=2026-07-31-cells-1" defer></script>
+  <script src="js/mesa-grid.js?v=2026-08-27-regua-1" defer></script>
   <script src="js/mesa-fog.js?v=2026-07-29-sharp-1" defer></script>
   <script src="js/mesa-scenes.js?v=2026-08-19-pastas-1" defer></script>
   <script src="js/mesa-ping.js?v=2026-07-27-ping-1" defer></script>
-  <script src="js/mesa-ruler.js?v=2026-07-27-ruler-1" defer></script>
+  <script src="js/mesa-ruler.js?v=2026-08-27-regua-1" defer></script>
   <script src="js/mesa-dice.js?v=2026-08-16-armados-1" defer></script>
   <script src="js/mesa-drawing.js?v=2026-08-27-seta-1" defer></script>
   <script src="js/mesa-select.js?v=2026-08-27-toque-1" defer></script>

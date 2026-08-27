@@ -10,6 +10,7 @@ Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencia
 
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
 
+- **[Tiago]** Deploy do Worker pendente: `normalizeSceneGrid` (`cloudflare/src/mesa.js`) ganhou `metersPerCell`, a escala da regua por cena (Etapa 131). Sem `npx wrangler deploy --config cloudflare/wrangler.toml` (com `--dry-run` antes), a escala escolhida pelo mestre aparece certa na sessao e volta aos 1,5 m no F5. Registrar o version ID em `cloudflare/README.md`. — aberta em 2026-08-27 (Etapa 131)
 - **[Tiago]** `cloudflare/.dev.vars` guarda `PASSWORD_PEPPER`, `JWT_SECRET` e `MASTER_BOOTSTRAP_PASSWORD` em texto puro dentro do OneDrive. Decidir o destino: manter e aceitar a copia na nuvem, mover para fora do OneDrive, ou trocar por valores locais de brinquedo — o `wrangler dev --local` nao precisa dos segredos reais. Antes de qualquer coisa, guardar uma copia segura: secret do Cloudflare NAO pode ser lido de volta, e este arquivo pode ser a unica copia que resta. — aberta em 2026-08-25 (Etapa 121)
 
 ## Regra Obrigatoria de Documentacao
@@ -40,7 +41,55 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-27 — Etapa 130: 100% de opacidade pinta 100%, e a seta ganha ponta)
+## Ultima Etapa Concluida (2026-08-27 — Etapa 131: a regua ganha escala por cena, e a marcacao fica legivel)
+
+**A escala era uma constante.** `MESA_RULER_METERS_PER_CELL = 1.5` vivia dentro
+da regua. A contagem em CELULAS ja estava certa — a regua le `cellFrac` da cena
+desde a Etapa 44 —, mas a traducao para metros era sempre a mesma: o mesmo mapa
+servia para o interior de uma carruagem e para um vale, e a regua respondia a
+mesma coisa nos dois.
+
+Agora `metersPerCell` e campo da GRADE da cena (e a mesma unidade: a celula e o
+que a regua conta), com stepper proprio na barra do mapa. O passo cresce por
+faixa — 0,5 m ate 3, depois 1, 5, 25, 100 e 500 —, senao chegar a 1 km levaria
+dois mil cliques; e descer usa o passo da faixa de baixo, para o stepper voltar
+pelo MESMO caminho por onde subiu.
+
+Acima de 1 km o rotulo troca de unidade: "3600,0 m" nao diz nada de imediato,
+"3,6 km" diz.
+
+**Cena antiga nao muda:** sem o campo, cai nos 1,5 m historicos. E a escala
+viaja mesmo com a grade DESLIGADA — a regua funciona sem linha desenhada, e
+perder a escala no F5 seria o mesmo defeito de antes com outra roupa (tanto
+`getMesaGridScenePayload` quanto o `normalizeSceneGrid` do Worker abriram
+excecao para esse caso).
+
+**A marcacao virou enfeite de tela** (mesma regra da Etapa 127). O overlay da
+regua e filho do `#mesaStageInner`, que o zoom escala: a 40% a linha saia com
+menos de 1px e o rotulo ilegivel; a 250% virava tarja. Agora linha, pontas e
+rotulo sao contra-escalados por `--stage-zoom`. E, junto, o pedido do Tiago de
+deixar a marcacao MAIOR: linha de 2,5 para 3,5, pontas de 4 para 6, rotulo de
+0,74rem para 0,95rem com peso 700 e sombra.
+
+Arquivos: `js/mesa-grid.js` (campo + stepper), `js/mesa-ruler.js` (le a escala
+e formata km), `cloudflare/src/mesa.js` (whitelist da grade), `css/mesa-stage.css`,
+`mesa.html` (controle novo + cache-busting).
+
+`tests/mesa-audit.spec.cjs`: quatro casos — a regua mede pela escala da cena e
+a contagem de celulas nao muda com ela; a escala viaja na cena inclusive com a
+grade desligada e sobrevive ao Worker (com clamp em 5000); a marcacao mantem o
+mesmo tamanho de TELA em zoom 0,4/1/2,5 e e maior que antes; e o stepper sobe e
+desce pelo mesmo caminho.
+
+**Precisa de deploy do Worker**: `normalizeSceneGrid` ganhou `metersPerCell`.
+Sem o deploy, a escala escolhida pelo mestre volta aos 1,5 m no F5 — campo que
+o Worker nao conhece e descartado em silencio.
+
+Validado: `check:js` (47), `audit:static`, `audit:pendencias`, `test:build`
+(8), `test:controles` (6), `test:mesa` (5), `test:mesa:audit` (244),
+`test:mesa:scenes` (22), `mesa-toque` (5).
+
+## Etapa Anterior (2026-08-27 — Etapa 130: 100% de opacidade pinta 100%, e a seta ganha ponta)
 
 Dois relatos do Tiago olhando o mesmo print: a seta com a ponta errada e "a
 opacidade 100% nao funciona, fica transparente".

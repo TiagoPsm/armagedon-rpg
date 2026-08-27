@@ -880,27 +880,41 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
   pointer-events: none;
   overflow: visible;
 }
+/* Marcacao em px de TELA (Etapa 131).
+ *
+ * O overlay da regua e filho do #mesaStageInner, que o zoom escala: a 25% a
+ * linha saia com 0,6px e o rotulo ilegivel, e a 300% virava uma tarja. Como
+ * as alcas do token (Etapa 127), isto e ENFEITE — mede-se em tela, nao no
+ * mundo. A contra-escala usa so `--stage-zoom` (nao ha escala de token aqui).
+ * Junto veio o pedido do Tiago de deixar a marcacao MAIOR: linha de 2,5 para
+ * 3,5, ponta de 4 para 6 e rotulo de 0,74rem para 0,95rem. */
 .mesa-ruler-line {
   stroke: rgba(214, 69, 80, 0.95);
-  stroke-width: 2.5;
-  stroke-dasharray: 8 6;
+  stroke-width: calc(3.5 / var(--stage-zoom, 1));
+  stroke-dasharray: calc(10 / var(--stage-zoom, 1)) calc(7 / var(--stage-zoom, 1));
   stroke-linecap: round;
 }
 .mesa-ruler-dot {
   fill: rgba(214, 69, 80, 0.95);
+  r: calc(6px / var(--stage-zoom, 1));
 }
 .mesa-ruler.is-self .mesa-ruler-line { stroke: rgba(216, 180, 90, 0.95); }
 .mesa-ruler.is-self .mesa-ruler-dot  { fill: rgba(216, 180, 90, 0.95); }
 .mesa-ruler-label {
   position: absolute;
-  transform: translate(-50%, -160%);
-  padding: 2px 8px;
+  /* A contra-escala vem DEPOIS do translate na composicao (aplicada antes ao
+     elemento), entao o chip cresce a partir do proprio centro e continua
+     ancorado no meio da linha. */
+  transform: translate(-50%, -160%) scale(calc(1 / var(--stage-zoom, 1)));
+  padding: 3px 11px;
   border-radius: 999px;
-  background: rgba(10, 6, 8, 0.92);
-  border: 1px solid rgba(214, 69, 80, 0.55);
+  background: rgba(10, 6, 8, 0.94);
+  border: 1px solid rgba(214, 69, 80, 0.7);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
   color: var(--text, #e8e3d8);
-  font-size: 0.74rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   white-space: nowrap;
   pointer-events: none;
 }
@@ -909,8 +923,8 @@ body[data-resize-dir="ew"]   * { cursor: ew-resize !important;   }
 }
 .mesa-ruler-name {
   position: absolute;
-  transform: translate(-50%, 12px);
-  font-size: 0.72rem;
+  transform: translate(-50%, 12px) scale(calc(1 / var(--stage-zoom, 1)));
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--text, #e8e3d8);
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
