@@ -10,7 +10,6 @@ Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencia
 
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
 
-- **[Tiago]** Deploy do Worker pendente: `normalizeSceneGrid` (`cloudflare/src/mesa.js`) ganhou `metersPerCell`, a escala da regua por cena (Etapa 131). Sem `npx wrangler deploy --config cloudflare/wrangler.toml` (com `--dry-run` antes), a escala escolhida pelo mestre aparece certa na sessao e volta aos 1,5 m no F5. Registrar o version ID em `cloudflare/README.md`. — aberta em 2026-08-27 (Etapa 131)
 - **[Tiago]** `cloudflare/.dev.vars` guarda `PASSWORD_PEPPER`, `JWT_SECRET` e `MASTER_BOOTSTRAP_PASSWORD` em texto puro dentro do OneDrive. Decidir o destino: manter e aceitar a copia na nuvem, mover para fora do OneDrive, ou trocar por valores locais de brinquedo — o `wrangler dev --local` nao precisa dos segredos reais. Antes de qualquer coisa, guardar uma copia segura: secret do Cloudflare NAO pode ser lido de volta, e este arquivo pode ser a unica copia que resta. — aberta em 2026-08-25 (Etapa 121)
 
 ## Regra Obrigatoria de Documentacao
@@ -41,7 +40,42 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-28 — Etapa 137: o bloco duplicado do botao de tela cheia)
+## Ultima Etapa Concluida (2026-08-28 — Etapa 138: o Worker no ar, e um incidente na verificacao)
+
+**Deploy feito.** Version ID `1439f8fa-02a1-403c-9f6d-7f906785a2aa`. Fecha a
+pendencia aberta na Etapa 131: `normalizeSceneGrid` com `metersPerCell` estava
+no repositorio desde 2026-08-27 e o backend descartava o campo em silencio —
+era a causa REAL do "o valor nao esta sendo salvo nem aplicado na regua".
+Dry-run limpo antes (bindings: Durable Object, D1, R2). Round-trip conferido:
+PUT com `metersPerCell: 30` volta 30 no GET.
+
+### Incidente: a verificacao apagou a cena ativa
+
+A conferencia ia rodar numa cena temporaria, criada e apagada. O
+`POST /api/mesa/scenes` devolveu o id num formato diferente do assumido pelo
+script, a variavel ficou VAZIA, e `PUT /api/mesa/scene?id=` com id vazio **nao
+da erro**: `resolveSceneIdForActor` cai na cena ativa. O payload de teste
+(`tokens: []`) foi gravado por cima de "Mapa Mundi", que ficou com 0 tokens.
+
+**Recuperado** com `wrangler d1 time-travel restore armagedon --bookmark=00000618-00000012-000050d5-447ab6a05ec4d7d73b10e612202e5a84`
+(estado anterior a escrita). Os 6 tokens voltaram, e as posicoes foram
+conferidas uma a uma contra a leitura somente-leitura feita mais cedo no mesmo
+dia pelo `tests/mesa-paridade-online.spec.cjs` — id, x e y batem. A cena orfa
+`zz-verificacao-escala` sumiu junto, por ser posterior ao bookmark.
+
+**Licoes, registradas tambem em `cloudflare/README.md`:**
+
+1. **Id vazio em querystring nao e erro — e a cena ativa.** Conferir que o id
+   veio preenchido ANTES de montar a URL. Um `?id=` vazio parece inofensivo e
+   aponta para o dado mais valioso que existe.
+2. **Verificacao pos-deploy que ESCREVE precisa do estado anterior salvo
+   antes**, nao depois. A leitura que eu tinha feito minutos antes so pegou o
+   `grid`; se tivesse guardado o payload inteiro, a restauracao teria sido um
+   PUT, sem mexer no banco todo.
+3. O `time-travel` do D1 salvou o dia, mas e uma restauracao do BANCO INTEIRO:
+   so serve porque a janela tinha apenas o proprio estrago dentro.
+
+## Etapa Concluida (2026-08-28 — Etapa 137: o bloco duplicado do botao de tela cheia)
 
 **Fecha a pendencia aberta na Etapa 136.** `.vtt-fullscreen-btn` estava
 declarado duas vezes em `css/mesa.css`: linha 576, com os tokens do HUD
