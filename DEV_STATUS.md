@@ -41,7 +41,53 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-27 — Etapa 132: a escala por celula amarrada por teste, do clique ao disco)
+## Ultima Etapa Concluida (2026-08-28 — Etapa 133: um comparador somente-leitura de mestre x jogador)
+
+**Pergunta que originou:** "todos os jogadores e o mestre estao vendo as mesmas
+coisas na mesa (desenhos e posicao dos tokens)?"
+
+Ate aqui a resposta so podia ser inferida. A suite local cobre a sincronia com
+o relay SIMULADO (o servidor de teste nao tem Durable Object), e o smoke de
+producao prova que o canal existe — nao que as duas telas coincidem.
+
+**`tests/mesa-paridade-online.spec.cjs`** fecha essa lacuna sem escrever nada:
+abre os dois clientes contra a producao com as credenciais do cofre, espera o
+boot e o WebSocket assentarem, e compara o estado em memoria dos dois.
+Desconta antes as divergencias LEGITIMAS — camada secreta `dm` e token com
+`visibleToPlayers: false` —, entao uma falha aqui e dessincronia de verdade,
+nao regra de visibilidade.
+
+Nao entrou em `npm run test:online` de proposito: aquele script e o portao do
+smoke oficial, e este comparador depende de haver cena publicada com conteudo.
+Roda sob demanda, com as variaveis do cofre no ambiente:
+
+```powershell
+$d = Import-Clixml "$env:LOCALAPPDATA\armagedom\online-credentials.xml"
+$env:ARMAGEDON_MASTER_USERNAME = $d.Master.UserName
+$env:ARMAGEDON_MASTER_PASSWORD = $d.Master.GetNetworkCredential().Password
+$env:ARMAGEDON_PLAYER_USERNAME = $d.Player.UserName
+$env:ARMAGEDON_PLAYER_PASSWORD = $d.Player.GetNetworkCredential().Password
+npx playwright test tests/mesa-paridade-online.spec.cjs --reporter=list
+```
+
+**Resultado da primeira execucao (2026-08-28):** os seis tokens da cena
+publicada batem um a um entre mestre e jogador — mesmo id, x, y e escala — e
+os dois clientes estao na MESMA `sceneVersion` (1787890180073), ou seja, nao ha
+cliente atrasado segurando estado velho. Sem token `dm`, sem token oculto, sem
+traco `dm`.
+
+**O que continua NAO provado, e esta escrito aqui para nao ser confundido com
+prova:**
+
+1. **Desenhos.** A cena publicada esta com zero tracos, entao a comparacao de
+   desenho passou no vazio. So a sonda de relay (`npm run test:online`, que
+   desenha um traco temporario e o remove) ou uma conferencia manual a dois
+   fecham esse lado.
+2. **Propagacao ao vivo.** O comparador e uma FOTO do boot. Ele nao prova que
+   um token arrastado agora aparece na tela do jogador em tempo real — para
+   isso alguem precisa mover algo enquanto os dois olham.
+
+## Etapa Concluida (2026-08-27 — Etapa 132: a escala por celula amarrada por teste, do clique ao disco)
 
 **Sintoma relatado:** "o valor nao esta sendo salvo nem aplicado na regua no
 campo de tamanho por celula".
