@@ -107,14 +107,27 @@
    passou a 32px, era exatamente a divergencia que a Etapa 95 tirou do
    pop-up de marcadores. Os vizinhos da linha (.btn-small) vem junto logo
    abaixo — "uma altura por secao" (Etapa 92). */
+/* Etapa 136: os valores eram brancos soltos (borda `rgba(255,255,255,.1)`,
+   fundo `rgba(255,255,255,.04)`) — um cinza estrangeiro no canto onde tudo
+   mais fala a lingua do HUD. Na tela do jogador, com a moldura do container
+   fora (Etapa 135), ele ficou lado a lado com a barra de zoom e a diferenca
+   virou obvia: quadrado cinza em cima, coluna carmesim embaixo.
+   Agora usa os MESMOS tokens do resto do HUD (--hud-bg/--hud-border/--hud-blur),
+   iguais aos da `.vtt-zoom-ctrl` logo abaixo e aos dos paineis flutuantes.
+   Nada de numero proprio: se o HUD mudar de cor, ele muda junto.
+   (O `.vtt-fullscreen-btn` do canto oposto AINDA usa brancos soltos — ele esta
+   declarado duas vezes em css/mesa.css, e o segundo bloco, o que vence, e o
+   antigo. Fica anotado nas Pendencias Vivas.) */
 .mesa-map-settings-btn {
   width: var(--control-md);
   height: var(--control-md);
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--hud-border);
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--hud-bg);
+  backdrop-filter: var(--hud-blur);
+  -webkit-backdrop-filter: var(--hud-blur);
   color: var(--text-soft);
   cursor: pointer;
   flex-shrink: 0;

@@ -8398,6 +8398,35 @@ test.describe("Rotulo do mapa e engrenagem (Etapa 134)", () => {
     expect(overlay.temFundo, "o mestre perdeu o fundo do overlay do mapa").toBe(true);
   });
 
+  /* Etapa 136 — "estilize esse botao para parecer com o resto da pagina". */
+  test("a engrenagem fala a lingua do HUD: mesmos tokens do zoom", async ({ page }) => {
+    await abrir(page, seedPlayerWithScene);
+
+    const cores = await page.evaluate(() => {
+      const ler = sel => {
+        const cs = getComputedStyle(document.querySelector(sel));
+        return { borda: cs.borderTopColor, fundo: cs.backgroundColor };
+      };
+      return {
+        engrenagem: ler("#mesaMapSettingsBtn"),
+        zoom:       ler(".vtt-zoom-ctrl")   // vizinho direto, logo abaixo
+      };
+    });
+
+    /* Comparado com os VIZINHOS, nao com um valor escrito no teste: se o HUD
+       mudar de cor amanha, os tres mudam juntos e isto continua verdade — era
+       exatamente o que os brancos soltos (rgba(255,255,255,.1)) quebravam. */
+    expect(cores.engrenagem.borda, "a engrenagem nao usa a borda do HUD (--hud-border)")
+      .toBe(cores.zoom.borda);
+    expect(cores.engrenagem.fundo, "a engrenagem nao usa o fundo do HUD (--hud-bg)")
+      .toBe(cores.zoom.fundo);
+    /* E nao pode voltar a inventar branco solto: era o valor antigo
+       (rgba(255,255,255,.1) / .04), o mesmo que o `.vtt-fullscreen-btn` ainda
+       carrega por um bloco duplicado em css/mesa.css (pendencia aberta). */
+    expect(cores.engrenagem.borda, "a engrenagem voltou a um branco solto")
+      .not.toMatch(/^rgba\(255, 255, 255/);
+  });
+
   test("o painel vazio do jogador cresce para BAIXO, sem descer o topo", async ({ browser }) => {
     /* Contextos separados de proposito: o seed so semeia uma vez por contexto,
        e aqui os DOIS papeis precisam abrir a mesma tela. */

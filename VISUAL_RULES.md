@@ -917,3 +917,19 @@ o painel e ancorado no topo, logo abaixo da barra do mapa (`top` derivado de
 rodape sem deslocar o topo: a relacao com a barra que o abriu fica intacta.
 Quando os controles do jogador existirem, a reserva sai junto com o paragrafo
 de aviso.
+
+## Controle do HUD usa token do HUD, e o teste compara com o VIZINHO (2026-08-28, Etapa 136)
+
+Todo controle flutuante sobre o palco — botao de icone, coluna de zoom, painel
+— usa `--hud-bg`, `--hud-border`, `--hud-blur` e `--hud-radius`. Valor de cor
+escrito a mao no componente e como o botao acaba sendo o unico cinza numa tela
+carmesim: ninguem repara enquanto ele esta cercado de moldura, e a diferenca
+salta assim que ele fica exposto.
+
+O teste dessa regra **compara com o vizinho, nunca com um valor literal**. Se o
+HUD mudar de cor amanha, um teste que guardasse `rgba(168,48,40,.22)` ficaria
+vermelho sem nada estar errado; um que compare a engrenagem com a barra de zoom
+continua dizendo a verdade — e ainda denuncia o componente que ficou para tras,
+que foi como se descobriu que `.vtt-fullscreen-btn` esta declarado duas vezes
+em `css/mesa.css`, com o bloco antigo vencendo.
+

@@ -11,6 +11,7 @@ Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencia
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
 
 - **[Tiago]** Deploy do Worker pendente: `normalizeSceneGrid` (`cloudflare/src/mesa.js`) ganhou `metersPerCell`, a escala da regua por cena (Etapa 131). Sem `npx wrangler deploy --config cloudflare/wrangler.toml` (com `--dry-run` antes), a escala escolhida pelo mestre aparece certa na sessao e volta aos 1,5 m no F5. Registrar o version ID em `cloudflare/README.md`. — aberta em 2026-08-27 (Etapa 131)
+- **[Claude]** `.vtt-fullscreen-btn` (botao de tela cheia, canto superior esquerdo do palco) esta declarado DUAS vezes em `css/mesa.css` — linha 576 com os tokens do HUD (`--hud-bg`/`--hud-border`/`--hud-blur`, 32px, `--radius-sm`) e linha 674 com brancos soltos (`rgba(255,255,255,.1)`, 30px, `radius: 7px`). O segundo vence, entao o primeiro bloco e codigo morto e o botao e o unico controle do HUD que nao fala a lingua carmesim do resto. Achado pelo teste da Etapa 136, que comparava a engrenagem com ele. Decidir qual bloco fica e apagar o outro. — aberta em 2026-08-28 (Etapa 136)
 - **[Tiago]** `cloudflare/.dev.vars` guarda `PASSWORD_PEPPER`, `JWT_SECRET` e `MASTER_BOOTSTRAP_PASSWORD` em texto puro dentro do OneDrive. Decidir o destino: manter e aceitar a copia na nuvem, mover para fora do OneDrive, ou trocar por valores locais de brinquedo — o `wrangler dev --local` nao precisa dos segredos reais. Antes de qualquer coisa, guardar uma copia segura: secret do Cloudflare NAO pode ser lido de volta, e este arquivo pode ser a unica copia que resta. — aberta em 2026-08-25 (Etapa 121)
 
 ## Regra Obrigatoria de Documentacao
@@ -41,7 +42,30 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-28 — Etapa 135: a moldura que sobrava era a do container, e o painel vazio ganhou corpo)
+## Ultima Etapa Concluida (2026-08-28 — Etapa 136: a engrenagem passa a falar a lingua do HUD)
+
+"Estilize esse botao para parecer com o resto da pagina." Com a moldura do
+container fora (Etapa 135), a engrenagem ficou lado a lado com a barra de zoom
+e a diferenca virou obvia: quadrado CINZA em cima, coluna CARMESIM embaixo.
+
+Os valores dela eram brancos escritos a mao — `rgba(255,255,255,.1)` na borda,
+`rgba(255,255,255,.04)` no fundo —, de antes do sistema `--hud-*`. Agora usa os
+mesmos tokens do resto do HUD (`--hud-bg`, `--hud-border`, `--hud-blur`), os
+mesmos da `.vtt-zoom-ctrl` logo abaixo e dos paineis flutuantes. Se o HUD mudar
+de cor, ela muda junto.
+
+**O teste comparou com o VIZINHO, nao com um valor escrito no teste** — e foi
+isso que denunciou um problema maior: a comparacao incluia tambem o
+`.vtt-fullscreen-btn` do canto oposto, e ele falhou. Motivo: esta declarado
+DUAS vezes em `css/mesa.css` (linha 576 com tokens do HUD, linha 674 com os
+brancos soltos), e o segundo vence. O primeiro bloco e codigo morto e o botao e
+hoje o unico controle do HUD fora da lingua carmesim. Foi para as Pendencias
+Vivas — nao corrigido aqui porque muda outro controle visivel, fora do pedido.
+
+Verde: `test:mesa:audit` (253) e o restante da bateria. Cache-bust
+`2026-08-28-engrenagem-1` ja cobria `css/mesa-map.css`. **Sem deploy**.
+
+## Etapa Concluida (2026-08-28 — Etapa 135: a moldura que sobrava era a do container, e o painel vazio ganhou corpo)
 
 Dois acertos visuais sobre a Etapa 134, pedidos pelo Tiago com a tela na mao.
 
