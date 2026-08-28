@@ -882,3 +882,38 @@ Detalhe de implementacao: em SVG, `stroke-width` e `r` aceitam `calc()` com
 `var()` — e `getComputedStyle` devolve `"calc(8.75px)"`, com o calc em volta.
 Teste que fizer `parseFloat` nesse valor recebe `NaN` e passa por acidente.
 
+## Contorno dentro de contorno nao — quem some e o CONTAINER (2026-08-28, Etapa 135)
+
+Um botao de icone dentro de um overlay do HUD tem DUAS molduras: o quadrado do
+proprio botao e o retangulo do container. Uma delas sobra.
+
+**Some a do container, nunca a do botao.** O quadrado do botao e o alvo de
+clique e o limite do icone — sem ele fica um simbolo solto no vidro, sem
+comeco nem fim. Ja o fundo/borda do overlay existe para AGRUPAR: com dois ou
+mais controles ele faz esse trabalho; com um botao so, e um retangulo em volta
+de outro retangulo.
+
+Precedente que ja existia e que esta regra so generaliza: `.vtt-overlay-tl`
+abriga apenas o botao de tela cheia e ja abria mao de padding, fundo e borda,
+deixando o quadrado do botao aparecer. Na Etapa 135 o `.vtt-overlay-tr` passou
+a fazer o mesmo **na tela do jogador**, onde a Etapa 134 deixou a engrenagem
+sozinha. Para o mestre a moldura fica: la ela agrupa nome do mapa, "Limpar
+mapa" e a gaveta de cenas.
+
+Ao testar isso: **borda que nao pinta se mede por largura ou estilo, nunca por
+cor**. `border: none` deixa a cor computada em `currentcolor` — um teste que
+olhe `borderTopColor` acusa moldura onde nao ha nenhuma.
+
+## Painel vazio ainda e painel (2026-08-28, Etapa 135)
+
+O painel de configuracoes do jogador esta vazio de proposito ate ganhar
+opcoes. Sem altura minima ele encolhia para a altura da unica frase que tem
+dentro e deixava de parecer um painel: virava um balao de aviso pendurado
+abaixo da barra.
+
+O corpo reservado (`.mesa-map-settings-empty`, 140px) cresce **para baixo** —
+o painel e ancorado no topo, logo abaixo da barra do mapa (`top` derivado de
+`--hud-overlay-h`, nunca um numero medido a mao). Entao a reserva alonga o
+rodape sem deslocar o topo: a relacao com a barra que o abriu fica intacta.
+Quando os controles do jogador existirem, a reserva sai junto com o paragrafo
+de aviso.

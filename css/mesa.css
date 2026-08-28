@@ -609,6 +609,22 @@ html {
   right: var(--hud-inset);
 }
 
+/* Etapa 135: na tela do JOGADOR este overlay abriga UM icone so — a
+   engrenagem (Etapa 134). O fundo e a borda do container existem para AGRUPAR
+   varios controles; em volta de um botao que ja e um quadrado no estilo HUD,
+   viram contorno dentro de contorno.
+   Mesma solucao ja adotada em `.vtt-overlay-tl`, que abriga so o botao de tela
+   cheia: some com a moldura do container e deixa o quadrado do botao aparecer.
+   Para o MESTRE nada muda — la o overlay agrupa nome do mapa, "Limpar mapa" e
+   a gaveta de cenas, e a moldura esta fazendo o trabalho dela. */
+body:not([data-role="master"]) .vtt-overlay-tr {
+  padding: 0;
+  border: none;
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .vtt-overlay-br {
   bottom: var(--hud-inset);
   right:  var(--hud-inset);

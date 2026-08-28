@@ -361,6 +361,16 @@
 
 /* A tecla citada no texto (Alt) marcada em carmesim: e a unica coisa
    acionavel dentro da frase. */
+/* Etapa 135: o painel do JOGADOR esta vazio de proposito ate ganhar opcoes
+   (decisao do Tiago). Vazio de verdade ele encolhia para a altura de uma
+   frase e nao parecia um painel — parecia um balao de aviso. O corpo
+   reservado cresce para BAIXO (o painel e ancorado no topo, logo abaixo da
+   barra), entao a barra nao desce: so o rodape dela avanca. Quando os
+   controles do jogador existirem, a reserva sai junto com este paragrafo. */
+.mesa-map-settings-empty {
+  min-height: 140px;
+}
+
 .mesa-map-settings-hint strong {
   color: var(--accent-text);
   font-weight: var(--fw-semibold);

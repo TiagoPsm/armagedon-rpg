@@ -8348,6 +8348,95 @@ test.describe("Rotulo do mapa e engrenagem (Etapa 134)", () => {
 
   /* Etapa 135 — dois ajustes visuais pedidos pelo Tiago sobre a Etapa 134. */
 
+  test("jogador: a moldura em volta da engrenagem e a do BOTAO, nao a do overlay", async ({ page }) => {
+    await abrir(page, seedPlayerWithScene);
+
+    const visual = await page.evaluate(() => {
+      /* Borda que nao pinta se mede por LARGURA/ESTILO, nunca por cor:
+         `border: none` deixa a cor computada em `currentcolor` (aqui, o bege
+         do texto), entao um teste que olhasse a cor acusaria moldura onde nao
+         ha nenhuma. */
+      const semBorda = cs => cs.borderTopStyle === "none" || cs.borderTopWidth === "0px";
+      const transparente = v => !v || v === "transparent" || v === "none"
+        || /rgba\(\s*0,\s*0,\s*0,\s*0\s*\)/.test(v);
+      const btn     = getComputedStyle(document.getElementById("mesaMapSettingsBtn"));
+      const overlay = getComputedStyle(document.querySelector(".vtt-overlay-tr"));
+      return {
+        // O quadrado do BOTAO fica: e ele que da alvo e limite ao icone.
+        botaoTemBorda: !semBorda(btn) && !transparente(btn.borderTopColor),
+        botaoTemFundo: !transparente(btn.backgroundColor),
+        // A moldura do CONTAINER sai: em volta de um unico botao que ja e um
+        // quadrado, ela e contorno dentro de contorno (mesma decisao do
+        // .vtt-overlay-tl, que abriga so o botao de tela cheia).
+        overlayTemBorda: !semBorda(overlay),
+        overlayTemFundo: !transparente(overlay.backgroundColor),
+        overlayPadding: overlay.paddingTop
+      };
+    });
+
+    expect(visual.botaoTemBorda, "a engrenagem perdeu o proprio quadrado").toBe(true);
+    expect(visual.botaoTemFundo, "a engrenagem perdeu o proprio fundo").toBe(true);
+    expect(visual.overlayTemBorda, "sobrou a moldura do overlay em volta da engrenagem sozinha").toBe(false);
+    expect(visual.overlayTemFundo, "sobrou o fundo do overlay em volta da engrenagem sozinha").toBe(false);
+    expect(visual.overlayPadding, "o overlay sem moldura ainda reserva respiro proprio").toBe("0px");
+  });
+
+  test("mestre: o overlay do mapa MANTEM a moldura — la ela agrupa tres controles", async ({ page }) => {
+    await abrir(page, seedMasterWithScene);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+    await page.evaluate(() => renderMesaMapLayer("data:image/gif;base64,R0lGODlhAQABAAAAACw=", "Mapa.png"));
+
+    const overlay = await page.evaluate(() => {
+      const cs = getComputedStyle(document.querySelector(".vtt-overlay-tr"));
+      const transparente = v => !v || v === "transparent" || v === "none"
+        || /rgba\(\s*0,\s*0,\s*0,\s*0\s*\)/.test(v);
+      const semBorda = cs.borderTopStyle === "none" || cs.borderTopWidth === "0px";
+      return { temBorda: !semBorda, temFundo: !transparente(cs.backgroundColor) };
+    });
+
+    expect(overlay.temBorda, "o mestre perdeu a moldura que agrupa os controles do mapa").toBe(true);
+    expect(overlay.temFundo, "o mestre perdeu o fundo do overlay do mapa").toBe(true);
+  });
+
+  test("o painel vazio do jogador cresce para BAIXO, sem descer o topo", async ({ browser }) => {
+    /* Contextos separados de proposito: o seed so semeia uma vez por contexto,
+       e aqui os DOIS papeis precisam abrir a mesma tela. */
+    const medir = async semear => {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await semear(page, [ANA_TOKEN]);
+      await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+      await waitForMesaSettled(page);
+      if (semear === seedMasterWithScene) {
+        await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+      }
+      await page.locator("#mesaMapSettingsBtn").click();
+      const r = await page.evaluate(() => {
+        const p = document.getElementById("mesaMapTransform").getBoundingClientRect();
+        const o = document.querySelector(".vtt-overlay-tr").getBoundingClientRect();
+        return { topo: Math.round(p.top), altura: Math.round(p.height), alturaDaBarra: Math.round(o.height) };
+      });
+      await context.close();
+      return r;
+    };
+
+    const jogador = await medir(seedPlayerWithScene);
+    const mestre  = await medir(seedMasterWithScene);
+
+    /* "Sem descer tudo": o topo do painel e ancorado no CSS
+       (--hud-inset + --hud-overlay-h + --sp-2), nao na caixa renderizada do
+       overlay. A prova e que ele cai no MESMO lugar nos dois papeis, embora a
+       barra do jogador tenha encolhido ao perder a moldura (Etapa 135). */
+    expect(jogador.alturaDaBarra, "a barra do jogador nao encolheu: a moldura voltou?")
+      .toBeLessThan(mestre.alturaDaBarra);
+    expect(jogador.topo, "o painel do jogador desceu junto com a barra em vez de ficar ancorado")
+      .toBe(mestre.topo);
+
+    // "Aumentar a parte de baixo": corpo com altura de painel, nao de balao.
+    expect(jogador.altura, "o painel vazio do jogador voltou a encolher")
+      .toBeGreaterThanOrEqual(150);
+  });
+
   test("mestre: o aviso do jogador NAO aparece no painel dele", async ({ page }) => {
     await abrir(page, seedMasterWithScene);
     await page.waitForFunction(() => typeof isMaster === "function" && isMaster());

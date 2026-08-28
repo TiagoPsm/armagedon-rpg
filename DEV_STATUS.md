@@ -41,7 +41,52 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-28 — Etapa 134: o nome do mapa para o mestre, so a engrenagem para o jogador)
+## Ultima Etapa Concluida (2026-08-28 — Etapa 135: a moldura que sobrava era a do container, e o painel vazio ganhou corpo)
+
+Dois acertos visuais sobre a Etapa 134, pedidos pelo Tiago com a tela na mao.
+
+**1. "Tire o contorno do contorno da engrenagem."** No canto do jogador havia
+duas molduras concentricas: o quadrado do proprio botao e o retangulo do
+overlay em volta dele.
+
+A primeira tentativa tirou a errada — apagou o quadrado do BOTAO e deixou a
+caixa do container. O Tiago corrigiu com duas imagens lado a lado, apontando
+qual das duas queria manter. **Some a do container**: o quadrado do botao e o
+alvo de clique e o limite do icone; o fundo/borda do overlay existe para
+AGRUPAR, e com um controle so nao ha o que agrupar.
+
+Nao e regra nova: `.vtt-overlay-tl`, que abriga so o botao de tela cheia, ja
+abria mao de padding, fundo e borda pelo mesmo motivo. O `.vtt-overlay-tr`
+passou a fazer o mesmo **so para o jogador** (`body:not([data-role="master"])`).
+Para o mestre nada muda — la o overlay agrupa nome do mapa, "Limpar mapa" e a
+gaveta de cenas.
+
+**2. "Traga a barra vazia um pouco mais para baixo, sem descer tudo — apenas
+aumentar a parte de baixo."** O painel do jogador encolhia para a altura da
+unica frase que tem dentro. `.mesa-map-settings-empty` reserva 140px de corpo;
+como o painel e ancorado no TOPO (`top` derivado de `--hud-overlay-h`), a
+reserva alonga o rodape e o topo nao se mexe. A reserva sai junto com o
+paragrafo de aviso quando o jogador ganhar controles de verdade.
+
+**Testes** (em `tests/mesa-audit.spec.cjs`, junto com os da Etapa 134): no
+jogador, o botao MANTEM borda e fundo enquanto o overlay perde os dois; no
+mestre, o overlay mantem a moldura que agrupa; e o painel do jogador cai no
+MESMO topo do painel do mestre embora a barra dele tenha encolhido — a prova de
+que o topo e ancorado no CSS e nao na caixa renderizada — com altura minima de
+150px.
+
+**Duas armadilhas encontradas escrevendo esses testes**, ambas registradas em
+`VISUAL_RULES.md`: (a) `border: none` deixa a cor computada em `currentcolor`,
+entao borda que nao pinta se mede por LARGURA ou ESTILO, nunca por cor — o
+primeiro teste acusava moldura onde nao havia; (b) ler cor logo apos o clique
+devolve o valor do MEIO da transicao de 120ms.
+
+Verde: `test:mesa:audit` (252), `test:mesa` (5), `test:mesa:permissoes` (15),
+cenas + mapa, `test:controles` (6), `check:js` (47), `audit:static`,
+`audit:pendencias`. Cache-bust `2026-08-28-engrenagem-1` em `css/mesa-map.css`
+e `css/mesa.css`. **Sem deploy**: e tudo cliente.
+
+## Etapa Concluida (2026-08-28 — Etapa 134: o nome do mapa para o mestre, so a engrenagem para o jogador)
 
 **Dois pedidos do Tiago, do mesmo canto da tela** (topo direito, `.vtt-overlay-tr`).
 
