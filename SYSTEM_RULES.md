@@ -71,6 +71,20 @@ Compartilhado por design (jogador PODE): ver o palco, desenhar (camada unica, Et
 
 `openMasterPanel()`, `backToMaster()` e `masterView()` sao globais e eram chamaveis pelo console por qualquer jogador, caindo no painel do mestre (formularios de criar jogador/NPC/monstro). As tres passam por `isFichaMaster()` agora. Vale a mesma regra da Mesa: **funcao global exclusiva do mestre precisa de trava na primeira linha**, porque esconder o botao nao protege nada.
 
+### Reconexao do mestre: autoritativo, mas nao onisciente (2026-08-28, Etapa 141)
+
+Na reconexao o mestre **re-persiste** o estado que tem em memoria em vez de puxar a cena. A razao original (bug 3, Etapa 34) continua valendo: puxar reverteria trabalho feito offline e perderia um PUT que falhou durante a queda.
+
+O que faltava era olhar **quem e mais novo**. Desde a Etapa 141, `resyncMesaSceneAfterReconnect()` consulta a cena e compara `sceneVersion`:
+
+- servidor **mais novo** que o local → **PUXA** e nao escreve. Esta aba ficou para tras.
+- **empate** ou local mais novo → re-persiste, como antes.
+- consulta **falhou** → re-persiste. Rede instavel nao pode impedir o mestre de salvar.
+
+Por que a regra existe: uma aba antiga de mestre, esquecida aberta, gravava o que tinha em memoria por cima da cena atual assim que reconectasse — sem aviso, sem confirmacao e sem olhar a versao. Aconteceu duas vezes em uma hora em 2026-08-28, uma delas disparada apenas pela ENTRADA DE UM JOGADOR (o anuncio do mapa tambem persiste a cena). Numa campanha real isso apaga o trabalho de uma sessao inteira. A cena sempre carregou `sceneVersion` — `bumpMesaSceneVersion()` a avanca em toda mutacao local e o valor acompanha o relogio (`Math.max(anterior + 1, Date.now())`), entao versoes de clientes diferentes se comparam.
+
+Coberto por `tests/mesa-audit.spec.cjs` ("reconexao do mestre: re-persiste, mas NAO por cima de cena mais nova"), com os quatro casos.
+
 ### Identidade do socket do realtime (PONTO CRITICO)
 
 O Durable Object decide papel pelos headers `x-armagedon-username` / `x-armagedon-role`. Quem os define e o Worker em `handleMesaRealtime`: ele copia os headers do cliente (o upgrade de WebSocket precisa deles) e **em seguida sobrescreve os dois com o papel do JWT verificado**, usando `set()`.

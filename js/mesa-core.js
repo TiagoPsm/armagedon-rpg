@@ -582,9 +582,45 @@ async function resyncMesaSceneAfterReconnect() {
   if (!window.AUTH?.isBackendEnabled?.()) return;
 
   if (isMaster()) {
-    // O mestre e autoritativo: em vez de puxar a cena (que poderia reverter
-    // mudancas locais feitas offline), re-persiste o estado atual — isso
-    // tambem recupera um PUT que falhou durante a queda.
+    /* O mestre e autoritativo, mas nao e onisciente (Etapa 141).
+     *
+     * Ate aqui esta reconexao re-persistia o estado em memoria SEM olhar o
+     * servidor. A intencao era boa — nao reverter mudanca feita offline e
+     * recuperar um PUT que falhou durante a queda —, mas o efeito colateral
+     * era grave e silencioso: uma ABA ANTIGA de mestre, esquecida aberta,
+     * gravava o que tinha em memoria por cima da cena atual assim que
+     * reconectasse. Sem aviso, sem confirmacao, sem olhar quem era mais novo.
+     * Aconteceu duas vezes em uma hora em 2026-08-28, uma delas sozinha,
+     * disparada so pela entrada de um jogador (o anuncio do mapa persiste).
+     *
+     * A cena SEMPRE carregou `sceneVersion` — `bumpMesaSceneVersion()` a
+     * avanca em toda mutacao local, e o valor acompanha o relogio
+     * (`Math.max(anterior + 1, Date.now())`), entao versoes de clientes
+     * diferentes se comparam. Faltava consultar.
+     *
+     * Regra: se o servidor esta MAIS NOVO, esta aba perdeu a corrida — puxa
+     * em vez de escrever. Empate ou local mais novo mantem o comportamento
+     * anterior (re-persiste), que e o caso legitimo do trabalho offline e do
+     * PUT perdido. Se a leitura falhar, tambem re-persiste: uma rede instavel
+     * nao pode impedir o mestre de salvar. */
+    const podeConferir = typeof window.APP?.getMesaScene === "function";
+    if (podeConferir) {
+      try {
+        const remoteScene = await window.APP.getMesaScene();
+        const versaoRemota = asPositiveInt(extractMesaSceneData(remoteScene)?.sceneVersion, 0);
+        const versaoLocal  = asPositiveInt(state.sceneVersion, 0);
+        if (versaoRemota > versaoLocal) {
+          console.warn(
+            `[mesa] Reconexao do mestre: cena do servidor e mais nova (v${versaoRemota} > v${versaoLocal}). ` +
+            "Puxando em vez de sobrescrever — esta aba provavelmente ficou para tras."
+          );
+          applyRemoteMesaSceneMessage(remoteScene);
+          return;
+        }
+      } catch (error) {
+        console.warn("Falha ao conferir a versao da cena na reconexao do mestre.", error);
+      }
+    }
     if (typeof persistState === "function") persistState({ immediate: true });
     return;
   }

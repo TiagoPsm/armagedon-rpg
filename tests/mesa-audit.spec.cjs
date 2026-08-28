@@ -253,28 +253,77 @@ test.describe("Regressao da auditoria — mestre", () => {
     expect(result.layerDefaults).toEqual(["dm", "tokens", "tokens"]);
   });
 
-  test("reconexao do mestre re-persiste em vez de puxar a cena (bug 3)", async ({ page }) => {
+  /* Bug 3 (Etapa 34) + a correcao da Etapa 141.
+   *
+   * A regra original: na reconexao o mestre NAO puxa a cena — ele re-persiste
+   * o que tem, para nao reverter trabalho feito offline nem perder um PUT que
+   * falhou durante a queda.
+   *
+   * O que faltava: olhar QUEM E MAIS NOVO. Uma aba antiga de mestre, esquecida
+   * aberta, gravava o que tinha em memoria por cima da cena atual ao
+   * reconectar — sem aviso e sem confirmacao. Aconteceu duas vezes em uma hora
+   * em 2026-08-28. A cena sempre carregou `sceneVersion`; faltava consultar.
+   *
+   * Regra nova: servidor mais novo => PUXA. Empate, local mais novo, ou falha
+   * na consulta => re-persiste (bug 3 intacto). */
+  test("reconexao do mestre: re-persiste, mas NAO por cima de cena mais nova (bug 3 + Etapa 141)", async ({ page }) => {
     await seedMasterWithScene(page, BASE_TOKENS);
     const baseUrl = await getMesaBaseUrl();
     await page.goto(`${baseUrl}/mesa.html`);
     await waitForMesaSettled(page);
 
     const result = await page.evaluate(async () => {
-      let persistCalls = 0;
-      let fetchCalls = 0;
+      let persistCalls = 0, fetchCalls = 0;
+      let versaoRemota = 0;
+      let falhar = false;
       persistState = () => { persistCalls += 1; };
       window.AUTH.isBackendEnabled = () => true;
-      window.APP.getMesaScene = async () => { fetchCalls += 1; return { data: { tokens: [] } }; };
+      window.APP.getMesaScene = async () => {
+        fetchCalls += 1;
+        if (falhar) throw new Error("rede caiu");
+        return { data: { tokens: [], sceneVersion: versaoRemota } };
+      };
+      const zerar = () => { persistCalls = 0; fetchCalls = 0; };
 
-      await resyncMesaSceneAfterReconnect(); // 1a conexao: nao faz nada
-      const afterFirst = { persistCalls, fetchCalls };
-      await resyncMesaSceneAfterReconnect(); // reconexao real
-      return { afterFirst, persistCalls, fetchCalls };
+      // 1a conexao da sessao: a cena acabou de ser hidratada no boot.
+      await resyncMesaSceneAfterReconnect();
+      const primeira = { persistCalls, fetchCalls };
+
+      state.sceneVersion = 5000;
+
+      // (a) servidor ATRASADO: o mestre manda o dele — bug 3 preservado.
+      zerar(); versaoRemota = 4999;
+      await resyncMesaSceneAfterReconnect();
+      const servidorAtrasado = { persistCalls, fetchCalls };
+
+      // (b) EMPATE: tambem re-persiste (recupera um PUT que falhou na queda).
+      zerar(); versaoRemota = 5000;
+      await resyncMesaSceneAfterReconnect();
+      const empate = { persistCalls, fetchCalls };
+
+      // (c) servidor MAIS NOVO: esta aba ficou para tras — puxa, nao escreve.
+      zerar(); versaoRemota = 5001;
+      await resyncMesaSceneAfterReconnect();
+      const servidorNovo = { persistCalls, fetchCalls };
+
+      // (d) consulta FALHOU: rede instavel nao pode impedir o mestre de salvar.
+      zerar(); falhar = true;
+      await resyncMesaSceneAfterReconnect();
+      const consultaFalhou = { persistCalls, fetchCalls };
+
+      return { primeira, servidorAtrasado, empate, servidorNovo, consultaFalhou };
     });
 
-    expect(result.afterFirst).toEqual({ persistCalls: 0, fetchCalls: 0 });
-    expect(result.persistCalls).toBe(1);   // mestre re-persiste (autoritativo)
-    expect(result.fetchCalls).toBe(0);     // e nao puxa cena (evita rollback)
+    expect(result.primeira, "a primeira conexao da sessao nao pode fazer nada")
+      .toEqual({ persistCalls: 0, fetchCalls: 0 });
+    expect(result.servidorAtrasado, "o mestre deixou de reimpor o proprio estado (bug 3 voltou)")
+      .toEqual({ persistCalls: 1, fetchCalls: 1 });
+    expect(result.empate, "no empate o mestre precisa reenviar — pode ser um PUT perdido")
+      .toEqual({ persistCalls: 1, fetchCalls: 1 });
+    expect(result.servidorNovo, "aba atrasada gravou por cima de cena mais nova")
+      .toEqual({ persistCalls: 0, fetchCalls: 1 });
+    expect(result.consultaFalhou, "falha de rede na consulta impediu o mestre de salvar")
+      .toEqual({ persistCalls: 1, fetchCalls: 1 });
   });
 
   test("selecao multipla persiste cena e retransmite desenhos ao soltar (bug 5)", async ({ page }) => {

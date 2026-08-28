@@ -40,7 +40,67 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-28 — Etapa 139: o rotulo do mapa mostra o arquivo, e a pasta vai para o hover)
+## Ultima Etapa Concluida (2026-08-28 — Etapa 141: aba antiga de mestre nao apaga mais a cena, e a paridade foi verificada ao vivo)
+
+### 1. A correcao: reconexao do mestre passou a comparar versao
+
+`resyncMesaSceneAfterReconnect()` (js/mesa-core.js) re-persistia o estado em
+memoria SEM olhar o servidor. A intencao (bug 3, Etapa 34) era legitima — nao
+reverter trabalho offline, recuperar um PUT que falhou na queda. O efeito
+colateral era grave e silencioso: **uma aba antiga de mestre, esquecida aberta,
+gravava o que tinha em memoria por cima da cena atual ao reconectar.**
+
+Nao e hipotese: aconteceu DUAS VEZES em uma hora hoje. A segunda foi disparada
+apenas pela entrada de um jogador — o anuncio do mapa (`_persistMesaSceneMap`)
+tambem persiste a cena. Numa campanha real, isso apaga a sessao inteira.
+
+A cena SEMPRE carregou `sceneVersion`, avancada por `bumpMesaSceneVersion()` em
+toda mutacao e ancorada no relogio (`Math.max(anterior + 1, Date.now())`), o
+que a torna comparavel entre clientes. Faltava consultar. Agora:
+
+| situacao | acao |
+|---|---|
+| servidor mais novo | PUXA, e avisa no console qual versao venceu |
+| empate | re-persiste (pode ser um PUT perdido) |
+| local mais novo | re-persiste (trabalho offline) |
+| consulta falhou | re-persiste (rede instavel nao trava o mestre) |
+
+O teste antigo do bug 3 gravava a regra anterior (`fetchCalls: 0`) e foi
+REESCRITO — nao afrouxado: passou de duas assercoes para os quatro casos acima.
+Conferido vermelho sem a correcao.
+
+### 2. A verificacao que faltava: paridade de desenhos e propagacao ao vivo
+
+Fecha os dois buracos declarados nas Etapas 133 e 138. Com a Mesa aberta pelo
+Tiago, um observador somente-leitura (um cliente JOGADOR real contra a
+producao, mais GET da cena oficial com o token do mestre) acompanhou seis
+mudancas:
+
+| horario | evento | cena oficial | jogador |
+|---|---|---|---|
+| 05:38:58 | boot | 4 tracos | os mesmos 4 ids |
+| 05:39:28 | traco novo | 5 tracos | os mesmos 5 |
+| 05:39:30 | traco novo | 6 tracos | os mesmos 6 |
+| 05:39:44 | 2 tokens colocados | 6 tracos, 2 tokens | iguais |
+| 05:39:46 | token movido | posicoes novas | iguais |
+| 05:40:20 | token movido | posicoes novas | iguais |
+
+Nenhum traco faltando, nenhum a mais, nenhuma posicao divergente. O canal de
+delta (`mesa:drawings:add`) e o de movimento funcionam ponta a ponta em
+producao. **Nao foi aberto cliente de MESTRE no teste**, de proposito: e
+exatamente o cliente do mestre que re-persiste ao conectar.
+
+**Descoberta de UX, nao corrigida aqui:** o Tiago desenhou um traco com a
+camada MESTRE ativa esperando que fosse secreto — e ele foi para todos. Esta
+CERTO pela regra da Etapa 73 (o desenho tem uma camada so, compartilhada), mas
+nada na tela avisa. Fica registrado como decisao pendente do Tiago: avisar,
+bloquear o desenho na camada MESTRE, ou devolver o traco secreto (as defesas do
+backend que filtram `dm` continuam la, inertes).
+
+Cache-bust `2026-08-28-reconexao-1` em `js/mesa-core.js`. **Sem deploy**: e
+tudo cliente.
+
+## Etapa Concluida (2026-08-28 — Etapa 139: o rotulo do mapa mostra o arquivo, e a pasta vai para o hover)
 
 Com o mapa restaurado e o nome funcionando (Etapa 134), o rotulo apareceu como
 `MAPA MUNDI / MAPA ...`. A varredura da pasta (`_scanDir`) guarda o CAMINHO
