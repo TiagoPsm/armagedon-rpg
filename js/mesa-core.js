@@ -2623,7 +2623,12 @@ function normalizeMesaScenePayload(payload = {}) {
     grid: typeof window.normalizeMesaGridState === "function" && payload?.grid
       ? (() => {
           const grid = window.normalizeMesaGridState(payload.grid);
-          return grid.enabled || grid.snap ? grid : null;
+          // MESMA condicao de getMesaGridScenePayload e do Worker: escala
+          // propria conta como grade viva. Sem isto, mudar so os m/cel com a
+          // grade DESLIGADA dava assinatura null == null e o dedupe engolia o
+          // persist — a regua voltava aos 1,5 m no F5 (Etapa 131).
+          const escalaPropria = Math.abs(Number(grid.metersPerCell) - 1.5) > 0.001;
+          return grid.enabled || grid.snap || escalaPropria ? grid : null;
         })()
       : null,
     // Névoa na assinatura pelo mesmo motivo (persist só-de-névoa não pode

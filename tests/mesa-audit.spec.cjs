@@ -8183,6 +8183,60 @@ test.describe("Regua: escala por cena e marcacao (Etapa 131)", () => {
     expect(base.espessuraNaTela, "a linha da regua continua fina").toBeGreaterThanOrEqual(3);
   });
 
+  /* Etapa 132 — a escala tem de chegar ao DISCO, nao so ao payload.
+   *
+   * A Etapa 131 provou que `getMesaGridScenePayload()` carrega a escala com a
+   * grade desligada e que o Worker a preserva. Faltava o pedaco do meio: o
+   * dedupe do `flushPersistState` compara ASSINATURAS
+   * (createMesaSceneSignature), e ali a grade era zerada para `null` sempre
+   * que nao estivesse `enabled` nem com `snap` — a condicao antiga da Etapa
+   * 42, de quando grade apagada era grade inexistente. Uma escala nova com a
+   * grade desligada dava `null` antes e `null` depois: gravacao descartada
+   * como "nada mudou".
+   *
+   * O teste percorre o caminho inteiro pelo controle real do mestre: clicar,
+   * gravar, recarregar, medir. */
+  test("a escala com a grade desligada chega ao disco e volta viva no F5", async ({ page }) => {
+    await abrirMesa(page);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    // Ponto de partida do defeito: grade apagada, escala no padrao.
+    await page.evaluate(() => updateMesaGrid({ enabled: false, snap: false, metersPerCell: 1.5 }));
+    await expect(page.locator("#mesaGridScaleLabel")).toHaveText("1,5");
+
+    // Pelo stepper que o mestre clica, nao por chamada direta. 1,5 -> 2.
+    await page.locator("#mesaMapSettingsBtn").click();
+    await expect(page.locator("#mesaGridGroup")).toBeVisible();
+    await page.locator('button[onclick="adjustMesaGridScale(1)"]').click();
+    await expect(page.locator("#mesaGridScaleLabel")).toHaveText("2,0");
+    expect(await page.evaluate(() => getMesaGridState().enabled),
+      "o teste deixou de cobrir o caso da grade DESLIGADA").toBe(false);
+
+    // A assinatura precisa ENXERGAR a escala — e aqui que o dedupe decide.
+    const assinatura = await page.evaluate(() =>
+      normalizeMesaScenePayload(createMesaScenePayloadFromState()).grid);
+    expect(assinatura, "a assinatura zerou a grade que so carregava a escala").toBeTruthy();
+    expect(assinatura.metersPerCell, "a escala nao entra na assinatura da cena").toBe(2);
+
+    // E o persist (debounced em 160ms) tem de ter escrito de fato.
+    await expect.poll(
+      () => page.evaluate(() =>
+        JSON.parse(localStorage.getItem("tc_virtual_mesa_mock_v1") || "{}")?.grid?.metersPerCell ?? null),
+      { message: "a escala nao chegou na cena gravada", timeout: 3000 }
+    ).toBe(2);
+
+    await page.reload();
+    await waitForMesaSettled(page);
+    await expect(page.locator("#mesaGridScaleLabel")).toHaveText("2,0");
+
+    // E a regua responde na escala nova depois do F5.
+    const medida = await page.evaluate(() => window.measureMesaRuler(0.2, 0.5, 0.6, 0.5));
+    expect(medida, "a regua nao mediu nada depois do F5").toBeTruthy();
+    expect(medida.cells).toBeGreaterThan(0);
+    expect(medida.meters, "a regua voltou a medir na escala antiga")
+      .toBeCloseTo(medida.cells * 2, 3);
+  });
+
   test("o stepper da escala sobe e desce pelo mesmo caminho", async ({ page }) => {
     await abrirMesa(page);
     const caminho = await page.evaluate(() => {

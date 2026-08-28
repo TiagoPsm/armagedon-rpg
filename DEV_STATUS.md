@@ -41,7 +41,40 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-27 — Etapa 131: a regua ganha escala por cena, e a marcacao fica legivel)
+## Ultima Etapa Concluida (2026-08-27 — Etapa 132: a escala por celula amarrada por teste, do clique ao disco)
+
+**Sintoma relatado:** "o valor nao esta sendo salvo nem aplicado na regua no
+campo de tamanho por celula".
+
+**Causa principal, e ela continua aberta:** o Worker em producao ainda nao tem
+o `metersPerCell` da Etapa 131 (ver Pendencias Vivas). `normalizeSceneGrid`
+descarta em silencio o campo que nao conhece, entao o PUT da cena volta sem a
+escala e a proxima rehidratacao sobrescreve o estado do mestre com os 1,5 m —
+o que explica os DOIS sintomas, o "nao salva" e o "nem aplica". Nenhuma
+mudanca de frontend resolve isso; so o deploy.
+
+**Segundo defeito, real e latente, corrigido aqui:** `createMesaSceneSignature`
+(js/mesa-core.js) zerava a grade para `null` sempre que ela nao estivesse
+`enabled` nem com `snap` — a condicao da Etapa 42, de quando grade apagada era
+grade inexistente. Desde a Etapa 131 isso deixou de ser verdade: a escala vale
+com ou sem linha desenhada. Hoje o `bumpMesaSceneVersion()` do `updateMesaGrid`
+mascarava o problema (a versao da cena entra na assinatura e sozinha ja fazia o
+persist passar), mas qualquer caminho que mudasse a escala sem bumpar a versao
+cairia no dedupe do `flushPersistState` como "nada mudou". A assinatura passou
+a usar a MESMA condicao de `getMesaGridScenePayload()` (js/mesa-grid.js) e de
+`normalizeSceneGrid()` (cloudflare/src/mesa.js): escala fora de 1,5 m conta
+como grade viva. Cache-busting de `js/mesa-core.js` atualizado em `mesa.html`.
+
+**Teste novo** em `tests/mesa-audit.spec.cjs` ("a escala com a grade desligada
+chega ao disco e volta viva no F5"): percorre o caminho inteiro pelo controle
+real do mestre — abre as configuracoes, clica o stepper, confere a assinatura,
+espera a gravacao, recarrega e mede a regua. Fica vermelho na assinatura sem a
+correcao acima. A Etapa 131 ja cobria as duas pontas (payload da cena e
+normalizacao do Worker); faltava o pedaco do meio, que era justamente onde o
+dedupe morava. `npm run test:mesa` (5) e `npm run test:mesa:audit` (245)
+passam.
+
+## Etapa Concluida (2026-08-27 — Etapa 131: a regua ganha escala por cena, e a marcacao fica legivel)
 
 **A escala era uma constante.** `MESA_RULER_METERS_PER_CELL = 1.5` vivia dentro
 da regua. A contagem em CELULAS ja estava certa — a regua le `cellFrac` da cena
