@@ -40,7 +40,29 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-28 — Etapa 138: o Worker no ar, e um incidente na verificacao)
+## Ultima Etapa Concluida (2026-08-28 — Etapa 139: o rotulo do mapa mostra o arquivo, e a pasta vai para o hover)
+
+Com o mapa restaurado e o nome funcionando (Etapa 134), o rotulo apareceu como
+`MAPA MUNDI / MAPA ...`. A varredura da pasta (`_scanDir`) guarda o CAMINHO
+relativo como nome, espacado para exibir — util para distinguir arquivos
+homonimos em pastas diferentes, pessimo num rotulo que trunca em 160px: a
+pasta comia o espaco e o corte caia justamente no fim, que e o que identifica
+o arquivo.
+
+`_mapFileName()` fica com o ultimo segmento; o caminho inteiro continua no
+`title`, onde nao custa largura nenhuma. Arquivo na raiz da pasta nao muda —
+nao ha o que cortar.
+
+Teste novo cobre os dois casos (subpasta e raiz) e o hover. Cache-bust
+`2026-08-28-mapa-nome-2` em `js/mesa-map.js`. **Sem deploy**: e tudo cliente.
+
+**Confirmado pelo Tiago na tela:** apos o time-travel da Etapa 138 a cena
+"Mapa Mundi" voltou completa — mapa no palco, 6 tokens, roster coerente. A
+duvida que ficou registrada la (se a referencia de mapa da cena tinha se
+perdido) esta resolvida: o mapa vem da pasta conectada, do navegador do
+mestre, e voltou sozinho.
+
+## Etapa Concluida (2026-08-28 — Etapa 138: o Worker no ar, e um incidente na verificacao)
 
 **Deploy feito.** Version ID `1439f8fa-02a1-403c-9f6d-7f906785a2aa`. Fecha a
 pendencia aberta na Etapa 131: `normalizeSceneGrid` com `metersPerCell` estava

@@ -1013,6 +1013,22 @@ function _recallMapName(mapId) {
   try { return localStorage.getItem(MESA_MAP_NAME_PREFIX + id) || ""; } catch { return ""; }
 }
 
+/* So o NOME DO ARQUIVO para o rotulo (Etapa 139).
+ *
+ * A varredura da pasta guarda o caminho relativo como nome ("Mapa Mundi /
+ * Mapa do reino.png", ver _scanDir) — util para distinguir arquivos homonimos
+ * em pastas diferentes, pessimo num rotulo que trunca em 160px: a pasta comia
+ * o espaco e cortava justamente o fim, que e o que identifica o arquivo.
+ * O caminho inteiro continua existindo, no `title`.
+ *
+ * Separador: `_scanDir` monta o caminho com "/" (a File System Access API
+ * sempre usa barra normal, em qualquer sistema) e depois espaca em " / " para
+ * exibir — os dois casos caem no mesmo split, e o trim tira o espaco. */
+function _mapFileName(nomeCompleto) {
+  const partes = String(nomeCompleto || "").split("/");
+  return partes[partes.length - 1].trim();
+}
+
 function renderMesaMapLayer(blobUrl, mapName) {
   const layer       = document.getElementById("mesaMapLayer");
   const label       = document.getElementById("mesaMapLabel");
@@ -1071,10 +1087,9 @@ function renderMesaMapLayer(blobUrl, mapName) {
       const nome = String(mapName || "").trim() || _recallMapName(mesaMapState.activeMapId);
       _rememberMapName(mesaMapState.activeMapId, nome);
       label.hidden = false;
-      label.textContent = blobUrl ? (nome || "Mapa") : "Sem mapa";
-      // O rotulo trunca em 160px por CSS, e nome de arquivo longo perde
-      // justamente o fim que distingue ("...Armaged..."). O title devolve o
-      // nome inteiro no hover, sem alargar a barra.
+      label.textContent = blobUrl ? (_mapFileName(nome) || "Mapa") : "Sem mapa";
+      // O rotulo trunca em 160px por CSS. O title devolve o caminho INTEIRO
+      // (pasta inclusive) no hover, sem alargar a barra.
       if (blobUrl && nome) label.title = nome;
       else label.removeAttribute("title");
       label.classList.toggle("has-map", !!blobUrl);

@@ -8306,6 +8306,30 @@ test.describe("Rotulo do mapa e engrenagem (Etapa 134)", () => {
     expect(depoisDoF5, "o nome do mapa nao sobreviveu ao F5").toBe(MAPA.nome);
   });
 
+  /* Etapa 139 — "ajusta pra mostrar so o nome do arquivo". */
+  test("mestre: mapa em subpasta mostra so o arquivo, com o caminho no hover", async ({ page }) => {
+    await abrir(page, seedMasterWithScene);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    // Nome como a varredura da pasta entrega: caminho relativo espacado.
+    const rotulo = await page.evaluate(() => {
+      mesaMapState.activeMapId = "cf-subpasta";
+      renderMesaMapLayer("data:image/gif;base64,R0lGODlhAQABAAAAACw=", "Mapa Mundi / Mapa do reino.png");
+      const el = document.getElementById("mesaMapLabel");
+      return { texto: el.textContent, hover: el.title };
+    });
+
+    expect(rotulo.texto, "a pasta voltou a comer o rotulo").toBe("Mapa do reino.png");
+    expect(rotulo.hover, "o caminho completo sumiu do hover").toBe("Mapa Mundi / Mapa do reino.png");
+
+    // Arquivo na raiz da pasta continua igual: nada a cortar.
+    const raiz = await page.evaluate(() => {
+      renderMesaMapLayer("data:image/gif;base64,R0lGODlhAQABAAAAACw=", "Mundo de Armagedom.png");
+      return document.getElementById("mesaMapLabel").textContent;
+    });
+    expect(raiz).toBe("Mundo de Armagedom.png");
+  });
+
   test("jogador: so a engrenagem — sem nome de arquivo e sem Limpar mapa", async ({ page }) => {
     await abrir(page, seedPlayerWithScene);
 
