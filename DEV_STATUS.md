@@ -11,7 +11,6 @@ Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencia
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
 
 - **[Tiago]** Deploy do Worker pendente: `normalizeSceneGrid` (`cloudflare/src/mesa.js`) ganhou `metersPerCell`, a escala da regua por cena (Etapa 131). Sem `npx wrangler deploy --config cloudflare/wrangler.toml` (com `--dry-run` antes), a escala escolhida pelo mestre aparece certa na sessao e volta aos 1,5 m no F5. Registrar o version ID em `cloudflare/README.md`. — aberta em 2026-08-27 (Etapa 131)
-- **[Claude]** `.vtt-fullscreen-btn` (botao de tela cheia, canto superior esquerdo do palco) esta declarado DUAS vezes em `css/mesa.css` — linha 576 com os tokens do HUD (`--hud-bg`/`--hud-border`/`--hud-blur`, 32px, `--radius-sm`) e linha 674 com brancos soltos (`rgba(255,255,255,.1)`, 30px, `radius: 7px`). O segundo vence, entao o primeiro bloco e codigo morto e o botao e o unico controle do HUD que nao fala a lingua carmesim do resto. Achado pelo teste da Etapa 136, que comparava a engrenagem com ele. Decidir qual bloco fica e apagar o outro. — aberta em 2026-08-28 (Etapa 136)
 - **[Tiago]** `cloudflare/.dev.vars` guarda `PASSWORD_PEPPER`, `JWT_SECRET` e `MASTER_BOOTSTRAP_PASSWORD` em texto puro dentro do OneDrive. Decidir o destino: manter e aceitar a copia na nuvem, mover para fora do OneDrive, ou trocar por valores locais de brinquedo — o `wrangler dev --local` nao precisa dos segredos reais. Antes de qualquer coisa, guardar uma copia segura: secret do Cloudflare NAO pode ser lido de volta, e este arquivo pode ser a unica copia que resta. — aberta em 2026-08-25 (Etapa 121)
 
 ## Regra Obrigatoria de Documentacao
@@ -42,7 +41,38 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-28 — Etapa 136: a engrenagem passa a falar a lingua do HUD)
+## Ultima Etapa Concluida (2026-08-28 — Etapa 137: o bloco duplicado do botao de tela cheia)
+
+**Fecha a pendencia aberta na Etapa 136.** `.vtt-fullscreen-btn` estava
+declarado duas vezes em `css/mesa.css`: linha 576, com os tokens do HUD
+(`--hud-bg`/`--hud-border`/`--hud-blur`, 32px, `--radius-sm`, mais o estado
+`.is-active`), e linha 674, com valores anteriores ao sistema de tokens (30px,
+`radius: 7px`, brancos soltos). A segunda vencia.
+
+**Duas coisas quebradas de uma vez, e a segunda ninguem tinha visto:**
+
+1. O botao era o unico controle do HUD fora da lingua carmesim — o sintoma que
+   o teste da Etapa 136 pegou.
+2. A declaracao vencedora **nao tinha `.is-active`**. E `js/mesa-roster.js:83`
+   liga essa classe ao entrar em tela cheia. Ou seja: entrar em tela cheia nao
+   mudava absolutamente nada na aparencia do botao. O `aria-pressed` estava
+   certo o tempo todo; quem enxerga a tela e que nao recebia resposta.
+
+Ficou o bloco dos tokens do HUD, que ganhou o `flex-shrink: 0` que so existia
+no duplicado (o botao mora num overlay flex). O duplicado foi apagado. O icone
+volta aos 15px do atributo do SVG (o duplicado forcava 14px por CSS), igual ao
+da engrenagem.
+
+**Por que isso passou despercebido tanto tempo:** seletor repetido no MESMO
+arquivo nao e erro, nao aparece em lint e nao quebra teste nenhum — a ultima
+declaracao vence e a primeira vira codigo morto que continua parecendo vivo na
+leitura. O teste novo conta as declaracoes (`.vtt-fullscreen-btn` uma vez,
+`.vtt-fullscreen-btn.is-active` uma vez) e ainda exige que acender a classe
+MUDE alguma coisa visivel.
+
+Cache-bust `2026-08-28-telacheia-1` em `css/mesa.css`. **Sem deploy**.
+
+## Etapa Concluida (2026-08-28 — Etapa 136: a engrenagem passa a falar a lingua do HUD)
 
 "Estilize esse botao para parecer com o resto da pagina." Com a moldura do
 container fora (Etapa 135), a engrenagem ficou lado a lado com a barra de zoom

@@ -572,13 +572,23 @@ html {
   -webkit-backdrop-filter: none;
 }
 
-/* Botao compacto de tela cheia (so icone) — quadrado no estilo HUD */
+/* Botao compacto de tela cheia (so icone) — quadrado no estilo HUD.
+   Etapa 137: este bloco existia desde sempre e NUNCA valeu. Havia uma segunda
+   declaracao de `.vtt-fullscreen-btn` mais abaixo neste mesmo arquivo, com
+   valores anteriores ao sistema `--hud-*` (30px, `radius: 7px`, brancos
+   soltos), e por vir depois era ela quem pintava o botao. Duas consequencias:
+   o botao era o unico controle do HUD fora da lingua carmesim, e o estado
+   `.is-active` — que o js/mesa-roster.js liga ao entrar em tela cheia — nao
+   existia na declaracao vencedora, entao entrar em tela cheia nao mudava nada
+   na tela. O duplicado foi apagado; este ficou. */
 .vtt-fullscreen-btn {
   display: inline-grid;
   place-items: center;
   width: 32px;
   height: 32px;
   padding: 0;
+  /* vinha do bloco duplicado: o botao mora num overlay flex */
+  flex-shrink: 0;
   border: 1px solid var(--hud-border);
   border-radius: var(--radius-sm);
   background: var(--hud-bg);
@@ -668,31 +678,6 @@ body:not([data-role="master"]) .vtt-overlay-tr {
   color: var(--text-soft);
   line-height: 1.4;
   max-width: 28ch;
-}
-
-/* Botão de tela cheia no overlay */
-.vtt-fullscreen-btn {
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border-radius: 7px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  cursor: pointer;
-  color: var(--text-soft);
-  transition: background 0.15s, color 0.15s;
-  flex-shrink: 0;
-}
-
-.vtt-fullscreen-btn svg {
-  width: 14px;
-  height: 14px;
-}
-
-.vtt-fullscreen-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text);
 }
 
 /* Esconde overlays de estado que CSS da mesa-map já gerencia */

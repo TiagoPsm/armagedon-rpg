@@ -8409,7 +8409,8 @@ test.describe("Rotulo do mapa e engrenagem (Etapa 134)", () => {
       };
       return {
         engrenagem: ler("#mesaMapSettingsBtn"),
-        zoom:       ler(".vtt-zoom-ctrl")   // vizinho direto, logo abaixo
+        zoom:       ler(".vtt-zoom-ctrl"),      // vizinho direto, logo abaixo
+        telaCheia:  ler(".vtt-fullscreen-btn")  // mesmo tipo de botao, canto oposto
       };
     });
 
@@ -8420,11 +8421,55 @@ test.describe("Rotulo do mapa e engrenagem (Etapa 134)", () => {
       .toBe(cores.zoom.borda);
     expect(cores.engrenagem.fundo, "a engrenagem nao usa o fundo do HUD (--hud-bg)")
       .toBe(cores.zoom.fundo);
-    /* E nao pode voltar a inventar branco solto: era o valor antigo
-       (rgba(255,255,255,.1) / .04), o mesmo que o `.vtt-fullscreen-btn` ainda
-       carrega por um bloco duplicado em css/mesa.css (pendencia aberta). */
-    expect(cores.engrenagem.borda, "a engrenagem voltou a um branco solto")
-      .not.toMatch(/^rgba\(255, 255, 255/);
+    /* Etapa 137: o botao de tela cheia entrou na comparacao. Ele falhava aqui
+       por causa de um bloco duplicado em css/mesa.css — foi este teste que o
+       encontrou, e a duplicata ja foi apagada. */
+    expect(cores.telaCheia.borda, "o botao de tela cheia saiu da lingua do HUD")
+      .toBe(cores.zoom.borda);
+
+    // E nenhum dos tres pode voltar a inventar branco solto.
+    for (const [nome, c] of Object.entries(cores)) {
+      expect(c.borda, `${nome} voltou a um branco solto na borda`)
+        .not.toMatch(/^rgba\(255, 255, 255/);
+    }
+  });
+
+  /* Etapa 137 — a duplicata que o teste acima denunciou.
+   *
+   * Declaracao repetida do MESMO seletor no MESMO arquivo nao da erro, nao
+   * aparece em lint e nao quebra teste nenhum: a ultima simplesmente vence e a
+   * primeira vira codigo morto que continua parecendo vivo na leitura. Aqui
+   * custou duas coisas de uma vez — o botao ficou fora da lingua do HUD e
+   * PERDEU o `.is-active`, que o js/mesa-roster.js liga ao entrar em tela
+   * cheia. */
+  test("`.vtt-fullscreen-btn` e declarado UMA vez, e o estado aceso existe", async ({ page }) => {
+    await abrir(page, seedPlayerWithScene);
+
+    const css = await page.evaluate(() => {
+      let base = 0, aceso = 0;
+      for (const sheet of document.styleSheets) {
+        let regras; try { regras = sheet.cssRules; } catch { continue; }
+        for (const r of regras) {
+          if (!r.selectorText) continue;
+          const seletores = r.selectorText.split(",").map(s => s.trim());
+          if (seletores.includes(".vtt-fullscreen-btn")) base += 1;
+          if (seletores.includes(".vtt-fullscreen-btn.is-active")) aceso += 1;
+        }
+      }
+      return { base, aceso };
+    });
+
+    expect(css.base, "`.vtt-fullscreen-btn` voltou a ser declarado mais de uma vez").toBe(1);
+    expect(css.aceso, "o estado aceso do botao de tela cheia sumiu de novo").toBe(1);
+
+    // E o estado aceso precisa MUDAR alguma coisa visivel. O botao tem
+    // transicao: ler no mesmo instante devolve o valor do MEIO dela.
+    const borda = () => page.evaluate(() =>
+      getComputedStyle(document.getElementById("fullscreenMesaBtn")).borderTopColor);
+    const apagado = await borda();
+    await page.evaluate(() => document.getElementById("fullscreenMesaBtn").classList.add("is-active"));
+    await expect.poll(borda, { message: "entrar em tela cheia nao muda nada no botao", timeout: 2000 })
+      .not.toBe(apagado);
   });
 
   test("o painel vazio do jogador cresce para BAIXO, sem descer o topo", async ({ browser }) => {

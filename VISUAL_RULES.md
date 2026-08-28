@@ -933,3 +933,16 @@ continua dizendo a verdade — e ainda denuncia o componente que ficou para tras
 que foi como se descobriu que `.vtt-fullscreen-btn` esta declarado duas vezes
 em `css/mesa.css`, com o bloco antigo vencendo.
 
+## Seletor declarado duas vezes no mesmo arquivo (2026-08-28, Etapa 137)
+
+Nao e erro, nao aparece em lint, nao quebra teste: a ultima declaracao vence e
+a primeira vira codigo morto que continua parecendo vivo para quem le. Foi o
+que aconteceu com `.vtt-fullscreen-btn` em `css/mesa.css` — e o prejuizo nao
+foi so estetico. A declaracao vencedora nao trazia o `.is-active`, entao
+entrar em tela cheia deixou de mudar qualquer coisa no botao, embora o codigo
+que liga a classe estivesse la, funcionando.
+
+Licao para o teste: quando um estado visual e ligado por JS (`is-active`,
+`is-open`, `has-map`), o teste tem de exigir que ele **mude alguma coisa
+computada** — nao basta a classe entrar no elemento.
+
