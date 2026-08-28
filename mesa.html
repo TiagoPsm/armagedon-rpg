@@ -478,15 +478,18 @@
         <p id="sceneStateCopy" class="vtt-hud-copy">A escalacao vem das fichas salvas e a cena sincroniza com jogadores conectados.</p>
       </div>
 
-      <!-- Overlay: topo direito — controles do mapa (MESTRE).
-           Todo o chrome de mapa (rotulo "Sem mapa", abrir, limpar, engrenagem)
-           e gestao: o jogador ve o mapa no palco, nunca os controles. -->
-      <div class="vtt-overlay vtt-overlay-tr" data-mesa-master-only>
+      <!-- Overlay: topo direito — controles do mapa.
+           Etapa 134: o overlay INTEIRO era master-only, o que tornava
+           impossivel dar a engrenagem ao jogador. Agora o master-only desceu
+           para cada peca de gestao (gaveta de cenas, nome do arquivo, limpar
+           mapa) e sobra a engrenagem para o jogador — a unica coisa que ele
+           ve neste canto. -->
+      <div class="vtt-overlay vtt-overlay-tr">
         <!-- Gaveta de cenas (Etapa 89). aria-expanded/aria-controls fazem o
              leitor de tela anunciar que este botao abre outra coisa. -->
         <button type="button" class="mesa-scenes-toggle" id="mesaScenesToggle"
                 aria-controls="mesaScenesDrawer" aria-expanded="false"
-                title="Cenas da mesa" hidden>
+                title="Cenas da mesa" data-mesa-master-only hidden>
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <rect x="2.5" y="5.5" width="15" height="11" rx="1.8"/>
             <path d="M7.5 5.5V4.2a1.2 1.2 0 0 1 1.2-1.2h2.6a1.2 1.2 0 0 1 1.2 1.2v1.3"/>
@@ -495,12 +498,14 @@
           <span class="sr-only">Cenas da mesa</span>
         </button>
         <div class="mesa-map-controls">
-          <span id="mesaMapLabel" class="mesa-map-label">Sem mapa</span>
+          <!-- Nome do arquivo do mapa: da pasta LOCAL do mestre, nunca do
+               jogador (Etapa 134). renderMesaMapLayer reforca por papel. -->
+          <span id="mesaMapLabel" class="mesa-map-label" data-mesa-master-only>Sem mapa</span>
 <!-- Etapa 100: "Abrir mapa" removido. Abria UM arquivo avulso de qualquer
            lugar do disco, caminho paralelo a pasta conectada (que ja varre a
            pasta escolhida e todas as subpastas). O mapa da cena agora sai
            sempre da pasta conectada ou da biblioteca salva. -->
-          <button type="button" class="btn btn-ghost btn-small" id="mesaMapClearBtn" onclick="clearActiveMap()" hidden>Limpar mapa</button>
+          <button type="button" class="btn btn-ghost btn-small" id="mesaMapClearBtn" onclick="clearActiveMap()" data-mesa-master-only hidden>Limpar mapa</button>
           <!-- Etapa 68: o botao "Ajustar/Ajustado" saiu daqui. O palco agora
                assume SEMPRE a proporcao do mapa; nao ha estado a alternar. -->
           <button type="button" class="mesa-map-settings-btn" id="mesaMapSettingsBtn" onclick="toggleMapSettings()" title="Configura&ccedil;&otilde;es da mesa" aria-controls="mesaMapTransform" aria-expanded="false" hidden>
@@ -516,7 +521,13 @@
       </div>
 
       <!-- Painel de configurações do mapa — separado, abre abaixo do overlay -->
-      <div class="mesa-map-settings-panel" id="mesaMapTransform" data-mesa-master-only hidden>
+      <!-- Etapa 134: o painel NAO e mais master-only. O jogador tambem abre a
+           engrenagem; o que ele encontra dentro e so o aviso abaixo, porque
+           todo grupo daqui (Grade, Nevoa) e do mestre e some sozinho para ele.
+           A dica de token desceu para dentro do grupo Grade pelo mesmo motivo:
+           solta aqui, ela vazaria para a tela do jogador. -->
+      <div class="mesa-map-settings-panel" id="mesaMapTransform" hidden>
+        <p class="mesa-map-settings-hint" data-mesa-player-only>Nada para ajustar por enquanto.</p>
         <!-- O grupo "Palco / Ajustar ao mapa" (Etapa 54) saiu na Etapa 68:
              o ajuste virou invariante, sem controle. -->
 
@@ -557,7 +568,7 @@
           <!-- Etapa 99: eram 3 linhas em 248px. Mesmos dois fatos (encaixe em
                celulas inteiras + escape pelo Alt), sem as palavras que so
                repetiam o que os controles acima ja dizem. -->
-          <p class="mesa-map-settings-hint">Token ocupa c&eacute;lulas inteiras (1&times;1, 2&times;2&hellip;). <strong>Alt</strong> ao redimensionar libera tamanho livre.</p>
+          <p class="mesa-map-settings-hint" data-mesa-master-only>Token ocupa c&eacute;lulas inteiras (1&times;1, 2&times;2&hellip;). <strong>Alt</strong> ao redimensionar libera tamanho livre.</p>
         </div>
 
         <!-- Fog of War (Etapa 47) — controles do mestre -->
@@ -934,14 +945,14 @@
   <script src="js/auth.js?v=2026-06-13-login-form-1" defer></script>
   <!-- Permissoes da Mesa (Etapa 75): precisa vir ANTES de todo modulo mesa-*,
        porque eles chamam mesaCan()/requireMesaMaster()/applyMesaRolePermissions(). -->
-  <script src="js/mesa-permissions.js?v=2026-08-21-meu-token-1" defer></script>
+  <script src="js/mesa-permissions.js?v=2026-08-28-mapa-nome-1" defer></script>
   <!-- Ordem importante: dependências antes de mesa-core -->
   <script src="js/mesa-stage.js?v=2026-08-21-resize-sync-1" defer></script>
   <script src="js/mesa-roster.js?v=2026-08-20-barra-vida-1" defer></script>
   <script src="js/mesa-inspector.js?v=2026-08-18-coluna-1" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
   <script src="js/mesa-core.js?v=2026-08-27-regua-2" defer></script>
-  <script src="js/mesa-map.js?v=2026-08-27-toque-1" defer></script>
+  <script src="js/mesa-map.js?v=2026-08-28-mapa-nome-1" defer></script>
   <script src="js/mesa-grid.js?v=2026-08-27-regua-1" defer></script>
   <script src="js/mesa-fog.js?v=2026-07-29-sharp-1" defer></script>
   <script src="js/mesa-scenes.js?v=2026-08-19-pastas-1" defer></script>

@@ -177,6 +177,18 @@ function applyMesaRolePermissions(role) {
   // CSS antigas (css/mesa-map.css); data-role e a fonte oficial.
   document.body.classList.toggle("is-master", resolved === "master");
 
+  /* `data-mesa-player-only` (Etapa 134): o espelho do master-only, para o
+     caso raro em que a tela do JOGADOR precisa de algo que a do mestre nao
+     tem. Nasceu com o painel da engrenagem, que deixou de ser exclusivo do
+     mestre: o aviso "nada para ajustar" e verdade para o jogador e mentira
+     para o mestre, que tem grade e nevoa ali dentro. */
+  document.querySelectorAll("[data-mesa-player-only]").forEach(el => {
+    const escondido = resolved === "master";
+    el.hidden = escondido;
+    if (escondido) el.setAttribute("aria-hidden", "true");
+    else el.removeAttribute("aria-hidden");
+  });
+
   if (resolved === "master") {
     document.querySelectorAll("[data-mesa-master-only][data-mesa-perm-hidden]").forEach(el => {
       delete el.dataset.mesaPermHidden;

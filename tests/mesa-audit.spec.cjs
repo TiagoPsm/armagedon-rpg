@@ -8259,3 +8259,103 @@ test.describe("Regua: escala por cena e marcacao (Etapa 131)", () => {
   });
 });
 
+/* ============================================================
+ * Rotulo do mapa e engrenagem (Etapa 134)
+ *
+ * Dois pedidos do Tiago, do mesmo canto da tela:
+ *   1. o mestre tem de ver SEMPRE o nome do arquivo na pasta — nao o id;
+ *   2. o jogador ve APENAS a engrenagem ali.
+ * ============================================================ */
+test.describe("Rotulo do mapa e engrenagem (Etapa 134)", () => {
+  const MAPA = { id: "cf-a1f8e19bbc35", url: "https://exemplo.test/mapa.png", nome: "Mundo de Armagedom.png" };
+
+  async function abrir(page, semear) {
+    await semear(page, [ANA_TOKEN]);
+    await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
+    await waitForMesaSettled(page);
+  }
+
+  test("mestre: a cena oficial reidratando a tela NAO troca o nome pelo id", async ({ page }) => {
+    await abrir(page, seedMasterWithScene);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    // 1) O mestre escolhe o mapa na pasta: e aqui que o nome do arquivo existe.
+    await page.evaluate(m => {
+      mesaMapState.activeMapId = m.id;
+      renderMesaMapLayer(m.url, m.nome);
+    }, MAPA);
+    await expect(page.locator("#mesaMapLabel")).toHaveText(MAPA.nome);
+
+    // 2) Agora a cena oficial reidrata a tela. O contrato da cena so tem
+    //    {id, url, transform} — era exatamente aqui que o rotulo virava
+    //    "CF-A1F8E19BBC35", o id cru, na cara do mestre.
+    const rotulo = await page.evaluate(m => {
+      renderMesaMapLayer(m.url, "");
+      return document.getElementById("mesaMapLabel").textContent;
+    }, MAPA);
+    expect(rotulo, "o rotulo caiu para o id do mapa").toBe(MAPA.nome);
+
+    // 3) E o nome sobrevive ao F5, que e o "sempre" do pedido.
+    await page.reload();
+    await waitForMesaSettled(page);
+    const depoisDoF5 = await page.evaluate(m => {
+      mesaMapState.activeMapId = m.id;
+      renderMesaMapLayer(m.url, "");
+      return document.getElementById("mesaMapLabel").textContent;
+    }, MAPA);
+    expect(depoisDoF5, "o nome do mapa nao sobreviveu ao F5").toBe(MAPA.nome);
+  });
+
+  test("jogador: so a engrenagem — sem nome de arquivo e sem Limpar mapa", async ({ page }) => {
+    await abrir(page, seedPlayerWithScene);
+
+    const visivel = async id => page.evaluate(sel => {
+      const el = document.getElementById(sel);
+      if (!el) return null;
+      return !el.hidden && el.offsetParent !== null;
+    }, id);
+
+    // Com mapa no palco (o caminho em que o jogador via os tres controles).
+    await page.evaluate(m => renderMesaMapLayer(m.url, m.nome), MAPA);
+    expect(await visivel("mesaMapLabel"), "o jogador viu o nome do arquivo do mestre").toBe(false);
+    expect(await visivel("mesaMapClearBtn"), "o jogador viu 'Limpar mapa'").toBe(false);
+    expect(await visivel("mesaMapSettingsBtn"), "a engrenagem sumiu para o jogador").toBe(true);
+
+    // E sem mapa nenhum: a engrenagem continua sendo a unica coisa ali.
+    await page.evaluate(() => renderMesaMapLayer("", ""));
+    expect(await visivel("mesaMapLabel"), "o jogador viu 'Sem mapa'").toBe(false);
+    expect(await visivel("mesaMapClearBtn")).toBe(false);
+    expect(await visivel("mesaMapSettingsBtn"), "a engrenagem sumiu sem mapa").toBe(true);
+  });
+
+  test("jogador: a engrenagem ABRE, e o que ha dentro e so o aviso", async ({ page }) => {
+    await abrir(page, seedPlayerWithScene);
+
+    await page.locator("#mesaMapSettingsBtn").click();
+    const painel = page.locator("#mesaMapTransform");
+    await expect(painel, "a engrenagem do jogador nao abriu nada").toBeVisible();
+
+    // Nada do mestre pode vazar para dentro dele.
+    await expect(page.locator("#mesaGridGroup")).toBeHidden();
+    await expect(page.locator("#mesaFogGroup")).toBeHidden();
+    await expect(page.locator('#mesaMapTransform [data-mesa-master-only]')).toBeHidden();
+    await expect(page.locator('#mesaMapTransform [data-mesa-player-only]')).toBeVisible();
+
+    // E fecha no segundo clique.
+    await page.locator("#mesaMapSettingsBtn").click();
+    await expect(painel).toBeHidden();
+  });
+
+  /* Etapa 135 — dois ajustes visuais pedidos pelo Tiago sobre a Etapa 134. */
+
+  test("mestre: o aviso do jogador NAO aparece no painel dele", async ({ page }) => {
+    await abrir(page, seedMasterWithScene);
+    await page.waitForFunction(() => typeof isMaster === "function" && isMaster());
+
+    await page.locator("#mesaMapSettingsBtn").click();
+    await expect(page.locator("#mesaMapTransform")).toBeVisible();
+    await expect(page.locator("#mesaGridGroup"), "o mestre perdeu os controles de grade").toBeVisible();
+    await expect(page.locator('#mesaMapTransform [data-mesa-player-only]'),
+      "o aviso 'nada para ajustar' vazou para o mestre").toBeHidden();
+  });
+});

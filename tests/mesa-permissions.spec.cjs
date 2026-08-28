@@ -88,7 +88,12 @@ test.describe("Permissoes da Mesa (Etapa 75)", () => {
     await expect(page.locator("#mesaLayerMapBtn")).toBeHidden();                 // MAPA
     await expect(page.locator("#mapLibFolderBtn")).toBeHidden();                 // CONECTAR PASTA
     await expect(page.locator("#mesaMapLabel")).toBeHidden();                    // SEM MAPA
-    await expect(page.locator("#mesaMapSettingsBtn")).toBeHidden();              // engrenagem
+    /* A engrenagem SAIU desta lista na Etapa 134, por decisao do Tiago: ela e
+       a unica coisa que o jogador ve no canto do mapa, e o painel dela deixou
+       de ser master-only. O que continua valendo — e esta conferido no
+       mesa-audit — e que nada do MESTRE aparece dentro dele: os grupos de
+       Grade e Nevoa seguem master-only, cada um pela propria checagem. */
+    await expect(page.locator("#mesaMapSettingsBtn")).toBeVisible();             // engrenagem: agora e do jogador tambem
     await expect(page.locator("#moveLockBtn")).toBeHidden();                     // TRAVAR MOVIMENTO
     await expect(page.locator("#resetMesaBtn")).toBeHidden();                    // LIMPAR CENA
     await expect(page.locator("#initMasterControls")).toBeHidden();              // Voltar/Passar/Encerrar
@@ -135,13 +140,31 @@ test.describe("Permissoes da Mesa (Etapa 75)", () => {
     const resultado = await page.evaluate(() => {
       activateInitiative();
       const combateLigou = getInitiativeState().active;
+      /* toggleMapSettings deixou de ser master-only na Etapa 134 — o painel
+         ABRE para o jogador de proposito. O que ele nao pode e conter
+         controle de mestre, e e isso que se confere aqui. */
       toggleMapSettings();
-      const painelAbriu = !document.getElementById("mesaMapTransform").hidden;
-      return { combateLigou, painelAbriu };
+      const painel = document.getElementById("mesaMapTransform");
+      const painelAbriu = !painel.hidden;
+      const vazouDoMestre = Array.from(painel.querySelectorAll("[data-mesa-master-only]"))
+        .filter(el => !el.hidden && el.offsetParent !== null)
+        .map(el => el.id || el.className);
+      const grade = document.getElementById("mesaGridGroup");
+      const nevoa = document.getElementById("mesaFogGroup");
+      return {
+        combateLigou,
+        painelAbriu,
+        vazouDoMestre,
+        gradeVisivel: Boolean(grade && !grade.hidden),
+        nevoaVisivel: Boolean(nevoa && !nevoa.hidden)
+      };
     });
 
     expect(resultado.combateLigou).toBe(false);
-    expect(resultado.painelAbriu).toBe(false);
+    expect(resultado.painelAbriu, "a engrenagem do jogador deixou de abrir").toBe(true);
+    expect(resultado.vazouDoMestre, "controle de mestre vazou para dentro do painel do jogador").toEqual([]);
+    expect(resultado.gradeVisivel, "grupo Grade apareceu para o jogador").toBe(false);
+    expect(resultado.nevoaVisivel, "grupo Nevoa apareceu para o jogador").toBe(false);
   });
 
   test("mesaCan: capacidade desconhecida e negada para jogador (fail-closed)", async ({ page }) => {

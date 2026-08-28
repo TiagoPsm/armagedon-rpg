@@ -41,7 +41,69 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-28 — Etapa 133: um comparador somente-leitura de mestre x jogador)
+## Ultima Etapa Concluida (2026-08-28 — Etapa 134: o nome do mapa para o mestre, so a engrenagem para o jogador)
+
+**Dois pedidos do Tiago, do mesmo canto da tela** (topo direito, `.vtt-overlay-tr`).
+
+### 1. O mestre via o ID do mapa, nao o nome do arquivo
+
+O rotulo estampava `CF-A1F8E19BBC35`. O nome do arquivo so existe no momento
+em que o mestre escolhe o mapa na pasta conectada (`entry.fullName`); quando a
+CENA OFICIAL reidratava a tela, `applySceneMapRef` chamava
+`renderMesaMapLayer(ref.url, ref.id || "Mapa")` — e o contrato da cena so tem
+`{id, url, transform}`. O id cru ia parar no rotulo, por cima do nome.
+
+Nao foi corrigido levando o nome para o contrato da cena: esse nome e do
+sistema de arquivos LOCAL do mestre, nao interessa ao jogador e obrigaria
+deploy do Worker. Ele agora fica do lado do cliente, indexado pelo mesmo id que
+a cena ja carrega (`mesa_map_name_<id>` no localStorage), gravado nos tres
+pontos onde o nome e conhecido (escolha na pasta, restore do IDB, biblioteca).
+`renderMesaMapLayer` resolve na ordem: nome recebido -> nome lembrado ->
+"Mapa". Vence quem SABE o nome, nao quem chega por ultimo — o que torna o
+resultado imune a ordem entre o restore local e o snapshot remoto. Nome longo
+ganhou `title` com o nome inteiro (o rotulo trunca em 160px por CSS).
+
+### 2. O jogador via o que nao devia, e nao via o que devia
+
+No canto do mapa o jogador via o nome do arquivo do mestre e um "Limpar mapa"
+que nunca funcionou (`clearActiveMap` recusa quem nao e mestre) — botao morto —
+e a engrenagem aparecia so de raspao. Agora ele ve **so a engrenagem**, com
+mapa ou sem, e ela ABRE.
+
+O impedimento era estrutural: o overlay INTEIRO era `data-mesa-master-only`. O
+marcador desceu para cada peca de gestao (gaveta de cenas, rotulo, limpar
+mapa), e `renderMesaMapLayer` reforca por papel. `toggleMapSettings()` perdeu o
+`_requireMapMaster`; quem protege continua sendo cada grupo de dentro (Grade,
+Nevoa), que ja e master-only por conta propria, mais o Worker e o DO. A dica de
+token, solta no painel, desceu para dentro do grupo Grade — senao vazaria para
+a tela do jogador.
+
+**Painel do jogador esta vazio de proposito** (decisao do Tiago: "ele ainda
+tera opcoes para ajustar la, deixe vazio por hora"), com um aviso "Nada para
+ajustar por enquanto." marcado com o **novo** `data-mesa-player-only` — o
+espelho do master-only, tratado no mesmo `applyMesaRolePermissions`.
+
+### Testes
+
+Quatro casos novos em `tests/mesa-audit.spec.cjs` ("Rotulo do mapa e
+engrenagem"): a cena reidratando nao troca o nome pelo id (e o nome sobrevive
+ao F5); o jogador ve so a engrenagem, com e sem mapa; a engrenagem do jogador
+abre e nao contem nada do mestre; o aviso do jogador nao vaza para o mestre.
+
+**Dois testes ANTIGOS foram alterados de proposito**, em
+`tests/mesa-permissions.spec.cjs`: eles gravavam a regra antiga (engrenagem
+escondida do jogador; `toggleMapSettings` no-op para jogador). Nao foram
+afrouxados — foram REESCRITOS para a regra nova e mais exigente: o painel ABRE
+para o jogador e nao pode conter nenhum `[data-mesa-master-only]` visivel, nem
+o grupo Grade, nem o grupo Nevoa.
+
+Verde: `test:mesa:audit` (249), `test:mesa` (5), `test:mesa:permissoes` (15),
+`mesa-scene-map`/`mesa-scenes`/`mesa-toque`/`mesa-token-handles`/`build-pages`
+(51), `test:controles` (6), `check:js` (47), `audit:static`,
+`audit:pendencias`. Cache-bust `2026-08-28-mapa-nome-1` em `js/mesa-map.js` e
+`js/mesa-permissions.js`. **Sem deploy**: e tudo cliente.
+
+## Etapa Concluida (2026-08-28 — Etapa 133: um comparador somente-leitura de mestre x jogador)
 
 **Pergunta que originou:** "todos os jogadores e o mestre estao vendo as mesmas
 coisas na mesa (desenhos e posicao dos tokens)?"

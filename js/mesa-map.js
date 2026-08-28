@@ -594,6 +594,12 @@ async function initMesaMap() {
       bindPlayerMapListeners();
       // Jogador: reforca o fechamento depois que o modulo de mapa mexeu no DOM.
       if (typeof applyMesaRolePermissions === "function") applyMesaRolePermissions("player");
+      // Etapa 134: a engrenagem e a unica coisa que o jogador ve no canto do
+      // mapa, e ela nao depende de haver mapa. Antes so o ramo do mestre
+      // revelava o botao, entao no jogador ele so aparecia de raspao, quando
+      // um render de mapa passava por ali.
+      const settingsBtn = document.getElementById("mesaMapSettingsBtn");
+      if (settingsBtn) settingsBtn.hidden = false;
     }
 
     // Restaura a camada ativa salva (respeitando o papel).
@@ -873,6 +879,7 @@ async function applyActiveMap(mapEntry) {
     if (typeof broadcastMapTransform === "function") broadcastMapTransform();
   });
 
+  _rememberMapName(mapEntry.id, mapEntry.name);
   renderMesaMapLayer(blobUrl, mapEntry.name);
 }
 
@@ -961,6 +968,7 @@ async function _restoreCFActiveMap() {
     // Marcar pasta conectada como tendo esse caminho ativo (sera confirmado apos reconexao)
     connectedFolder._activePath = saved.cfPath || "";
 
+    _rememberMapName(mesaMapState.activeMapId, saved.name || "");
     renderMesaMapLayer(blobUrl, saved.name || "");
 
     // Restaura o transform salvo por mapa (antes o F5 sempre zerava o
@@ -979,6 +987,31 @@ async function _restoreCFActiveMap() {
 }
 
 /* ── RENDERIZAÇÃO NO PALCO ──────────────────────────────────── */
+
+/* Nome do arquivo do mapa, por id (Etapa 134).
+ *
+ * O rotulo mostrava o ID quando a cena oficial reidratava a tela do mestre
+ * ("CF-A1F8E19BBC35"): `applySceneMapRef` so tem `{id, url, transform}` — o
+ * contrato da cena nunca carregou o nome do arquivo, e nem deve, porque esse
+ * nome e da PASTA LOCAL do mestre e nao interessa ao jogador.
+ *
+ * Entao o nome fica do lado de ca, indexado pelo mesmo id que a cena carrega.
+ * Sobrevive ao F5 e a ordem em que o restore local e o snapshot remoto
+ * chegam — vence quem souber o nome, nao quem chegar por ultimo. */
+const MESA_MAP_NAME_PREFIX = "mesa_map_name_";
+
+function _rememberMapName(mapId, mapName) {
+  const id   = String(mapId || "").trim();
+  const nome = String(mapName || "").trim();
+  if (!id || !nome) return;
+  try { localStorage.setItem(MESA_MAP_NAME_PREFIX + id, nome); } catch {}
+}
+
+function _recallMapName(mapId) {
+  const id = String(mapId || "").trim();
+  if (!id) return "";
+  try { return localStorage.getItem(MESA_MAP_NAME_PREFIX + id) || ""; } catch { return ""; }
+}
 
 function renderMesaMapLayer(blobUrl, mapName) {
   const layer       = document.getElementById("mesaMapLayer");
@@ -1011,9 +1044,17 @@ function renderMesaMapLayer(blobUrl, mapName) {
         if (settingsBtn) settingsBtn.classList.remove("is-active");
       }
     } else {
-      // Jogador: sem mapa → sem configurações → oculta tudo
-      if (transformEl) { transformEl.hidden = true; }
-      if (settingsBtn) { settingsBtn.hidden = true; settingsBtn.setAttribute("aria-expanded","false"); }
+      // Jogador (Etapa 134): a engrenagem e a UNICA coisa que ele ve neste
+      // canto, com mapa ou sem. Antes ela sumia sem mapa — e no lugar dela
+      // sobravam o nome do arquivo e um "Limpar mapa" que nao funcionava.
+      if (transformEl && !transformEl.hidden) {
+        transformEl.hidden = true;
+        if (settingsBtn) {
+          settingsBtn.setAttribute("aria-expanded", "false");
+          settingsBtn.classList.remove("is-active");
+        }
+      }
+      if (settingsBtn) settingsBtn.hidden = false;
     }
     // Mapa limpo: o palco volta a preencher o canvas e a grade e a névoa
     // voltam a ancorar no palco inteiro (sem mapa não há proporção a ajustar).
@@ -1022,11 +1063,30 @@ function renderMesaMapLayer(blobUrl, mapName) {
     if (typeof window.renderMesaFog === "function") window.renderMesaFog();
   }
 
+  // Nome do arquivo so existe para o MESTRE (Etapa 134): e o nome na pasta
+  // local dele. O jogador nao ve rotulo nenhum — nem "Sem mapa", que so
+  // anunciava que o mestre ainda nao escolheu.
   if (label) {
-    label.textContent = blobUrl ? mapName : "Sem mapa";
-    label.classList.toggle("has-map", !!blobUrl);
+    if (masterMode) {
+      const nome = String(mapName || "").trim() || _recallMapName(mesaMapState.activeMapId);
+      _rememberMapName(mesaMapState.activeMapId, nome);
+      label.hidden = false;
+      label.textContent = blobUrl ? (nome || "Mapa") : "Sem mapa";
+      // O rotulo trunca em 160px por CSS, e nome de arquivo longo perde
+      // justamente o fim que distingue ("...Armaged..."). O title devolve o
+      // nome inteiro no hover, sem alargar a barra.
+      if (blobUrl && nome) label.title = nome;
+      else label.removeAttribute("title");
+      label.classList.toggle("has-map", !!blobUrl);
+    } else {
+      label.hidden = true;
+      label.textContent = "";
+      label.classList.remove("has-map");
+    }
   }
-  if (clearBtn) clearBtn.hidden = !blobUrl;
+  // "Limpar mapa" e master-only no comportamento (clearActiveMap recusa
+  // jogador) — sem esta guarda ele APARECIA para o jogador e nao fazia nada.
+  if (clearBtn) clearBtn.hidden = !blobUrl || !masterMode;
 }
 
 /* ── TRANSFORM DO MAPA (pan + zoom) ────────────────────────── */
@@ -1489,7 +1549,9 @@ function _renderSceneMapFromUrl(ref) {
     // Transform realtime que chegou antes da imagem (jogador).
     _flushPendingRemoteTransform();
   });
-  renderMesaMapLayer(ref.url, ref.id || "Mapa");
+  // Sem nome de proposito (Etapa 134): o contrato da cena so tem o id, e
+  // passar o id aqui era o que estampava "CF-A1F8E19BBC35" no lugar do nome.
+  renderMesaMapLayer(ref.url, "");
 }
 
 // Persiste a cena oficial com a referência atual do mapa (master-only).
@@ -2265,8 +2327,11 @@ function setMesaMapUploading(uploading) {
   _setMesaMapStatus("enviando", uploading, "Enviando...");
 }
 
+/* Etapa 134: o painel deixou de ser master-only. O jogador ve a engrenagem e
+   ela ABRE — o conteudo dele por enquanto e so o aviso de que ainda nao ha o
+   que ajustar. Os grupos de dentro (Grade, Nevoa) continuam master-only, cada
+   um pela propria checagem de papel. */
 function toggleMapSettings() {
-  if (!_requireMapMaster("abrir as configuracoes da mesa")) return;
   const panel = document.getElementById("mesaMapTransform");
   const btn   = document.getElementById("mesaMapSettingsBtn");
   if (!panel) return;
@@ -3058,6 +3123,7 @@ async function setMapFromConnectedFolder(path) {
     _stampLocalMapScene();
     try { localStorage.removeItem(_mapActiveKeyForScene(_currentMesaSceneId())); } catch {}
 
+    _rememberMapName(cfEntry.id, entry.fullName);
     renderMesaMapLayer(blobUrl, entry.fullName);
     resetMapTransform();
     // Medir a imagem (Etapa 68). Este caminho NUNCA media: as dimensões
