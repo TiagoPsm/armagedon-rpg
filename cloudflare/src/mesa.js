@@ -1,3 +1,5 @@
+import {} from "../../js/mesa-vision-geometry.js";
+import {} from "../../js/mesa-vision-rules.js";
 const DEFAULT_SCENE_ID = "default";
 const MAX_TOKENS = 120;
 const MAX_TEXT_LENGTH = 160;
@@ -95,8 +97,10 @@ function normalizeSceneToken(token) {
   return {
     id: normalizeText(token?.id || characterKey).toLowerCase(),
     characterKey,
-    x: Math.round(clamp(token?.x, 0, 100) * 100) / 100,
-    y: Math.round(clamp(token?.y, 0, 100) * 100) / 100,
+    facingDeg: ((Number(token?.facingDeg) || 0) % 360 + 360) % 360,
+    visionRadius: token?.visionRadius ? clamp(token.visionRadius, .0001, .45) : null,
+    x: Math.round(clamp(token?.x, 0, 100) * 1e6) / 1e6,
+    y: Math.round(clamp(token?.y, 0, 100) * 1e6) / 1e6,
     visibleToPlayers: token?.visibleToPlayers !== false,
     statsVisibleToPlayers: token?.statsVisibleToPlayers === true,
     layer: token?.layer === "dm" ? "dm" : "tokens",
@@ -318,6 +322,7 @@ function normalizeMesaScene(payload) {
 
   return {
     sceneVersion: normalizeSceneVersion(source?.sceneVersion),
+    vision: globalThis.MesaVisionRules.normalize(source?.vision),
     selectedTokenId: normalizeText(source?.selectedTokenId).toLowerCase(),
     tokens,
     initiative,
@@ -617,24 +622,63 @@ async function saveMesaScene(env, actor, payload, requestedId) {
 
   const meta = await getMesaSceneMeta(env);
   const sceneId = resolveSceneIdForActor(meta, actor, requestedId);
-  const data = normalizeMesaScene(payload);
+  let data;
+  try { data = normalizeMesaScene(payload); }
+  catch (error) { throw jsonError(error.message || "Cena invalida.", 400); }
   const now = new Date().toISOString();
 
-  await env.DB.prepare(
+  const previous = await env.DB.prepare("select data_json from mesa_scenes where id = ?").bind(sceneId).first();
+  const oldVision = parseSceneData(previous?.data_json)?.vision;
+  if (data.vision || oldVision) {
+    if ((data.vision?.revision || 0) !== (oldVision?.revision || 0)) throw jsonError("A cena mudou. Recarregue antes de editar.", 409);
+    if (!data.vision) throw jsonError("Cliente antigo: atualize a Mesa antes de salvar.", 409);
+    // Validate the full geometry before any write; never persist a partial graph.
+    try { globalThis.MesaVisionGeometry.prepare(data.vision, data.vision.aspect); }
+    catch { throw jsonError("Geometria invalida ou complexa demais.", 400); }
+    data.vision.revision = (oldVision?.revision || 0) + 1;
+    data.sceneVersion = Math.max(Date.now(), data.sceneVersion, (parseSceneData(previous?.data_json)?.sceneVersion || 0) + 1);
+  }
+
+  if (previous) {
+    const result = await env.DB.prepare("update mesa_scenes set data_json = ?, updated_by_user_id = ?, updated_at = ? where id = ? and data_json = ?")
+      .bind(JSON.stringify(data), actor.sub, now, sceneId, previous.data_json).run();
+    if (result.meta.changes !== 1) throw jsonError("A cena mudou durante o salvamento.", 409);
+    return getMesaScene(env, actor, sceneId);
+  }
+
+  const inserted = await env.DB.prepare(
     `
       insert into mesa_scenes (
         id, data_json, created_by_user_id, updated_by_user_id, created_at, updated_at
       )
       values (?, ?, ?, ?, ?, ?)
-      on conflict(id) do update set
-        data_json = excluded.data_json,
-        updated_by_user_id = excluded.updated_by_user_id,
-        updated_at = excluded.updated_at
+      on conflict(id) do nothing
     `
   )
     .bind(sceneId, JSON.stringify(data), actor.sub, actor.sub, now, now)
     .run();
 
+  if (inserted.meta.changes !== 1) throw jsonError("A cena foi criada em outra aba.", 409);
+
+  return getMesaScene(env, actor, sceneId);
+}
+
+async function applyMesaVisionAction(env, actor, body, locked) {
+  const meta = await getMesaSceneMeta(env);
+  const sceneId = body?.sceneId;
+  if (!isValidSceneId(sceneId) || (actor.role !== "master" && sceneId !== meta.activeId)) throw jsonError("Cena nao autorizada.", 403);
+  const row = await env.DB.prepare("select data_json from mesa_scenes where id = ?").bind(sceneId).first();
+  if (!row) throw jsonError("Cena inexistente.", 404);
+  const current = normalizeMesaScene(parseSceneData(row.data_json));
+  if (body.revision !== current.vision?.revision) throw jsonError("A cena mudou. Tente novamente.", 409);
+  let next;
+  try { next = globalThis.MesaVisionRules.apply(current, actor, body.action, locked); }
+  catch (error) { throw jsonError(error.message, error.status || 400); }
+  next.vision.revision++;
+  next.sceneVersion = Math.max(Date.now(), current.sceneVersion + 1);
+  const result = await env.DB.prepare("update mesa_scenes set data_json = ?, updated_by_user_id = ?, updated_at = ? where id = ? and data_json = ? and (? = 1 or coalesce((select json_extract(data_json, '$.activeId') from mesa_scenes where id = 'meta:mesa'), 'default') = ?)")
+    .bind(JSON.stringify(next), actor.sub, new Date().toISOString(), sceneId, row.data_json, actor.role === "master" ? 1 : 0, sceneId).run();
+  if (result.meta.changes !== 1) throw jsonError("A cena mudou durante a acao.", 409);
   return getMesaScene(env, actor, sceneId);
 }
 
@@ -711,6 +755,7 @@ export {
   renameMesaSceneFolder,
   deleteMesaScene,
   getMesaScene,
+  applyMesaVisionAction,
   getMesaSceneMeta,
   isValidSceneId,
   listMesaScenes,

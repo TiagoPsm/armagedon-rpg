@@ -1,5 +1,19 @@
 # VISUAL RULES
 
+## Paredes e visao — 2026-09-20
+
+- Distribuicao beta autorizada em 2026-09-21: titulo da secao exibe "Paredes e visao · Beta", mantendo a tipografia existente.
+
+- Revisao compacta: painel de configuracoes com largura de 280px limitada pelo palco; barra de zoom acompanha o mesmo token de largura. Corpos internos e pares com gaps de 8px e botoes com altura automatica (minimo 40px; ferramentas 64px). Icones SVG de 24px independem da fonte; porta com batente, folha e macaneta. Textos quebram dentro dos controles; sem esconder overflow como remendo. Rolagem vertical interna e gutter estavel.
+- Ferramenta ativa tem rotulo textual e atalho de botao direito. Ultimos segmentos alterados recebem espessura maior e vertices marcados; alvo de apagar/trancar fica branco. Pontos clicados do poligono tem ligacao branca continua, distinta da previa tracejada; cursor tem anel de referencia.
+- Teste de contencao em 1024/1280/1920px com texto a 100% e 150% verifica caixas, ausencia de rolagem horizontal e alturas iguais das ferramentas. Nao equivale a homologacao completa mobile.
+
+- Paredes e visao e uma secao recolhivel dentro da engrenagem de configuracoes da cena, junto de Grade e Nevoa. Sem painel independente no canto esquerdo; usa tokens HUD, rotulos, checkbox e botoes compartilhados do VTT. Rolagem interna preserva acesso aos grupos e espaco para as acoes inferiores.
+- Editor com paredes vermelhas, portas fechadas douradas e abertas verdes tracejadas. Botoes sem acao disponivel ficam desabilitados e atenuados; simulacao usa `aria-pressed` e borda destacada.
+- Mascara preta na camada 25, nevoa manual 26, portas contextuais 27 e editor 28. Jogador nao recebe editor; giro compacto na borda inferior, sem memoria visual do terreno explorado.
+- Validacao visual desktop por capturas reais do Playwright; nao constitui homologacao mobile.
+- Duas acoes principais com icone e texto: Criar parede / Criar porta. Formas aparecem apenas na ferramenta parede, com estado pressionado explicito. Previa tracejada e vertices brancos distinguem rascunho de parede confirmada. Ajustes e correcoes recolhe controles secundarios; botoes de formas ocupam a largura da celula, sem herdar largura fixa dos steppers.
+
 Este arquivo define a direcao visual do projeto. Atualizar sempre que uma decisao de design passar a ser padrao.
 
 ## Regra Obrigatoria de Documentacao
@@ -945,4 +959,3 @@ que liga a classe estivesse la, funcionando.
 Licao para o teste: quando um estado visual e ligado por JS (`is-active`,
 `is-open`, `has-map`), o teste tem de exigir que ele **mude alguma coisa
 computada** — nao basta a classe entrar no elemento.
-

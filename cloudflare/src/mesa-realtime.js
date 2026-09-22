@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { getMesaScene } from "./mesa.js";
 // Regras puras (tipos permitidos, limites, sanitizacao, normalizacao) vivem
 // em mesa-realtime-rules.js — modulo sem dependencia de "cloudflare:workers",
 // entao os testes unitarios (tests/mesa-audit.spec.cjs) exercitam exatamente
@@ -365,6 +366,14 @@ class MesaRealtimeRoom extends DurableObject {
   async handleRealtimeRelay(ws, payload) {
     const attachment = readAttachment(ws) || {};
     const type = String(payload?.type || "");
+    // Enabled vision scenes use authoritative HTTP actions, never a blind relay.
+    if (attachment.role !== "master" && ["mesa:token:move", "mesa:token:upsert", "mesa:token:remove", "mesa:batch"].includes(type)) {
+      const scene = await getMesaScene(this.env, { role: "player" });
+      if (scene.data.vision?.enabled) {
+        sendJson(ws, { type: "mesa:scene:ack", ok: false, reason: "Use as acoes validadas da cena.", messageId: payload?.messageId || "" });
+        return;
+      }
+    }
     if (type === SHEET_PATCH_TYPE) {
       this.handleSheetPatchRelay(ws, payload, attachment);
       return;
@@ -705,7 +714,15 @@ class MesaRealtimeRoom extends DurableObject {
 
     this.ctx.getWebSockets().forEach(ws => {
       if (excludeSocket && ws === excludeSocket) return;
-      sendJson(ws, message);
+      if (message.type === "mesa:scene" && message.scene?.data && readAttachment(ws)?.role !== "master") {
+        const data = message.scene.data;
+        sendJson(ws, { ...message, scene: { ...message.scene, data: { ...data,
+          drawings: (data.drawings || []).filter(s => s.layer !== "dm"),
+          tokens: (data.tokens || []).filter(t => t.layer !== "dm").map(t => t.statsVisibleToPlayers ? t : {
+            ...t, currentLife: null, maxLife: null, currentIntegrity: null, maxIntegrity: null
+          })
+        } } });
+      } else sendJson(ws, message);
     });
   }
 

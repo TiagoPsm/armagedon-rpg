@@ -9,6 +9,8 @@
  * teste instalado antes dos scripts (window.APP.__testEmit).
  * ============================================================ */
 const { test, expect } = require("@playwright/test");
+const fs = require("node:fs");
+const path = require("node:path");
 const { closeMesaTestServer, getMesaBaseUrl } = require("./mesa-test-server.cjs");
 
 test.afterAll(async () => {
@@ -3336,7 +3338,7 @@ test.describe("Multiplas cenas — backend (Etapa 48)", () => {
               const row = rows.get(values[0]);
               return row ? { ...row } : null;
             },
-            async run() { applyWrite(sql, values); return { success: true }; },
+            async run() { const changes = applyWrite(sql, values); return { success: true, meta: { changes: changes ?? 1 } }; },
             async all() { throw new Error("all() apos bind nao usado"); }
           };
         },
@@ -3366,12 +3368,20 @@ test.describe("Multiplas cenas — backend (Etapa 48)", () => {
       };
     }
     function applyWrite(sql, values) {
+      if (/^\s*update mesa_scenes set data_json/i.test(sql)) {
+        const [dataJson, userId, updatedAt, id, previous] = values;
+        const row = rows.get(id);
+        if (!row || row.data_json !== previous) return 0;
+        rows.set(id, { ...row, data_json: dataJson, updated_by_user_id: userId, updated_at: updatedAt });
+        return 1;
+      }
       if (/^\s*delete/i.test(sql)) { rows.delete(values[0]); return; }
       if (/insert into mesa_scenes/i.test(sql)) {
         const [id, dataJson] = values;
         const createdAt = values.length >= 6 ? values[4] : values[2];
         const updatedAt = values.length >= 6 ? values[5] : values[3];
         const existing = rows.get(id);
+        if (existing && /on conflict\(id\) do nothing/i.test(sql)) return 0;
         rows.set(id, {
           id,
           data_json: dataJson,
@@ -5176,6 +5186,38 @@ test.describe("Desenho no palco (Etapa 73)", () => {
     expect(tag[0]).toContain("disabled");
   });
 
+  test("o bootstrap e o ultimo modulo externo da Mesa", () => {
+    const html = fs.readFileSync(path.join(__dirname, "..", "mesa.html"), "utf8");
+    const modulos = [...html.matchAll(/<script\s+src="(js\/mesa-[^"]+)"\s+defer><\/script>/g)]
+      .map(match => match[1].split("?")[0]);
+
+    expect(modulos.at(-1)).toBe("js/mesa-bootstrap.js");
+    expect(modulos).toContain("js/mesa-core.js");
+    expect(modulos.indexOf("js/mesa-bootstrap.js")).toBeGreaterThan(modulos.indexOf("js/mesa-drawing.js"));
+    expect(modulos.indexOf("js/mesa-bootstrap.js")).toBeGreaterThan(modulos.indexOf("js/mesa-select.js"));
+    expect(modulos.indexOf("js/mesa-bootstrap.js")).toBeGreaterThan(modulos.indexOf("js/mesa-initiative.js"));
+  });
+
+  test("falha no backup local dos desenhos avisa sem alterar o estilo da Mesa", async ({ page }) => {
+    await page.evaluate(() => {
+      const originalSetItem = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (key, value) {
+        if (key === MESA_DRAWINGS_STORAGE_KEY) throw new DOMException("quota", "QuotaExceededError");
+        return originalSetItem.call(this, key, value);
+      };
+      try {
+        _drawingsPersistWarningShown = false;
+        _persistDrawings({ immediate: true });
+        _persistDrawings({ immediate: true });
+      } finally {
+        Storage.prototype.setItem = originalSetItem;
+      }
+    });
+
+    await expect(page.locator(".ui-toast-message")).toHaveCount(1);
+    await expect(page.locator(".ui-toast-message")).toContainText("backup local dos desenhos");
+  });
+
   test("traco novo nasce na camada compartilhada e vai para a rede", async ({ page }) => {
     const result = await page.evaluate(async () => {
       const calls = [];
@@ -6687,8 +6729,11 @@ test.describe("Zoom do palco: teto e desvio da barra (Etapa 101)", () => {
     // pega a barra AINDA no caminho — e foi o que este teste flagrou na
     // primeira execucao. Esperamos o movimento terminar; o que se cobra e
     // onde ela PARA, nao onde ela passa.
-    await page.waitForFunction(() =>
-      getComputedStyle(document.getElementById("mesaZoomCtrl")).right === "268px");
+    await page.waitForFunction(() => {
+      const zoom = document.getElementById("mesaZoomCtrl");
+      const panel = document.getElementById("mesaMapTransform");
+      return zoom.getBoundingClientRect().right < panel.getBoundingClientRect().left;
+    });
     expect(await sobrepoe(), "barra de zoom por cima do painel aberto").toBe(false);
 
     // Fechado, ela volta para a borda — o desvio nao pode ficar grudado.
@@ -8411,7 +8456,7 @@ test.describe("Rotulo do mapa e engrenagem (Etapa 134)", () => {
     // Nada do mestre pode vazar para dentro dele.
     await expect(page.locator("#mesaGridGroup")).toBeHidden();
     await expect(page.locator("#mesaFogGroup")).toBeHidden();
-    await expect(page.locator('#mesaMapTransform [data-mesa-master-only]')).toBeHidden();
+    await expect(page.locator('#mesaMapTransform [data-mesa-master-only]:visible')).toHaveCount(0);
     await expect(page.locator('#mesaMapTransform [data-mesa-player-only]')).toBeVisible();
 
     // E fecha no segundo clique.

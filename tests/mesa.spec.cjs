@@ -67,6 +67,22 @@ test.describe("Mesa virtual", () => {
     expect(consoleErrors).toEqual([]);
   });
 
+  test("Limpar cena confirma o escopo e cancelar preserva os tokens", async ({ page }) => {
+    const baseUrl = await getMesaBaseUrl();
+    await page.goto(`${baseUrl}/mesa.html`);
+    await expect(page.locator("#mesaStage .mesa-token")).toHaveCount(3);
+
+    await page.locator("#resetMesaBtn").click();
+    await expect(page.locator("#uiModalTitle")).toHaveText("Limpar tokens da cena?");
+    await expect(page.locator("#uiModalMessage")).toContainText("Mapa, grade, nevoa e desenhos permanecerao");
+    await page.locator("[data-modal-cancel]").click();
+    await expect(page.locator("#mesaStage .mesa-token")).toHaveCount(3);
+
+    await page.locator("#resetMesaBtn").click();
+    await page.locator("[data-modal-confirm]").click();
+    await expect(page.locator("#mesaStage .mesa-token")).toHaveCount(0);
+  });
+
   test("mantem tokens do palco no mesmo tamanho ao selecionar e alternar tela cheia", async ({ page }) => {
     const baseUrl = await getMesaBaseUrl();
     await page.goto(`${baseUrl}/mesa.html`);

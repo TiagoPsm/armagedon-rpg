@@ -1,5 +1,29 @@
 # 📊 Smart Skill Feedback & Improvements Log
 
+### 2026-09-21 — Cloudflare / Wrangler — publicacao beta
+
+Skills apropriadas para dry-run, preservacao de bindings e verificacao de deploy. Wrangler sem autenticacao: pacote minificado validado publicado pelo plugin ja conectado, sem copiar segredos. Checklist frontend citada pelo dispatcher nao existe neste checkout; substituida pelos checks JS/static/pendencias/build e suite completa. Smoke publico separado da suite local para nao confundir bloqueio de rede com regressao. Homologacao autenticada nao presumida sem credenciais.
+
+### 2026-09-20 — game-ui-frontend, layout-integrity-checker e game-playtest — editor compacto
+
+Skills apropriadas: reduzir espacamento e altura das ferramentas mantendo texto contido e alvos acessiveis. Feedback combina rotulo, vertices, espessura e previa, sem depender apenas de cor. Playwright verifica botao direito em todos os modos, cadeia aberta do poligono, desfazer e recarga; captura real revisada para avaliar icone e peso do painel. Sem dependencias novas.
+
+### 2026-09-20 — game-ui-frontend, layout-integrity-checker e game-playtest
+
+Uso explicito de skill frontend para corrigir contencao e alinhamento do editor. Layout checker orientou min-width:0, altura automatica, grids com gap consistente e testes de overflow em 1024/1280/1920px e texto 150%. SVG substitui glifos dependentes da fonte. Screenshot valida hierarquia e rolagem; nao usar overflow:hidden para mascarar texto excedente. Adequadas ao pedido, sem alteracao de mecanicas.
+
+### 2026-09-20 — game-ui-frontend / game-playtest — formas e portas
+
+Skills apropriadas: duas acoes principais, formatos contextuais e ajustes secundarios recolhidos. Captura real detectou heranca de largura fixa dos steppers; corrigida e protegida por teste de largura. Gestos testam previa, fechamento de poligono, cancelamento, retangulo e recorte de porta com abertura pelo jogador. Nao confundir remocao da barreira com revelacao global da regiao.
+
+### 2026-09-20 — game-ui-frontend / game-playtest — editor integrado
+
+Pedido de aproximar paredes do restante do VTT: reaproveitados tokens HUD e controles da engrenagem, removido painel solto. Screenshot identificou necessidade de reservar espaco para acoes inferiores; painel ganhou rolagem limitada. Teste confirma encerramento da captura do palco ao fechar configuracoes. Skills apropriadas, sem dependencia adicional.
+
+### 2026-09-20 — game-ui-frontend, game-playtest e dark-mode-design-expert
+
+Aplicacao apropriada na interface de visao da Mesa: painel recolhivel fora da engrenagem, estados de botoes explicitos, revisao de texto e screenshots reais do mestre/jogador. Testes de pixels e gestos complementam o DOM; inspecao visual detectou o plural incorreto e pouca distincao dos botoes desabilitados. Nao inferir homologacao mobile ou Cloudflare a partir do Chromium local.
+
 Este arquivo rastreia cada uso de skill e propostas de melhoria. Claude o lê periodicamente para otimizar as regras.
 
 ---
@@ -33,6 +57,16 @@ Cada skill use é registrada assim:
 ---
 
 ## 📝 Log de Usos
+
+### 2026-09-18 - web-game-foundations / Cloudflare - uso no inicio da visao
+
+- Pedido: iniciar desenvolvimento de paredes, portas e visao individual.
+- `web-game-foundations`: apropriada; manteve o nucleo geometrico puro e separado
+  do DOM, sem trocar a stack existente. Testes numericos precedem ativacao na Mesa.
+- `workers-best-practices` e `durable-objects`: consultadas para a fronteira futura
+  de autoridade/persistencia. Nenhum handler, binding ou deploy alterado nesta etapa.
+- Sem novos plugins pagos/dependencias; geometria nao comprova autorizacao nem
+  integracao realtime. Evitar registrar a primeira base como recurso completo.
 
 ### [2026-08-02] - 01-code-review-frontend - ✅ APROPRIADA (vazamento de permissao na UI)
 
@@ -432,6 +466,23 @@ Skill 03 (page-architecture):
 ---
 
 ## 📊 Estatísticas (monitoradas automaticamente)
+
+### 2026-09-18 - 05-canvas-rendering-benchmark - ✅ Apropriada
+
+**Prompt do usuário:**
+Idealizar iluminação dinâmica eficiente e gratuita para a Mesa, comparando
+tecnologias de renderização.
+
+**Apropriada?** ✅ Sim.
+
+**Feedback:**
+- O checklist ajudou a manter Canvas 2D como hipótese mensurável, sem propor
+  WebGL/PixiJS antes de existir gargalo.
+- Os cenários genéricos precisaram ser adaptados para paredes e polígonos de
+  visão; o plano foi registrado em `docs/ILUMINACAO-DINAMICA.md`.
+- O dispatcher aponta para `06-canvas-rendering-benchmark.md`, mas o arquivo
+  real é `05-canvas-rendering-benchmark.md`; a numeração precisa ser corrigida
+  futuramente com aprovação do Tiago.
 
 *(Será preenchido por Claude)*
 

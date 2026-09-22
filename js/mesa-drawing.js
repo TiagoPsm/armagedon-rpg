@@ -15,6 +15,13 @@ let _isDrawing   = false;
 let _drawCanvasEl  = null;
 let _drawCtx       = null;
 let _stageInnerEl  = null;
+let _completedDrawingsCanvas = null;
+let _completedDrawingsCtx = null;
+let _completedDrawingsSource = null;
+let _completedDrawingsCount = -1;
+let _drawResizeFrame = 0;
+let _drawRenderGeneration = 0;
+let _lastProgressiveDrawMetrics = null;
 
 const ERASE_RADIUS = 22;
 
@@ -51,6 +58,9 @@ const ARROW_HEAD_MIN = 10;   // px de tela: ponta legivel mesmo em seta curta
 const DRAW_SIMPLIFY_EPS = 0.0015;
 const DRAW_MAX_POINTS  = 400;        // = MAX_DRAW_POINTS do Worker
 const DRAW_MAX_STROKES = 1500;       // = MAX_DRAWINGS do Worker
+const DRAW_PROGRESSIVE_POINT_THRESHOLD = 20_000;
+const DRAW_PROGRESSIVE_FRAME_BUDGET_MS = 8;
+const DRAW_PROGRESSIVE_POINT_BUDGET = 4_000;
 // Teto de segurança do full-state (só o reenvio a quem entra depois usa):
 // abaixo do cap de 32KB do DO, com folga para o envelope.
 const DRAW_FULL_STATE_MAX_CHARS = 30 * 1024;
@@ -229,7 +239,7 @@ function initMesaDrawing() {
   _drawCtx = _drawCanvasEl.getContext("2d");
 
   _resizeDrawCanvas();
-  new ResizeObserver(() => _resizeDrawCanvas()).observe(_stageInnerEl);
+  new ResizeObserver(_scheduleDrawCanvasResize).observe(_stageInnerEl);
 
   _bindDrawEvents();
   _bindToolbarButtons();
@@ -259,12 +269,46 @@ const MESA_DRAWINGS_STORAGE_KEY = "mesa_drawings_v1";
 // forneceu o campo `drawings` — nesse caso a cena é a fonte de verdade e o
 // restore do localStorage antigo não deve sobrescrevê-la.
 let _sceneDrawingsApplied = false;
+let _drawingsPersistTimer = 0;
+let _drawingsPersistPending = false;
+let _drawingsPersistWarningShown = false;
 
-function _persistDrawings() {
+function _persistDrawings(options = {}) {
+  _drawingsPersistPending = true;
+  if (options.immediate) {
+    _flushDrawingsPersist();
+    return;
+  }
+  if (_drawingsPersistTimer) return;
+  _drawingsPersistTimer = window.setTimeout(_flushDrawingsPersist, 160);
+}
+
+function _flushDrawingsPersist() {
+  if (_drawingsPersistTimer) {
+    window.clearTimeout(_drawingsPersistTimer);
+    _drawingsPersistTimer = 0;
+  }
+  if (!_drawingsPersistPending) return;
   try {
     localStorage.setItem(MESA_DRAWINGS_STORAGE_KEY, JSON.stringify(_strokes));
-  } catch {}
+  } catch (error) {
+    if (!_drawingsPersistWarningShown) {
+      _drawingsPersistWarningShown = true;
+      window.UI?.toast?.(
+        "O navegador nao conseguiu guardar o backup local dos desenhos.",
+        { kicker: "// Mesa" }
+      );
+    }
+    console.warn("Falha ao guardar desenhos localmente.", error);
+  } finally {
+    _drawingsPersistPending = false;
+  }
 }
+
+window.addEventListener("pagehide", _flushDrawingsPersist);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") _flushDrawingsPersist();
+});
 
 function _readLocalDrawings() {
   try {
@@ -280,7 +324,7 @@ function _restoreDrawings() {
   const saved = _readLocalDrawings();
   if (saved.length) {
     _strokes = saved;
-    renderDrawings();
+    renderDrawings({ progressive: true });
   }
 }
 
@@ -296,7 +340,7 @@ function applyMesaSceneDrawingsFromSnapshot(drawings) {
   // separado para o mestre (Etapa 73).
   _strokes = _asSharedStrokes(drawings);
   _persistDrawings();
-  renderDrawings();
+  renderDrawings({ progressive: true });
 }
 window.applyMesaSceneDrawingsFromSnapshot = applyMesaSceneDrawingsFromSnapshot;
 
@@ -341,7 +385,20 @@ function _resizeDrawCanvas() {
   if (_drawCtx) {
     _drawCtx.scale(dpr, dpr);
   }
-  renderDrawings();
+  _completedDrawingsSource = null;
+  _completedDrawingsCount = -1;
+  renderDrawings({ progressive: true });
+}
+
+function _scheduleDrawCanvasResize() {
+  if (_drawResizeFrame) return;
+  const schedule = typeof window.requestAnimationFrame === "function"
+    ? window.requestAnimationFrame.bind(window)
+    : callback => window.setTimeout(callback, 16);
+  _drawResizeFrame = schedule(() => {
+    _drawResizeFrame = 0;
+    _resizeDrawCanvas();
+  });
 }
 
 // ── Ativar / desativar ferramenta ─────────────────────────────────
@@ -760,21 +817,156 @@ function _hitTest(s, mx, my) {
 }
 
 // ── Renderização ───────────────────────────────────────────────────
-function renderDrawings() {
+function renderDrawings(options = {}) {
   if (!_drawCtx || !_drawCanvasEl) return;
   const w = _drawCanvasEl.offsetWidth;
   const h = _drawCanvasEl.offsetHeight;
+
+  if (options.progressive && !_activeStroke && _shouldRenderDrawingsProgressively()) {
+    _renderDrawingsProgressively(w, h);
+    return;
+  }
+
+  _cancelProgressiveDrawingsRender();
   _drawCtx.clearRect(0, 0, w, h);
 
+  // Durante um gesto, os tracos concluidos nao mudam. Reaproveitar seus pixels
+  // evita redesenhar ate 1500 formas / centenas de milhares de pontos em cada
+  // pointermove; so o traco ativo volta a ser vetorizado.
+  if (_activeStroke && _hasCompletedDrawingsCache()) {
+    _drawCtx.save();
+    _drawCtx.setTransform(1, 0, 0, 1, 0, 0);
+    _drawCtx.drawImage(_completedDrawingsCanvas, 0, 0);
+    _drawCtx.restore();
+    _renderStroke(_activeStroke, w, h);
+    return;
+  }
+
   // Camada única: todo mundo vê os mesmos traços (Etapa 73).
-  const all = _activeStroke ? [..._strokes, _activeStroke] : _strokes;
-  all.forEach(_renderStroke);
+  _strokes.forEach(stroke => _renderStroke(stroke, w, h));
+  _cacheCompletedDrawings();
+  if (_activeStroke) _renderStroke(_activeStroke, w, h);
 }
 
-function _renderStroke(s) {
+function _drawingPointCost(stroke) {
+  if (stroke?.tool === "pencil" && Array.isArray(stroke.points)) {
+    return Math.max(2, stroke.points.length);
+  }
+  return 4;
+}
+
+function _shouldRenderDrawingsProgressively() {
+  let total = 0;
+  for (const stroke of _strokes) {
+    total += _drawingPointCost(stroke);
+    if (total >= DRAW_PROGRESSIVE_POINT_THRESHOLD) return true;
+  }
+  return false;
+}
+
+function _cancelProgressiveDrawingsRender() {
+  _drawRenderGeneration += 1;
+  if (_drawCanvasEl?.dataset.drawRenderState === "progressive") {
+    _drawCanvasEl.dataset.drawRenderState = "ready";
+  }
+}
+
+function _renderDrawingsProgressively(w, h) {
+  const generation = ++_drawRenderGeneration;
+  const source = _strokes;
+  let index = 0;
+  let frames = 0;
+  let maxChunkMs = 0;
+  const startedAt = performance.now();
+
+  _completedDrawingsSource = null;
+  _completedDrawingsCount = -1;
+  _drawCtx.clearRect(0, 0, w, h);
+  _drawCanvasEl.dataset.drawRenderState = "progressive";
+
+  const renderChunk = () => {
+    if (generation !== _drawRenderGeneration || source !== _strokes) return;
+    const chunkStartedAt = performance.now();
+    let rendered = 0;
+    let pointCost = 0;
+    while (index < source.length) {
+      const nextPointCost = _drawingPointCost(source[index]);
+      if (rendered > 0 && pointCost + nextPointCost > DRAW_PROGRESSIVE_POINT_BUDGET) break;
+      _renderStroke(source[index], w, h);
+      index += 1;
+      rendered += 1;
+      pointCost += nextPointCost;
+      if (rendered > 0
+          && performance.now() - chunkStartedAt >= DRAW_PROGRESSIVE_FRAME_BUDGET_MS) break;
+    }
+
+    frames += 1;
+    maxChunkMs = Math.max(maxChunkMs, performance.now() - chunkStartedAt);
+    if (index < source.length) {
+      window.requestAnimationFrame(renderChunk);
+      return;
+    }
+
+    _cacheCompletedDrawings();
+    _drawCanvasEl.dataset.drawRenderState = "ready";
+    _lastProgressiveDrawMetrics = {
+      frames,
+      maxChunkMs,
+      totalMs: performance.now() - startedAt,
+      strokes: source.length
+    };
+  };
+
+  window.requestAnimationFrame(renderChunk);
+}
+
+function getDrawingsRenderMetrics() {
+  return _lastProgressiveDrawMetrics ? { ..._lastProgressiveDrawMetrics } : null;
+}
+window.getDrawingsRenderMetrics = getDrawingsRenderMetrics;
+
+function _hasCompletedDrawingsCache() {
+  return Boolean(
+    _completedDrawingsCanvas
+    && _completedDrawingsCanvas.width === _drawCanvasEl.width
+    && _completedDrawingsCanvas.height === _drawCanvasEl.height
+    && _completedDrawingsSource === _strokes
+    && _completedDrawingsCount === _strokes.length
+  );
+}
+
+function _cacheCompletedDrawings() {
+  if (!_completedDrawingsCanvas) {
+    _completedDrawingsCanvas = document.createElement("canvas");
+    _completedDrawingsCtx = _completedDrawingsCanvas.getContext("2d");
+  }
+  if (!_completedDrawingsCtx) return;
+
+  if (_completedDrawingsCanvas.width !== _drawCanvasEl.width
+      || _completedDrawingsCanvas.height !== _drawCanvasEl.height) {
+    _completedDrawingsCanvas.width = _drawCanvasEl.width;
+    _completedDrawingsCanvas.height = _drawCanvasEl.height;
+  }
+  _completedDrawingsCtx.setTransform(1, 0, 0, 1, 0, 0);
+  _completedDrawingsCtx.clearRect(
+    0,
+    0,
+    _completedDrawingsCanvas.width,
+    _completedDrawingsCanvas.height
+  );
+  _completedDrawingsCtx.drawImage(_drawCanvasEl, 0, 0);
+  _completedDrawingsSource = _strokes;
+  _completedDrawingsCount = _strokes.length;
+}
+
+function _renderStroke(s, canvasWidth, canvasHeight) {
   const ctx = _drawCtx;
-  const { x: x1, y: y1 } = _fromPercent(s.x1, s.y1);
-  const { x: x2, y: y2 } = _fromPercent(s.x2, s.y2);
+  const w = canvasWidth || _drawCanvasEl.offsetWidth || 1;
+  const h = canvasHeight || _drawCanvasEl.offsetHeight || 1;
+  const x1 = s.x1 * w;
+  const y1 = s.y1 * h;
+  const x2 = s.x2 * w;
+  const y2 = s.y2 * h;
 
   ctx.save();
   ctx.strokeStyle = s.color;
@@ -792,15 +984,13 @@ function _renderStroke(s) {
     case "pencil": {
       if (!s.points || s.points.length < 2) break;
       ctx.beginPath();
-      const { x: sx0, y: sy0 } = _fromPercent(s.points[0][0], s.points[0][1]);
-      ctx.moveTo(sx0, sy0);
+      ctx.moveTo(s.points[0][0] * w, s.points[0][1] * h);
       for (let i = 1; i < s.points.length; i++) {
-        const { x: sx, y: sy } = _fromPercent(s.points[i][0], s.points[i][1]);
+        const sx = s.points[i][0] * w;
+        const sy = s.points[i][1] * h;
         if (i < s.points.length - 1) {
-          const { x: mx, y: my } = _fromPercent(
-            (s.points[i][0] + s.points[i + 1][0]) / 2,
-            (s.points[i][1] + s.points[i + 1][1]) / 2
-          );
+          const mx = (s.points[i][0] + s.points[i + 1][0]) * 0.5 * w;
+          const my = (s.points[i][1] + s.points[i + 1][1]) * 0.5 * h;
           ctx.quadraticCurveTo(sx, sy, mx, my);
         } else {
           ctx.lineTo(sx, sy);

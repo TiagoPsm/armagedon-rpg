@@ -184,7 +184,7 @@ let mesaRenderFrame = 0;
 let mesaRosterByCharacterKey = new Map();
 let mesaRosterById = new Map();
 let mesaPersistTimer = null;
-let pendingPersistPayload = null;
+let mesaPersistPending = false;
 let mesaRemotePersistInFlight = false;
 let pendingRemotePersistPayload = null;
 let pendingRemotePersistSignature = "";
@@ -204,12 +204,6 @@ let mesaRealtimeBound = false;
 let mesaRealtimeMessageSequence = 0;
 const mesaClientId = getMesaClientId();
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", bootMesaPage, { once: true });
-} else {
-  bootMesaPage();
-}
-
 function bootMesaPage() {
   if (mesaInitStarted) return;
   mesaInitStarted = true;
@@ -221,6 +215,12 @@ function bootMesaPage() {
       state.bootCompleted = true;
     });
 }
+
+// O core apenas define o ciclo de vida; quem o dispara e mesa-bootstrap.js,
+// carregado depois de todos os modulos da Mesa. Scripts `defer` executam com
+// readyState "interactive", portanto iniciar aqui faria os modulos listados
+// depois de mesa-core.js serem pulados conforme o timing do cache/navegador.
+window.bootMesaPage = bootMesaPage;
 
 function preFillMesaPage() {
   try {
@@ -280,6 +280,7 @@ async function initMesaPage() {
 
   setMesaRoster(buildRoster());
   await hydrateState(prefetchedScene);
+  if (typeof initMesaVision === "function") initMesaVision();
   bindMesaRealtime();
   bindMesaStorageSync();
   renderAll();
@@ -352,8 +353,19 @@ function bindEvents() {
     toggleMesaMoveLock();
   });
 
-  resetMesaBtn?.addEventListener("click", () => {
+  resetMesaBtn?.addEventListener("click", async () => {
     if (!isMaster()) return;
+    const confirmed = await window.UI?.confirm?.(
+      "Todos os tokens serao retirados da cena. Mapa, grade, nevoa e desenhos permanecerao.",
+      {
+        kicker: "// Mesa",
+        title: "Limpar tokens da cena?",
+        confirmLabel: "Limpar cena",
+        cancelLabel: "Cancelar",
+        variant: "danger"
+      }
+    );
+    if (!confirmed) return;
     resetPrototype();
   });
   if (resetMesaBtn) resetMesaBtn.dataset.armed = "1";        // contrato da Etapa 84
@@ -635,6 +647,7 @@ async function resyncMesaSceneAfterReconnect() {
 }
 
 function applyRemoteMesaSceneMessage(payload) {
+  if (payload?.scene?.id && payload.scene.id !== (state.sceneId || "default")) return;
   const remoteData = extractMesaSceneData(payload);
   if (!remoteData) return;
 
@@ -870,6 +883,7 @@ async function applyMesaRealtimeDelta(payload) {
 }
 
 function applyMesaTokenMoveDelta(payload) {
+  if (typeof mesaVisionActive === "function" && mesaVisionActive()) return false;
   const token = findToken(payload?.tokenId);
   if (!token) return false;
 
@@ -993,7 +1007,9 @@ async function handleMesaSheetChanged(payload) {
 async function applyRemoteMesaSceneSnapshot(remoteData) {
   if (!remoteData) return;
 
-  if (isStaleMesaSceneVersion(remoteData?.sceneVersion)) {
+  const localVisionRevision = typeof mesaVision !== "undefined" ? mesaVision?.revision : null;
+  if (remoteData.vision && localVisionRevision != null && remoteData.vision.revision < localVisionRevision) return;
+  if (isStaleMesaSceneVersion(remoteData?.sceneVersion) && !(remoteData.vision?.revision > (localVisionRevision ?? -1))) {
     return;
   }
 
@@ -1955,6 +1971,7 @@ async function handleMesaSceneSwitch(payload) {
  *   para cena que chega em tempo real (Etapa 87) — ver applyRemoteMesaSceneSnapshot.
  */
 function applyMesaSceneSnapshot(saved, options = {}) {
+  if (typeof applyMesaVisionSnapshot === "function") applyMesaVisionSnapshot(saved?.vision);
   const savedTokens = Array.isArray(saved?.tokens) ? saved.tokens : [];
   // hasExplicitSave = true quando o usuário já salvou a cena ao menos uma vez
   // (mesmo que vazia). Impede o auto-seed sobrescrever uma cena intencionalmente limpa.
@@ -1995,13 +2012,9 @@ function applyMesaSceneSnapshot(saved, options = {}) {
       );
 
   // Restaura estado de iniciativa.
-  // ATENCAO (Etapa 77): quando o navegador serve os scripts do cache, o
-  // mesa-core.js pode executar com document.readyState ja em "interactive" —
-  // ai bootMesaPage() roda NA HORA, antes de o mesa-initiative.js (script
-  // defer seguinte) existir. Era exatamente isso que fazia o F5 no meio do
-  // combate perder a iniciativa em silencio: o `typeof === 'function'`
-  // falhava e a cena salva era descartada. Agora o estado fica em espera e
-  // o proprio modulo o consome quando carrega.
+  // Defesa para integracoes/testes que apliquem um snapshot antes de carregar
+  // o modulo. No carregamento normal mesa-bootstrap.js garante que todos os
+  // modulos ja existem antes de iniciar o core.
   if (saved?.initiative) {
     if (typeof applyInitiativeState === 'function') {
       applyInitiativeState(saved.initiative);
@@ -2125,14 +2138,17 @@ function mergeTokenWithRoster(savedToken, rosterEntry) {
 
   return {
     ...entry,
+    id: String(savedToken?.id || entry.id),
     visibleToPlayers: savedToken?.visibleToPlayers !== false,
     layer: normalizeTokenLayer(savedToken?.layer),
     statsVisibleToPlayers: normalizeStatsVisibility(
       entry.type,
       savedToken?.statsVisibleToPlayers ?? entry.statsVisibleToPlayers
     ),
-    x: clamp(Number(savedToken?.x), 3, 82),
-    y: clamp(Number(savedToken?.y), 3, 78),
+    x: clamp(Number(savedToken?.x), 0, 100),
+    y: clamp(Number(savedToken?.y), 0, 100),
+    facingDeg: Number(savedToken?.facingDeg) || 0,
+    visionRadius: Number(savedToken?.visionRadius) || null,
     order: asPositiveInt(savedToken?.order, 1),
     tokenScale: clampMesaTokenScale(savedToken?.tokenScale),
     statusMarkers: normalizeMesaStatusMarkers(savedToken?.statusMarkers)
@@ -2371,6 +2387,7 @@ function canPlayerMoveOwnToken(token) {
 }
 
 function broadcastMesaTokenMove(token) {
+  if (typeof mesaVisionActive === "function" && mesaVisionActive()) return;
   if (!token) return false;
   if (!isMaster() && !canPlayerMoveOwnToken(token)) return false;
   // Token da camada secreta do mestre NUNCA trafega pela rede (mesmo padrao
@@ -2445,11 +2462,12 @@ function broadcastMesaSceneClear() {
 }
 
 function hasPendingMesaScenePersist() {
-  return Boolean(pendingPersistPayload || pendingRemotePersistPayload || mesaRemotePersistInFlight);
+  return Boolean(mesaPersistPending || pendingRemotePersistPayload || mesaRemotePersistInFlight);
 }
 
 function createMesaScenePayloadFromState() {
   return {
+    vision: typeof getMesaVisionPayload === "function" ? getMesaVisionPayload() : null,
     sceneVersion: asPositiveInt(state.sceneVersion, 0),
     tokenStyle: "minimal",
     // Sem `selectedTokenId` (Etapa 88) — ver mesaSelectionStorageKey. De
@@ -2459,8 +2477,10 @@ function createMesaScenePayloadFromState() {
     tokens: state.tokens.map(token => ({
       id: token.id,
       characterKey: token.characterKey,
-      x: roundTo(token.x, 2),
-      y: roundTo(token.y, 2),
+      x: roundTo(token.x, 6),
+      y: roundTo(token.y, 6),
+      facingDeg: Number(token.facingDeg) || 0,
+      visionRadius: Number(token.visionRadius) || null,
       visibleToPlayers: token.visibleToPlayers !== false,
       layer: normalizeTokenLayer(token.layer),
       statsVisibleToPlayers: normalizeStatsVisibility(token.type, token.statsVisibleToPlayers),
@@ -2585,6 +2605,7 @@ function normalizeMesaSceneDrawings(list) {
 function normalizeMesaScenePayload(payload = {}) {
   const tokens = Array.isArray(payload?.tokens) ? payload.tokens : [];
   return {
+    vision: payload.vision || null,
     sceneVersion: asPositiveInt(payload?.sceneVersion, 0),
     tokenStyle: "minimal",
     // `selectedTokenId` ignorado de proposito (Etapa 88): cena legada no D1
@@ -2593,8 +2614,10 @@ function normalizeMesaScenePayload(payload = {}) {
       .map(token => ({
         id: String(token?.id || ""),
         characterKey: String(token?.characterKey || ""),
-        x: roundTo(clamp(Number(token?.x), 0, 100), 2),
-        y: roundTo(clamp(Number(token?.y), 0, 100), 2),
+        x: roundTo(clamp(Number(token?.x), 0, 100), 6),
+        y: roundTo(clamp(Number(token?.y), 0, 100), 6),
+        facingDeg: Number(token?.facingDeg) || 0,
+        visionRadius: Number(token?.visionRadius) || null,
         visibleToPlayers: token?.visibleToPlayers !== false,
         layer: normalizeTokenLayer(token?.layer),
         statsVisibleToPlayers: token?.statsVisibleToPlayers === true,
@@ -2697,4 +2720,3 @@ function renderHeader() {
     headerUser.textContent = state.session?.username || "Convidado";
   }
 }
-

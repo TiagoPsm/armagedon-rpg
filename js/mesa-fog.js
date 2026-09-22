@@ -202,6 +202,7 @@ function _resizeFogCanvas() {
  * opaco; a diferença mestre/jogador é a opacidade CSS do elemento.
  */
 function renderMesaFog() {
+  if (typeof requestMesaVisionRender === "function") requestMesaVisionRender();
   if (!_fogCanvasEl || !_fogCtx || !_fogStageEl) return;
   const cw = _fogCanvasEl.width;
   const ch = _fogCanvasEl.height;

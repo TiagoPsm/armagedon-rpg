@@ -2,6 +2,8 @@
 
 Este arquivo registra regras funcionais e de gameplay que nao devem ser alteradas sem autorizacao explicita.
 
+- Editor de paredes: botao direito no palco encerra parede, poligono, retangulo, porta, apagar ou trancar. Mantem segmentos confirmados; no poligono salva apenas ligacoes entre pontos clicados (cadeia aberta, um desfazer). Ponto isolado e previa do cursor nao viram barreira. Se a edicao nao for aceita, preserva o rascunho para nova tentativa.
+
 ## Regra Obrigatoria de Documentacao
 
 Sempre que uma mudanca alterar ou esclarecer regra de gameplay, permissao, persistencia ou validacao, este arquivo deve ser atualizado na mesma etapa. Tambem atualize `DEV_STATUS.md` com resumo, arquivos afetados e validacoes.
@@ -24,6 +26,25 @@ Nao use a pasta antiga `rpg-campaign` para alterar regras ou publicar commits.
 - Regras do sistema nao devem ser alteradas sem pedido claro do usuario
 
 ## Banco e Persistencia
+
+### Visao dinamica da Mesa — escopo confirmado em 2026-09-18
+
+- Editor acessivel pela engrenagem da cena > Paredes e visao, exclusivo do mestre. Fechar as configuracoes ou recolher a secao encerra ferramenta/cadeia e simulacao, sem desativar a visao persistida.
+
+- Visao individual do proprio personagem, em cone orientado, sem uniao do grupo.
+- Fora da visao atual fica totalmente preto; nao existe memoria de exploracao.
+- Paredes e relevos sao barreiras opacas que bloqueiam visao e movimento; sem
+  alturas navegaveis, tochas ou visao no escuro nesta versao.
+- O mestre posiciona portas; jogadores proximos poderao abri-las.
+- Padroes iniciais de implementacao: cone de 120 graus, giro manual e interacao
+  com porta a uma celula de distancia, sem parede intermediaria.
+- Integracao local implementada em 2026-09-20, opt-in por cena; desativada em cenas legadas. O Worker valida dono, cena ativa, bloqueio do mestre, trajeto e revisao antes de persistir.
+- Giro manual em passos de 15 graus. Com visao ativa, movimento individual e tamanho fixo: redimensionamento e arrasto de grupos ficam desativados; envio remoto ocorre ao soltar.
+- Criar porta recorta automaticamente um trecho de uma unica parede com dois cliques; tambem aceita vao livre. Preserva partes laterais e nasce fechada/destrancada. Jogador abre porta destrancada ao alcance de uma celula mais o raio do token, dentro do cone e sem barreira intermediaria; mestre pode fechar se nao houver token sobre a porta.
+- Criar parede oferece cadeia aberta, poligono fechado e retangulo. Formas fechadas sao confirmadas/desfeitas como uma operacao; Escape descarta apenas o rascunho, sem apagar paredes confirmadas.
+- Nevoa manual continua ocultando; o proprio disco do personagem fica legivel. A mascara nao protege os dados publicos do mapa contra DevTools. Nao ha promessa de filtragem individual do mapa no servidor.
+
+### Fonte de dados
 
 - O site publicado usa Cloudflare Workers + Cloudflare D1
 - Dados sao centralizados no servidor
@@ -376,4 +397,3 @@ Se uma etapa mexer no site e nao atualizar documentacao, ela deve ser considerad
 - **Gestos da Mesa (2026-08-27, Etapa 129)**: a Mesa fala Pointer Events — mouse, dedo e caneta pelo mesmo caminho. A regra e uma so: **um dedo** faz o que o botao esquerdo faz no modo atual (pan no modo mao, faixa de selecao no modo seta, traco com ferramenta armada) e **dois dedos sao sempre camera** (arrastam o palco e dao zoom pela distancia entre eles). O segundo dedo ABORTA o gesto do primeiro, e o traco ou a faixa em curso sao descartados sem gravar — quem faz isso sao `mesaAbortDrawingGesture` e `mesaAbortSelectionGesture`, chamados pelo mesa-map.js. Todo handler novo de gesto no palco nasce em `pointer*`, com `setPointerCapture` e `preventDefault()` no `pointerdown` (o preventDefault e o que impede o evento de mouse de compatibilidade de disparar um segundo gesto por cima do primeiro).
 
 - **Escala da cena (2026-08-27, Etapa 131)**: quanto vale UMA celula em metros e campo da grade da cena (`grid.metersPerCell`, 0,1 a 5000, duas casas), nao constante de codigo. A regua conta celulas pelo `cellFrac` e traduz por esse numero; cena sem o campo cai nos 1,5 m historicos. A escala viaja na cena mesmo com a grade DESLIGADA — a regua vale sem linha desenhada —, e por isso tanto `getMesaGridScenePayload` (cliente) quanto `normalizeSceneGrid` (Worker) tratam "grade desligada com escala propria" como grade valida. Campo novo na grade exige deploy do Worker: o que ele nao conhece e descartado em silencio no save.
-

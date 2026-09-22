@@ -10,7 +10,9 @@ Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencia
 
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
 
-- **[Tiago]** `cloudflare/.dev.vars` guarda `PASSWORD_PEPPER`, `JWT_SECRET` e `MASTER_BOOTSTRAP_PASSWORD` em texto puro dentro do OneDrive. Decidir o destino: manter e aceitar a copia na nuvem, mover para fora do OneDrive, ou trocar por valores locais de brinquedo — o `wrangler dev --local` nao precisa dos segredos reais. Antes de qualquer coisa, guardar uma copia segura: secret do Cloudflare NAO pode ser lido de volta, e este arquivo pode ser a unica copia que resta. — aberta em 2026-08-25 (Etapa 121)
+- **[Codex/Tiago]** Homologar a beta de visao dinamica em sessao mestre/jogador conectados: salvar/reabrir paredes, colisao, giro e portas. API publicada em 2026-09-21 apos dry-run; health e autenticacao da rota conferidos. Sem cofre de credenciais online nesta maquina para round-trip autenticado. Com visao ativa, invocacao de Echo pelo relay legado do jogador continua bloqueada. — aberta em 2026-09-20 (integracao da visao dinamica)
+
+- **[Tiago]** Rotacionar em producao `JWT_SECRET` e `MASTER_BOOTSTRAP_PASSWORD` via `wrangler secret put` — os valores que estiveram em texto puro no OneDrive continuam validos no Worker. Comandos e ordem no bloco da Etapa 142. **`PASSWORD_PEPPER` fica de fora de proposito**: rotacionar invalida o hash de senha de TODOS os jogadores (PBKDF2 mistura o pepper, `cloudflare/src/auth.js:35`) e nao existe fluxo de recuperacao de senha. Rotacionar o pepper exige antes a migracao pepper-duplo descrita na Etapa 142. — aberta em 2026-08-28 (Etapa 142, herdada da Etapa 121)
 
 ## Regra Obrigatoria de Documentacao
 
@@ -24,6 +26,16 @@ Registro minimo esperado:
 - pendencias ou riscos que continuam abertos
 
 ## Projeto
+
+### Publicacao beta autorizada — 2026-09-21
+
+Tiago autorizou publicar API e conjunto local da Mesa via commit/main. Painel identificado como "Paredes e visao · Beta". API publicada pelo plugin Cloudflare depois do dry-run Wrangler 4.100.0 (CLI sem login), preservando os oito bindings por heranca estrita, segredos, compatibilidade e namespace DO existentes. Sem migracao de banco e sem alterar cenas. Versao ativa `e3721515-0d31-40ec-94d8-038a3a4eed42`; anterior `926349ef-38b9-443a-8fc2-253cb84a33f9` registrada para rollback. Health 200 e POST da rota de visao sem credencial retorna 401.
+
+Validacao: 26 testes Node, 387 Playwright locais aprovados (2 de Worker ignorados), 2 readiness online aprovados, sintaxe JS, auditorias e build/minificacao OK. Dois testes antigos de layout atualizados para verificar ausencia real de sobreposicao e todos os controles exclusivos do mestre, sem largura fixa nem supor um unico elemento. Site segue publicacao pelo workflow GitHub Pages no push main. Configuracoes pessoais, copias, pagina de teste manual e ferramenta de segredos fora do commit.
+
+### Editor compacto e conclusao por botao direito — 2026-09-20
+
+Painel reduzido para 280px, ferramentas mais baixas, icone de porta redesenhado e rotulo da ferramenta ativa. Canvas destaca ultima alteracao e alvo de apagar/trancar; pontos clicados no poligono sao solidos e previa tracejada. Botao direito encerra qualquer modo do editor, preserva segmentos confirmados e salva a cadeia aberta dos pontos do poligono em um passo de desfazer; nao confirma a posicao apenas apontada. Falha de persistencia local impede descartar o rascunho. Alteracoes em mesa.html, mesa-vision.js/css e teste de gestos. Validacao local: 34 testes Playwright direcionados passaram, incluindo recarga, desfazer/refazer e contencao em tres larguras com texto ampliado. Sem publicacao.
 
 - Nome: Armagedon
 - Tipo: portal de campanha de RPG
@@ -40,7 +52,243 @@ Registro minimo esperado:
 - A fronteira UI->backend ja esta limpa: os modulos `mesa-*.js` falam com a fachada `window.APP` (js/api.js), e quase toda chamada de backend ja esta guardada por `isBackendEnabled()` (cai pro localStorage automaticamente quando o `/health` falha).
 - ~~Divida conhecida: fetch direto no endpoint de mapa em js/mesa-map.js~~ — RESOLVIDA na Etapa 40 (2026-07-11): upload/delete de mapa agora passam pela fachada `window.APP` (`uploadMesaMap`/`deleteMesaMap` em js/api.js). Nao ha mais nenhum `fetch` fora da fachada nos modulos `mesa-*.js`.
 
-## Ultima Etapa Concluida (2026-08-28 — Etapa 141: aba antiga de mestre nao apaga mais a cena, e a paridade foi verificada ao vivo)
+## Interface e integracao local — 2026-09-20
+
+- Revisao visual solicitada: controle de paredes reorganizado em grids, SVGs consistentes, largura e espacamentos uniformes, textos contidos e ajustes secundarios alinhados. Teste automatizado mede overflow e alinhamento em tres larguras desktop e texto ampliado em 150%; capturas do editor e ajustes revisadas. Sem alteracao das regras de visao/portas.
+
+- Editor simplificado em Criar parede/Criar porta, formas ponto a ponto/poligono/retangulo e previa no cursor. Porta recorta uma parede existente de forma atomica com desfazer/refazer. Teste de jogador confirma revelacao do NPC e passagem depois da abertura. Ajustes secundarios recolhidos; 31 testes de navegador aprovados na bateria de interface, mapa, controles e build.
+
+- Refinamento solicitado: editor movido para engrenagem da cena, compartilhando controles com Grade/Nevoa. Dicas contextuais por ferramenta, secao recolhivel e encerramento da edicao ao fechar configuracoes. Validacao focada inicial: 15 testes aprovados e screenshot desktop revisada.
+
+- Editor recolhivel de paredes em cadeia, portas, remocao, tranca, desfazer/refazer e simulacao do cone selecionado. Fechar o painel encerra a ferramenta, sem capturar o palco invisivelmente.
+- Mascara individual preta sem exploracao; giro de 15 graus; colisao continua do disco; portas proximas; tokens e iniciativa fora da visao ocultos na interface. Geometria compartilhada entre navegador e servidor, sem nova dependencia de runtime.
+- Persistencia completa dos dados de exibicao dos tokens, revisao com CAS no D1 e recusa de movimento legado para jogadores com visao ativa. Falha remota restaura a posicao aceita e solicita snapshot atual.
+- Validacao focada: 26 testes Node e 15 testes de navegador aprovados. Capturas do editor e jogador inspecionadas. Benchmark local de poligono com 5.000 segmentos: p95 de 9,5 ms (nao equivale ao FPS completo da Mesa).
+- Regressao final desktop: 345 testes Playwright aprovados, 2 ignorados por exigirem Worker e credenciais locais. Sintaxe (51 arquivos), auditoria estatica, auditoria de pendencias, build Pages e `git diff --check` aprovados. Na bateria concorrente, p95 de 12,2 ms para poligono de 5.000 segmentos.
+- Estado: alteracoes locais; sem commit ou deploy. Regras e limites em `docs/ILUMINACAO-DINAMICA.md`.
+
+## HISTORICO — desenvolvimento iniciado (2026-09-18 — base geometrica da visao dinamica; integrado em 2026-09-20)
+
+- Novo `js/mesa-vision-geometry.js`: normalizacao versionada de paredes/portas,
+  indice espacial BVH, poligono de cone direcional, linha de visao, varredura de
+  disco para colisao continua e proximidade de porta sem parede intermediaria.
+- Coordenadas preservam a proporcao do mapa; portas abertas deixam de bloquear.
+  Cruzamentos entram no poligono; segmentos degenerados e dados invalidos sao
+  rejeitados em vez de desaparecer silenciosamente.
+- Nucleo puro, sem DOM, rede ou persistencia; utilizavel como script classico e
+  modulo nativo. Ainda nao carregado em `mesa.html`, nem conectado ao Worker.
+  Nenhuma cena existente foi migrada ou modificada. Nao ha nova dependencia.
+- `npm run test:mesa:vision` executa testes deterministas com oraculos independentes
+  de visibilidade/colisao, contorno de 5.000 segmentos e limites de recursos.
+  Isso nao comprova desempenho de renderizacao nem integracao multiplayer.
+- Verificacao deste incremento: 20 testes aprovados; sintaxe JS (49 arquivos),
+  auditoria estatica, auditoria de pendencias e `git diff --check` aprovados.
+  A bateria de navegador preexistente nao foi reexecutada neste incremento isolado.
+- Escopo de integracao centralizado em Pendencias Vivas. Sem commit/deploy.
+
+## Etapa Concluida (2026-09-15 — Etapa 144: primeira pintura densa sem bloco longo)
+
+### 1. O gargalo restante foi repartido entre quadros
+
+A Etapa 143 deixou o gesto de desenho rapido, mas a primeira pintura de um
+quadro com 300 riscos de 400 pontos ainda executava tudo de uma vez e bloqueava
+por cerca de 163 a 166 ms. A restauracao local, a aplicacao de snapshots e o
+redimensionamento agora detectam quadros acima de 20 mil pontos e distribuem a
+pintura com `requestAnimationFrame`.
+
+O lote tem dois limites complementares: ate 8 ms de JavaScript e ate 4 mil
+pontos por quadro. O segundo e necessario porque o canvas pode enfileirar a
+rasterizacao fora do trecho medido pelo relogio. No cenario extremo, a carga foi
+dividida em 30 quadros; o maior bloco JavaScript medido ficou entre 0,8 e 1,6 ms
+nas quatro execucoes desta etapa. O tempo total ficou perto de 500 ms, mas a
+pagina pode responder entre os lotes em vez de congelar por um bloco unico.
+
+Quadros normais continuam no caminho sincrono simples. A aparencia dos tracos,
+o cache do gesto e os contratos de persistencia/realtime nao mudaram.
+
+### 2. Verificacao
+
+- teste de performance repetido 3 vezes depois do ajuste final: 18 aprovacoes
+- bateria desktop completa da Mesa: 333 aprovados; 2 ignorados por exigirem o Worker real
+- testes do artefato Pages: 8 aprovados
+- bundle local da Mesa: 315,2 KB minificados
+- verificacao visual desktop: toolbar, flyout, palco e tokens sem mudanca de estilo
+- console do navegador: nenhum erro ou aviso
+
+### 3. Decisoes de custo
+
+- nenhuma dependencia, infraestrutura ou servico pago foi adicionado
+- IndexedDB continua desnecessario enquanto o limite real do `localStorage` nao aparecer
+- divisao do bundle nao foi feita sem uma medicao real de rede/Core Web Vitals;
+  o conector Chrome DevTools ainda precisa ser configurado para essa evidencia
+
+Sem deploy. A validacao permanece local e desktop; celular fica para o fim do
+projeto.
+
+## Etapa Concluida (2026-09-15 — Etapa 143: boot deterministico, desenho responsivo e persistencia economica)
+
+### 1. O boot nao depende mais do timing do cache
+
+`mesa-core.js` iniciava sozinho assim que encontrava `document.readyState ===
+"interactive"`. Como os scripts `defer` executam justamente nesse estado, o
+core podia iniciar antes dos modulos listados depois dele no HTML. Os guardas
+`typeof ... === "function"` pulavam desenho, selecao ou iniciativa em silencio,
+sem uma segunda tentativa.
+
+O disparo foi separado em `js/mesa-bootstrap.js`, ultimo modulo externo da
+Mesa. O core agora apenas publica `bootMesaPage()`; o bootstrap chama a funcao
+depois que todos os contratos globais ja foram registrados. Um teste estrutural
+protege a posicao do bootstrap no HTML.
+
+### 2. Quadro denso nao e mais redesenhado inteiro a cada movimento
+
+A medicao encontrou um caminho quente real em `mesa-drawing.js`: durante um
+novo traco, `renderDrawings()` redesenhava todos os tracos concluidos em cada
+`pointermove`. Com 300 riscos de 400 pontos (120 mil pontos), uma pintura
+completa levou entre 166 e 291 ms nas repeticoes finais desta maquina.
+
+Os pixels dos tracos concluidos agora ficam em um canvas de cache. Durante o
+gesto, a Mesa copia esse fundo e vetoriza apenas o traco ativo. No mesmo cenario,
+a interacao medida ficou entre 0,3 e 1,1 ms. Mudancas de tamanho, snapshot, borracha e
+realtime continuam invalidando/reconstruindo o fundo pelo fluxo normal.
+
+### 3. Gravacoes locais foram retiradas do caminho quente
+
+Chamadas repetidas de `persistState()` agora apenas marcam a cena como pendente.
+A cena e montada, normalizada e serializada uma unica vez no flush de 160 ms;
+20 pedidos consecutivos resultaram em uma montagem e um `JSON.stringify`.
+
+O backup local dos desenhos segue a mesma agregacao: ele nao serializa durante
+o gesto, faz flush ao ocultar/sair da pagina e avisa por um toast no estilo atual
+caso o navegador rejeite a gravacao. Eventos repetidos do `ResizeObserver`
+tambem foram condensados em um unico `requestAnimationFrame`.
+
+### 4. Limpar cena agora explicita o alcance
+
+O botao manteve a aparencia existente, mas agora abre o modal padrao da
+interface. A mensagem deixa claro que apenas os tokens serao retirados e que
+mapa, grade, nevoa e desenhos permanecem. Cancelar preserva a cena.
+
+### 5. Verificacao
+
+- os dois bugs originais e a ordem do bootstrap passaram 5 vezes seguidas cada
+- sintaxe JavaScript: 48 arquivos aprovados
+- bateria desktop da Mesa: 332 testes aprovados; 2 ignorados por exigirem o Worker real
+- testes do artefato Pages: 8 aprovados
+- auditoria estatica e auditoria de pendencias: aprovadas
+- artefato local de Pages: bundle da Mesa com 313,5 KB minificados
+- verificacao visual em navegador desktop: toolbar, flyout, canvas, tokens e modal sem desalinhamento; console sem erros ou avisos
+
+### 6. Arquivos principais
+
+- `js/mesa-bootstrap.js`, `js/mesa-core.js`, `mesa.html`
+- `js/mesa-drawing.js`
+- `js/mesa-stage.js`
+- `tests/mesa-audit.spec.cjs`, `tests/mesa.performance.spec.cjs`, `tests/mesa.spec.cjs`
+
+### 7. Limites e proximas oportunidades gratuitas
+
+- a primeira pintura de um quadro com 120 mil pontos ainda pode bloquear por
+  166 a 291 ms; avaliar render progressivo ou cache persistente
+- o bundle da Mesa ainda carrega 313,5 KB minificados de uma vez; medir rede e
+  Core Web Vitals antes de separar paineis opcionais em carga tardia
+- considerar IndexedDB apenas se o limite real do `localStorage` aparecer em
+  desenhos muito grandes; nao ha motivo atual para adicionar backend ou servico pago
+
+Nenhuma dependencia ou servico pago foi adicionado, e o estilo visual foi
+preservado. Sem deploy: a verificacao desta etapa e local e desktop; celular
+fica para o fim do projeto, conforme decisao atual.
+
+## Etapa Concluida (2026-08-28 — Etapa 142: os segredos de dev saem do OneDrive, e a rotacao do pepper e barrada)
+
+### 1. O problema, com o tamanho certo
+
+`cloudflare/.dev.vars` guardava `JWT_SECRET`, `PASSWORD_PEPPER` e
+`MASTER_BOOTSTRAP_PASSWORD` em texto puro. O arquivo esta no `.gitignore`
+desde sempre — conferido com `git check-ignore`, ele nunca foi para o
+repositorio. **A exposicao real era outra**: a pasta do projeto fica dentro do
+OneDrive, entao esses tres valores estavam sincronizados para a nuvem.
+
+Isso importa para dimensionar a resposta. Nao houve vazamento publico; houve
+copia numa nuvem pessoal. A reacao proporcional e tirar do OneDrive e rotacionar
+o que e barato rotacionar — nao queimar as contas dos jogadores.
+
+### 2. Cofre cifrado, reusando o que ja existia
+
+`tools/set-dev-secrets.ps1` (novo) segue a mesma tecnica do
+`set-online-credentials.ps1` da Etapa 120: DPAPI via `Export-Clixml`, com a
+chave derivada da conta do Windows nesta maquina. O cofre fica em
+`%LOCALAPPDATA%armagedomdev-vars.xml` — fora do OneDrive, fora do repo,
+inutil em outra maquina.
+
+    -Guardar    cifra o .dev.vars atual
+    -Trocar     troca o .dev.vars por valores de brinquedo
+    -Conferir   lista as chaves guardadas, nunca os valores
+    -Restaurar  devolve os valores reais ao .dev.vars
+    -Apagar     remove o cofre
+
+**`-Trocar` se recusa a rodar sem cofre.** Um secret do Cloudflare nao pode
+ser lido de volta depois de gravado: o `.dev.vars` podia ser a unica copia do
+pepper de producao que restava no mundo. Perde-lo sem copia significaria nenhuma
+senha de jogador podendo mais ser verificada. A ordem "copia primeiro" esta
+imposta pelo codigo, nao pela lembranca de quem roda.
+
+### 3. O achado que barrou metade da rotacao
+
+O plano original dizia "rotacionar os de producao", os tres. Ler
+`cloudflare/src/auth.js` mostrou que isso quebraria a promessa do proprio
+plano de nao forcar 5 jogadores a redefinir senha:
+
+`derivePbkdf2Bits(password, pepper, salt, iterations)` (linha 35) mistura o
+pepper **dentro** de cada hash gravado no D1. Trocar o pepper invalida todos os
+hashes de uma vez.
+
+| Segredo | Rotacionar custa | Veredito |
+|---|---|---|
+| `JWT_SECRET` | sessoes ativas caem; todo mundo loga de novo | rotacionar |
+| `MASTER_BOOTSTRAP_PASSWORD` | nada — `ensureMasterUser` re-hasheia no proximo login do mestre | rotacionar |
+| `PASSWORD_PEPPER` | **os 5 jogadores perdem a conta, sem recuperacao** | **NAO rotacionar** |
+
+O mestre se cura sozinho porque `ensureMasterUser` (auth.js:222) marca
+`needsUpdate` quando `verifyPassword` falha e regrava o hash. **Jogador nao
+tem esse caminho**: `verifyPassword` retorna false e o login so nega. E nao ha
+fluxo de recuperacao de senha no sistema — o proprio plano lista "recuperacao de
+senha" entre as coisas que o Supabase teria e nos nao temos.
+
+Isso foi observado, nao deduzido: no teste local o mestre entrou com a senha de
+brinquedo **na primeira tentativa**, porque o bootstrap regravou o hash com o
+pepper novo. Um jogador na mesma base teria sido recusado.
+
+**Se um dia o pepper precisar mesmo girar**, o caminho e pepper-duplo:
+`verifyPassword` tenta o pepper novo, cai para o antigo, e num acerto pelo
+antigo regrava o hash com o novo. Migracao preguicosa, sem ninguem perceber.
+Fica registrado como o pre-requisito, nao como trabalho aberto.
+
+### 4. Verificacao
+
+- Cofre conferido **antes** de sobrescrever: os 3 valores decifrados batem por
+  `sha256` com os originais. Backup nao conferido nao e backup.
+- `wrangler dev --local` sobe com os valores de brinquedo:
+  `/api/health` devolve `{"ok":true}`.
+- `POST /api/auth/login` com `mestre` / `mestre-local-123` devolve token
+  com `"role":"master"`.
+- Nenhum valor de segredo foi impresso em terminal, log ou arquivo durante o
+  processo — so nomes de chave, tamanhos e hashes.
+
+**Limite honesto do DPAPI**: a chave e derivada desta conta nesta maquina. O
+cofre protege contra a copia na nuvem e contra outro usuario do PC; **nao** e
+backup de desastre. Se o disco morrer, o cofre morre junto. Uma segunda copia
+num gerenciador de senhas continua sendo a rede de seguranca — decisao do Tiago.
+
+### 5. Arquivos alterados
+
+- `tools/set-dev-secrets.ps1` (novo)
+- `cloudflare/.dev.vars` (fora do repo; agora so brinquedos)
+- `DEV_STATUS.md`, `cloudflare/README.md`
+
+**Sem deploy** e **sem cache-bust**: nada do site mudou.
+
+## Etapa Concluida (2026-08-28 — Etapa 141: aba antiga de mestre nao apaga mais a cena, e a paridade foi verificada ao vivo)
 
 ### 1. A correcao: reconexao do mestre passou a comparar versao
 

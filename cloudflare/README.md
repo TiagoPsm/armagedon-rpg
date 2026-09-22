@@ -1,5 +1,15 @@
 # Migracao para Cloudflare
 
+## Visao dinamica — integracao local 2026-09-20
+
+`POST /api/mesa/vision/action` recebe cena, revisao e acao de movimento, orientacao ou porta. Autenticacao, ownership, cena ativa e bloqueio do mestre precedem a escrita. Geometria e regras puras sao compartilhadas com `js/mesa-vision-geometry.js` e `js/mesa-vision-rules.js`.
+
+Cena guarda `vision` e tokens guardam `facingDeg`/`visionRadius`. Escrita D1 usa comparacao do JSON anterior (CAS); concorrencia ou revisao obsoleta retorna 409. Snapshot completo antigo nao pode apagar visao ativa. Nao requer migracao de schema.
+
+DO recusa mutacoes legadas de tokens pelo jogador com visao ativa e filtra tokens/desenhos DM e vitais privados em broadcasts de cena. Nao filtra mapa publico por cone individual; isso nao e protecao contra DevTools. Invocacao de Echo por esse relay tambem fica bloqueada nesse modo.
+
+Testes locais usam SQLite real com adaptador D1 e DO simulado; nao equivalem a uma sessao mestre/jogador publicada. Beta publicada em 2026-09-21 com autorizacao do Tiago: versao `e3721515-0d31-40ec-94d8-038a3a4eed42`, dry-run Wrangler limpo, upload via plugin Cloudflare (CLI sem login), bindings herdados estritamente e sem migracao. Health 200 e rota de visao exige autenticacao (401 anonimo). Versao anterior para rollback: `926349ef-38b9-443a-8fc2-253cb84a33f9`. Acompanhamento central em `../DEV_STATUS.md`.
+
 Este e o caminho principal atual da API publicada do Armagedon.
 
 ## Regra Obrigatoria de Documentacao
@@ -228,3 +238,50 @@ Duas armadilhas registradas no codigo:
 2. A rota de `/folder` precisa ser avaliada ANTES da rota generica `PUT /api/mesa/scenes/:id`, senao o sufixo `/folder` entra no id da cena.
 
 Compatibilidade: metadado antigo (sem os campos) funciona — tudo cai na raiz. `--dry-run` conferido em 2026-08-19; deploy pendente do Tiago.
+
+## Segredos do Worker (2026-08-28, Etapa 142)
+
+Tres secrets sustentam a autenticacao. **Eles nao sao intercambiaveis e nao
+devem ser rotacionados juntos.**
+
+| Secret | Para que serve | Rotacionar custa |
+|---|---|---|
+| `JWT_SECRET` | assina/verifica o token de sessao (`auth.js:304`) | sessoes ativas caem; todos logam de novo |
+| `MASTER_BOOTSTRAP_PASSWORD` | senha de bootstrap do mestre (`auth.js:224`) | nada: `ensureMasterUser` regrava o hash no proximo login do mestre |
+| `PASSWORD_PEPPER` | entra no PBKDF2 de **toda** senha (`auth.js:35`) | **todos os jogadores perdem a conta** |
+
+### Por que o pepper e diferente
+
+`derivePbkdf2Bits(password, pepper, salt, iterations)` mistura o pepper dentro
+de cada `password_hash` gravado em `users`. Trocar o pepper invalida todos os
+hashes de uma vez. O **mestre** se recupera sozinho — `ensureMasterUser` marca
+`needsUpdate` quando `verifyPassword` falha e regrava. **Jogador nao tem esse
+caminho**, e o sistema nao tem recuperacao de senha.
+
+Se o pepper precisar mesmo girar, faca antes a **migracao pepper-duplo**:
+`verifyPassword` tenta o pepper novo, cai para o antigo, e num acerto pelo
+antigo regrava o hash com o novo. Migracao preguicosa, invisivel para o jogador.
+
+### Rotacionar (os dois que sao seguros)
+
+```
+npx wrangler secret put JWT_SECRET --config cloudflare/wrangler.toml
+npx wrangler secret put MASTER_BOOTSTRAP_PASSWORD --config cloudflare/wrangler.toml
+```
+
+O valor e digitado no prompt do wrangler — nunca como argumento de linha de
+comando (ficaria no historico do shell). Depois de trocar
+`MASTER_BOOTSTRAP_PASSWORD`, o proximo login do mestre ja usa a senha nova.
+
+### Desenvolvimento local
+
+`cloudflare/.dev.vars` fica no `.gitignore` e contem **apenas valores de
+brinquedo**. Os reais vivem cifrados (DPAPI) em
+`%LOCALAPPDATA%\armagedom\dev-vars.xml`, fora do OneDrive — ver
+`tools/set-dev-secrets.ps1` (`-Guardar` / `-Trocar` / `-Conferir` /
+`-Restaurar`). Um secret do Cloudflare **nao pode ser lido de volta**, entao o
+`.dev.vars` pode ser a unica copia que resta: `-Trocar` se recusa a sobrescrever
+sem cofre.
+
+`MASTER_BOOTSTRAP_PASSWORD` do `.dev.vars` precisa bater com a variavel de
+ambiente `ARMAGEDON_LOCAL_MASTER_PASSWORD` usada pelos testes locais.

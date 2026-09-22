@@ -2352,6 +2352,7 @@ function toggleMapSettings() {
   if (!panel) return;
   const isOpen = !panel.hidden;
   panel.hidden = isOpen;
+  if (isOpen && typeof closeMesaVisionEditor === "function") closeMesaVisionEditor();
   if (btn) {
     btn.setAttribute("aria-expanded", isOpen ? "false" : "true");
     btn.classList.toggle("is-active", !isOpen);

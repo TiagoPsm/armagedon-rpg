@@ -612,11 +612,10 @@ function _broadcastInitiative() {
 /**
  * Consome a iniciativa que o boot da Mesa deixou em espera.
  *
- * Por que existe: com os scripts vindo do cache, o mesa-core.js pode executar
- * com readyState "interactive" e disparar bootMesaPage() imediatamente — ou
- * seja, a cena e restaurada ANTES de este arquivo existir. Nesse caso o
- * applyMesaSceneSnapshot guarda o estado em window._mesaPendingInitiative em
- * vez de descarta-lo, e quem aplica somos nos.
+ * O carregamento normal agora e ordenado por mesa-bootstrap.js. Este fallback
+ * continua necessario para integracoes/testes que apliquem uma cena antes de
+ * carregar este modulo: o core deixa o estado em window._mesaPendingInitiative
+ * e quem o consome somos nos.
  */
 function drainPendingInitiative() {
   const pending = window._mesaPendingInitiative;
@@ -663,7 +662,10 @@ function _visibleEntries() {
   const master = isInitMaster();
   return s.order
     .map((entry, index) => ({ entry, index }))
-    .filter(item => master || !item.entry.secret);
+    .filter(item => master || (!item.entry.secret && (typeof mesaVisionActive !== "function" || !mesaVisionActive() || (() => {
+      const token = findInitiativeToken(item.entry);
+      return token && mesaVisionTokenVisible(token);
+    })())));
 }
 
 function _entryAvatarHtml(entry) {
@@ -819,7 +821,7 @@ function _renderTracker() {
   const status = tracker.querySelector(".init-status");
   if (status) {
     if (!current) status.textContent = "Aguardando o mestre…";
-    else if (current.secret && !master) status.textContent = "Turno do mestre…";
+    else if (!master && (current.secret || !items.some(item => item.entry.id === current.id))) status.textContent = "Turno do mestre…";
     else status.textContent = `Vez de ${current.name}`;
   }
 

@@ -396,8 +396,11 @@
         body: {}
       });
     },
-    async getMesaScene() {
-      return request("/mesa/scene");
+    async getMesaScene(sceneId) {
+      return request("/mesa/scene" + (sceneId ? `?id=${encodeURIComponent(sceneId)}` : ""));
+    },
+    async mesaVisionAction(sceneId, revision, action) {
+      return request("/mesa/vision/action", { method: "POST", body: { sceneId, revision, action } });
     },
     // Múltiplas cenas (Etapa 49) — gestão master-only (o Worker valida).
     async getMesaScenes() {
@@ -429,7 +432,7 @@
       return request(`/mesa/scenes/${encodeURIComponent(sceneId)}/folder`, { method: "PUT", body: { folderId } });
     },
     async saveMesaScene(data, options = {}) {
-      return request("/mesa/scene", {
+      return request("/mesa/scene" + (options.sceneId ? `?id=${encodeURIComponent(options.sceneId)}` : ""), {
         method: "PUT",
         body: { data },
         keepalive: options.keepalive === true

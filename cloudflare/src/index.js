@@ -49,6 +49,7 @@ import {
 } from "./echos.js";
 import {
   activateMesaScene,
+  applyMesaVisionAction,
   createMesaScene,
   createMesaSceneFolder,
   deleteMesaScene,
@@ -706,6 +707,17 @@ export default {
         const session = await requireAuth(request, env);
         const sceneId = path.slice("/api/mesa/scenes/".length);
         return withCors(json(await deleteMesaScene(env, session, sceneId)), origin);
+      }
+
+      if (path === "/api/mesa/vision/action" && request.method === "POST") {
+        const session = await requireAuth(request, env);
+        const body = await readJson(request, 32 * 1024);
+        const stub = getMesaRealtimeStub(env);
+        if (!stub) return errorJson("Coordenacao da Mesa indisponivel.", 503, origin);
+        const locked = await stub.isPlayersMoveLocked();
+        const saved = await applyMesaVisionAction(env, session, body, locked);
+        if (saved.active) await broadcastMesaScene(env, await getMesaScene(env, { role: "master" }, saved.id), session);
+        return withCors(json(saved), origin);
       }
 
       if (path === "/api/mesa/scene" && request.method === "PUT") {

@@ -70,6 +70,7 @@ const MESA_MASTER_CAPS = new Set([
   "map.manage",        // abrir, importar, limpar e transformar o mapa
   "grid.manage",       // grade funcional
   "fog.manage",        // fog of war
+  "vision.manage",     // paredes, portas e configuracao de visao
   "layer.dm",          // camada secreta do mestre
   "layer.map",         // camada de mapa
   "inspector",         // inspetor lateral de token
