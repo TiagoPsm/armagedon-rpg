@@ -24,7 +24,7 @@ async function getMesaBaseUrl() {
   server = http.createServer((request, response) => {
     const requestUrl = new URL(request.url || "/", "http://127.0.0.1");
     const pathname = decodeURIComponent(requestUrl.pathname === "/" ? "/index.html" : requestUrl.pathname);
-    const target = path.resolve(repoRoot, pathname.replace(/^\/+/, ""));
+    const target = path.resolve(repoRoot, process.env.MESA_TEST_ARTIFACT === "1" ? "_site" : ".", pathname.replace(/^\/+/, ""));
 
     if (!target.startsWith(repoRoot) || !fs.existsSync(target) || fs.statSync(target).isDirectory()) {
       response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });

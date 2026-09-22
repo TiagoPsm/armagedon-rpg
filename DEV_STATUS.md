@@ -27,6 +27,12 @@ Registro minimo esperado:
 
 ## Projeto
 
+### Hotfix da inicializacao da beta — 2026-09-22
+
+Erro reproduzido no endereco usado pelo Tiago (`armagedon-rpg.pages.dev/mesa`): `Cannot access 'mesaVisionFrame' before initialization`. Ao concatenar scripts, a funcao de visao sofre hoisting, mas seu estado lexical ainda nao existe quando a nevoa inicializa. Inicializacao da nevoa movida para mesa-bootstrap, depois de todos os modulos, com guarda contra listeners/observers duplicados. Falha assincrona de boot agora registra `state.bootError` e mostra aviso em vez de deixar apenas erro no console.
+
+Validacao: 10 testes de build, incluindo boot/interacao/recarga nos bundles normal e minificado; 330 testes de Mesa executados contra `_site` (permissoes, cenas, mapas, tokens, nevoa, portas e visao), todos aprovados. Screenshot do editor revisada. Helper aceita `MESA_TEST_ARTIFACT=1`. Workflow GitHub Pages passou a executar regressao de bundle antes do build final. Nao foram reproduzidas outras falhas nesses fluxos. Homologacao autenticada real continua na lista viva; testes usam cenarios locais/controlados.
+
 ### Publicacao beta autorizada — 2026-09-21
 
 Tiago autorizou publicar API e conjunto local da Mesa via commit/main. Painel identificado como "Paredes e visao · Beta". API publicada pelo plugin Cloudflare depois do dry-run Wrangler 4.100.0 (CLI sem login), preservando os oito bindings por heranca estrita, segredos, compatibilidade e namespace DO existentes. Sem migracao de banco e sem alterar cenas. Versao ativa `e3721515-0d31-40ec-94d8-038a3a4eed42`; anterior `926349ef-38b9-443a-8fc2-253cb84a33f9` registrada para rollback. Health 200 e POST da rota de visao sem credencial retorna 401.

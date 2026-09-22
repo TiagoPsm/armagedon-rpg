@@ -209,7 +209,9 @@ function bootMesaPage() {
   mesaInitStarted = true;
   initMesaPage()
     .catch(error => {
+      state.bootError = error.message || "Erro inesperado ao carregar a Mesa.";
       console.error("Falha ao iniciar a mesa virtual.", error);
+      window.UI?.toast?.("A Mesa não terminou de carregar. Recarregue a página; se persistir, informe este erro: " + state.bootError, { kicker: "// Erro na Mesa" });
     })
     .finally(() => {
       state.bootCompleted = true;

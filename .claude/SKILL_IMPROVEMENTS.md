@@ -1,5 +1,9 @@
 # 📊 Smart Skill Feedback & Improvements Log
 
+### 2026-09-22 — code-review-frontend / game-playtest — regressao de bundle
+
+Skills apropriadas: erro de hoisting/TDZ so apareceu na concatenacao publicada. Testar arquivos separados e somente inspecionar tags nao basta. Acrescentados browser tests nos pacotes normal/minificado, com criacao e recarga de paredes; 330 cenarios existentes tambem passaram contra artefato. Captura confirma papel e controles do mestre. Erros de rede bloqueada de assets externos no sandbox sao separados dos erros JS, sem ignorar pageerror.
+
 ### 2026-09-21 — Cloudflare / Wrangler — publicacao beta
 
 Skills apropriadas para dry-run, preservacao de bindings e verificacao de deploy. Wrangler sem autenticacao: pacote minificado validado publicado pelo plugin ja conectado, sem copiar segredos. Checklist frontend citada pelo dispatcher nao existe neste checkout; substituida pelos checks JS/static/pendencias/build e suite completa. Smoke publico separado da suite local para nao confundir bloqueio de rede com regressao. Homologacao autenticada nao presumida sem credenciais.

@@ -13,9 +13,42 @@ const path = require("node:path");
 
 const repoRoot = path.resolve(__dirname, "..");
 const siteDir = path.join(repoRoot, "_site");
+const { getMesaBaseUrl, closeMesaTestServer } = require("./mesa-test-server.cjs");
+test.afterAll(closeMesaTestServer);
 
 test.beforeAll(() => {
   execFileSync(process.execPath, [path.join(repoRoot, "tools", "build-pages.cjs")], { cwd: repoRoot });
+});
+
+test.describe("Boot real do pacote publicado", () => {
+  for (const minified of [false, true]) {
+    test(`Mesa inicia e edita paredes no bundle ${minified ? "minificado" : "normal"}`, async ({ page }, info) => {
+      const errors = [];
+      page.on("pageerror", error => errors.push(error.message));
+      page.on("console", message => {
+        if (message.type() === "error" && !message.text().includes("net::ERR_NETWORK_ACCESS_DENIED")) errors.push(message.text());
+      });
+      const source = fs.readFileSync(path.join(siteDir, "js/mesa-page.bundle.js"), "utf8");
+      const code = minified ? (await require("terser").minify(source, { compress: { passes: 2 }, mangle: true })).code : source;
+      await page.route("**/js/mesa-page.bundle.js*", route => route.fulfill({ contentType: "application/javascript", body: code }));
+      await page.goto(`${await getMesaBaseUrl()}/_site/mesa.html`);
+      await expect(page.locator("#mesaStage .mesa-token")).toHaveCount(3);
+      await expect.poll(() => page.evaluate(() => state.bootCompleted)).toBe(true);
+      await page.locator("#mesaMapSettingsBtn").click();
+      await page.locator("#mesaVisionPanel > summary").click();
+      await page.locator("#mesaVisionWall").click();
+      const box = await page.locator("#mesaWallCanvas").boundingBox();
+      await page.mouse.click(box.x + box.width * .2, box.y + box.height * .3);
+      await page.mouse.click(box.x + box.width * .5, box.y + box.height * .3);
+      await expect(page.locator("#mesaVisionCount")).toHaveText("1 segmento");
+      await page.mouse.click(box.x + box.width * .5, box.y + box.height * .4, { button: "right" });
+      await expect(page.locator("#mesaWallCanvas")).toBeHidden();
+      await page.screenshot({ path: info.outputPath(`bundle-${minified ? "min" : "normal"}.png`) });
+      await page.reload();
+      await expect.poll(() => page.evaluate(() => mesaVision?.walls.length)).toBe(1);
+      expect(errors).toEqual([]);
+    });
+  }
 });
 
 function lerHtml(nome) {

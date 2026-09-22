@@ -412,10 +412,13 @@ function _bindFogSettingsUI() {
 
 /* ── INIT ───────────────────────────────────────────────────── */
 
+let mesaFogInitialized = false;
 function initMesaFog() {
+  if (mesaFogInitialized) return;
   _fogCanvasEl = document.getElementById("mesaFogCanvas");
   _fogStageEl = document.getElementById("mesaStageInner");
   if (!_fogCanvasEl || !_fogStageEl) return;
+  mesaFogInitialized = true;
   _fogCtx = _fogCanvasEl.getContext("2d");
 
   _resizeFogCanvas();
@@ -429,11 +432,8 @@ function initMesaFog() {
   renderMesaFog();
 }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initMesaFog, { once: true });
-} else {
-  initMesaFog();
-}
+// Started by mesa-bootstrap after every module has initialized its lexical state.
+// In a concatenated bundle, hoisted functions can exist before their let bindings.
 
 // Globais consumidos por mesa-core.js / mesa-map.js e testes.
 window.renderMesaFog                 = renderMesaFog;
