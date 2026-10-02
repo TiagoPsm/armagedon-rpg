@@ -49,13 +49,14 @@
 /* Hero do mestre */
 .master-hero {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr));
   gap: var(--sp-8);
   align-items: start;
 }
 
 .master-hero-main {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: var(--sp-3);
 }
@@ -69,9 +70,10 @@
 }
 
 .master-hero-meta {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--sp-3);
-  flex-shrink: 0;
+  min-width: 0;
 }
 
 .master-stat {
@@ -85,7 +87,7 @@
   background: var(--bg-raised);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  min-width: 120px;
+  min-width: 0;
 }
 
 .master-stat-label {
@@ -94,11 +96,11 @@
   font-weight: var(--fw-semibold);
   letter-spacing: var(--tracking-widest);
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .master-stat strong {
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-size: var(--fs-lg);
   font-weight: var(--fw-semibold);
   letter-spacing: var(--tracking-wide);
@@ -110,7 +112,7 @@
 .master-stat small {
   font-family: var(--font-body);
   font-size: var(--fs-xs);
-  color: var(--text-faint);
+  color: var(--text-soft);
   line-height: var(--lh-relaxed);
 }
 
@@ -139,6 +141,24 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--sp-4);
+}
+
+/* Keep credentials together and reserve a full row for the character name.
+   The three-field flex row previously left each input about 110px wide. */
+@media (min-width: 769px) {
+  .master-card-create > .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+    gap: var(--sp-3);
+  }
+
+  .master-card-create > .form-row > .form-group {
+    min-width: 0;
+  }
+
+  .master-card-create > .form-row > .form-group:last-child {
+    grid-column: 1 / -1;
+  }
 }
 
 .players-btns {
@@ -332,7 +352,7 @@
 .soul-core-state {
   font-family: var(--font-body);
   font-size: var(--fs-xs);
-  color: var(--text-faint);
+  color: var(--text-soft);
 }
 
 .soul-detail-link {
@@ -436,7 +456,7 @@
   min-width: 7em;
   font-family: var(--font-body);
   font-size: var(--fs-xs);
-  color: var(--text-faint);
+  color: var(--text-soft);
   font-style: italic;
 }
 
@@ -506,7 +526,7 @@
 .block-hint {
   font-family: var(--font-body);
   font-size: var(--fs-xs);
-  color: var(--text-faint);
+  color: var(--text-soft);
   font-style: italic;
   text-align: right;
 }
@@ -561,7 +581,7 @@
   font-size: var(--fs-2xs);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-soft);
 }
 
 .resource-input {
@@ -586,7 +606,7 @@
 .resource-sep {
   font-family: var(--font-display);
   font-size: var(--fs-xl);
-  color: var(--text-faint);
+  color: var(--text-soft);
   flex-shrink: 0;
   margin-bottom: var(--sp-3);
 }
@@ -673,7 +693,7 @@
   font-size: 9px;
   letter-spacing: var(--tracking-widest);
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-soft);
 }
 
 .attr-mod {
@@ -765,7 +785,7 @@
   font-size: var(--fs-2xs);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-soft);
 }
 
 .inventory-slot-input {
@@ -840,7 +860,7 @@
 .armor-empty {
   font-family: var(--font-body);
   font-size: var(--fs-xs);
-  color: var(--text-faint);
+  color: var(--text-soft);
   font-style: italic;
 }
 
@@ -1149,7 +1169,7 @@
 .dice-panel-toggle-state {
   font-family: var(--font-ui);
   font-size: var(--fs-2xs);
-  color: var(--text-faint);
+  color: var(--text-soft);
 }
 
 .dice-tray-advanced-panel {
@@ -1183,7 +1203,7 @@
 .dice-tray-preview-note {
   font-family: var(--font-body);
   font-size: var(--fs-xs);
-  color: var(--text-faint);
+  color: var(--text-soft);
   font-style: italic;
 }
 
@@ -1392,6 +1412,16 @@
 }
 
 @media (max-width: 768px) {
+  /* Retain the existing wrapped cards at the deferred mobile breakpoint. */
+  .master-hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .master-stat {
+    min-width: 120px;
+  }
+
   .page-main-master,
   .page-main-sheet {
     padding: var(--sp-4);

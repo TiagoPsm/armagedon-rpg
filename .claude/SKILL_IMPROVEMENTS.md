@@ -1,5 +1,93 @@
 # 📊 Smart Skill Feedback & Improvements Log
 
+### 2026-10-02 — Publicacao autorizada — frontend-performance-checklist / plugin-management
+
+Checklist apropriada para preservar ordem/cache/build e distinguir pipeline de homologacao. Dispatcher aponta nome antigo 05; utilizado arquivo existente 04-frontend-performance-checklist.md. Minificacao usa build completo, nao somente build:pages. Descoberta de Cloudflare nao retornou plugin nesta sessao; CLI existente reutilizado, sem instalar dependencia. Login OAuth com escopos reduzidos conta/Workers; ausencia intencional de outros escopos nao justifica ampliacao automatica. Conferir versao/bindings antes e depois, preservar vars/secrets e nao confundir health com teste autenticado. Referencias Git invalidas de OneDrive precisam de backup recuperavel, nao reset/limpeza ampla. Dois destinos frontend exigem conferir conteudo real em ambos, pois hash de URL nao demonstra minificacao.
+
+### 2026-10-02 — Manual do proprietario — frontend / arquitetura / contraste / playtest
+
+Skills apropriadas: game-ui-frontend/game-playtest e revisoes locais de codigo/layout/design/performance. Manual prevalece sobre recomendações genericas mobile/engine. Risco visual exige captura: hero estreito e palavra quebrada nao aparecem no scrollWidth do painel. Teclado imediato reproduz roubo de foco de callbacks atrasados; hidden e aria-hidden precisam concordar. Apenas topo do dialogo trata teclas, incluindo Escape ja consumido/IME. Regiao live precisa existir antes do aviso. Listas remotas exigem distinguir vazio, falha, cache e resultado de escrita incerto; nunca retry automatico de POST/DELETE. Revisao independente capturou leitura iniciada antes/durante escrita apagando aviso de resultado incerto: invalidar leituras ja em voo nesse estado, sem prejudicar cancelamento/validacao local. Revisao independente de cache de render capturou retrato assincrono desatualizado: comparar IDs e valores de retrato sem serializar data URLs. Nao propor framework/abstracao por tamanho de arquivo apenas, nem declarar producao pronta por testes locais.
+
+### 2026-10-02 — varredura QA — frontend / design / layout / performance / playtest
+
+Skills apropriadas (game-ui-frontend/game-playtest e revisao local): evidencia visual deve aguardar animacoes finitas; fade transitório nao prova baixo contraste. scrollWidth de select nativo inclui peculiaridades de padding, portanto medir contenção da caixa e legibilidade separadamente. LRU exige invalidar elementos que ainda apontam para URLs revogadas. Confirmar por Enter conserva foco: o campo deve hidratar valor aceito fora do render que ignora input ativo. Valor formatado igual nao pode gerar historico/escrita. Teste de exclusao de ferramenta precisa verificar primeiro frame, nao apenas esperar timer esconder. Varredura das outras paginas revelou lacuna do build (Echos) e falhas reais de rede/submissao; requests simulados permitem reproduzir sem alterar producao. Skill Canvas cita renderer antigo: manter tokens DOM e medir camadas existentes, sem reconstruir engine. CI configurado localmente nao significa CI remoto executado.
+
+### 2026-10-02 — C2/C3 e integracao — frontend / canvas / playtest
+
+Reusar biblioteca e desenhos existentes evita camadas e fluxos duplicados. Catalogo deve armazenar metadados sem carregar todos os blobs; miniaturas pequenas/visiveis e migracao aditiva precisam de teste com biblioteca maior. Bloqueio e permissao de edicao normal devem ser separados de desbloqueio explicito. Preview de ferramentas precisa de exclusao mutua, e ajuda focada nao pode permanecer fora do viewport. Comparar suites antigas com contratos novos antes de ajustar expectativas; nao afrouxar teste de pixels que revelou bug real. Grid normalizado por dois modulos independentes causava drift: contrato puro compartilhado e round-trip reduzem retrabalho. Capturas e testes do bundle minificado complementam testes da fonte. Skills preservaram estilo e area de jogo, sem trocar engine ou infraestrutura.
+
+### 2026-10-01 — microentregas W2–T5 — frontend / canvas / playtest / Workers
+
+Separar previa, geometria confirmada e transporte preservou historico atomico. Tolerancias devem usar pixels de tela; viewport recorta bitmap, nunca colisao. Cache exige chave de camera e geometria. Fixtures compartilhadas entre geometria/pixels tornam regressoes reproduziveis; medir DPR1/2 antes/depois, sem inferir 60fps. Captura de ponteiro redireciona cliques sinteticos durante arrasto: testes de fechamento devem acionar comando explicitamente. SQL/DO simulado nao equivale a homologacao conectada real. Dispatcher aponta skill Canvas antiga; arquivo existente 03-canvas-optimization.md usado.
+
+### 2026-10-01 — W1 — game-ui-frontend / code-review-frontend / game-playtest
+
+Skills apropriadas: botao na secao existente preserva area do mapa; selecao separada de geometria/transporte evita gravacoes e passos de desfazer no clique. QA mede tolerancia em pixels de tela com zoom, cancelamentos e perda de papel; capturas obrigatorias do Canvas verificam destaque/endpoints. Extremidades apenas indicativas neste ciclo, sem prometer gesto de arrasto antecipado.
+
+### 2026-10-01 — comparativo de VTT — web-game-foundations e game-ui-frontend
+
+Skills apropriadas para criterios de confiabilidade e uso: separar regra/render/persistencia e preservar area do mapa. Pesquisa usa fontes oficiais atuais; nao trocar engine por padrao da skill nem confundir criacao de cenas com isolamento entre campanhas. Relatorio propoe prioridades, sem criar backlog autorizado ou modificar site.
+
+### 2026-10-01 — canvas-optimization e workers-best-practices — barreiras
+
+Densidade com zoom e limite de memoria aplicada a barreiras/mascara; espessura separada da resolucao. MIME real conferido na referencia R2. Rastro precisa amostrar footprint ja quantizado para evitar irregularidade; arredondar somente ao desenhar nao basta.
+
+### 2026-10-01 — game-ui-frontend e canvas-optimization
+
+Skills apropriadas: controle proporcional com limites protege o mapa; densidade inclui zoom e DPR, recorte visivel limita memoria. A referencia antiga da skill de Canvas no dispatcher tinha nome divergente; usado arquivo existente 03-canvas-optimization.md. Tokens continuam DOM.
+
+### 2026-09-30 — rastro encaixado e medida — game-ui-frontend
+
+Skill apropriada: reduzir chip a medida e remover geometria redundante favorece leitura do mapa. Testar ocultacao no pointerdown, nao apenas apos render, captura controle residual durante arrasto.
+
+### 2026-09-30 — rastro ortogonal — game-ui-frontend
+
+Skill apropriada: footprints inteiros e preenchimento sem acumulo reduzem ruido; previa, medida e animacao devem compartilhar percurso para nao contradizer o gesto.
+
+### 2026-09-30 — olho no controle de visao — game-ui-frontend
+
+Skill apropriada: icone familiar de olho em superficie pequena com contraste claro/escuro comunica visao melhor que marca abstrata. A compreensao do gesto ainda deve ser validada pelo usuario; nao presumir usabilidade comprovada apenas por testes automatizados.
+
+### 2026-09-30 — direcao na borda — game-ui-frontend
+
+Skill apropriada: reutilizar borda existente com marca pequena evita aneis redundantes. Testar scroll real e resize sem chamar render manualmente detecta falta de sincronizacao que testes de zoom com render explicito escondiam.
+
+### 2026-09-30 — anel de direcao — game-ui-frontend
+
+Skill apropriada: overlay contextual protege o mapa, enquanto seta e cursor comunicam giro. Alvo maior que o desenho favorece uso sem tornar o controle pesado. Desktop priorizado conforme pedido; preferencias e persistencia reaproveitadas.
+
+### 2026-09-30 — dois modos de movimento — game-ui-frontend
+
+Skill apropriada: remover contorno retangular redundante e celulas com grade desligada reduz ruido no mapa. Previa contextual conserva contraste e distancia sem adicionar controles.
+
+### 2026-09-28 — contraste do rastro — game-ui-frontend
+
+Skill apropriada: aumentar opacidade do preenchimento preservando paleta e separacao das celulas melhora leitura sem adicionar interface ou ocultar totalmente o mapa.
+
+### 2026-09-28 — footprint — game-ui-frontend / game-playtest
+
+Skills apropriadas: contorno de ocupacao e trilha larga comunicam o tamanho sem novos paineis. Capturas 2x2 e 3x3 verificam alinhamento com a grade; testes de area, bordas, inversao e diagonais evitam validar apenas a linha central. Iluminacao mantida fora do escopo.
+
+### 2026-09-28 — game-ui-frontend / page-architecture / code-review-frontend / game-playtest
+
+Skills apropriadas: remover divulgacao aninhada para ferramentas frequentes; separar posicao oficial, previa e animacao evita revelar terreno durante planejamento. Regua existente fornece medida/escala. Removida fila de movimento intermediario sem consumidores; DOM nao e reordenado sem necessidade para preservar pointer capture. QA cobre cancelamento, colisao, snap/zoom/offset, recusa de rede e movimento reduzido. Testes antigos de chegada instantanea precisam esperar fim da animacao, mantendo a tolerancia geometrica original.
+
+### 2026-09-26 — reconstrucao — game-ui-frontend / code-review-frontend / game-playtest
+
+Skills apropriadas: proteger o palco exige reduzir o controle visual sem tornar a area interativa minuscula. Separados runtime, editor e gesto; schema existente preservado. Captura real identificou nome duplicado por especificidade CSS de token selecionado; corrigido e coberto por teste. QA inclui pixels da mascara durante arrasto, poligono sem area, recorte atomico, botao direito, preferencia apos recarga e layout sob zoom. Sem framework/dependencias novas.
+
+### 2026-09-26 — game-ui-frontend / code-review-frontend / game-playtest
+
+Skills apropriadas: separar gesto/previa/persistencia em modulo proprio e ancorar controle em coordenadas de tela evita alvos moveis e encolhidos. QA verifica pixels da mascara, tamanho sob zoom, cancelamento, gate do mestre, fila com rede lenta e consistencia entre Concluir e botao direito. Reutilizados tokens visuais e SVG, sem framework/dependencia adicional.
+
+### 2026-09-22 — game-ui-frontend / game-playtest — portas contextuais
+
+Skills apropriadas: reutilizar SVG do editor preserva identidade e reduz ruido no palco; proximidade e visibilidade nao equivalem a permissao de abrir. Amostragem dos pixels durante pointerdown confirma que a mascara acompanha o giro, alem de asserts no rotulo. Reutilizar botoes evita perder foco/clique durante repintura.
+
+### 2026-09-22 — code-review-frontend / game-playtest — giro e portas
+
+Skills apropriadas: separar previa visual de estado persistido evita esperar rede durante gestos. Cobertura inclui arrasto, cancelamento e porta longa com centro fora do cone, mantendo alcance e paredes intermediarias.
+
 ### 2026-09-22 — code-review-frontend / game-playtest — regressao de bundle
 
 Skills apropriadas: erro de hoisting/TDZ so apareceu na concatenacao publicada. Testar arquivos separados e somente inspecionar tags nao basta. Acrescentados browser tests nos pacotes normal/minificado, com criacao e recarga de paredes; 330 cenarios existentes tambem passaram contra artefato. Captura confirma papel e controles do mestre. Erros de rede bloqueada de assets externos no sandbox sao separados dos erros JS, sem ignorar pageerror.

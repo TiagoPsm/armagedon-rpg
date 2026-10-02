@@ -131,7 +131,7 @@ ul, ol {
   font-family: var(--font-body);
   font-style: italic;
   font-size: var(--fs-sm);
-  color: var(--text-faint);
+  color: var(--text-soft);
   text-align: center;
   padding: var(--sp-8) var(--sp-4);
 }
@@ -155,7 +155,7 @@ ul, ol {
   font-weight: var(--fw-semibold);
   letter-spacing: var(--tracking-ritual);
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .item-meta {
@@ -182,4 +182,15 @@ ul, ol {
   border-radius: var(--radius-full);
   background: var(--accent);
   transition: width var(--transition);
+}
+
+/* Native keyboard targets share a visible baseline; contextual components
+   may refine it, but must not remove their own focus indication. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
 }

@@ -14,21 +14,21 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap"></noscript>
-  <link rel="stylesheet" href="css/tokens.css?v=2026-08-20-contraste-1" />
-  <link rel="stylesheet" href="css/reset.css?v=2026-06-12-cache-fix-1" />
-  <link rel="stylesheet" href="css/components.css?v=2026-06-12-modal-stack-1" />
-  <link rel="stylesheet" href="css/mesa.css?v=2026-08-28-telacheia-1" />
+  <link rel="stylesheet" href="css/tokens.css?v=2026-10-02-production-guide-1" />
+  <link rel="stylesheet" href="css/reset.css?v=2026-10-02-production-guide-1" />
+  <link rel="stylesheet" href="css/components.css?v=2026-10-02-production-guide-1" />
+  <link rel="stylesheet" href="css/mesa.css?v=2026-10-02-production-guide-1" />
   <link rel="stylesheet" href="css/mesa-stage.css?v=2026-08-27-regua-1" />
-  <link rel="stylesheet" href="css/mesa-roster.css?v=2026-08-20-barra-vida-1" />
-  <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-08-20-contraste-1" />
-  <link rel="stylesheet" href="css/mesa-map.css?v=2026-08-28-engrenagem-1" />
-  <link rel="stylesheet" href="css/mesa-drawing.css?v=2026-08-25-desenho-1" />
-  <link rel="stylesheet" href="css/mesa-scenes.css?v=2026-08-19-escala-1" />
+  <link rel="stylesheet" href="css/mesa-roster.css?v=2026-10-02-production-guide-1" />
+  <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-10-02-production-guide-1" />
+  <link rel="stylesheet" href="css/mesa-map.css?v=2026-10-02-microdeliveries" />
+  <link rel="stylesheet" href="css/mesa-drawing.css?v=2026-10-02-qa" />
+  <link rel="stylesheet" href="css/mesa-scenes.css?v=2026-10-02-production-guide-1" />
   <!-- Permissoes (Etapa 75): esconde tudo marcado com data-mesa-master-only
        enquanto o body nao estiver com data-role="master". Carrega DEPOIS dos
        demais para vencer por ordem em caso de especificidade empatada. -->
   <link rel="stylesheet" href="css/mesa-permissions.css?v=2026-08-02-permissoes-1" />
-  <link rel="stylesheet" href="css/mesa-vision.css?v=2026-09-20-compact-5" />
+  <link rel="stylesheet" href="css/mesa-vision.css?v=2026-10-02-microdeliveries" />
   <style>
     /* ── TOKEN SCALE ── */
     .mesa-token { transform-origin: top left; transform: scale(var(--token-scale, 1)); }
@@ -134,7 +134,7 @@
       <nav class="main-nav" aria-label="Navegacao principal">
         <a href="index.html" class="nav-link">In&iacute;cio</a>
         <a href="ficha.html" class="nav-link">Fichas</a>
-        <a href="mesa.html" class="nav-link active">Mesa</a>
+        <a href="mesa.html" class="nav-link active" aria-current="page">Mesa</a>
         <a href="regras.html" class="nav-link">Regras</a>
         <a href="sugestoes.html" class="nav-link">Sugest&otilde;es</a>
       </nav>
@@ -290,10 +290,8 @@
 
     <!-- ── CANVAS CENTRAL ────────────────────────────────────── -->
     <div class="vtt-canvas" id="mesaPanelStage">
-      <div id="mesaFacingControls" class="mesa-facing-controls" hidden aria-label="Direção do personagem">
-        <button id="mesaFacingLeft" type="button" aria-label="Olhar 15 graus à esquerda">↶</button>
-        <span id="mesaFacingValue">0°</span>
-        <button id="mesaFacingRight" type="button" aria-label="Olhar 15 graus à direita">↷</button>
+      <div id="mesaFacingControls" class="mesa-facing-controls" hidden>
+        <button id="mesaFacingHandle" class="mesa-facing-dot" type="button" role="slider" aria-label="Girar visão do token" aria-valuemin="0" aria-valuemax="359" aria-valuenow="0"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
       </div>
 
       <!-- O palco propriamente dito -->
@@ -333,6 +331,9 @@
           <canvas id="mesaFogCanvas" aria-hidden="true"></canvas>
           <canvas id="mesaVisionCanvas" aria-hidden="true" hidden></canvas>
           <canvas id="mesaWallCanvas" aria-label="Editor de paredes" hidden></canvas>
+          <canvas id="mesaGridEditCanvas" aria-label="Calibrar grade" hidden></canvas>
+          <canvas id="mesaLightCanvas" aria-label="Editar fontes de luz" hidden></canvas>
+          <canvas id="mesaTemplateCanvas" aria-label="Editar moldes de area" hidden></canvas>
           <div id="mesaVisionDoors"></div>
 
         </div>
@@ -430,6 +431,28 @@
         <div class="draw-flyout-divider"></div>
 
         <!-- Cores e largura — só visíveis quando tool ativa (não eraser) -->
+        <section id="mesaDecorationTools" class="mesa-template-tools mesa-barriers" aria-label="Decorações" data-mesa-master-only hidden>
+          <span class="mesa-map-transform-label">Decorações</span>
+          <div class="mesa-barrier-history"><button id="mesaDecorationSelect" type="button">Selecionar</button><button id="mesaDecorationLock" type="button" disabled>Bloquear seleção</button></div>
+          <label class="mesa-decoration-picker" for="mesaDecorationList">Bloqueadas <select id="mesaDecorationList"><option value="">Nenhuma bloqueada</option></select></label>
+          <button id="mesaDecorationUnlock" type="button" class="mesa-barrier-preview" disabled>Desbloquear decoração</button>
+          <p class="mesa-barrier-hint">Selecione desenhos na mesa e bloqueie para não movê-los por acidente.</p>
+        </section>
+        <section class="mesa-template-tools mesa-barriers" aria-label="Moldes de área">
+          <span class="mesa-map-transform-label">Moldes com medida</span>
+          <div class="mesa-barrier-history"><button id="mesaTemplateCircle" type="button" aria-pressed="false">Círculo</button><button id="mesaTemplateCone" type="button" aria-pressed="false">Cone</button></div>
+          <div class="mesa-barrier-history"><button id="mesaTemplateRect" type="button" aria-pressed="false">Retângulo</button><button id="mesaTemplateLine" type="button" aria-pressed="false">Linha larga</button></div>
+          <button id="mesaTemplateEdit" type="button" aria-pressed="false">Editar moldes</button>
+          <div id="mesaTemplateProperties" class="mesa-barrier-body" hidden>
+            <label class="mesa-barrier-row" for="mesaTemplateLength"><span id="mesaTemplateLengthLabel">Raio (m)</span> <input id="mesaTemplateLength" type="number" min="0.01" max="50000" step="0.1"></label>
+            <label id="mesaTemplateDirectionRow" class="mesa-barrier-row" for="mesaTemplateDirection" hidden>Direção (°) <input id="mesaTemplateDirection" type="number" min="0" max="359" step="1"></label>
+            <label id="mesaTemplateApertureRow" class="mesa-barrier-row" for="mesaTemplateAperture" hidden>Abertura (°) <input id="mesaTemplateAperture" type="number" min="10" max="360" step="5"></label>
+            <label id="mesaTemplateWidthRow" class="mesa-barrier-row" for="mesaTemplateWidth" hidden><span id="mesaTemplateWidthLabel">Altura (m)</span> <input id="mesaTemplateWidth" type="number" min="0.01" max="50000" step="0.1"></label>
+            <button id="mesaTemplateRemove" type="button">Remover molde</button>
+          </div>
+          <div class="mesa-barrier-history"><button id="mesaTemplateUndo" type="button">Desfazer molde</button><button id="mesaTemplateRedo" type="button">Refazer</button></div>
+          <p id="mesaTemplateHint" class="mesa-map-settings-hint"></p>
+        </section>
         <div id="mesaDrawOptions" class="draw-flyout-options" hidden>
           <div class="draw-color-row">
             <div id="mesaDrawColorPreview" title="Cor atual"></div>
@@ -536,37 +559,44 @@
            A dica de token desceu para dentro do grupo Grade pelo mesmo motivo:
            solta aqui, ela vazaria para a tela do jogador. -->
       <div class="mesa-map-settings-panel" id="mesaMapTransform" hidden>
-        <p class="mesa-map-settings-hint mesa-map-settings-empty" data-mesa-player-only>Nada para ajustar por enquanto.</p>
-        <details id="mesaVisionPanel" class="mesa-map-transform-group mesa-vision-panel" data-mesa-master-only>
-          <summary class="mesa-map-transform-label">Paredes e visão · Beta <span id="mesaVisionCount">0 segmentos</span></summary>
-          <div class="mesa-vision-body">
-          <label class="mesa-grid-check"><input id="mesaVisionToggle" type="checkbox"> Visão individual</label>
-          <div class="mesa-vision-tools" role="group" aria-label="Construir barreiras">
-            <button class="mesa-transform-btn" id="mesaVisionWall" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18 10 6l10 9"/><circle cx="4" cy="18" r="2"/><circle cx="10" cy="6" r="2"/><circle cx="20" cy="15" r="2"/></svg><span>Criar parede</span></button>
-            <button class="mesa-transform-btn" id="mesaVisionDoor" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V3h14v18M3 21h18"/><rect x="8" y="6" width="8" height="15" rx="1"/><circle cx="13.5" cy="13.5" r=".7"/></svg><span>Criar porta</span></button>
-          </div>
-          <div id="mesaVisionShapes" class="mesa-vision-shapes" role="group" aria-label="Formato da parede" hidden>
-            <button class="mesa-transform-btn" type="button" data-vision-shape="wall" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 18 6-12 6 12 6-12"/></svg><span>Ponto a ponto</span></button>
-            <button class="mesa-transform-btn" type="button" data-vision-shape="polygon" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 7-4 11H7L3 10Z"/></svg><span>Polígono</span></button>
-            <button class="mesa-transform-btn" type="button" data-vision-shape="rect" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1"/></svg><span>Retângulo</span></button>
-          </div>
-          <p id="mesaVisionStatus" role="status" hidden></p>
-          <p class="mesa-map-settings-hint" id="mesaVisionHint">Escolha uma ferramenta para editar o contorno da cena.</p>
-          <button class="mesa-transform-btn mesa-vision-wide" id="mesaVisionFinish" type="button">Encerrar cadeia</button>
-          <button class="mesa-transform-btn mesa-vision-wide" id="mesaVisionStop" type="button" hidden>Concluir edição</button>
-          <div class="mesa-map-transform-row mesa-btn-pair"><button class="mesa-transform-btn" id="mesaVisionUndo" type="button">Desfazer</button><button class="mesa-transform-btn" id="mesaVisionRedo" type="button">Refazer</button></div>
-          <details class="mesa-vision-options"><summary>Ajustes e correções</summary>
-            <div class="mesa-vision-options-body">
-            <label class="mesa-vision-field" for="mesaVisionCone">Campo de visão
-              <select id="mesaVisionCone"><option value="60">60°</option><option value="90">90°</option><option value="120" selected>120°</option><option value="180">180°</option><option value="270">270°</option><option value="360">360°</option></select>
-            </label>
-            <div class="mesa-map-transform-row mesa-btn-pair"><button class="mesa-transform-btn" id="mesaVisionErase" type="button">Apagar trecho</button><button class="mesa-transform-btn" id="mesaVisionLock" type="button">Trancar porta</button></div>
-            <button class="mesa-transform-btn mesa-vision-wide" id="mesaVisionPreview" type="button">Simular visão do token</button>
-            <p class="mesa-map-settings-hint">Visão ativa: movimento individual, sem redimensionamento.</p>
+        <p class="mesa-map-settings-hint mesa-map-settings-empty" data-mesa-player-only>Os ajustes da cena são do mestre. Veja os atalhos abaixo.</p>
+        <section id="mesaVisionPanel" class="mesa-map-transform-group mesa-barriers" data-mesa-master-only aria-labelledby="mesaVisionTitle">
+          <h3 id="mesaVisionTitle" class="mesa-map-transform-label">Paredes e portas <span id="mesaVisionCount">0 segmentos</span></h3>
+          <div class="mesa-barrier-body">
+            <label class="mesa-grid-check"><input id="mesaVisionToggle" type="checkbox"> Visão e colisão na cena</label>
+            <label class="mesa-barrier-row" for="mesaVisionCone">Cone dos jogadores <select id="mesaVisionCone"><option value="60">60°</option><option value="90">90°</option><option value="120" selected>120°</option><option value="180">180°</option><option value="270">270°</option><option value="360">360°</option></select></label>
+            <button id="mesaVisionSelect" class="mesa-barrier-select" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 3 3 16 4-6 7-2L5 3Z"/></svg><span>Selecionar trecho</span></button>
+            <div class="mesa-barrier-tools" role="group" aria-label="Editar barreiras">
+              <button id="mesaVisionWall" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18 10 6l11 12"/></svg><span>Parede</span></button>
+              <button id="mesaVisionDoor" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V3h14v18M3 21h18"/><rect x="8" y="6" width="8" height="15" rx="1"/><circle cx="13.5" cy="13.5" r=".7"/></svg><span>Porta</span></button>
+              <button id="mesaVisionErase" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 15 11-11 6 6-11 11H7l-3-3ZM12 21h9"/></svg><span>Apagar</span></button>
             </div>
-          </details>
+            <label id="mesaBarrierShapeRow" class="mesa-barrier-row" for="mesaBarrierShape" hidden>Formato <select id="mesaBarrierShape"><option value="chain">Ponto a ponto</option><option value="polygon">Polígono</option><option value="rect">Retângulo</option></select></label>
+            <label id="mesaBarrierSnapRow" class="mesa-grid-check" hidden><input id="mesaBarrierSnap" type="checkbox" checked> Encaixar vértices <span class="mesa-barrier-shortcut">Alt: livre</span></label>
+            <div id="mesaBarrierActions" class="mesa-barrier-history" hidden><button id="mesaBarrierSplit" type="button" aria-pressed="false">Dividir</button><button id="mesaBarrierJoin" type="button" aria-pressed="false">Unir</button></div>
+            <label id="mesaBarrierDoorRow" class="mesa-barrier-row" for="mesaBarrierDoorState" hidden>Estado da porta <select id="mesaBarrierDoorState"><option value="closed">Fechada</option><option value="open">Aberta</option><option value="locked">Trancada</option></select></label>
+            <div id="mesaBarrierClipboard" class="mesa-barrier-history" hidden><button id="mesaBarrierCopy" type="button">Copiar</button><button id="mesaBarrierPaste" type="button" aria-pressed="false">Colar</button></div>
+            <p id="mesaVisionHint" class="mesa-map-settings-hint">Escolha uma ferramenta.</p>
+            <button id="mesaBarrierClose" type="button" hidden>Fechar polígono</button>
+            <button id="mesaVisionStop" type="button" hidden>Concluir edição</button>
+            <div class="mesa-barrier-history"><button id="mesaVisionUndo" type="button">Desfazer</button><button id="mesaVisionRedo" type="button">Refazer</button></div>
+            <button id="mesaVisionPreview" type="button" aria-pressed="false">Testar visão do token</button>
+            <section class="mesa-light-section" aria-label="Iluminação">
+              <h4 class="mesa-map-transform-label">Iluminação</h4>
+              <label class="mesa-grid-check"><input id="mesaDarknessToggle" type="checkbox"> Escuridão da cena</label>
+              <div id="mesaLightTools" class="mesa-barrier-history" role="group" aria-label="Fontes de luz">
+                <button id="mesaLightCreate" type="button" aria-pressed="false">Adicionar luz</button>
+                <button id="mesaLightSelect" type="button" aria-pressed="false">Editar luzes</button>
+              </div>
+              <div id="mesaLightProperties" hidden>
+                <label class="mesa-barrier-row" for="mesaLightRadius">Raio (m) <input id="mesaLightRadius" type="number" min="0.01" max="50000" step="0.01"></label>
+                <label class="mesa-barrier-row" for="mesaLightIntensity">Intensidade (%) <input id="mesaLightIntensity" type="number" min="5" max="100" step="1"></label>
+                <button id="mesaLightRemove" type="button">Remover luz selecionada</button>
+              </div>
+              <p id="mesaLightHint" class="mesa-map-settings-hint">Luzes revelam somente dentro do cone individual.</p>
+            </section>
           </div>
-        </details>
+        </section>
         <!-- O grupo "Palco / Ajustar ao mapa" (Etapa 54) saiu na Etapa 68:
              o ajuste virou invariante, sem controle. -->
 
@@ -608,6 +638,14 @@
                celulas inteiras + escape pelo Alt), sem as palavras que so
                repetiam o que os controles acima ja dizem. -->
           <p class="mesa-map-settings-hint" data-mesa-master-only>Token ocupa c&eacute;lulas inteiras (1&times;1, 2&times;2&hellip;). <strong>Alt</strong> ao redimensionar libera tamanho livre.</p>
+          <div class="mesa-barriers mesa-barrier-body" data-mesa-master-only>
+            <label id="mesaGridReferenceRow" class="mesa-barrier-row" for="mesaGridReferenceCells">Casas na referência <input id="mesaGridReferenceCells" type="number" min="1" max="100" step="1" value="1"></label>
+            <div class="mesa-barrier-history"><button id="mesaGridCalibrate" type="button" aria-pressed="false">Calibrar</button><button id="mesaGridOrigin" type="button" aria-pressed="false">Alinhar origem</button></div>
+            <div id="mesaGridDraftControls" class="mesa-barrier-body" hidden>
+              <p id="mesaGridDraftHint" class="mesa-map-settings-hint" aria-live="polite"></p>
+              <div class="mesa-barrier-history"><button id="mesaGridDraftApply" type="button">Aplicar</button><button id="mesaGridDraftCancel" type="button">Cancelar</button></div>
+            </div>
+          </div>
         </div>
 
         <!-- Fog of War (Etapa 47) — controles do mestre -->
@@ -636,6 +674,18 @@
           </div>
         </div>
 
+        <details id="mesaToolsHelp" class="mesa-tools-help">
+          <summary>Gestos e atalhos <kbd>?</kbd></summary>
+          <p>Arrasto de token ou régua: <strong>direito</strong> fixa ponto; <kbd>Backspace</kbd> remove o último; <kbd>Esc</kbd> cancela. <kbd>Shift</kbd> + arrasto mede sem mover.</p>
+          <p data-mesa-master-only>Com esta seção aberta: <kbd>W</kbd> parede, <kbd>D</kbd> porta, <kbd>E</kbd> apagar, <kbd>S</kbd> selecionar. <kbd>Shift</kbd> + clique adiciona trechos; <kbd>Alt</kbd> desenha livre.</p>
+          <p>Edição ativa: <kbd>Ctrl Z</kbd> desfaz; <kbd>Ctrl Y</kbd> refaz. Trechos: <kbd>Ctrl C/V</kbd> copia/cola. Molde selecionado: <kbd>Delete</kbd> remove. Os botões fazem as mesmas ações.</p>
+        </details>
+        <section class="mesa-map-transform-group mesa-barriers mesa-barrier-body" data-mesa-master-only aria-label="Reutilizar ajustes da cena">
+          <h3 class="mesa-map-transform-label">Reutilizar ajustes</h3>
+          <div class="mesa-barrier-history"><button id="mesaSettingsCopy" type="button">Copiar ajustes</button><button id="mesaSettingsPreview" type="button" disabled>Prévia</button></div>
+          <p id="mesaSettingsHint" class="mesa-map-settings-hint" role="status"></p>
+          <div id="mesaSettingsDraft" class="mesa-barrier-history" hidden><button id="mesaSettingsApply" type="button">Aplicar ajustes</button><button id="mesaSettingsCancel" type="button">Cancelar</button></div>
+        </section>
         <!-- O grupo "Cenas" (Etapa 49) saiu daqui na Etapa 89: virou a gaveta
              #mesaScenesDrawer, aberta pelo botao do canto superior direito.
              Gerenciar cena tem UM lugar so. -->
@@ -714,6 +764,9 @@
             <span id="mapLibStorageLabel" class="map-lib-storage-label"></span>
           </div>
         </div>
+        <label class="map-lib-search" for="mesaMapSearch">Buscar mapas
+          <input id="mesaMapSearch" type="search" placeholder="Nome ou caminho da pasta..." autocomplete="off">
+        </label>
         <!-- Pasta conectada (tempo real, sem IDB) -->
         <div id="vttConnectedFolder" aria-live="polite"></div>
 
@@ -980,33 +1033,47 @@
 
     <script src="js/runtime-config.js?v=2026-05-04-mesa-realtime-1" defer></script>
   <script src="js/api.js?v=2026-09-18-vision-1" defer></script>
-  <script src="js/ui.js?v=2026-06-11-soul-notify-1" defer></script>
+  <script src="js/ui.js?v=2026-10-02-production-guide-1" defer></script>
   <script src="js/auth.js?v=2026-06-13-login-form-1" defer></script>
   <!-- Permissoes da Mesa (Etapa 75): precisa vir ANTES de todo modulo mesa-*,
        porque eles chamam mesaCan()/requireMesaMaster()/applyMesaRolePermissions(). -->
   <script src="js/mesa-permissions.js?v=2026-09-18-vision-1" defer></script>
   <!-- Ordem importante: dependências antes de mesa-core -->
-  <script src="js/mesa-stage.js?v=2026-09-20-vision-1" defer></script>
-  <script src="js/mesa-roster.js?v=2026-08-20-barra-vida-1" defer></script>
-  <script src="js/mesa-inspector.js?v=2026-08-18-coluna-1" defer></script>
+  <script src="js/mesa-stage.js?v=2026-10-02-microdeliveries" defer></script>
+  <script src="js/mesa-roster.js?v=2026-10-02-production-guide-1" defer></script>
+  <script src="js/mesa-inspector.js?v=2026-10-02-microdeliveries" defer></script>
   <script src="js/mesa-storage.js?v=2026-06-19-dm-layer-1" defer></script>
-  <script src="js/mesa-core.js?v=2026-09-22-boot-2" defer></script>
-  <script src="js/mesa-map.js?v=2026-09-20-vision-settings-1" defer></script>
-  <script src="js/mesa-grid.js?v=2026-08-27-regua-1" defer></script>
+  <script src="js/mesa-core.js?v=2026-10-02-microdeliveries" defer></script>
+  <script src="js/mesa-map.js?v=2026-10-02-microdeliveries" defer></script>
+  <script src="js/mesa-grid-rules.js?v=2026-10-02-microdeliveries" defer></script>
+  <script src="js/mesa-grid.js?v=2026-10-02-microdeliveries" defer></script>
   <script src="js/mesa-fog.js?v=2026-09-22-boot-2" defer></script>
-  <script src="js/mesa-scenes.js?v=2026-08-19-pastas-1" defer></script>
-  <script src="js/mesa-ping.js?v=2026-07-27-ping-1" defer></script>
-  <script src="js/mesa-ruler.js?v=2026-08-27-regua-1" defer></script>
+  <script src="js/mesa-scenes.js?v=2026-10-02-production-guide-1" defer></script>
+  <script src="js/mesa-ping.js?v=2026-10-02-microdeliveries" defer></script>
+  <script src="js/mesa-ruler.js?v=2026-10-02-microdeliveries" defer></script>
   <script src="js/mesa-dice.js?v=2026-08-16-armados-1" defer></script>
-  <script src="js/mesa-drawing.js?v=2026-08-27-seta-1" defer></script>
-  <script src="js/mesa-select.js?v=2026-09-18-vision-1" defer></script>
+  <script src="js/mesa-drawing.js?v=2026-10-02-microdeliveries" defer></script>
+  <script src="js/mesa-select.js?v=2026-10-02-microdeliveries" defer></script>
   <script src="js/mesa-initiative.js?v=2026-09-18-vision-1" defer></script>
   <!-- Depois de mesa-stage.js (whitelist/toggle) e mesa-inspector.js (linha do inspetor) -->
   <script src="js/mesa-markers.js?v=2026-08-18-popup-1" defer></script>
   <!-- Unico ponto de entrada: inicia somente depois de todos os modulos acima. -->
-  <script src="js/mesa-vision-geometry.js?v=2026-09-18-1" defer></script>
-  <script src="js/mesa-vision-rules.js?v=2026-09-18-1" defer></script>
-  <script src="js/mesa-vision.js?v=2026-09-20-compact-4" defer></script>
+  <script src="js/mesa-vision-geometry.js?v=2026-10-02-microdeliveries" defer></script>
+  <script src="js/mesa-vision-rules.js?v=2026-10-02-microdeliveries" defer></script>
+  <script src="js/mesa-movement-rules.js?v=2026-10-02-microdeliveries" defer></script>
+  <script src="js/mesa-canvas-viewport.js?v=2026-10-02-microdeliveries" defer></script>
+  <script src="js/mesa-vision-runtime.js?v=2026-10-02-production-guide-1" defer></script>
+  <script src="js/mesa-barriers-editor.js?v=2026-10-02-qa" defer></script>
+  <script src="js/mesa-token-facing.js?v=2026-10-02-qa" defer></script>
+  <script src="js/mesa-movement.js?v=2026-10-02-microdeliveries" defer></script>
+  <script src="js/mesa-grid-editor.js?v=2026-10-02-microdeliveries" defer></script>
+  <script src="js/mesa-lighting.js?v=2026-10-02-qa" defer></script>
+  <script src="js/mesa-template-rules.js?v=2026-10-02-microdeliveries" defer></script>
+  <script src="js/mesa-map-library.js?v=2026-10-02-qa" defer></script>
+  <script src="js/mesa-decorations.js?v=2026-10-02-microdeliveries" defer></script>
+  <script src="js/mesa-templates.js?v=2026-10-02-qa" defer></script>
+  <script src="js/mesa-shortcuts.js?v=2026-10-02-microdeliveries" defer></script>
+  <script src="js/mesa-scene-settings.js?v=2026-10-02-microdeliveries" defer></script>
   <script src="js/mesa-bootstrap.js?v=2026-09-22-boot-2" defer></script>
   <script>
   /* VTT Toolbar — camadas + painéis da sidebar */

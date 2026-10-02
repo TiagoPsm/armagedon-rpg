@@ -168,7 +168,7 @@
 .login-error {
   font-family: var(--font-ui);
   font-size: var(--fs-xs);
-  color: var(--danger);
+  color: var(--danger-text);
   letter-spacing: var(--tracking-wide);
   min-height: 1.25rem;
 }
@@ -186,7 +186,7 @@
   font-size: var(--fs-2xs);
   letter-spacing: var(--tracking-ritual);
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-soft);
 }
 
 .login-footnote strong {
@@ -291,7 +291,7 @@
   font-size: var(--fs-2xs);
   letter-spacing: var(--tracking-widest);
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-soft);
 }
 
 .dashboard-owner strong {
@@ -357,7 +357,7 @@
 .status-card small {
   font-family: var(--font-body);
   font-size: var(--fs-xs);
-  color: var(--text-faint);
+  color: var(--text-soft);
 }
 
 .dashboard-note {
@@ -376,7 +376,7 @@
   font-weight: var(--fw-semibold);
   letter-spacing: var(--tracking-widest);
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .dashboard-note p {
@@ -464,7 +464,7 @@ a.action-row:hover {
   font-weight: var(--fw-semibold);
   letter-spacing: var(--tracking-ritual);
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .action-row-copy strong {
@@ -489,7 +489,7 @@ a.action-row:hover {
   font-weight: var(--fw-medium);
   letter-spacing: var(--tracking-widest);
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-soft);
   white-space: nowrap;
   flex-shrink: 0;
 }

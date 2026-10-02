@@ -45,10 +45,9 @@
       const door = vision.walls.find(w => w.id === action.doorId && w.kind === "door");
       if (!door) fail("Porta inexistente.", 404);
       const origin = center(token, vision);
-      const midpoint = { x: (door.ax + door.bx) / 2, y: (door.ay + door.by) / 2 * vision.aspect };
       const reach = (Number(scene.grid?.cellFrac) || .05) + radius(token);
-      if (!master && (!geometry.canReachDoor(origin, door.id, reach) || !geometry.canSee(origin, midpoint, token.facingDeg || 0))) {
-        fail("Aproxime-se e olhe para uma porta destrancada.", 403);
+      if (!master && !geometry.canReachDoor(origin, door.id, reach)) {
+        fail("Aproxime-se de uma porta destrancada e sem parede no caminho.", 403);
       }
       door.doorState = master && action.close === true ? "closed" : "open";
       if (door.doorState === "closed") {

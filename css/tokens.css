@@ -13,7 +13,8 @@
   /* ── TEXTO (3 níveis) ───────────────────────────────────── */
   --text:       #e2d9c5;   /* principal */
   --text-soft:  #8a8272;   /* secundário, labels */
-  --text-faint: #3a382f;   /* placeholder, desabilitado */
+  --text-faint: #3a382f;   /* decoração/inativo; nunca texto necessário */
+  --text-placeholder: var(--text-soft); /* exemplo de preenchimento legível */
 
   /* ── ACENTO CARMESIM ────────────────────────────────────── */
   --accent:      #a83028;
@@ -38,6 +39,8 @@
   /* ── SEMÂNTICA ──────────────────────────────────────────── */
   --success: #4a7a3e;
   --danger:  #a83028;
+  --success-text: #9ebd8f; /* confirmação escrita sobre fundos escuros */
+  --danger-text: var(--accent-text); /* erro escrito; preenchimento usa danger */
   --warning: #8a7438;
   --info:    #3d4f8a;
 

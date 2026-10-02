@@ -1,6 +1,260 @@
 # DEV STATUS
 
+## Publicacao beta autorizada — 2026-10-02
+
+Tiago autorizou documentar, commitar e colocar no ar o conjunto da Mesa e a revisao pelo Manual de Decisoes. Escopo: codigo, contratos/testes e documentacao relacionados, sem configuracao pessoal, copias duplicadas, pagina manual de mecanicas, ferramenta local de segredos, credenciais ou artefatos gerados. Nenhuma mudanca de regra do RPG ou dependencia/servico pago.
+
+API `armagedon-api` publicada pelo Wrangler 4.100.0 apos dry-run limpo (233,27 KiB; gzip 47,91 KiB), login OAuth com escopos limitados a conta/Workers e `--keep-vars`. Versao nova `b3c894c1-e252-42fc-a1ca-bc0a4d4b0a1c`; anterior conferida diretamente `8fa53504-987c-4197-a2d6-e5a5efd88785`. Health 200. Sem migracao D1, alteracao de cenas, rotacao de secrets ou criacao de infraestrutura. O frontend sera publicado pelo push autorizado na `main`; somente concluir esse registro com resultado efetivo do pipeline e dos dois enderecos publicados.
+
+Git: cinco referencias invalidas com sufixo ` - Copia` impediam fetch. Foram movidas, sem apagar objetos/branches validos, para backup recuperavel em `test-results/git-reference-backup-2026-10-02` (ignorado pelo Git). Fetch voltou a funcionar; `main` e `origin/main` estavam no mesmo `fee2bd8` antes do commit. Copias ambiguas da raiz e configuracoes pessoais continuam preservadas.
+
+Guardas JS/static/CSS e 51 testes Node reexecutados antes da publicacao; regressao da mesma base nesta sessao: 629 frontend, 165 artefato minificado, 11 build e 12 desempenho aprovados; dois de Worker/DO ignorados por falta de ambiente/credenciais de jogador/mestre. Publicar nao fecha homologacao conectada nem certifica acessibilidade integral; acompanhar exclusivamente na lista viva.
+
+## Revisao pelo Manual de Decisoes — 2026-10-02
+
+Documento integral do proprietario incorporado em `docs/GUIA-DE-PRODUCAO.md`, conferido por igualdade de texto com o original. `AGENTS.md` e `CLAUDE.md` o apontam como fonte primaria de qualidade. Projeto 100% gratuito, sem nova dependencia/servico pago; alteracoes de estrutura/regras do sistema de RPG precisam de consulta previa a Tiago. Desktop primeiro; mobile fica para etapa posterior sem remocao do suporte existente.
+
+Microentregas: contraste semantico e foco; toolbar/nomes da Mesa; layout de acesso da Ficha; dialogos/toasts; estados de rede e exclusao no portal; renderizacao da iniciativa sem reconstruir botoes inalterados; regressao e artefato. Sem alteracoes das formulas, atributos, fichas ou mecanicas de RPG, sem commit/envio/deploy. Valores/iniciativa permanecem os existentes: mudou somente a atualizacao da interface.
+
+Resumo/iniciativa acompanham imediatamente mudanca de visibilidade; retratos hidratados de modo assincrono invalidam o cache sem serializar grandes data URLs em cada quadro. Revisao independente encontrou esse caso e gerou teste proprio. Regras/Sugestoes preservam rascunhos/listas e distinguem resultado de escrita incerto de escrita confirmada. Leituras antigas nao sobrescrevem atuais; exclusao fica serializada e tem feedback. A revisao final reproduziu quatro falhas adicionais: leitura iniciada antes/durante escrita apagava o aviso de resultado incerto. Esse estado agora invalida todas as leituras em voo; consulta nova recupera, sem repetir POST/DELETE. Dez regressões adicionais, 53 testes selecionados aprovados. Guardas de foco ignoram elementos ocultos e preservam prioridade do dialogo superior.
+
+Fechamento integrado: fonte com 629 testes aprovados e dois de Worker/DO ignorados sem ambiente/credenciais; artefato efetivamente minificado com 165 aprovados; 11 de build; 51 contratos/guardas Node; 12 de desempenho isolado. Sao 110 casos novos desta revisao; fonte e artefato se sobrepoem, nao somar como testes unicos. Sintaxe de 65 JS, referencias estaticas, delimitadores de 16 CSS e pendencias aprovados; capturas desktop/texto ampliado inspecionadas. Na fixture de 3.000 segmentos/80 tokens, zoom DPR2 teve mediana de 22,1ms/p95 de 27,8ms: sem travamento comprovado, sem promessa de 60FPS. Giro com conteudo lateral inalterado nao reconstroi resumo/iniciativa e preserva foco.
+
+Relatorio e evidencias desta revisao: `docs/REVISAO-MANUAL-2026-10-02.md`. Esta etapa nao declara homologacao online ou aprovacao de producao: faltam sessoes reais mestre/jogador, navegador adicional e leitor de tela. Workflow preparado, nao executado remotamente. A lista viva existente continua sendo a unica fonte de tarefas abertas.
+
+## Varredura por microentregas QA — 2026-10-02
+
+QA1: levantamento preservou o checkout; sintaxe de 65 JS, referencias e pendencias passaram. Regressao da base ampliada para Ficha/Mesa/toque/controles: 489 testes passaram, dois casos de Worker online pulados sem credenciais; 48 contratos/geometria/SQLite/DO passaram. Nao e teste de producao nem garantia de ausencia de bugs.
+
+QA2: defeito de miniatura reproduzido com 140 mapas: URLs removidas do cache de 128 continuavam nas linhas marcadas prontas. Agora invalidar a URL rearma observacao da linha; cache reutilizado vira LRU e decodificacoes concorrentes nao criam URL duplicada. Seis testes de biblioteca passaram, inclusive voltar ao primeiro mapa depois de percorrer a lista. Originais e limite de memoria preservados.
+
+QA3: Enter em medidas/luzes invalidas mantinha valor recusado no campo; confirmar valor igual criava historico/substituicao desnecessarios. Confirmacao agora restaura valor real mesmo com foco, mostra aviso claro e ignora edicoes apenas de formato. Commit de barreiras ignora snapshot identico antes de reconstruir geometria/gravar. Onze testes de moldes e 34 de luzes/editor passaram. Dois erros de parenteses nos estilos do inspetor corrigidos; nova guarda lexical CSS e tres testes de parser passaram, sem se apresentar como validador completo de gramatica CSS.
+
+QA4: seletor de decoracoes agora ocupa a linha inteira; acoes desse bloco empilhadas evitam cortar palavras. Cabecalhos da sidebar permitem badge quebrar de linha com texto ampliado; corrigido token de cor inexistente e respeitada preferencia de movimento reduzido no flyout. Suite visual de 19 cenarios passou em seis paginas, 390/1280px, controles em 1024/1366/1920 com texto 100/150%, foco e exclusao de editores. Capturas finais e verificacoes de artefato/desempenho registradas no fechamento abaixo.
+
+QA5: Ficha aponta para echos.html, que nao era copiado pelo build nem conferido no audit:static. Incluido nas duas listas e adicionada verificacao de links HTML do pacote. Onze testes de build passaram; Echos validado em boot/layout local, nao integracao autenticada de Echos. Alteracoes locais, sem commit/publicacao.
+
+QA6: controle de direcao permanecia operante durante os primeiros quadros ao iniciar luz/grade/desenho. Teste que apenas esperava ficar oculto aceitava atraso de 300ms do hover; nova verificacao apos dois RAF reproduziu tres falhas. Guarda agora oculta imediatamente em outros editores. Sessenta e sete testes de interface/giro/movimento passaram apos a correcao.
+
+QA7: revisao de Regras/Sugestoes reproduziu envio desbloqueado durante gravacao lenta e rejeicao nao tratada na exclusao. Submit agora serializa, marca aria-busy, protege rascunho e libera controles no finally; escrita aceita e falha de atualizar lista sao estados distintos, evitando reenviar post ja salvo. Exclusao que falha preserva card e mostra aviso, sem pageerror. Vinte e sete testes da suite UI/portal passaram, incluindo oito novos de CRUD/F5, escrita lenta, falha de rede e falha de refresh apos sucesso. Um erro de seletor no primeiro teste de CRUD foi corrigido, sem alterar o comportamento do produto para atende-lo.
+
+QA8: workflow local recebeu guardas de sintaxe/CSS/referencias/contratos e testes de UI/fluxos no artefato minificado antes do upload; nao foi executado no GitHub nesta sessao. Documento de achados e propostas: docs/AUDITORIA-UI-BUGS-2026-10-02.md. Sem segunda lista de tarefas abertas: propostas nao sao backlog autorizado; publicacao/homologacao continuam na lista viva existente.
+
+Fechamento QA: dez grupos de defeitos corrigidos localmente. Regressao final da fonte: 519 passaram / dois testes de Worker online pulados, 4,6min; 51 Node (48 contratos/geometria/SQLite/DO + tres guardas CSS) passaram. Onze testes de build e seis P1 isolados passaram. Cinquenta e cinco testes de interface/portal/biblioteca/moldes/luzes passaram no pacote final minificado, 53,3s. Capturas finais de painel com texto 150%, luz/cone/porta e rastro no zoom inspecionadas, complementando revisao das seis paginas. P1 isolado: zoom p95 5,2/9,0/23,0ms DPR1 e 12,2/18,0/30,7ms DPR2 nas cenas pequena/media/densa; estimativa RGBA dessas tres camadas 9,2/36,9MiB. Nao garante 60fps ou memoria total. Artefato `_site`: JS Mesa `5598bcae8187`, CSS `5695962ce460`. Auditorias JS (65), CSS (16), referencias e pendencias passaram. Diff whitespace conferido respeitando CRLF existente (cr-at-eol), sem normalizar arquivos inteiros do usuario.
+
+Relatorio [Auditoria de bugs e interface](docs/AUDITORIA-UI-BUGS-2026-10-02.md) registra reproducoes, cobertura/limites e propostas priorizadas. Ainda observado rotulo da toolbar fixa recortado com texto 150%; recomendacao de dimensionamento e hierarquia/contraste nao foi implementada como redesign amplo. Sem commit, envio ou publicacao; nao houve teste conectado autenticado nem homologacao completa mobile/outros navegadores. Suites se sobrepoem e nao devem ser somadas como testes unicos.
+
+## Microentregas C2/C3 e revisao integrada — 2026-10-02
+
+Conferencia do Git preservou alteracoes locais e arquivos pessoais/duplicados sem limpeza ampla. C2: busca por palavras, nomes/caminhos sem acentos na biblioteca existente; catalogo IndexedDB v4 separado dos originais, migracao aditiva v3, miniaturas WebP ate 192x128 geradas somente para itens visiveis com duas leituras paralelas e cache de 128 URLs. Arquivo ausente/corrompido tem feedback; cache por hash passa a buscar metadados antes do original. Tres testes da biblioteca passaram, incluindo 400 mapas e pasta aninhada; originais preservados.
+
+C3: desenhos decorativos podem ser bloqueados pelo mestre; selecao/transformacao/borracha/desfazer normal nao os alteram. Desbloqueio explicito no painel de desenho, estado opcional `locked` via cena/relay/F5; jogador nao pode bloquear pelo relay. Dois testes de navegador passaram (selecao, permissao, persistencia, desbloqueio), e round-trip SQLite/DO validado. Ao substituir um desenho, autoria acompanha o mesmo autor autenticado estampado pelo DO.
+
+Revisao encontrou borda da grade recortada em pixel fracionado: pintura agora recorta pixels inteiros sem mudar celulas completas. Normalizador compartilhado `mesa-grid-rules.js` elimina arredondamento divergente entre Worker/navegador em 1/N colunas. Quatro expectativas antigas de testes foram atualizadas ao contrato pedido (colunas inteiras e presets 1/5/10...), mantendo asserts de alinhamento/persistencia. Primeira rodada ampliada: 443/448; cinco casos corrigidos passaram isoladamente. Resultado da reexecucao integrada registrado abaixo.
+
+Moldes/luzes ocultos liberam bitmap; cache evita repintura identica. Previa reutilizada e ferramentas agora se cancelam mutuamente; ajuda `?` rola dentro do painel ate ficar visivel. Iluminacao separada visualmente depois das ferramentas de barreiras; hint de decoracao compacto. Cliente nao confirma cena quando servidor antigo perde moldes/bloqueios; avisa inclusive com visao desligada e mantem copia local. Cache dos assets renovado. Local, sem commit, publicacao ou homologacao conectada.
+
+Regressao ampliada corrigida: 450 testes de navegador passaram; 48 de contratos/geometria/SQLite/DO passaram. Pacote normal/minificado e baseline: 16 passaram. Ultima revisao de C2 protege selecoes concorrentes/troca de cena e informa falhas da pasta conectada; 33 testes de mapas/cenas passaram apos essa protecao. Catalogo de 400 entradas: seed+render 84,9/87,1ms e quatro originais visiveis lidos em duas execucoes locais (fixtures 512x256; nao benchmark de arquivos enormes). Repeticao P1: zoom p95 7,8–25,4ms DPR1 / 15,8–29,0ms DPR2, memoria RGBA dessas tres camadas 9,2/36,9MiB; nao promessa de 60fps. Capturas de biblioteca, decoracao, previa, ajuda e bundle inspecionadas. Quarenta e seis testes dos fluxos novos passaram no artefato final minificado (biblioteca/cenas, decoracao, falha de compatibilidade, grade, iluminacao, quatro moldes, ajuda e ajustes). Build/minificacao, sintaxe de 65 JS, auditorias estatica/pendencias e diff whitespace passaram. Pacote gerado: `_site`, bundle JS `a6da2bbc9677` / CSS `bceb3c232aa8`; nenhuma publicacao.
+
+Baixa local dos 27 contratos W1–W9, G1/G2, M1/M2, P1/P2, V1–V3, T1–T5, U1 e C1–C3. Os numeros de suites acima se sobrepoem; nao representam soma de testes unicos. Publicacao e homologacao autenticada seguem exclusivamente na pendencia beta. Estes resultados nao garantem ausencia de bugs nem funcionamento ja confirmado online.
+
+## Microentregas U1/C1: atalhos e ajustes reutilizaveis — 2026-10-01
+
+U1: ajuda recolhida na secao existente, atalhos contextuais acionam os mesmos botoes; inputs/dialogos visiveis protegidos. Corrigido falso positivo de dialogo oculto por ancestral e Ctrl Z de desenho em input. C1: copiar ajustes nesta aba, previa de grade e resumo explicito de cone/escuridao; aplicar preserva mapa/tokens/barreiras/luzes/desenhos. Cancelamento/troca de cena/conflito invalida previa. Sete testes de navegador passaram; cache separado por cena verificado. Local.
+
+## Microentrega T4: linha larga medida — 2026-10-01
+
+Area da origem a ponta com comprimento/largura/direcao em metros, sem automatizar alvos. Mesmo fluxo de edicao/historico e contrato de desenhos. Nove testes de navegador dos moldes passaram; contratos puros das quatro formas validam aspecto e limites. Circulos/cones renderizam arcos exatos, nao poligonos aparentes no zoom. Local.
+
+## Microentrega T3: retangulo medido — 2026-10-01
+
+Largura/altura em metros e rotacao, arrasto do centro/canto no editor comum. Oito testes de navegador passaram, com zoom e historico, e contrato puro confirma dimensoes fisicas em palco retangular. Local.
+
+## Microentrega T2: cone medido — 2026-10-01
+
+Mesmo editor/armazenamento do circulo, com ponta arrastavel para alcance/direcao e campos de abertura/direcao. Hit-test respeita setor, direcao normalizada e abertura invalida recusada. Sete testes de navegador dos moldes passaram e contrato puro testado; local.
+
+## Microentrega T1: molde circular medido — 2026-10-01
+
+Molde com raio em metros, centro/borda arrastaveis, remocao e historico atomico; armazenado nos desenhos existentes com autoria e normalizador compartilhado. Viewport/DPR evita raster ampliado e circulo continua redondo em palco retangular. Seis testes de navegador passaram (previa, cancelamentos, F5, segundo cliente); contrato/round-trip SQL verificados e captura inspecionada. Revisao corrigiu rolagem programatica do body causada por foco no flyout: body fullscreen usa clip e flyout tem altura/rolagem proprias. Local, requer Worker atualizado para preservar metadados.
+
+## Microentregas V2/V3 e T5: luzes e regua com curvas — 2026-10-01
+
+Escuridao opcional, desligada em cenas existentes; luzes locais com colocacao, previa de arrasto, raio/intensidade, remocao e historico. Luz recortada por barreiras e cone individual; proprio token continua perceptivel. Nove testes de navegador e round-trip SQL/acoes do servidor passaram, capturas inspecionadas; homologacao conectada real ainda nao executada. Regua existente ganhou pontos por botao direito e Backspace, soma em escala comum, conclusao/cancelamento efemeros e compatibilidade de mensagens antigas. Cinco testes de navegador e contrato/relay DO passaram; captura inspecionada. Suite Node de servidor totaliza 12 testes neste ponto. Nenhuma publicacao.
+
+## Microentregas P1/V1/P2: oclusao e render visivel — 2026-10-01
+
+P1: fixture deterministica de caverna com 100/800/3000 segmentos e 8/32/80 tokens, Chromium desktop 1440x900, palco 768x768, DPR1/2 e 12 quadros por fase de giro/previa/pan/zoom. Guarda de 1000ms apenas detecta travamento, nao garante 60fps. Base p95 de zoom: 14,9–26,8ms DPR1 / 47,7–65,4ms DPR2; RGBA estimado em zoom3,75: 65,5/192,1MiB.
+
+V1: mesmos contornos em geometria e testes de pixels: canto, cruzamento, trecho curto, caverna concava e portas nos tres estados. Vinte e sete testes de geometria e sete de pixels passaram. Captura da caverna inspecionada; base geometrica preservada, sem reescrever algoritmo correto.
+
+P2: parede/mascara rasterizadas apenas no viewport, com DPR e zoom, geometria/hit-test permanecem da cena inteira. Pan agenda atualizacao; cache evita pintura identica. Cinquenta testes de editor/visao/juncoes/viewport passaram antes do cache adicional de barreiras; sete testes de viewport/baseline passaram depois. Memoria RGBA estimada caiu para 9,2/36,9MiB; p95 zoom 6,2–22,5ms DPR1 / 11,5–25,0ms DPR2. Numeros de uma execucao local, sem prometer FPS universal; captura DPR2 inspecionada.
+
+## Microentrega M2: percurso compartilhado — 2026-10-01
+
+Contrato puro com ate 256 pontos, origem/destino/versao e duracao deterministica de 120–450ms. Metadados de visao emitidos apos CAS autorizado; sem visao acompanham delta existente. Duplicatas/atrasos/origem divergente nao reiniciam curvas; DO filtra movimento secreto ou de versao diferente. Percurso nao entra na cena/cache/F5. Onze testes Node de contrato/servidor e dois testes de navegador com dois clientes/snapshot passaram; 63 regressoes de movimento/visao/build/controles passaram antes de ajustar tolerancia numerica do novo teste de curva. Homologacao online pendente.
+
+## Microentrega G2: origem da grade — 2026-10-01
+
+Alinhar origem na propria secao da Grade, com previa e Aplicar/Cancelar. Preserva mapa/tokens; desenha somente celulas completas no retangulo util, com margens sem grade. Movimento respeita as mesmas bordas completas com origem deslocada. QA corrigiu controle desabilitado desatualizado apos snapshot; 58 testes de grid/editor/movimento passaram, incluindo cancelamentos e clique sem arrasto. Capturas de origem e M1 inspecionadas. Local, sem publicacao.
+
+## Microentrega G1: calibracao por referencia — 2026-10-01
+
+Mestre indica quantas casas uma aresta cobre, marca dois pontos e recebe previa. Arredondamento explicito para colunas inteiras (nao promete encaixe exato quando referencia exige fracao). Aplicar confirma grade sem mover/redimensionar mapa ou tokens; medida preserva escala. Cancelar, fechar painel, perda de papel, blur e mudanca remota descartam previa. Modulo `mesa-grid-editor.js` separado do estado/transporte; sete testes passaram, captura inspecionada. Local.
+
+## Microentrega M1: remover ponto do percurso — 2026-10-01
+
+Backspace durante arrasto retira somente ultimo ponto fixado, recalcula caminho/colisao/metros e preserva origem ate soltar. Marcadores de 3px em tela apenas nos pontos confirmados do rascunho. Ignora teclas em campos editaveis; Escape ainda cancela. Vinte e seis testes de movimento passaram, incluindo com/sem visao. Local.
+
+## Microentrega W9: copiar estruturas — 2026-10-01
+
+Copiar/Colar contextuais usam clipboard efemero interno (sem ler clipboard do sistema). Previa verde tracejada, clique confirma com IDs novos e propriedades preservadas; Escape/direito descartam sem alterar original. Proporcao entre cenas compensada pelo aspecto, sem redimensionar estrutura que nao cabe. Sessenta e cinco testes de editor/visao/movimento passaram; captura da copia inspecionada. Revisao acrescentou protecao/teste contra gravacao de ruido ao clicar numa extremidade sem arrastar. Local.
+
+## Microentrega W8: mover conjunto — 2026-10-01
+
+Arrastar corpo de um trecho ja selecionado translada o conjunto, sem deformar distancias/juncoes internas. Limites aplicados ao grupo; previa local, commit/undo unico e mesmos cancelamentos da extremidade. Pequeno clique nao gera escrita. Vinte testes do editor passaram; mantidos testes de conflitos e propriedades. Local.
+
+## Microentrega W7: selecionar conjunto — 2026-10-01
+
+Shift+clique adiciona/remove; arrasto no vazio seleciona segmentos que cruzam a caixa. Selecao efemera, sem gravacao/historico nem gesto de token. Regua em captura respeita editor ativo. Revisao encontrou acesso a previa inexistente durante caixa e corrigiu; suite agora tambem reprova pageerror. Trinta e sete testes de editor/visao passaram; teste/captura da caixa repetidos apos correcao visual. Local.
+
+## Microentrega W6: estado de porta selecionada — 2026-10-01
+
+Mestre configura Aberta/Fechada/Trancada no trecho selecionado; gravacao/historico pelo contrato existente. Fechar/trancar recusa token no vao, retornando controle ao estado confirmado. Testes de pixels/geometria anteriores e portas dos jogadores permanecem verdes: 36 testes de editor/visao passaram, incluindo estado, undo/F5 e porta ocupada. Local.
+
+## Microentrega W5: unir trechos — 2026-10-01
+
+Acao Unir pede segundo trecho: somente colineares/contiguos com tipo/estado iguais e sem sobreposicao. Mantem contorno, novo ID, selecao e um unico desfazer. Recusa curva, vao e mistura de porta/parede. Quinze testes do editor passaram. Local.
+
+## Microentrega W4: dividir parede — 2026-10-01
+
+Acao contextual Dividir pede o ponto na parede selecionada e projeta exatamente no segmento. Cria dois IDs, juncao coincidente, mesmo contorno e um unico desfazer. Recusa cortes junto as extremidades; portas nao divididas para nao inventar duas interacoes independentes. Onze testes do editor passaram. Local.
+
+## Microentrega W3: vertices encaixados e juncoes — 2026-10-01
+
+Encaixe habilitado por controle contextual, tolerancia de 10px em tela, indicador verde discreto e Alt temporario para coordenada livre. Mover vertice compartilhado preserva juncoes: todos os extremos coincidentes acompanham, um unico commit/historico. QA encontrou conflito real com Alt+ping em captura; ping agora respeita o editor ativo, preservando comportamento fora dele. Nove testes do editor passaram; captura da juncao inspecionada. Local, sem publicacao.
+
+## Microentrega W2: arrasto de extremidade — 2026-10-01
+
+Extremidades da selecao agora arrastaveis (alvo 10px em tela, cursor grab/grabbing). Captura do ponteiro, previa sem mutacao e confirmacao unica ao soltar. Escape, pointercancel, blur, troca de cena/papel/ferramenta ou snapshot que altere barreiras descartam o gesto. Trecho sem comprimento minimo nao confirma; undo/refaz por gesto. Sete testes novos passaram, incluindo zoom/pan e snapshot remoto durante arrasto; captura inspecionada. Local, sem publicacao.
+
+## Microentrega W1: selecao de paredes/portas — 2026-10-01
+
+Sequencia desmembrada em contratos pequenos em `docs/MESA-MICROENTREGAS.md`: editor, grade/movimento, visao/desempenho/iluminacao, ferramentas e preparacao. Uma entrega por ciclo, sem misturar gestos, protocolo ou escopos excluidos pelo Tiago.
+
+W1 adiciona "Selecionar trecho" diretamente a secao de barreiras, sem modal. Clique destaca parede/porta e duas extremidades em branco; tolerancia de 12px de tela mantida com zoom. Selecao e efemera, nao altera geometria, revisao, gravacao ou historico. Area vazia limpa; Escape/direito/concluir/troca de ferramenta/fechar painel/troca de cena/perda de papel retiram selecao. Extremidades ainda nao arrastaveis (contrato W2). Alteracao local, sem commit/publicacao.
+
+Arquivos: `js/mesa-barriers-editor.js`, `mesa.html`, `css/mesa-vision.css`, dois testes novos em `tests/mesa-vision.spec.cjs` e selecao coberta no boot dos bundles em `tests/build-pages.spec.cjs`; cache-bust atualizado. Capturas de porta selecionada, parede em zoom 284% e bundle minificado inspecionadas.
+
+Validacao final: 43 testes locais de visao/movimento e 16 de build/controles passaram (59 no total). Selecao exercitada nos bundles normal e minificado; teste aguarda ferramenta realmente ativa antes de clicar no Canvas. Sintaxe de 54 arquivos, auditorias estatica/pendencias e diff check CRLF sem erros. Sem sessao autenticada online nesta entrega. Skills game-ui-frontend/code-review-frontend/game-playtest orientaram controle compacto, estado efemero e validacao visual.
+
+## Grade inteira e contorno do rastro — 2026-10-01
+
+Colunas agora ajustadas uma a uma, cellFrac normalizado ao reciproco de numero inteiro e offsets zerados ao trocar tamanho. Grade desenha somente linhas completas na altura, preservando celulas quadradas; sobra de mapa retangular fica sem grade. Escala no controle usa valores fechados 1,5,10,15,20,25,50,75,100,200,500,1000,2000,5000 metros (escala fracionaria de cenas antigas preservada ate ajustar). Rastro tem contorno externo de 1,5px sem divisorias internas. Alteracao local.
+
+## Pontos de passagem durante arrasto — 2026-10-01
+
+Botao direito fixa destino atual durante arrasto sem apagar rastro; proximos segmentos partem desse ponto. Previa soma metros do percurso inteiro, valida colisao por segmento e confirma apenas ao soltar esquerdo. Animacao local segue curvas tambem no retorno autorizado da API. Escape/blur/pointercancel continuam cancelando tudo; direito deixa de cancelar movimento. Limite de 255 pontos fixados (contrato de 256 segmentos). Alteracao local; espectadores ainda recebem posicao final e animacao direta pelo protocolo existente.
+
+## Barreiras nitidas e rastro regular — 2026-10-01
+
+Editor e mascara usam getMesaRenderScale (DPR/zoom com teto de memoria); paredes e pontos mantem espessura em pixels de tela. Zoom repinta visao. Rastro amostra dimensoes inteiras da grade desde a origem, evitando passos fracionarios e espacos irregulares. Importacao preserva PNG/JPEG/WebP que cabem em 10MB, sem teto automatico de 4096px; compressao mantem dimensoes antes de reduzi-las e avisa reducao. Relay identifica formato pelos bytes; R2 conserva MIME do arquivo. Alteracao local. Mapas antigos reduzidos precisam ser reimportados. Blocos de imagem por nivel de zoom nao fazem parte desta etapa; o limite de memoria dos canvas continua aplicavel.
+
+## Nitidez no zoom e olho proporcional — 2026-10-01
+
+Controle de direcao mede 22% do diametro visivel do token, limitado a 18–32px de tela. Canvas do rastro usa densidade DPR multiplicada pelo zoom e recorte do viewport, evitando ampliar bitmap de baixa resolucao ou alocar a cena inteira em zoom alto. Zoom/pan e resize atualizam a previa ativa. Alteracao local.
+
+## Rastro encaixado e medida discreta — 2026-09-30
+
+Footprints da previa agora arredondam suas bordas para linhas/offsets da grade, com dimensoes inteiras de celulas, inclusive nas diagonais. Removidos tracejado e circulo projetado no modo grade. Indicador compacto mostra apenas distancia; bloqueio continua por cor e confirmacao usa aria-busy sem texto adicional. Controle de visao ocultado sincronamente no inicio do arrasto, antes de mover o ponteiro; permanece indisponivel durante animacao. Alteracao local, sem publicacao.
+
+## Diagonais restauradas — 2026-09-30
+
+A pedido do usuario, removida restricao ortogonal: previa, distancia e animacao voltam ao segmento direto, permitindo diagonais. Mantidos footprints inteiros proporcionais ao token, preenchimento unico sem subdivisoes extras, snap com grade e colisao. Alteracao local, sem publicacao.
+
+## Percurso ortogonal e blocos inteiros — 2026-09-30
+
+Validacao final: 35 testes de movimento/visao passaram, incluindo envio dos dois trechos e bloqueio por parede, animacao ortogonal e footprints 1x1/2x2/3x3. Captura 2x2 inspecionada. Sintaxe de 54 arquivos, auditorias estatica/pendencias e diff check sem erros.
+
+Grade ligada usa percurso Manhattan minimo sem diagonais: primeiro horizontal, depois vertical. Previa, distancia, animacao local/remota e envio de segmentos para validacao compartilham esse contrato. Sem busca de desvios: colisao interrompe o percurso no trecho bloqueado. Rastro composto por footprints completos do token (1x1, 2x2, 3x3), amostrados por seu tamanho, sem subdivisoes internas; preenchimento unico evita acumulo de opacidade nas sobreposicoes. Grade desligada preserva reta/metros. 18 testes locais de movimento passaram. Sem publicacao.
+
+## Controle de visao com olho — 2026-09-30
+
+Seta de 10x8px substituida por bolinha escura de 22px com olho vetorial claro de 16px; alvo de 24px preservado. Icone permanece horizontal enquanto percorre a borda, sem anel adicional. Tooltip removido, nome acessivel mantido. Hover/giro reforcam borda sem ampliar o controle. Mudanca visual local, sem publicacao.
+
+## Direcao integrada a borda — 2026-09-30
+
+Validacao local: 33 testes de visao/movimento passaram, incluindo scroll, pan, zoom 2.84 e resize sem render manual. Sintaxe de 54 arquivos, auditorias estatica/pendencias e diff check sem erros.
+
+Removido anel amarelo externo. Controle contextual usa pequena seta clara sobre a borda existente do avatar, com alvo transparente de 24px. Geometria mede o avatar real; transformacoes de zoom/pan atualizam a sobreposicao imediatamente, resize do palco solicita render e scroll atualiza posicao. Pivo do giro recalculado durante o gesto para evitar centro antigo apos mudancas de camera. Sem publicacao.
+
+## Anel de direcao contextual — 2026-09-30
+
+Validacao: 32 testes de visao/movimento passaram; sintaxe de 54 arquivos, auditoria estatica e diff check sem erros. Corrigida transicao CSS de escala em tokens com visao ativa que desalinhava temporariamente hitbox/anel da geometria real. Testes verificam centro e diametro do anel, giro nos dois sentidos, mascara antes do aceite, preferencias, rede lenta e zoom.
+
+Controle de giro substituido por anel externo fino, 9px alem da esfera, exibido ao passar o mouse em token controlavel. Seta de 12px com alvo de 24px gira em torno do centro do token; atualiza o cone durante o gesto e salva ao soltar. Nome/retrato/barras nao giram nem sao ocultados pelo controle. Hover possui tolerancia de 300ms para chegar a seta; arrasto e foco preservam o anel. Escape, cancelamento de ponteiro e perda de foco descartam previa. Preferencia de ocultar e permissoes existentes preservadas. Foco desta etapa em desktop; sem novos fluxos mobile. Alteracao local, sem publicacao.
+
+## Movimento com e sem grade — 2026-09-30
+
+Validacao local: 17 testes de movimento passaram, incluindo ausencia de preenchimento/contornos no modo livre, encaixe no modo grade e ausencia do retangulo extra. Capturas dos dois modos inspecionadas; diff check sem erros.
+
+Previa individual separada em dois modos: grade habilitada encaixa o destino nas casas, preenche o percurso proporcional ao token e desenha somente o contorno circular (retangulo extra removido). Grade desligada nao preenche casas nem desenha contorno de destino: mostra reta e distancia em metros com a escala da cena. Alertas de colisao continuam visiveis. Confirmacao ao soltar e autorizacao preservadas. Alteracao local, sem publicacao.
+
+## Contraste do rastro — 2026-09-28
+
+Preenchimento da previa de movimento aumentado de 19% para 48%, tanto no caminho livre dourado quanto no bloqueio vermelho. Sem alterar tamanho, distancia ou iluminacao. Cache do modulo atualizado; alteracao local, sem publicacao.
+
+## Previa proporcional ao token — 2026-09-28
+
+Corrigida a trilha de movimento: considera a area quadrada completa do token, nao somente o centro. Tamanhos 1x1, 2x2, 3x3 e maiores ocupam as respectivas celulas ao longo da reta, com contorno quadrado no destino. Intersecoes das bordas com a grade determinam os intervalos; celulas repetidas sao unificadas e mero contato com a borda nao inclui vizinhas. Usa tamanho final ajustado a grade, offsets e coordenadas do palco antes do zoom. Distancia permanece deslocamento, nao quantidade de celulas cobertas. Iluminacao e regras de colisao nao alteradas nesta etapa. Sem publicacao.
+
+Validacao: 26 testes locais de movimento/build passaram, incluindo tres tamanhos, area estacionaria, trajeto inverso/diagonal e capturas 2x2/3x3 inspecionadas. Sintaxe de 54 arquivos, auditorias estatica/pendencias e diff check CRLF sem erros.
+
 Este arquivo registra o estado atual do projeto e deve ser atualizado ao final de cada etapa importante.
+
+## Movimento planejado, giro e acesso ao editor — 2026-09-28
+
+Arrasto individual reconstruido em `js/mesa-movement.js`: enquanto o ponteiro esta pressionado, token, visao e estado persistido permanecem na origem. Apenas o destino, linha reta, celulas atravessadas e distancia sao mostrados localmente. Soltar confirma uma unica posicao e anima visualmente o trajeto; com visao ativa, a animacao comeca apos aceite da API/regra compartilhada. O cone acompanha a interpolacao aceita. A distancia usa `measureMesaRuler` e a escala da grade, inclusive com zoom e offsets. Parede limita o destino; a previa informa o bloqueio. Sem roteamento automatico ao redor de obstaculos.
+
+`mesa-stage.js` deixa de mutar/transmitir posicoes durante o arrasto e evita reposicionar nos filhos DOM tokens cuja ordem ja esta correta, preservando captura do ponteiro. Escape, botao direito, pointercancel, perda de foco, troca de cena e pinca cancelam rascunhos. Trava/posse/posicao sao revalidadas ao soltar. Snap calcula o destino antes da colisao. Animacao respeita movimento reduzido e tambem se aplica a snapshots/deltas recebidos; interpolacao nao entra no payload. Movimento em grupo do editor mantido no fluxo existente, sem visao dinamica.
+
+Giro lateral da bolinha invertido conforme pedido: direita reduz angulo, esquerda aumenta; giro circular continua acompanhando o ponteiro e teclado mantem passos de 15 graus. `mesaVisionPanel` passa de details para section: paredes/portas aparecem diretamente ao abrir as configuracoes da cena, junto de Grade/Nevoa, sem janela/acordeao adicional. Skills game-ui-frontend, page-architecture, code-review-frontend e game-playtest orientaram separacao de estados, feedback e QA. Sem novas dependencias, migracao de dados, commit ou publicacao.
+
+Arquivos: novo modulo/teste de movimento; integracao em stage, core, select, map e runtime de visao; HTML/CSS/cache-bust; testes de visao/build/auditoria adaptados ao novo contrato (posicao visual chega ao destino ao fim da animacao, nao instantaneamente).
+
+Validacao final local: 350 testes de navegador/controles contra `_site` passaram (13 novos de movimento); 27 testes de geometria/servidor e 10 de build normal/minificado passaram. Sintaxe de 54 arquivos, auditorias estatica/pendencias e diff check CRLF sem erros. Capturas de configuracoes, trajeto livre e bloqueio inspecionadas. Cobertura inclui giro invertido, escala/offset/snap/zoom, render durante captura, trava durante gesto, cancelamentos, recusa de rede, animacao remota e movimento reduzido. Nao foi executada sessao autenticada mestre/jogador online.
+
+## Reconstrucao de paredes e portas — 2026-09-26
+
+Pedido confirmado: refazer o sistema de paredes/portas e substituir o controle grande por bolinha discreta. Controladores antigos `mesa-vision.js` e `mesa-vision-facing.js` retirados do codigo ativo. Copia recuperavel local (ignorada pelo Git): `.wrangler/backups/vision-before-rebuild-20260926.zip`, incluindo controladores, HTML, CSS e testes anteriores. Nenhum mapa, token ou dado de campanha apagado.
+
+Tres modulos novos: `mesa-vision-runtime.js` (mascara, portas, adaptadores e acoes autenticadas), `mesa-barriers-editor.js` (estado do editor/rascunho/historico) e `mesa-token-facing.js` (gesto, previa e preferencia local). Geometria compartilhada, regras de permissao, schema v1 e fila de persistencia existentes preservados; esta reconstrucao nao e uma nova implementacao da matematica/servidor nem exige migrar cenas.
+
+Interface em `mesa.html`/`mesa-vision.css`: Parede, Porta e Apagar; formatos ponto a ponto, poligono e retangulo. Porta recorta um unico trecho sem parede sobreposta. Botao direito conclui mantendo pontos confirmados; Escape descarta rascunho; formas e porta tem undo atomico. Removido modo de trancar do editor simplificado, mantendo respeito a trancas existentes.
+
+Bolinha visual de 10px abaixo do nome, hit-area transparente 24px (32px em toque), sem painel nem botoes laterais. Giro lateral/circular com previa por frame, teclado, cancelamento e fila coalescida. Preferencia local por usuario/cena/token no inspetor e painel do jogador para ocultar somente a bolinha. Chave global do mestre ativa/desativa visao e colisao sem apagar barreiras. Nenhuma publicacao ou alteracao de cenas online nesta etapa.
+
+Validacao local: 337 testes de regressao da Mesa/controles contra `_site`, 27 testes de geometria/servidor e 10 testes de build normal/minificado passaram. Os 15 fluxos especificos tambem passaram em tres repeticoes (45 execucoes). QA cobre recorte/abertura de porta com liberacao de passagem/visao, eco atrasado durante desenho, pixels da mascara antes de soltar, giro nos dois sentidos, cancelamento, preferencia apos F5 e contencao/zoom. Capturas inspecionadas; nome duplicado corrigido sem transicao de opacidade. Sintaxe de 53 arquivos, auditorias estatica/pendencias e diff check com CRLF preservado sem erros. Nao equivale a homologacao autenticada online.
+
+## Refatoracao da interacao de visao — 2026-09-26 (HISTORICO, substituida na reconstrucao acima)
+
+Escopo: barreiras para visao/movimento, portas e cone individual; sem novas fontes de luz. Painel separa controle global da cena, construcao e edicao/teste. A chave do mestre "Visao e colisao dos jogadores" aplica enabled a toda a cena e preserva paredes ao desligar.
+
+Controle de giro extraido para `js/mesa-vision-facing.js`: dial fixo abaixo do nome, tamanho de tela constante sob zoom, giro circular/lateral, teclado, pointer capture e cancelamento. Previa local por frame; persistencia coalescida entre liberacoes/teclas rapidas, sem bloquear nova previa enquanto confirma a anterior. Troca de cena/desativacao descarta gestos e filas locais.
+
+Editor: Concluir e botao direito preservam os lados clicados do poligono; Escape cancela rascunho e sai da ferramenta. Cliques duplicados/retangulos sem area sao ignorados. Novos pontos e undo usam a fila de persistencia existente durante uma gravacao anterior, com revisao atualizada entre envios. Nenhuma publicacao ou alteracao de cenas online nesta etapa.
+
+Sincronizacao: ecos de visao recebidos durante gravacao do mestre sao adiados e reavaliados por revisao ao esvaziar a fila. Evita substituir uma cadeia local mais recente pelo primeiro trecho confirmado; snapshots de outra cena nao sao reaplicados. Nome do token fica no controle acima da mascara, legivel mesmo quando o cone aponta para cima.
+
+Validacao final local: 345 testes de navegador/controles contra `_site`, 10 testes de build (normal e minificado) e 27 testes de geometria/servidor passaram. Sintaxe de 52 arquivos e auditorias estatica/pendencias sem erros. Playtest inspecionado por captura, pixels da mascara durante arrasto, controle em 390/600/1280px e zoom .75/1.5, painel com fontes ampliadas, rede lenta, cancelamento, portas e chave global. Homologacao autenticada online nao foi executada.
+
+## Giro e alcance de portas — 2026-09-22
+
+Alca de direcao junto ao token oferece previa local por frame, sem escrita durante arrasto; soltar confirma pela API e cancelamento descarta a previa. Botoes de giro tambem antecipam a imagem enquanto aguardam confirmacao. Portas usam o ponto mais proximo no segmento, nao o centro distante, com o mesmo contrato no cliente e servidor. Alteracoes locais, sem publicacao nesta etapa.
+
+Refinamento: portas aparecem dentro do cone ou por proximidade fora dele, com SVG identico ao editor e sem revelar o restante da area. Abertura nao exige orientacao; alcance, tranca e barreiras continuam obrigatorios. Elementos de porta sao reutilizados por ID entre frames, preservando foco e cliques. Teste do giro amostra os pixels reais da mascara em 90 e 180 graus antes de soltar, nao apenas o rotulo numerico.
+
+Validacao: 333 testes de Mesa contra o artefato passaram; 27 testes puros/servidor e 10 de build (normal/minificado) passaram. Os 3 novos fluxos foram repetidos no artefato final. Captura do giro inspecionada; sintaxe de 51 arquivos, auditorias estatica/pendencias e diff check sem erros. Sessao de jogador simulada, sem alterar cenas online.
 
 ## Pendencias Vivas
 
@@ -10,7 +264,9 @@ Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencia
 
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
 
-- **[Codex/Tiago]** Homologar a beta de visao dinamica em sessao mestre/jogador conectados: salvar/reabrir paredes, colisao, giro e portas. API publicada em 2026-09-21 apos dry-run; health e autenticacao da rota conferidos. Sem cofre de credenciais online nesta maquina para round-trip autenticado. Com visao ativa, invocacao de Echo pelo relay legado do jogador continua bloqueada. — aberta em 2026-09-20 (integracao da visao dinamica)
+- **[Codex/Tiago]** Homologar a beta da Mesa em sessao mestre/jogador conectados: paredes/portas/colisao/giro, percursos, iluminacao, moldes, configuracoes e decoracoes. Tiago autorizou publicar em 2026-10-02; Worker atualizado para `b3c894c1-e252-42fc-a1ca-bc0a4d4b0a1c`, frontend em fluxo de publicacao pelo push main. Os 27 contratos encerrados localmente nao substituem teste conectado real. Sem cofre de credenciais online nesta maquina para round-trip autenticado atual. Com visao ativa, invocacao de Echo pelo relay legado do jogador continua bloqueada. — aberta em 2026-09-20 (integracao da visao dinamica)
+
+- **[Codex/Tiago]** Homologar as correcoes do Manual de Decisoes no portal real, apos publicacao autorizada: estados de rede/escrita em Regras e Sugestoes, foco/dialogos/Cenas, layouts desktop e texto ampliado; completar navegacao com leitor de tela e navegador adicional. Chromium/fixtures e pacote minificado passaram localmente, mas nao demonstram essas experiencias reais. Sem alterar mecanicas do RPG ou introduzir recursos pagos. — aberta em 2026-10-02 (revisao pelo Manual de Decisoes)
 
 - **[Tiago]** Rotacionar em producao `JWT_SECRET` e `MASTER_BOOTSTRAP_PASSWORD` via `wrangler secret put` — os valores que estiveram em texto puro no OneDrive continuam validos no Worker. Comandos e ordem no bloco da Etapa 142. **`PASSWORD_PEPPER` fica de fora de proposito**: rotacionar invalida o hash de senha de TODOS os jogadores (PBKDF2 mistura o pepper, `cloudflare/src/auth.js:35`) e nao existe fluxo de recuperacao de senha. Rotacionar o pepper exige antes a migracao pepper-duplo descrita na Etapa 142. — aberta em 2026-08-28 (Etapa 142, herdada da Etapa 121)
 

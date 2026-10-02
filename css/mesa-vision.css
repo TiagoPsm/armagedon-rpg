@@ -1,51 +1,60 @@
-#mesaVisionCanvas, #mesaWallCanvas, #mesaVisionDoors {
-  position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
-}
+#mesaVisionCanvas, #mesaWallCanvas, #mesaVisionDoors { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 #mesaVisionCanvas { z-index: 25; }
-#mesaWallCanvas { z-index: 28; touch-action: none; cursor: crosshair; }
 #mesaVisionDoors { z-index: 27; }
-#mesaVisionCanvas[hidden], #mesaWallCanvas[hidden], #mesaFacingControls[hidden] { display: none; }
-.vtt-canvas { --map-panel-w: 280px; }
+#mesaWallCanvas { z-index: 28; touch-action: none; cursor: crosshair; pointer-events: auto; }
+#mesaLightCanvas { position: absolute; z-index: 28; touch-action: none; cursor: crosshair; pointer-events: auto; }
+.mesa-tools-help { border-top: 1px solid var(--border); padding-top: 10px; font: 12px/1.5 var(--font-ui); color: var(--text-soft); }
+.mesa-tools-help summary { cursor: pointer; color: var(--text); }
+.mesa-tools-help p { margin: 8px 0; }
+.mesa-tools-help kbd { font: inherit; border: 1px solid var(--border); padding: 1px 3px; border-radius: 3px; }
+.mesa-barriers button:focus-visible, .mesa-tools-help summary:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+#mesaLightCanvas[hidden] { display: none; }
+#mesaLightProperties { display: grid; gap: 6px; min-width: 0; }
+#mesaLightProperties[hidden] { display: none; }
+#mesaVisionCanvas[hidden], #mesaWallCanvas[hidden], #mesaFacingControls[hidden], .mesa-facing-dot[hidden], .mesa-barriers [hidden] { display: none; }
+.vtt-canvas { --map-panel-w: 260px; }
 .mesa-map-settings-panel { max-width: calc(100% - var(--hud-inset) * 2); max-height: calc(100% - var(--hud-inset) - var(--hud-overlay-h) - 80px); overflow-y: auto; scrollbar-gutter: stable; overscroll-behavior: contain; }
-.mesa-vision-panel { display: block; color: var(--text); }
-.mesa-vision-panel, .mesa-vision-panel * { box-sizing: border-box; min-width: 0; }
-.mesa-vision-panel summary { cursor: pointer; line-height: 1.6; }
-.mesa-vision-panel summary span { display: block; color: var(--text-soft); font-size: var(--fs-eyebrow); letter-spacing: normal; text-transform: none; font-weight: normal; }
-.mesa-vision-body, .mesa-vision-options-body { display: grid; gap: var(--sp-2); padding-top: var(--sp-2); }
-.mesa-vision-body > *, .mesa-vision-options-body > * { margin: 0; }
-.mesa-vision-panel .mesa-transform-btn { width: 100%; height: auto; min-height: 40px; padding: var(--sp-2); font-size: var(--fs-control); line-height: 1.4; white-space: normal; overflow-wrap: anywhere; }
-.mesa-vision-panel .mesa-grid-check { min-height: 40px; padding: var(--sp-2); border: 1px solid var(--hud-border); border-radius: var(--radius-sm); background: var(--hud-bg); }
-.mesa-vision-panel .mesa-grid-check input { flex-shrink: 0; }
-.mesa-vision-panel .mesa-btn-pair { align-items: stretch; gap: var(--sp-2); }
-.mesa-vision-panel .mesa-map-settings-hint { font-size: var(--fs-control); line-height: 1.6; overflow-wrap: anywhere; }
-#mesaVisionHint { padding: var(--sp-2) var(--sp-3); border-left: 2px solid var(--border-accent); background: var(--hud-bg); border-radius: var(--radius-sm); }
-.mesa-vision-field { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); font-family: var(--font-ui); font-size: var(--fs-control); }
-.mesa-vision-field select { min-width: 0; max-width: 45%; min-height: 40px; padding: var(--sp-2); background: var(--hud-bg); color: var(--text); border: 1px solid var(--hud-border); border-radius: var(--hud-radius); font: inherit; }
-.mesa-vision-wide { width: 100%; }
-.mesa-vision-tools, .mesa-vision-shapes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); align-items: stretch; }
-.mesa-vision-shapes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.mesa-vision-tools .mesa-transform-btn, .mesa-vision-shapes .mesa-transform-btn { display: grid; grid-template-rows: 24px auto; align-content: center; justify-items: center; gap: var(--sp-1); min-height: 64px; text-align: center; }
-#mesaVisionStatus { color: var(--accent-text); font: 600 var(--fs-control)/1.5 var(--font-ui); overflow-wrap: anywhere; }
-#mesaVisionStatus[hidden] { display: none; }
-.mesa-vision-tools svg, .mesa-vision-shapes svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.mesa-vision-tools span, .mesa-vision-shapes span { display: block; max-width: 100%; }
-.mesa-vision-panel button[aria-pressed="true"] { background: rgba(168, 48, 40, .24); box-shadow: inset 0 -2px var(--accent-text); }
-.mesa-vision-shapes[hidden], #mesaVisionStop[hidden], #mesaVisionFinish[hidden] { display: none; }
-.mesa-vision-options { border-top: 1px solid var(--hud-border); padding-top: var(--sp-2); font-size: var(--fs-control); }
-.mesa-vision-options > summary { padding: var(--sp-2) 0; color: var(--text); }
-@media (max-width: 600px) {
-  .mesa-vision-panel .mesa-transform-btn, .mesa-vision-field select { min-height: 44px; }
-}
-.mesa-facing-controls button, .mesa-door-button {
-  background: #2b1b22; color: #f6eaed; border: 1px solid #79515b;
-  border-radius: 4px; padding: 6px 8px; margin: 3px 2px; cursor: pointer;
-}
-.mesa-vision-panel :focus-visible, .mesa-facing-controls :focus-visible, .mesa-door-button:focus-visible { outline: 2px solid #eab984; outline-offset: 2px; }
-.mesa-vision-panel button:disabled, .mesa-facing-controls button:disabled, .mesa-door-button:disabled { opacity: .45; cursor: not-allowed; }
-.mesa-facing-controls button:not(:disabled):hover, .mesa-door-button:not(:disabled):hover { background: #482b35; }
-.mesa-vision-panel button[aria-pressed="true"] { border-color: var(--accent-text); color: var(--accent-text); }
-.mesa-facing-controls { position: absolute; z-index: 44; left: 50%; bottom: 16px; transform: translateX(-50%); background: #171216; border: 1px solid #663039; border-radius: 8px; color: white; padding: 4px; }
-.mesa-facing-controls span { display: inline-block; min-width: 40px; text-align: center; font-size: 12px; }
-.mesa-door-button { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; font-size: 11px; }
+.mesa-barriers, .mesa-barriers * { box-sizing: border-box; min-width: 0; }
+.mesa-barriers h3 { margin: 0; }
+.mesa-barriers h3 span { display: block; font-size: var(--fs-eyebrow); letter-spacing: normal; font-weight: normal; color: var(--text-soft); }
+.mesa-barrier-body { display: grid; gap: var(--sp-2); padding-top: var(--sp-2); }
+.mesa-barrier-body > * { margin: 0; }
+.mesa-light-section { display: grid; gap: var(--sp-2); border-top: 1px solid var(--border-accent); padding-top: var(--sp-3); }
+.mesa-light-section > * { margin: 0; }
+.mesa-barrier-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); font-size: var(--fs-control); }
+.mesa-barriers select { max-width: 60%; background: var(--hud-bg); color: var(--text); border: 1px solid var(--hud-border); border-radius: var(--radius-sm); font: inherit; min-height: 32px; padding: 4px; }
+.mesa-barrier-tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.mesa-barriers .mesa-barrier-select { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.mesa-barrier-shortcut { margin-left: auto; color: var(--text-soft); font-size: var(--fs-eyebrow); }
+#mesaWallCanvas[data-mode="select"] { cursor: default; }
+#mesaGridEditCanvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 28; cursor: crosshair; touch-action: none; }
+#mesaGridEditCanvas[hidden] { display: none; }
+.mesa-barriers input[type="number"] { width: 64px; padding: 4px; border: 1px solid var(--hud-border); border-radius: var(--radius-sm); background: var(--hud-bg); color: var(--text); font: inherit; }
+.mesa-barriers button { min-height: 32px; padding: 6px; border: 1px solid var(--hud-border); border-radius: var(--radius-sm); background: var(--hud-bg); color: var(--text); cursor: pointer; font: 500 var(--fs-control)/1.4 var(--font-ui); white-space: normal; overflow-wrap: anywhere; }
+.mesa-barrier-tools button { display: grid; justify-items: center; gap: 4px; }
+.mesa-barriers svg, .mesa-door-button svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.mesa-barriers button[aria-pressed="true"] { color: var(--accent-text); border-color: var(--accent-text); background: rgba(168, 48, 40, .18); }
+.mesa-barriers button:disabled, .mesa-door-button:disabled { opacity: .5; cursor: not-allowed; }
+.mesa-barrier-history { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.mesa-barriers .mesa-map-settings-hint { font-size: var(--fs-control); line-height: 1.5; overflow-wrap: anywhere; }
+.mesa-barriers :focus-visible, .mesa-facing-dot:focus-visible, .mesa-door-button:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+.mesa-facing-controls { position: absolute; z-index: 44; transform: translate(-50%, -50%); pointer-events: none; }
+.mesa-facing-name { font: 600 12px/1.4 var(--font-ui); color: var(--text); max-width: 112px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 3px #000; pointer-events: none; }
+.mesa-facing-dot { position: absolute; display: block; border: 0; padding: 0; width: var(--facing-size, 24px); height: var(--facing-size, 24px); transform: translate(-50%, -50%); background: transparent; border-radius: 50%; pointer-events: auto; cursor: grab; touch-action: none; }
+.mesa-facing-dot::before { content: ""; position: absolute; inset: 1px; border-radius: 50%; background: var(--hud-bg); border: 1px solid var(--text-soft); box-shadow: 0 1px 3px #000; }
+.mesa-facing-dot svg { position: absolute; inset: 17%; width: 66%; height: 66%; fill: none; stroke: var(--text); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.mesa-facing-controls.is-turning .mesa-facing-dot { cursor: grabbing; }
+.mesa-facing-dot:hover::before, .mesa-facing-controls.is-turning .mesa-facing-dot::before { border-color: var(--text); background: var(--surface, #262124); }
+.mesa-facing-dot:disabled { opacity: .4; cursor: not-allowed; }
+.mesa-facing-preference { font-size: var(--fs-control); }
+.mesa-door-button { position: absolute; display: grid; place-items: center; transform: translate(-50%, -50%); width: 28px; height: 28px; padding: 3px; pointer-events: auto; border: 1px solid var(--hud-border); border-radius: var(--radius-sm); background: var(--hud-bg); color: var(--text); cursor: pointer; }
+.mesa-door-button[data-state="open"] { color: #7bc89a; }
+.mesa-door-button[data-state="locked"] { border-style: dashed; }
 body:has(#mesaVisionToggle:checked) #mesaSelectionBox { pointer-events: none !important; }
 body:has(#mesaVisionToggle:checked) #mesaSelectionBox .sel-handle { display: none !important; }
+@media (pointer: coarse) { .mesa-barriers button { min-height: 40px; } }
+
+#mesaMovementCanvas { position: absolute; pointer-events: none; z-index: 29; }
+#mesaMovementLabel { position: absolute; z-index: 30; pointer-events: none; white-space: nowrap; padding: 2px 5px; border: 1px solid var(--hud-border); border-radius: var(--radius-sm); background: var(--hud-bg); color: var(--text); font: 11px/1.3 var(--font-ui); text-align: center; transform: translateX(-50%) scale(calc(1 / var(--movement-zoom, 1))); transform-origin: center top; }
+#mesaMovementLabel[data-blocked="true"] { border-color: var(--accent-text); }
+#mesaMovementCanvas[hidden], #mesaMovementLabel[hidden] { display: none; }

@@ -21,7 +21,7 @@ function bundleVersion(content) {
 }
 
 const files = [
-  "index.html", "ficha.html", "mesa.html", "regras.html", "sugestoes.html",
+  "index.html", "ficha.html", "mesa.html", "regras.html", "sugestoes.html", "echos.html",
   ".nojekyll", "logo-rpg-site.jpg", "logo-rpg-site.webp",
   "logo-rpg-armagedon.png", "logo-rpg-armagedon.webp",
   "Logo app.jpg", "Logo app.webp",

@@ -11,6 +11,25 @@ const vertical = wall("wall", .5, 0, .5, 1);
 const build = (walls = [], aspect = 1) => G.prepare({ enabled: true, walls }, aspect);
 const close = (a, b, tolerance = 1e-7) => assert.ok(Math.abs(a - b) <= tolerance, `${a} != ${b}`);
 const plain = a => JSON.parse(JSON.stringify(a));
+const { cases } = require("./mesa-vision-fixtures.cjs");
+
+for (const fixture of cases) test(`V1 ${fixture.name}: polygon agrees with individual visibility at joints`, () => {
+  const geometry = G.prepare({ enabled: true, walls: fixture.walls }, 1), origin = { x: .3, y: .4 };
+  const inside = (p, polygon) => {
+    let result = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const a = polygon[i], b = polygon[j];
+      if ((a.y > p.y) !== (b.y > p.y) && p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y) + a.x) result = !result;
+    }
+    return result;
+  };
+  for (const facing of [0, 90, 359]) for (const cone of [120, 360]) {
+    const polygon = geometry.polygon(origin, facing, cone);
+    for (let x = .01317; x < 1; x += .03091) for (let y = .01719; y < 1; y += .02897) {
+      assert.equal(inside({ x, y }, polygon), geometry.canSee(origin, { x, y }, facing, cone), `${fixture.name}, facing=${facing}, cone=${cone}, ${x},${y}`);
+    }
+  }
+});
 
 test("same file loads as a native module without browser globals", async () => {
   await import("../js/mesa-vision-geometry.js");

@@ -186,6 +186,7 @@ let mesaRosterById = new Map();
 let mesaPersistTimer = null;
 let mesaPersistPending = false;
 let mesaRemotePersistInFlight = false;
+let mesaDeferredVisionSnapshot = null;
 let pendingRemotePersistPayload = null;
 let pendingRemotePersistSignature = "";
 let activeRemotePersistSignature = "";
@@ -193,6 +194,7 @@ let lastPersistedMesaSceneSignature = "";
 let lastRemoteMesaSceneSignature = "";
 let remoteMesaSceneFrame = 0;
 let pendingRemoteMesaSceneData = null;
+let pendingRemoteMesaSceneMovement = null;
 let dragAnimationFrame = 0;
 let pendingDragPoint = null;
 const mesaSheetSaveTimers = new Map();
@@ -437,7 +439,10 @@ function bindEvents() {
 
   window.addEventListener("pointermove", handleDragMove);
   window.addEventListener("pointerup", handleDragEnd);
-  window.addEventListener("pointercancel", handleDragEnd);
+  window.addEventListener("pointercancel", () => {
+    if (_tokenResizeDrag) handleResizePointerUp();
+    cancelTokenDrag();
+  });
   window.addEventListener("mousemove", handleMouseDragMove);
   window.addEventListener("mouseup", handleMouseDragEnd);
   window.addEventListener("pagehide", flushPersistState);
@@ -665,13 +670,16 @@ function applyRemoteMesaSceneMessage(payload) {
   }
 
   pendingRemoteMesaSceneData = remoteData;
+  pendingRemoteMesaSceneMovement = payload.movement || payload.scene?.movement || null;
   if (remoteMesaSceneFrame) return;
 
   remoteMesaSceneFrame = requestMesaRenderFrame(() => {
     remoteMesaSceneFrame = 0;
     const nextRemoteData = pendingRemoteMesaSceneData;
+    const movement = pendingRemoteMesaSceneMovement;
     pendingRemoteMesaSceneData = null;
-    void applyRemoteMesaSceneSnapshot(nextRemoteData);
+    pendingRemoteMesaSceneMovement = null;
+    void applyRemoteMesaSceneSnapshot(nextRemoteData, { movement });
   });
 }
 
@@ -910,6 +918,11 @@ function applyMesaTokenMoveDelta(payload) {
     && token.order === nextOrder
     && clampMesaTokenScale(token.tokenScale) === nextScale
   ) return false;
+  if (typeof MesaMovement !== "undefined") {
+    if (state.drag?.tokenId === token.id) cancelTokenDrag();
+    const movement = MesaMovementRules.normalize(payload.movement, { tokenId: token.id, from: token, to: { x: nextX, y: nextY }, version: payload.sceneVersion });
+    MesaMovement.animate(MesaMovement.visual(token), { ...token, x: nextX, y: nextY }, movement?.path, movement?.duration);
+  }
   token.x = nextX;
   token.y = nextY;
   token.order = nextOrder;
@@ -1006,12 +1019,21 @@ async function handleMesaSheetChanged(payload) {
   }
 }
 
-async function applyRemoteMesaSceneSnapshot(remoteData) {
+async function applyRemoteMesaSceneSnapshot(remoteData, options = {}) {
   if (!remoteData) return;
 
   const localVisionRevision = typeof mesaVision !== "undefined" ? mesaVision?.revision : null;
   if (remoteData.vision && localVisionRevision != null && remoteData.vision.revision < localVisionRevision) return;
   if (isStaleMesaSceneVersion(remoteData?.sceneVersion) && !(remoteData.vision?.revision > (localVisionRevision ?? -1))) {
+    return;
+  }
+  // A save echo can arrive before HTTP confirmation. Do not replace newer local
+  // wall points with that partial snapshot; replay the latest revision after the queue drains.
+  if (isMaster() && mesaRemotePersistInFlight && remoteData.vision && localVisionRevision != null) {
+    if (!mesaDeferredVisionSnapshot || mesaDeferredVisionSnapshot.sceneId !== (state.sceneId || "default") ||
+        remoteData.vision.revision >= mesaDeferredVisionSnapshot.data.vision.revision) {
+      mesaDeferredVisionSnapshot = { sceneId: state.sceneId || "default", data: remoteData, movement: options.movement };
+    }
     return;
   }
 
@@ -1041,7 +1063,7 @@ async function applyRemoteMesaSceneSnapshot(remoteData) {
     // ressuscitava o token do emissor; agora a selecao mora em chave separada
     // e o cache de cena nao tem mais como contamina-la.
     localStorage.setItem(mesaSceneStorageKey(), JSON.stringify(stripMesaSceneSelection(remoteData)));
-    applyMesaSceneSnapshot(remoteData, { keepSelection: true });
+    applyMesaSceneSnapshot(remoteData, { keepSelection: true, movement: options.movement });
     lastPersistedMesaSceneSignature = remoteSignature;
     lastRemoteMesaSceneSignature = remoteSignature;
 
@@ -1973,6 +1995,7 @@ async function handleMesaSceneSwitch(payload) {
  *   para cena que chega em tempo real (Etapa 87) — ver applyRemoteMesaSceneSnapshot.
  */
 function applyMesaSceneSnapshot(saved, options = {}) {
+  if (typeof MesaMovement !== "undefined") MesaMovement.beforeSnapshot(saved, options.movement);
   if (typeof applyMesaVisionSnapshot === "function") applyMesaVisionSnapshot(saved?.vision);
   const savedTokens = Array.isArray(saved?.tokens) ? saved.tokens : [];
   // hasExplicitSave = true quando o usuário já salvou a cena ao menos uma vez
@@ -2388,7 +2411,7 @@ function canPlayerMoveOwnToken(token) {
   );
 }
 
-function broadcastMesaTokenMove(token) {
+function broadcastMesaTokenMove(token, movement = null) {
   if (typeof mesaVisionActive === "function" && mesaVisionActive()) return;
   if (!token) return false;
   if (!isMaster() && !canPlayerMoveOwnToken(token)) return false;
@@ -2401,6 +2424,7 @@ function broadcastMesaTokenMove(token) {
   // existia na tela dele — nenhum broadcast saia de handleResizePointerUp.
   return sendMesaRealtimeDelta("mesa:token:move", {
     tokenId: token.id,
+    movement,
     characterKey: token.characterKey || token.id,
     x: roundTo(token.x, 2),
     y: roundTo(token.y, 2),
@@ -2597,6 +2621,13 @@ function normalizeMesaSceneDrawings(list) {
           .filter(point => Array.isArray(point) && point.length >= 2)
           .map(point => [frac(point[0]), frac(point[1])]);
         if (normalized.points.length < 2) return null;
+      }
+      if (stroke.locked != null && typeof stroke.locked !== 'boolean') return null;
+      if (stroke.locked === true) normalized.locked = true;
+      if (stroke.template != null) {
+        const template = globalThis.MesaTemplateRules.normalize(stroke.template);
+        if (!template) return null;
+        normalized.template = template;
       }
       return normalized;
     })

@@ -2,6 +2,10 @@ const RULES_KEY = "tc_rules_posts";
 
 let currentSession = null;
 let editingRuleId = null;
+let rulesSaving = false;
+let rulesDeleting = false;
+let rulesLoadRequest = 0;
+let rulesLoadState = "ready";
 let rulesCache = [];
 let rulesRealtimeBound = false;
 let rulesFilters = {
@@ -96,6 +100,8 @@ function bindRulesRealtime() {
 }
 
 function setupRulesPage() {
+  document.getElementById("ruleFormError")?.setAttribute("role", "alert");
+  document.getElementById("ruleFormStatus")?.setAttribute("role", "status");
   const rulesUser = document.getElementById("rulesUser");
   const rulesRoleLabel = document.getElementById("rulesRoleLabel");
   const rulesHeaderRole = document.getElementById("rulesHeaderRole");
@@ -170,12 +176,11 @@ async function loadRules(options = {}) {
 
   if (AUTH.isBackendEnabled()) {
     if (preferCache) {
-      rulesCache = readRulesLocal();
-      return rulesCache;
+      return readRulesLocal();
     }
 
     const remoteRules = await APP.listRules();
-    rulesCache = remoteRules
+    return remoteRules
       .map(rule =>
         normalizeRule({
         id: rule.id,
@@ -188,12 +193,9 @@ async function loadRules(options = {}) {
         })
       )
       .sort((left, right) => right.updatedAt - left.updatedAt);
-    writeRulesLocal(rulesCache);
-    return rulesCache;
   }
 
-  rulesCache = readRulesLocal();
-  return rulesCache;
+  return readRulesLocal();
 }
 
 function normalizeRule(rule) {
@@ -235,8 +237,88 @@ function createRuleId() {
 }
 
 async function renderRules(options = {}) {
-  await loadRules(options);
-  renderRulesFromCache();
+  const requestId = ++rulesLoadRequest;
+  const remote = AUTH.isBackendEnabled() && !options.preferCache;
+  if (remote) setRulesLoadState("loading");
+  try {
+    const loadedRules = await loadRules(options);
+    // Realtime, retry and post-save reads may overlap. Only the newest read
+    // owns the visible list and its cache; an old response must not undo it.
+    if (requestId !== rulesLoadRequest) return;
+    rulesCache = loadedRules;
+    if (remote) {
+      try { writeRulesLocal(rulesCache); } catch {}
+    }
+    setRulesLoadState("ready");
+    renderRulesFromCache();
+  } catch (error) {
+    if (requestId !== rulesLoadRequest) return;
+    setRulesLoadState("error");
+    throw error;
+  }
+}
+
+function setRulesLoadState(state) {
+  // A read started before the write outcome (including realtime while it was
+  // pending) cannot confirm that outcome. Only a newly issued read may do so.
+  if (state === "unconfirmed") rulesLoadRequest++;
+  rulesLoadState = state;
+  const list = document.getElementById("rulesList");
+  if (!list) return;
+  let notice = document.getElementById("rulesLoadStatus");
+  if (!notice) {
+    notice = document.createElement("p");
+    notice.id = "rulesLoadStatus";
+    notice.className = "rules-form-status";
+    notice.setAttribute("role", "status");
+    notice.setAttribute("aria-live", "polite");
+    list.before(notice);
+  }
+  list.setAttribute("aria-busy", state === "loading" ? "true" : "false");
+  notice.hidden = state === "ready";
+  const cached = rulesCache.length > 0;
+  notice.replaceChildren(document.createTextNode(state === "loading"
+    ? (cached ? "Atualizando regras; a versão anterior continua disponível." : "Carregando regras…")
+    : state === "unconfirmed" ? "Confira a lista para confirmar o resultado da ação antes de tentar novamente. "
+    : (cached ? "Não foi possível atualizar as regras. A lista exibida pode estar desatualizada. " : "Não foi possível carregar as regras. ")));
+  if (state === "error" || state === "unconfirmed") {
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.className = "rule-btn";
+    retry.textContent = state === "unconfirmed" ? "Atualizar lista" : "Tentar novamente";
+    retry.addEventListener("click", () => { void renderRules().catch(() => {}); });
+    notice.append(retry);
+  }
+  if (!cached && state !== "ready") {
+    list.innerHTML = state === "loading" ? '<p class="empty-msg">Aguarde o carregamento.</p>' : "";
+    document.getElementById("ruleCount")?.replaceChildren(document.createTextNode("—"));
+    document.getElementById("rulesUpdatedText")?.replaceChildren(document.createTextNode("Lista ainda não confirmada."));
+  }
+}
+
+function syncRulesMutationControls() {
+  const busy = rulesSaving || rulesDeleting;
+  ["saveRuleBtn", "cancelEditBtn"].forEach(id => { const button = document.getElementById(id); if (button) button.disabled = busy; });
+  ["ruleTitle", "ruleTag", "ruleContent"].forEach(id => { const field = document.getElementById(id); if (field) field.readOnly = busy; });
+  document.querySelectorAll("#rulesList .rule-actions button").forEach(button => { button.disabled = busy; });
+  const save = document.getElementById("saveRuleBtn");
+  if (rulesSaving) save?.setAttribute("aria-busy", "true");
+  else save?.removeAttribute("aria-busy");
+}
+
+function ruleWriteErrorMessage(error) {
+  if ([401, 403].includes(Number(error?.status))) return "Você não tem autorização para salvar esta postagem. Entre novamente com a conta do mestre; seu rascunho foi mantido.";
+  if (Number(error?.status) === 400) return "Não foi possível salvar. Revise o título e o conteúdo; seu rascunho foi mantido.";
+  if (Number(error?.status) === 409) return "Esta postagem mudou enquanto você a editava. Atualize a lista e confira a versão publicada antes de tentar novamente; seu rascunho foi mantido.";
+  return "Não foi possível confirmar o salvamento. Seu rascunho foi mantido. Atualize a lista e confira se a postagem foi salva antes de tentar novamente.";
+}
+
+function showRuleWriteError(error) {
+  const notice = document.getElementById("ruleFormError");
+  if (notice) notice.textContent = ruleWriteErrorMessage(error);
+  const status = document.getElementById("ruleFormStatus");
+  if (status) status.textContent = "";
+  if (AUTH.isBackendEnabled() && ![400, 401, 403].includes(Number(error?.status))) setRulesLoadState("unconfirmed");
 }
 
 function renderRulesFromCache() {
@@ -269,7 +351,8 @@ function renderRulesFromCache() {
   if (!rulesList) return;
 
   if (!rules.length) {
-    rulesList.innerHTML = '<p class="empty-msg">Nenhuma regra publicada.</p>';
+    if (rulesLoadState !== "ready") { setRulesLoadState(rulesLoadState); return; }
+    rulesList.innerHTML = `<p class="empty-msg">${isMaster ? "Nenhuma regra publicada. Use Nova postagem para publicar a primeira." : "Nenhuma regra publicada. Aguarde as postagens do mestre."}</p>`;
     return;
   }
 
@@ -295,7 +378,7 @@ function renderRulesFromCache() {
               ? `
                 <div class="rule-actions">
                   <button class="rule-btn" onclick="editRule('${jsEsc(rule.id)}')">Editar</button>
-                  <button class="rule-btn rule-btn-danger" onclick="deleteRule('${jsEsc(rule.id)}')">Excluir</button>
+                  <button class="rule-btn rule-btn-danger" data-delete-rule="${esc(rule.id)}" onclick="deleteRule('${jsEsc(rule.id)}')">Excluir</button>
                 </div>
               `
               : ""
@@ -306,6 +389,7 @@ function renderRulesFromCache() {
       </article>
     `)
     .join("");
+  syncRulesMutationControls();
 }
 
 function renderRuleTags(rule) {
@@ -361,7 +445,8 @@ function filterRules(rules) {
   });
 }
 
-function resetRuleForm() {
+function resetRuleForm(force = false) {
+  if ((rulesSaving || rulesDeleting) && !force) return;
   editingRuleId = null;
 
   setFormValue("ruleTitle", "");
@@ -387,7 +472,7 @@ function resetRuleForm() {
 }
 
 function editRule(ruleId) {
-  if (currentSession.role !== "master") return;
+  if (rulesSaving || rulesDeleting || currentSession.role !== "master") return;
 
   const rule = rulesCache.find(candidate => candidate.id === ruleId);
   if (!rule) return;
@@ -417,6 +502,17 @@ function editRule(ruleId) {
 }
 
 async function saveRule() {
+  if (rulesSaving || rulesDeleting) return;
+  rulesSaving = true;
+  syncRulesMutationControls();
+  try { await saveRuleOnce(); }
+  catch (error) { showRuleWriteError(error); }
+  finally {
+    rulesSaving = false;
+    syncRulesMutationControls();
+  }
+}
+async function saveRuleOnce() {
   if (currentSession.role !== "master") return;
 
   const wasEditing = Boolean(editingRuleId);
@@ -445,6 +541,8 @@ async function saveRule() {
     return;
   }
 
+  if (ruleFormStatus) ruleFormStatus.textContent = "Salvando postagem…";
+
   if (AUTH.isBackendEnabled()) {
     try {
       if (editingRuleId) {
@@ -453,7 +551,7 @@ async function saveRule() {
         await APP.createRule({ title, tag, tags, content });
       }
     } catch (error) {
-      if (ruleFormError) ruleFormError.textContent = error?.message || "Falha ao salvar a postagem.";
+      showRuleWriteError(error);
       return;
     }
   } else {
@@ -489,8 +587,11 @@ async function saveRule() {
     writeRulesLocal(rules);
   }
 
-  await renderRules();
-  resetRuleForm();
+  // The write succeeded. Reset before refreshing, so a failed list request
+  // cannot leave a new post ready to be submitted a second time.
+  resetRuleForm(true);
+  try { await renderRules(); }
+  catch { if (ruleFormStatus) ruleFormStatus.textContent = 'Postagem salva. Não foi possível atualizar a lista; recarregue a página.'; return; }
 
   if (ruleFormStatus) {
     ruleFormStatus.textContent = wasEditing
@@ -501,32 +602,44 @@ async function saveRule() {
 }
 
 async function deleteRule(ruleId) {
-  if (currentSession.role !== "master") return;
+  if (rulesSaving || rulesDeleting || currentSession.role !== "master") return;
 
   const rule = rulesCache.find(candidate => candidate.id === ruleId);
   if (!rule) return;
 
-  const confirmed = await UI.confirm(`Excluir a postagem "${rule.title || "Regra sem título"}"?`, {
-    title: "Excluir regra",
-    kicker: "// Arquivo da campanha",
-    confirmLabel: "Excluir",
-    cancelLabel: "Cancelar",
-    variant: "danger"
-  });
+  rulesDeleting = true;
+  syncRulesMutationControls();
+  let deleted = false;
+  const deleteButton = [...document.querySelectorAll("[data-delete-rule]")].find(button => button.dataset.deleteRule === ruleId);
+  try {
+    const confirmed = await UI.confirm(`Excluir a postagem "${rule.title || "Regra sem título"}"?`, {
+      title: "Excluir regra",
+      kicker: "// Arquivo da campanha",
+      confirmLabel: "Excluir",
+      cancelLabel: "Cancelar",
+      variant: "danger"
+    });
+    if (!confirmed) return;
+    if (deleteButton) deleteButton.textContent = "Excluindo…";
+    if (AUTH.isBackendEnabled()) await APP.deleteRule(ruleId);
+    else writeRulesLocal(rulesCache.filter(candidate => candidate.id !== ruleId));
+    deleted = true;
+    rulesCache = rulesCache.filter(candidate => candidate.id !== ruleId);
+    renderRulesFromCache();
 
-  if (!confirmed) return;
+    if (editingRuleId === ruleId) resetRuleForm(true);
 
-  if (AUTH.isBackendEnabled()) {
-    await APP.deleteRule(ruleId);
-  } else {
-    writeRulesLocal(rulesCache.filter(candidate => candidate.id !== ruleId));
+    await renderRules();
+  } catch (error) {
+    if (!deleted && AUTH.isBackendEnabled()) setRulesLoadState("unconfirmed");
+    UI.toast(deleted
+      ? "Postagem excluída. Não foi possível atualizar a lista; tente novamente na lista."
+      : "Não foi possível confirmar a exclusão. Atualize a lista e confira se a postagem ainda existe antes de tentar novamente.", { kicker: "// Regras" });
+  } finally {
+    if (deleteButton?.isConnected) deleteButton.textContent = "Excluir";
+    rulesDeleting = false;
+    syncRulesMutationControls();
   }
-
-  if (editingRuleId === ruleId) {
-    resetRuleForm();
-  }
-
-  await renderRules();
 }
 
 function getFormValue(id) {

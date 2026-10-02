@@ -1,6 +1,92 @@
 # VISUAL RULES
 
-## Paredes e visao — 2026-09-20
+- Manual de producao (2026-10-02): revisar capturas reais, nao somente overflow; palavra recortada/quebrada e hierarquia comprimida podem passar nos testes de caixas. Desktop 1024/1280/1440/1920/2560 e texto ampliado sao o foco atual; mobile e fase posterior.
+- Texto necessario usa `--text-soft`, placeholders `--text-placeholder`, erro `--danger-text`, sucesso `--success-text`, carmesim escrito `--accent-text`. Reservar preenchimentos/bordas `--accent` e decoracao/inativo `--text-faint`; nao clarear a paleta inteira.
+- Navbar pode quebrar os links em linhas no desktop com texto ampliado, sem esconder navegacao nem ampliar horizontalmente a pagina. Pagina atual tem `aria-current="page"` quando existe link direto.
+- Barra da Mesa e sua doca compartilham largura proporcional a rem; normal continua compacta. Nomes recebem mais espaco; acoes secundarias por SVG preservam texto acessivel, title e acesso por teclado, sem dependencia de hover.
+- Avisos de lista permanecem junto ao conteudo/cache, com acao de nova consulta e espaco antes dos cards. Dialogos e avisos seguem identidade existente; movimento reduzido tambem desliga transicao do toast.
+
+- QA (2026-10-02): seletor de decoracoes em linha completa e acoes empilhadas no flyout estreito; badge da sidebar quebra de linha em vez de sair do painel quando o texto aumenta. Mantidos temas/tipografia e area central da Mesa. Flyout respeita movimento reduzido; captura de QA espera fim de animacoes finitas, para nao confundir fade de entrada com falta de contraste.
+- Guarda audit:css confere delimitadores, strings e comentarios; complementa validacao visual/CSSOM, nao substitui parser de toda a gramatica CSS ou auditoria integral de acessibilidade.
+
+- Biblioteca (C2): busca na propria sidebar, nomes truncados sem transbordar e miniaturas pequenas sob demanda; indicadores discretos de carregamento/arquivo indisponivel. Nenhuma nova galeria sobre o mapa.
+- Decoracoes (C3): controles compactos no painel existente de desenho, selecao/bloqueio e lista explicita para desbloquear; objetos bloqueados nao ganham handles no palco.
+- Barreiras permanecem antes das luzes; Iluminacao tem divisor/titulo proprio na configuracao existente. Ajuda por teclado precisa entrar na area visivel do painel, sem rolagem da pagina inteira.
+- Camadas ocultas de moldes/luzes liberam bitmap; camada inalterada nao repinta. Contorno/medidas mantem densidade de tela e estilo existente, sem novo painel flutuante.
+
+- Atalhos/ajustes (U1/C1): ajuda recolhida e copiar/previa/aplicar na propria configuracao; foco perceptivel. Escopo da copia e resumo de alteracoes visiveis antes de confirmar, sem modal novo.
+
+- Linha larga (T4): quatro moldes em grade de dois botoes, editar separado; campos apenas da forma selecionada. Contorno e chip em tela permanecem discretos sob zoom.
+
+- Retangulo medido (T3): campo de altura somente nessa forma; chip compacto largura × altura e handle unico no canto selecionado.
+
+- Cone medido (T2): um unico handle na ponta, direcao/abertura no painel selecionado; sem adicionar controles de visao aos tokens.
+
+- Moldes (T1, 2026-10-01): secao compacta no flyout de desenho; contorno dourado legivel e preenchimento leve, medida de 11px com fundo discreto. Handle somente do selecionado, espessura em tela e bitmap recortado com DPR/zoom. Flyout rola internamente; body fullscreen nao deve rolar por foco.
+
+- Luzes (V3, 2026-10-01): controles na secao existente da cena; fonte pequena com centro/cruz e raio tracejado somente durante edicao. Queda radial de intensidade, preto fora da visao individual. Sem modal ou icone permanente sobre tokens.
+- Regua (T5, 2026-10-01): reaproveitar linha SVG/rotulo existentes; curvas conservam todos os pontos fixados, sem outra barra flutuante. Contorno vetorial e label da medida acumulada.
+
+- Viewport (P2, 2026-10-01): recorte apenas da pintura, sem mudar espessura ou tolerancia em pixels de tela, juncoes e forma do cone. Nao expandir bitmap por area invisivel em zoom alto.
+- Movimento compartilhado (M2, 2026-10-01): mesmas curvas confirmadas/duracao entre clientes; sem rastro remoto permanente. Respeitar preferencia de movimento reduzido.
+
+- Origem da grade (G2, 2026-10-01): Alinhar origem junto a Calibrar; ponto verde pequeno no palco e previa da grade real. Sem janela nova; margens sem grade indicam area que nao acomoda uma celula completa.
+
+- Calibracao (G1, 2026-10-01): referencia verde vetorial de 2px, pontos de 4px em tela e previa da propria camada da grade. Aplicar/Cancelar diretamente na secao de Grade, com texto de previa distinto da configuracao confirmada.
+
+- Pontos do percurso (M1, 2026-10-01): pequenas marcas de 3px em tela apenas durante planejamento; manter chip exclusivamente com metros.
+
+- Colagem (W9, 2026-10-01): previa verde tracejada de 3px em tela, sem painel adicional. Copiar/Colar na secao de edicao; controles individuais indisponiveis para selecao coletiva.
+
+- Selecao por area (W7, 2026-10-01): caixa tracejada fina em tela, preenchimento branco de 6%, contador no hint existente. Trechos selecionados claros, sem painel flutuante novo.
+
+- Acoes de trecho (W4, 2026-10-01): aparecem somente com selecao, dentro da secao existente; acao armada marcada por aria-pressed e dica de proximo clique.
+
+- Encaixe (W3, 2026-10-01): alvo com anel verde de 7px em tela; controle na propria secao, dica Alt: livre. Previa mostra todos os lados ligados, sem ocultar desenho original do mapa.
+
+- Extremidades editaveis (W2, 2026-10-01): alvo de 10px em tela sobre os pontos existentes; cursor grab/grabbing e previa do proprio trecho. Sem painel ou overlay adicional durante arrasto.
+
+- Selecao de barreira (W1, 2026-10-01): botao compacto "Selecionar trecho" na mesma secao de paredes/portas, sem nova janela. Trecho selecionado branco de 4px; extremidades com centro escuro, raio de 4px e contorno branco de 1,5px, medidos em tela. Sem cursor de arrasto antes de existir edicao. Cores atuais preservadas nos demais trechos.
+
+- Grade inteira (2026-10-01): controles ajustam colunas inteiras e escala em opcoes fechadas. Em mapas retangulares, margem inferior sem grade evita ultima linha parcial sem esticar celulas. Rastro preenchido recebe contorno de 1,5px na tela somente no perimetro, sem subdivisoes internas.
+
+- Curvas (2026-10-01): conservar todos os trechos fixados por botao direito; medida discreta mostra soma em metros. Controle de visao permanece oculto enquanto planeja/animando. Sem painel adicional.
+
+- Barreiras (2026-10-01): linhas 2px, trechos recentes 4px, vertices 3px de raio em tela, independentes do zoom. Canvas acompanha densidade/zoom dentro do teto de memoria. Rastro calcula passos a partir do footprint inteiro da grade. Preservar imagem original quando cabe no upload; avisar reducao de dimensoes.
+
+- Zoom (2026-10-01): olho proporcional ao diametro visivel (22%, minimo 18px, maximo 32px); SVG interno acompanha o controle. Rastro renderizado na densidade da tela com zoom, recortado ao viewport. Medida continua em DOM com tamanho discreto.
+
+- Rastro limpo (2026-09-30): alinhar cada footprint as linhas e offsets da grade, sem subdivisoes extras, tracejado ou circulo de destino no modo grade. Chip centralizado de 11px com padding 2x5px mostra somente medida (ex.: 11,4 m), sem casas ou instrucoes. Bloqueio usa vermelho. Olho nao aparece durante arrasto/animacao.
+
+- Rastro diagonal (2026-09-30, revisao mais recente): permitir blocos inteiros ao longo da reta, sem subdivisoes 1x1 adicionais em tokens maiores. Substitui percurso em L; manter preenchimento unico para evitar escurecimento nas sobreposicoes.
+
+- Rastro ortogonal (2026-09-30): representar pegadas do tamanho inteiro do token, nao celulas individuais de sua area. Blocos sem linhas internas, preenchidos de uma so vez para nao escurecer intersecoes. Caminho horizontal/vertical e contorno do destino; manter grade original ao fundo. Substitui varredura diagonal de celulas.
+
+- Controle de visao (2026-09-30, revisao olho): substitui a pequena seta por bolinha de 22px com olho SVG de 16px e alvo de 24px. Fundo escuro, borda e olho claros; horizontal em todos os angulos. Sem tooltip ou texto visual, preservando nome acessivel. Continua contextual e integrado a borda do token, sem anel externo.
+
+- Direcao contextual (2026-09-30): pequena seta clara de 10x8px sobre a borda existente do avatar, com sombra escura e alvo transparente de 24px. Sem anel externo, amarelo ou circulo extra no hover. Aparece no hover, permanece durante giro/foco; cursor grab/grabbing e dica explicam a acao. Geometria acompanha zoom, pan e resize, sem esconder nome nem girar retrato/barras.
+
+- Rastro de movimento (2026-09-28): preenchimento dourado/vermelho com opacidade de 48% (antes 19%), mantendo separacao entre celulas e mapa visivel.
+
+- Previa proporcional (2026-09-30): com grade ligada, preenchimento translucido cobre toda a largura do token durante o trajeto; somente contorno circular da esfera no destino, sem retangulo adicional. Preservar tamanho das celulas da cena: um token 2x2 ocupa quatro celulas, sem aumentar a grade global. Com grade desligada, apenas reta e distancia em metros, sem casas ou contorno de destino.
+
+## Previa de movimento e acesso direto — 2026-09-28
+
+- Paredes e portas e uma section sempre expandida dentro das configuracoes da cena, como Grade/Nevoa. Abrir a engrenagem mostra as ferramentas diretamente; sem summary, acordeao adicional ou segunda janela.
+- Durante arrasto individual, manter token real na origem e mostrar destino com contorno circular, reta tracejada e celulas preenchidas de forma translucida. Dourado para caminho livre, carmesim e texto explicito para parede no caminho. A previa nao revela mapa/tokens fora da visao.
+- Distancia em celulas/metros junto ao destino, usando a mesma formatacao da regua; chip compacto com tamanho constante sob zoom. No aceite remoto, texto "Confirmando movimento" ate a resposta. Overlay sem capturar ponteiro (camadas 29/30), limpo ao cancelar/soltar.
+- Apos confirmar, interpolacao linear de 120–450ms, sem overshoot e sem giro dos nomes/barras. A posicao persistida e separada da posicao animada; mascara acompanha o token visual. Respeitar prefers-reduced-motion. Sem reorganizar tokens no DOM desnecessariamente durante repinturas.
+
+## Paredes e portas reconstruidas — 2026-09-26 (padrao atual)
+
+- Painel de 260px dentro das configuracoes da cena, limitado pelo palco, com rolagem interna. Chave global e cone primeiro; tres ferramentas alinhadas (Parede, Porta, Apagar); seletor de formatos contextual. Concluir, desfazer/refazer e testar visao em linhas de largura integral. Sem controles de luz inexistentes.
+- Direcao: somente bolinha de 10px abaixo do nome, sem painel, dial grande, angulo textual nem setas laterais. Area transparente de interacao 24px no desktop/32px em ponteiro grosso. Tamanho constante sob zoom, foco visivel; arrasto lateral/circular gira a mascara continuamente. Opcao de ocultar fica no inspetor do mestre ou painel do proprio jogador.
+- Nome unico acima da mascara; ao espelha-lo no overlay, o nome original e ocultado mesmo com token selecionado/hover. Ocultar a bolinha nao oculta o nome. Posicao limitada ao palco.
+- Portas no palco reutilizam o SVG de Porta, alvo de 28px, fundo e contorno do tema. Estado aberto verde, trancado tracejado, nome acessivel e tooltip de alcance. Proximidade nao revela mapa/tokens fora do cone.
+- Paredes vermelhas, portas douradas, portas abertas tracejadas; ultimos segmentos confirmados mais espessos e alvo de apagar branco. Rascunho tracejado e vertices brancos distinguem pontos clicados. Layout usa os tokens existentes, foco visivel e botoes com texto contido. Nenhuma dependencia visual adicional.
+- Camadas preservadas: mascara 25, nevoa manual 26, portas 27, editor 28; bolinha fora do transform de zoom. QA por capturas reais e contencao em 390/600/1280/1920px; nao equivale a homologacao mobile completa.
+
+## Paredes e visao — 2026-09-20 (HISTORICO, substituido em 2026-09-26)
 
 - Distribuicao beta autorizada em 2026-09-21: titulo da secao exibe "Paredes e visao · Beta", mantendo a tipografia existente.
 

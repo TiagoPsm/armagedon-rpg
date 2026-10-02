@@ -36,6 +36,7 @@ import {
   sanitizeRelayDrawingIds,
   sanitizeRelayDrawingStroke,
   sanitizeRelayDrawings,
+  sanitizeRulerPoints,
   takeRateToken
 } from "./mesa-realtime-rules.js";
 
@@ -402,11 +403,17 @@ class MesaRealtimeRoom extends DurableObject {
       payload = { ...payload, drawings: sanitized };
     }
 
+    if (type === "mesa:ruler" && payload.points != null) {
+      const points = sanitizeRulerPoints(payload.points);
+      if (!points) { sendJson(ws, { type: "mesa:scene:ack", ok: false, reason: "Percurso de regua invalido." }); return; }
+      payload = { ...payload, points };
+    }
+
     // Delta de desenho (Etapa 50): UM traco recem-fechado. Mesma regra da
     // camada secreta — traco "dm" nunca e retransmitido.
     if (type === DRAWINGS_ADD_TYPE) {
       const stroke = sanitizeRelayDrawingStroke(payload?.stroke);
-      if (!stroke) {
+      if (!stroke || (stroke.locked === true && attachment.role !== 'master')) {
         sendJson(ws, {
           type: "mesa:scene:ack",
           ok: false,
@@ -502,7 +509,20 @@ class MesaRealtimeRoom extends DurableObject {
           sentAt: payload?.sentAt || new Date().toISOString()
         };
 
-    this.broadcast(relayPayload, ws);
+    // Old clients can omit motion. Invalid optional metadata is removed,
+    // preserving their confirmed endpoint without accepting arbitrary paths.
+    const sanitizeMotion = message => {
+      if (message.type !== "mesa:token:move") return message;
+      const movement = globalThis.MesaMovementRules.normalize(message.movement, {
+        tokenId: message.tokenId, to: message, version: message.sceneVersion
+      });
+      const { movement: ignored, ...rest } = message;
+      return movement ? { ...rest, movement } : rest;
+    };
+    if (type === "mesa:batch") relayPayload.messages = relayPayload.messages.map(sanitizeMotion);
+    const safeRelay = sanitizeMotion(relayPayload);
+
+    this.broadcast(safeRelay, ws);
     sendJson(ws, {
       type: "mesa:scene:ack",
       ok: true,
@@ -714,15 +734,18 @@ class MesaRealtimeRoom extends DurableObject {
 
     this.ctx.getWebSockets().forEach(ws => {
       if (excludeSocket && ws === excludeSocket) return;
+      const token = message.scene?.data?.tokens?.find(t => t.id === message.movement?.tokenId);
+      const movement = token && (readAttachment(ws)?.role === "master" || token.layer !== "dm")
+        ? globalThis.MesaMovementRules.normalize(message.movement, { tokenId: token.id, to: token, version: message.scene.data.sceneVersion }) : null;
       if (message.type === "mesa:scene" && message.scene?.data && readAttachment(ws)?.role !== "master") {
         const data = message.scene.data;
-        sendJson(ws, { ...message, scene: { ...message.scene, data: { ...data,
+        sendJson(ws, { ...message, movement, scene: { ...message.scene, movement: undefined, data: { ...data,
           drawings: (data.drawings || []).filter(s => s.layer !== "dm"),
           tokens: (data.tokens || []).filter(t => t.layer !== "dm").map(t => t.statsVisibleToPlayers ? t : {
             ...t, currentLife: null, maxLife: null, currentIntegrity: null, maxIntegrity: null
           })
         } } });
-      } else sendJson(ws, message);
+      } else sendJson(ws, message.type === "mesa:scene" ? { ...message, movement } : message);
     });
   }
 

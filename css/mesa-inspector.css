@@ -32,7 +32,7 @@
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent, #a83028);
+  color: var(--accent-text, #c97a70);
 }
 
 /* ── HERO (avatar + nome + badges) ──────────────────────────── */
@@ -601,13 +601,13 @@
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-soft));
+  color: var(--text-soft);
 }
 
 .token-inspector-empty p {
   font-family: var(--font-body, "Crimson Text", serif);
   font-size: 0.82rem;
-  color: var(--text-soft));
+  color: var(--text-soft);
   max-width: 22ch;
   line-height: 1.45;
 }

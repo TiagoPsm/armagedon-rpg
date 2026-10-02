@@ -44,8 +44,9 @@
 /* ── CONSTANTES ─────────────────────────────────────────────── */
 
 const MESA_MAP_DB_NAME    = "armagedom_maps";
-const MESA_MAP_DB_VERSION = 3;
+const MESA_MAP_DB_VERSION = 4;
 const MESA_MAP_STORE      = "maps";
+const MESA_MAP_CATALOG_STORE = "catalog";
 const MESA_MAP_SETTINGS_STORE = "settings";
 const MESA_MAP_ACTIVE_KEY = "tc_mesa_active_map";
 
@@ -103,7 +104,6 @@ const EV_MAP_CLEAR     = "mesa:map:clear";       // mestre → todos: limpar map
 // o mapa num estado meio quebrado — visível localmente e via P2P, mas ausente
 // para quem entrar depois, porque o R2/cena nunca recebeu. Então a estratégia
 // é MAXIMIZAR PIXELS DENTRO DE UM ORÇAMENTO, não subir o cap às cegas.
-const WEBP_MAX_PX   = 4096;   // maior dimensão em pixels (nunca faz upscale)
 const WEBP_QUALITY  = 0.92;   // qualidade inicial — só cai se o orçamento exigir
 
 // Degradação em ordem: primeiro qualidade (imperceptível), depois dimensão.
@@ -126,6 +126,7 @@ const STUN_SERVERS = [
 ];
 
 /* ── ESTADO ─────────────────────────────────────────────────── */
+let mesaLocalMapLoadGeneration = 0;
 
 const mesaMapState = {
   db:             null,   // IDBDatabase
@@ -251,6 +252,7 @@ function rescaleStageCanvases() {
     if (typeof _resizeGridCanvas === "function") _resizeGridCanvas();
     if (typeof _resizeFogCanvas  === "function") _resizeFogCanvas();
     if (typeof _resizeDrawCanvas === "function") _resizeDrawCanvas();
+    if (typeof requestMesaVisionRender === "function") requestMesaVisionRender();
   };
   if (typeof requestAnimationFrame !== "function") { run(); return; }
   _rescaleRaf = requestAnimationFrame(run);
@@ -288,6 +290,9 @@ function _applyStageTransform() {
   // Exposto ao CSS: as alcas de selecao do token se contra-escalam por ele
   // para manter tamanho constante em px de TELA em qualquer zoom (Etapa 63).
   inner.style.setProperty("--stage-zoom", String(z));
+  if (typeof MesaFacingDot !== "undefined") MesaFacingDot.render(mesaVisionSource());
+  if (typeof MesaMovement !== "undefined") MesaMovement.refreshPreview();
+  if (typeof requestMesaVisionRender === "function") requestMesaVisionRender();
   // Promove a camada só durante o movimento (fluidez) e devolve a
   // rasterização normal ao parar (nitidez). Ver _markStageTransforming.
   _markStageTransforming();
@@ -646,17 +651,43 @@ function openMesaMapDB() {
       if (!db.objectStoreNames.contains(MESA_MAP_SETTINGS_STORE)) {
         db.createObjectStore(MESA_MAP_SETTINGS_STORE, { keyPath: "key" });
       }
+      if (!db.objectStoreNames.contains(MESA_MAP_CATALOG_STORE)) {
+        const catalog = db.createObjectStore(MESA_MAP_CATALOG_STORE, { keyPath: "id" });
+        // Metadata-only migration: retain original blobs and never decode images here.
+        const cursor = e.target.transaction.objectStore(MESA_MAP_STORE).openCursor();
+        cursor.onsuccess = () => {
+          const row = cursor.result;
+          if (row) { catalog.put(mesaMapCatalogEntry(row.value)); row.continue(); }
+        };
+      }
     };
 
-    request.onsuccess = (e) => resolve(e.target.result);
+    request.onsuccess = (e) => {
+      const db = e.target.result;
+      db.onversionchange = () => db.close();
+      resolve(db);
+    };
     request.onerror   = (e) => reject(e.target.error);
+  });
+}
+
+function mesaMapCatalogEntry(map) {
+  return { id: map.id, name: map.name || "Mapa", hash: map.hash || "", createdAt: map.createdAt || 0, size: map.blob?.size || 0 };
+}
+
+function listMesaMapCatalog() {
+  return new Promise((resolve, reject) => {
+    const req = mesaMapState.db.transaction(MESA_MAP_CATALOG_STORE).objectStore(MESA_MAP_CATALOG_STORE).getAll();
+    req.onsuccess = () => resolve((req.result || []).sort((a, b) => b.createdAt - a.createdAt));
+    req.onerror = () => reject(req.error);
   });
 }
 
 function saveMesaMapToDB(map) {
   return new Promise((resolve, reject) => {
-    const tx = mesaMapState.db.transaction(MESA_MAP_STORE, "readwrite");
+    const tx = mesaMapState.db.transaction([MESA_MAP_STORE, MESA_MAP_CATALOG_STORE], "readwrite");
     tx.objectStore(MESA_MAP_STORE).put(map);
+    tx.objectStore(MESA_MAP_CATALOG_STORE).put(mesaMapCatalogEntry(map));
     tx.oncomplete = () => resolve();
     tx.onerror    = (e) => reject(e.target.error);
   });
@@ -683,8 +714,9 @@ function listMesaMapsFromDB() {
 
 function deleteMesaMapFromDB(mapId) {
   return new Promise((resolve, reject) => {
-    const tx = mesaMapState.db.transaction(MESA_MAP_STORE, "readwrite");
+    const tx = mesaMapState.db.transaction([MESA_MAP_STORE, MESA_MAP_CATALOG_STORE], "readwrite");
     tx.objectStore(MESA_MAP_STORE).delete(mapId);
+    tx.objectStore(MESA_MAP_CATALOG_STORE).delete(mapId);
     tx.oncomplete = () => resolve();
     tx.onerror    = (e) => reject(e.target.error);
   });
@@ -697,8 +729,8 @@ function deleteMesaMapFromDB(mapId) {
  */
 async function findCachedMapByHash(hash) {
   if (!mesaMapState.db || !hash) return null;
-  const all = await listMesaMapsFromDB();
-  return all.find(m => m.hash === hash) || null;
+  const entry = (await listMesaMapCatalog()).find(m => m.hash === hash);
+  return entry ? loadMesaMapFromDB(entry.id) : null;
 }
 
 /* ── COMPRESSÃO WEBP ────────────────────────────────────────── */
@@ -712,16 +744,16 @@ async function findCachedMapByHash(hash) {
  * @param {number} quality  — qualidade WebP 0-1 (default 0.82)
  * @returns {Promise<Blob>} — blob WebP comprimido
  */
-async function compressToWebP(blob, maxPx = WEBP_MAX_PX, quality = WEBP_QUALITY) {
+async function compressToWebP(blob, maxPx = Infinity, quality = WEBP_QUALITY) {
   const bitmap = await createImageBitmap(blob);
   const srcMax = Math.max(bitmap.width, bitmap.height);
 
   try {
-    // Atalho sem perda: fonte já é WebP, já cabe no cap de pixels e no
+    // Atalho sem perda: fonte raster suportada cabe no limite solicitado e no
     // orçamento. Re-encodar aqui seria perda geracional pura — a imagem
     // passaria por uma segunda compressão com lossy sobre lossy, sem ganhar
     // nada em bytes.
-    if (blob.type === "image/webp" && srcMax <= maxPx && blob.size <= MAP_BYTES_BUDGET) {
+    if (["image/webp", "image/png", "image/jpeg"].includes(blob.type) && srcMax <= maxPx && blob.size <= MAP_BYTES_BUDGET) {
       console.info(`[mesa-map] Original preservado: ${bitmap.width}x${bitmap.height} WebP, ${_fmtMB(blob.size)}`);
       return blob;
     }
@@ -738,6 +770,7 @@ async function compressToWebP(blob, maxPx = WEBP_MAX_PX, quality = WEBP_QUALITY)
         // Guarda o menor produzido até agora, para o caso de nada caber.
         if (!best || out.blob.size < best.blob.size) best = out;
         if (out.blob.size <= MAP_BYTES_BUDGET) {
+          if (targetMax < srcMax) window.UI?.toast?.(`Mapa ajustado de ${bitmap.width}×${bitmap.height} para ${out.w}×${out.h} para caber no upload.`, { kicker: "// Mapa" });
           const nota = (out.w === srcMax || out.w === bitmap.width) ? "" : ` (origem ${bitmap.width}x${bitmap.height})`;
           console.info(`[mesa-map] Mapa: ${out.w}x${out.h} q${q} ${_fmtMB(out.blob.size)}${nota}`);
           return out.blob;
@@ -885,6 +918,7 @@ async function applyActiveMap(mapEntry) {
 
 function clearActiveMap() {
   if (!_requireMapMaster("limpar o mapa")) return;
+  mesaLocalMapLoadGeneration++; setMesaMapLoading(false);
   if (mesaMapState.activeMapUrl) {
     URL.revokeObjectURL(mesaMapState.activeMapUrl);
   }
@@ -1501,6 +1535,7 @@ function _applySceneMapRef(ref) {
  * cena dela, e volta quando ela voltar.
  */
 async function _trocarMapaLocalDaCena() {
+  mesaLocalMapLoadGeneration++; setMesaMapLoading(false);
   if (mesaMapState.activeMapUrl && String(mesaMapState.activeMapUrl).startsWith("blob:")) {
     URL.revokeObjectURL(mesaMapState.activeMapUrl);
   }
@@ -1660,6 +1695,7 @@ function bindMapInteractions() {
     // primeiro dedo tinha comecado sao DESCARTADOS, nao gravados pela metade.
     window.mesaAbortDrawingGesture?.();
     window.mesaAbortSelectionGesture?.();
+    if (typeof cancelTokenDrag === "function") cancelTokenDrag();
     dragging = false;
     _panPointerId = null;
     const centro = _centroDosDedos();
@@ -2173,7 +2209,11 @@ async function _reassembleAndApply(buffer) {
     return;
   }
 
-  const blob = new Blob(buffer.chunks, { type: "image/webp" });
+  const raw = new Blob(buffer.chunks);
+  const header = new Uint8Array(await raw.slice(0, 12).arrayBuffer());
+  const type = header[0] === 0x89 && header[1] === 0x50 ? "image/png"
+    : header[0] === 0xff && header[1] === 0xd8 ? "image/jpeg" : "image/webp";
+  const blob = new Blob([raw], { type });
 
   const mapEntry = {
     id:        `cached-${buffer.hash.slice(0, 12)}`,
@@ -2353,6 +2393,7 @@ function toggleMapSettings() {
   const isOpen = !panel.hidden;
   panel.hidden = isOpen;
   if (isOpen && typeof closeMesaVisionEditor === "function") closeMesaVisionEditor();
+  if (isOpen) window.MesaGridEditor?.reset();
   if (btn) {
     btn.setAttribute("aria-expanded", isOpen ? "false" : "true");
     btn.classList.toggle("is-active", !isOpen);
@@ -2364,11 +2405,7 @@ function toggleMapSettings() {
 
 /* ── BIBLIOTECA DE MAPAS (Fase 3 — UI local) ────────────────── */
 
-/**
- * Blob URLs temporários para thumbnails da biblioteca.
- * Revogados quando o painel é fechado ou o mapa é deletado.
- */
-const _mapLibThumbUrls = new Map(); // mapId → blobUrl
+let _mapLibraryRenderRevision = 0;
 
 /**
  * Renderiza a biblioteca de mapas no painel lateral.
@@ -2377,6 +2414,7 @@ const _mapLibThumbUrls = new Map(); // mapId → blobUrl
 async function renderMapLibrary() {
   const container = document.getElementById("mapLibraryList");
   if (!container) return;
+  const revision = ++_mapLibraryRenderRevision;
 
   if (!mesaMapState.db) {
     container.innerHTML =
@@ -2389,7 +2427,7 @@ async function renderMapLibrary() {
 
   let maps;
   try {
-    maps = await listMesaMapsFromDB();
+    maps = await listMesaMapCatalog();
   } catch (err) {
     container.innerHTML =
       '<div class="map-lib-empty">' +
@@ -2399,27 +2437,21 @@ async function renderMapLibrary() {
     return;
   }
 
+  if (revision !== _mapLibraryRenderRevision) return;
+  const allMaps = maps;
+  maps = maps.filter(m => window.MesaMapLibrary?.matches(m.name) ?? true);
   if (!maps.length) {
     container.innerHTML =
       '<div class="map-lib-empty">' +
-      '<strong>Nenhum mapa salvo</strong>' +
-      '<p>Use <strong>Importar</strong> para adicionar imagens \u00e0 sua biblioteca local.</p>' +
+      (allMaps.length ? '<strong>Nenhum resultado</strong><p>Tente outro nome.</p>' : '<strong>Nenhum mapa salvo</strong><p>Use <strong>Importar</strong> para adicionar imagens à sua biblioteca local.</p>') +
       '</div>';
-    return;
   }
-
-  // Revogar thumbs antigos antes de recriar
-  _mapLibThumbUrls.forEach(function(url) { URL.revokeObjectURL(url); });
-  _mapLibThumbUrls.clear();
 
   const activeId = mesaMapState.activeMapId;
 
   const cards = maps.map(function(m) {
-    const thumbUrl = URL.createObjectURL(m.blob);
-    _mapLibThumbUrls.set(m.id, thumbUrl);
-
     const isActive  = m.id === activeId;
-    const sizeKB    = Math.round((m.blob && m.blob.size ? m.blob.size : 0) / 1024);
+    const sizeKB    = Math.round((m.size || 0) / 1024);
     const sizeLabel = sizeKB >= 1024
       ? (sizeKB / 1024).toFixed(1) + " MB"
       : sizeKB + " KB";
@@ -2428,13 +2460,13 @@ async function renderMapLibrary() {
       : "";
 
     const actionBtn = isActive
-      ? '<button type="button" class="mini-btn is-danger" data-lib-action="remove" data-map-id="' + m.id + '">Retirar</button>'
-      : '<button type="button" class="mini-btn is-primary" data-lib-action="set" data-map-id="' + m.id + '">Colocar</button>';
+      ? '<button type="button" class="mini-btn is-danger" data-lib-action="remove" data-map-id="' + _escAttr(m.id) + '">Retirar</button>'
+      : '<button type="button" class="mini-btn is-primary" data-lib-action="set" data-map-id="' + _escAttr(m.id) + '">Colocar</button>';
 
     const activePill = isActive ? '<span class="map-lib-active-pill">Na mesa</span>' : "";
 
-    return '<article class="map-lib-entry' + (isActive ? " is-active" : "") + '" data-map-id="' + m.id + '">' +
-      '<div class="map-lib-thumb" style="background-image:url(\'' + thumbUrl + '\')" aria-hidden="true"></div>' +
+    return '<article class="map-lib-entry' + (isActive ? " is-active" : "") + '" data-map-id="' + _escAttr(m.id) + '">' +
+      '<div class="map-lib-thumb" data-lib-thumb="' + _escAttr(m.id) + '" data-thumb-state="idle" aria-label="Miniatura"></div>' +
       '<div class="map-lib-info">' +
         '<strong class="map-lib-name" title="' + _escAttr(m.name) + '">' + _escHtml(m.name) + '</strong>' +
         '<span class="map-lib-meta">' + sizeLabel + (dateLabel ? " &middot; " + dateLabel : "") + '</span>' +
@@ -2442,15 +2474,16 @@ async function renderMapLibrary() {
       '</div>' +
       '<div class="map-lib-actions">' +
         actionBtn +
-        '<button type="button" class="mini-btn map-lib-delete-btn" data-lib-action="delete" data-map-id="' + m.id + '" title="Excluir da biblioteca">&#215;</button>' +
+        '<button type="button" class="mini-btn map-lib-delete-btn" data-lib-action="delete" data-map-id="' + _escAttr(m.id) + '" title="Excluir da biblioteca">&#215;</button>' +
       '</div>' +
     '</article>';
   });
 
-  container.innerHTML = cards.join("");
+  if (maps.length) container.innerHTML = cards.join("");
+  window.MesaMapLibrary?.observe(allMaps);
 
   // Atualizar label de espaço total
-  var totalBytes = maps.reduce(function(sum, m) { return sum + (m.blob && m.blob.size ? m.blob.size : 0); }, 0);
+  var totalBytes = allMaps.reduce(function(sum, m) { return sum + (m.size || 0); }, 0);
   // Inclui tamanho dos arquivos da pasta conectada no contador
   var cfBytes = connectedFolder.entries.reduce(function(sum, e) { return sum + (e.size || 0); }, 0);
   var storageLabel = document.getElementById("mapLibStorageLabel");
@@ -2459,22 +2492,32 @@ async function renderMapLibrary() {
 
 /** Ativa um mapa da biblioteca como mapa da mesa. */
 async function setActiveMapFromLibrary(mapId) {
+  if (!_requireMapMaster("colocar mapas")) return;
   if (!mesaMapState.db) return;
-  const mapEntry = await loadMesaMapFromDB(mapId);
-  if (!mapEntry) return;
-
+  const generation = ++mesaLocalMapLoadGeneration, sceneId = _currentMesaSceneId();
+  const valid = () => generation === mesaLocalMapLoadGeneration && sceneId === _currentMesaSceneId() && isMaster();
   setMesaMapLoading(true);
   try {
+    const mapEntry = await loadMesaMapFromDB(mapId);
+    if (!mapEntry?.blob) throw new Error("Arquivo ausente na biblioteca.");
+    const probe = await createImageBitmap(mapEntry.blob); probe.close();
+    if (!valid()) return;
     await applyActiveMap(mapEntry);
+    if (!valid()) return;
     mesaMapState.activeEntry = mapEntry;
+    connectedFolder._activePath = ''; renderConnectedFolderUI();
     if (mesaMapState.playersOnline) {
       announceMapToPlayers(mapEntry);
     }
     // R2 + cena oficial (jogadores offline/futuros recebem no boot)
     _ensureActiveMapPersisted();
     await renderMapLibrary();
+  } catch (err) {
+    if (!valid()) return;
+    window.UI?.toast?.("Mapa indisponível. Reimporte o arquivo ou reconecte a pasta.", { kicker: "// Mapa" });
+    console.warn("[mesa-map] Biblioteca:", err);
   } finally {
-    setMesaMapLoading(false);
+    if (generation === mesaLocalMapLoadGeneration) setMesaMapLoading(false);
   }
 }
 
@@ -2489,11 +2532,6 @@ async function deleteMapFromLibrary(mapId) {
   if (!mesaMapState.db) return;
   if (mesaMapState.activeMapId === mapId) {
     clearActiveMap();
-  }
-  const thumbUrl = _mapLibThumbUrls.get(mapId);
-  if (thumbUrl) {
-    URL.revokeObjectURL(thumbUrl);
-    _mapLibThumbUrls.delete(mapId);
   }
   try {
     await deleteMesaMapFromDB(mapId);
@@ -2979,7 +3017,7 @@ async function _pollConnectedFolder(force) {
 
   // Revogar thumbs de entradas que sumiram
   connectedFolder.snapshot.forEach(function(_, path) {
-    if (!newSnap.has(path) && connectedFolder.thumbUrls.has(path)) {
+    if ((!newSnap.has(path) || newSnap.get(path) !== connectedFolder.snapshot.get(path)) && connectedFolder.thumbUrls.has(path)) {
       URL.revokeObjectURL(connectedFolder.thumbUrls.get(path));
       connectedFolder.thumbUrls.delete(path);
     }
@@ -2987,9 +3025,6 @@ async function _pollConnectedFolder(force) {
 
   connectedFolder.snapshot = newSnap;
   connectedFolder.entries  = entries;
-
-  // Gerar thumbnails para entradas novas
-  await _generateMissingThumbs(entries);
 
   renderConnectedFolderUI();
 }
@@ -3047,58 +3082,6 @@ async function _scanDir(dirHandle, prefix) {
   return results;
 }
 
-/**
- * Gera thumbnails (blob: URL) para entradas que ainda nao tem.
- * Limita a leitura paralela para nao travar o I/O.
- */
-async function _generateMissingThumbs(entries) {
-  // Coleta todas as entradas sem thumbnail ainda
-  var missing = entries.filter(function(en) {
-    return !connectedFolder.thumbUrls.has(en.path);
-  });
-  if (missing.length === 0) return;
-
-  // Processa em lotes de 10 em paralelo sem travar o I/O.
-  // NAO chama renderConnectedFolderUI() a cada lote — isso destruiria
-  // o estado open/closed das subpastas (<details>).
-  // Em vez disso, gera todos os blob: URLs em background e depois
-  // faz um unico patch no DOM atualizando so os style.backgroundImage.
-  var BATCH = 10;
-  for (var start = 0; start < missing.length; start += BATCH) {
-    var chunk = missing.slice(start, start + BATCH);
-    await Promise.all(chunk.map(async function(en) {
-      try {
-        var file = await en.handle.getFile();
-        var url  = URL.createObjectURL(file);
-        connectedFolder.thumbUrls.set(en.path, url);
-      } catch (e) { /* ignore */ }
-    }));
-  }
-
-  // Patch cirurgico unico ao final: percorre todos os .map-lib-thumb
-  // ja renderizados e aplica o backgroundImage pelo data-cf-path.
-  // Nao reconstroi o HTML — preserva estado open/closed das subpastas.
-  _patchThumbsInDOM();
-}
-
-/**
- * Atualiza o style.backgroundImage de cada miniatura ja no DOM
- * usando os blob: URLs gerados em _generateMissingThumbs.
- * Operacao segura de chamar a qualquer momento, inclusive com painel oculto.
- */
-function _patchThumbsInDOM() {
-  var container = document.getElementById("vttConnectedFolder");
-  if (!container) return;
-  var thumbEls = container.querySelectorAll(".map-lib-thumb[data-cf-path]");
-  thumbEls.forEach(function(el) {
-    var cfPath = el.getAttribute("data-cf-path");
-    var url    = connectedFolder.thumbUrls.get(cfPath);
-    if (url && !el.style.backgroundImage) {
-      el.style.backgroundImage = "url('" + url + "')";
-    }
-  });
-}
-
 /* ── APLICAR MAPA DA PASTA CONECTADA ────────────────────────── */
 
 /**
@@ -3107,8 +3090,12 @@ function _patchThumbsInDOM() {
  * @param {string} path - caminho relativo dentro da pasta conectada
  */
 async function setMapFromConnectedFolder(path) {
+  if (!_requireMapMaster("colocar mapas")) return;
   var entry = connectedFolder.entries.find(function(e) { return e.path === path; });
-  if (!entry) return;
+  if (!entry) { window.UI?.toast?.('Arquivo ausente. Recarregue ou reconecte a pasta.', { kicker: '// Mapa' }); return; }
+  const generation = ++mesaLocalMapLoadGeneration, sceneId = _currentMesaSceneId(), folder = connectedFolder.handle;
+  const valid = () => generation === mesaLocalMapLoadGeneration && sceneId === _currentMesaSceneId() && folder === connectedFolder.handle && isMaster();
+  setMesaMapLoading(true);
 
   // Feedback visual imediato
   connectedFolder._activePath = path;
@@ -3117,8 +3104,9 @@ async function setMapFromConnectedFolder(path) {
   try {
     var file = await entry.handle.getFile();
     var compressed = await compressToWebP(file);
-    var blobUrl    = URL.createObjectURL(compressed);
     var hash       = await computeBlobHash(compressed);
+    if (!valid()) return;
+    var blobUrl = URL.createObjectURL(compressed);
 
     // Limpar mapa IDB ativo (se havia)
     if (mesaMapState.activeMapUrl) {
@@ -3160,9 +3148,13 @@ async function setMapFromConnectedFolder(path) {
     // Re-renderizar biblioteca IDB (para desmarcar is-active)
     renderMapLibrary();
   } catch (err) {
+    if (!valid()) return;
     console.warn("[mesa-map] setMapFromConnectedFolder:", err);
+    window.UI?.toast?.('Arquivo indisponível. Recarregue ou reconecte a pasta.', { kicker: '// Mapa' });
     connectedFolder._activePath = "";
     renderConnectedFolderUI();
+  } finally {
+    if (generation === mesaLocalMapLoadGeneration) setMesaMapLoading(false);
   }
 }
 
@@ -3284,14 +3276,16 @@ function renderConnectedFolderUI() {
       '</div>' +
     '</div>';
 
+  const matching = connectedFolder.entries.filter(e => window.MesaMapLibrary?.matches(e.fullName || e.path) ?? true);
   var listHtml = entryCount === 0
     ? '<div class="map-lib-empty">' +
         '<strong>Pasta vazia</strong>' +
         '<p>Adicione imagens na pasta para elas aparecerem aqui.</p>' +
       '</div>'
-    : _renderConnectedCards(connectedFolder.entries, connectedFolder._activePath);
+    : (matching.length ? _renderConnectedCards(matching, connectedFolder._activePath) : '<div class="map-lib-empty"><strong>Nenhum resultado</strong><p>Tente outro nome ou caminho.</p></div>');
 
   container.innerHTML = headerHtml + listHtml;
+  window.MesaMapLibrary?.observe();
 }
 
 /**
@@ -3340,7 +3334,7 @@ function _renderConnectedCards(entries, activePath) {
     }
 
     html +=
-      '<details class="map-lib-folder-group"' + (hasActive ? " open" : "") + ">" +
+      '<details class="map-lib-folder-group"' + (hasActive || document.getElementById("mesaMapSearch")?.value.trim() ? " open" : "") + ">" +
         '<summary class="map-lib-folder-summary">' +
           '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" ' +
                'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" ' +
@@ -3374,7 +3368,7 @@ function _renderCFCard(en, activePath) {
 
   return (
     '<div class="map-lib-entry' + (isAct ? " is-active" : "") + '">' +
-      '<div class="map-lib-thumb" data-cf-path="' + _escAttr(en.path) + '" style="' + bgStyle + '"></div>' +
+      '<div class="map-lib-thumb" data-cf-path="' + _escAttr(en.path) + '" data-thumb-state="' + (thumbUrl ? 'ready' : 'idle') + '" style="' + bgStyle + '"></div>' +
       '<div class="map-lib-info">' +
         '<span class="map-lib-name">' + _escHtml(dispName) + "</span>" +
         '<span class="map-lib-meta">' + sizeStr +

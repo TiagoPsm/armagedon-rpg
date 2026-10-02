@@ -2,6 +2,10 @@ const SUGGESTIONS_KEY = "tc_suggestions_posts";
 
 let currentSession = null;
 let editingSuggestionId = null;
+let suggestionsSaving = false;
+let suggestionsDeleting = false;
+let suggestionsLoadRequest = 0;
+let suggestionsLoadState = "ready";
 let suggestionsCache = [];
 let suggestionsRealtimeBound = false;
 
@@ -88,6 +92,8 @@ function bindSuggestionsRealtime() {
 }
 
 function setupSuggestionsPage() {
+  document.getElementById("suggestionFormError")?.setAttribute("role", "alert");
+  document.getElementById("suggestionFormStatus")?.setAttribute("role", "status");
   const suggestionsUser = document.getElementById("suggestionsUser");
   const suggestionsRoleLabel = document.getElementById("suggestionsRoleLabel");
   const suggestionsHeaderRole = document.getElementById("suggestionsHeaderRole");
@@ -132,12 +138,11 @@ async function loadSuggestions(options = {}) {
 
   if (AUTH.isBackendEnabled()) {
     if (preferCache) {
-      suggestionsCache = readSuggestionsLocal();
-      return suggestionsCache;
+      return readSuggestionsLocal();
     }
 
     const remoteSuggestions = await APP.listSuggestions();
-    suggestionsCache = remoteSuggestions
+    return remoteSuggestions
       .map(suggestion =>
         normalizeSuggestion({
           id: suggestion.id,
@@ -150,12 +155,9 @@ async function loadSuggestions(options = {}) {
         })
       )
       .sort((left, right) => right.updatedAt - left.updatedAt);
-    writeSuggestionsLocal(suggestionsCache);
-    return suggestionsCache;
   }
 
-  suggestionsCache = readSuggestionsLocal();
-  return suggestionsCache;
+  return readSuggestionsLocal();
 }
 
 function normalizeSuggestion(suggestion) {
@@ -179,7 +181,90 @@ function createSuggestionId() {
 }
 
 async function renderSuggestions(options = {}) {
-  const suggestions = await loadSuggestions(options);
+  const requestId = ++suggestionsLoadRequest;
+  const remote = AUTH.isBackendEnabled() && !options.preferCache;
+  if (remote) setSuggestionsLoadState("loading");
+  try {
+    const loadedSuggestions = await loadSuggestions(options);
+    if (requestId !== suggestionsLoadRequest) return;
+    suggestionsCache = loadedSuggestions;
+    if (remote) {
+      try { writeSuggestionsLocal(suggestionsCache); } catch {}
+    }
+    setSuggestionsLoadState("ready");
+    renderSuggestionsFromCache();
+  } catch (error) {
+    if (requestId !== suggestionsLoadRequest) return;
+    setSuggestionsLoadState("error");
+    throw error;
+  }
+}
+
+function setSuggestionsLoadState(state) {
+  // Invalidate every read already in flight when a mutation becomes uncertain;
+  // neither its success nor its rejection can replace the verification cue.
+  if (state === "unconfirmed") suggestionsLoadRequest++;
+  suggestionsLoadState = state;
+  const list = document.getElementById("suggestionsList");
+  if (!list) return;
+  let notice = document.getElementById("suggestionsLoadStatus");
+  if (!notice) {
+    notice = document.createElement("p");
+    notice.id = "suggestionsLoadStatus";
+    notice.className = "rules-form-status";
+    notice.setAttribute("role", "status");
+    notice.setAttribute("aria-live", "polite");
+    list.before(notice);
+  }
+  list.setAttribute("aria-busy", state === "loading" ? "true" : "false");
+  notice.hidden = state === "ready";
+  const cached = suggestionsCache.length > 0;
+  notice.replaceChildren(document.createTextNode(state === "loading"
+    ? (cached ? "Atualizando sugestões; a versão anterior continua disponível." : "Carregando sugestões…")
+    : state === "unconfirmed" ? "Confira a lista para confirmar o resultado da ação antes de tentar novamente. "
+    : (cached ? "Não foi possível atualizar as sugestões. A lista exibida pode estar desatualizada. " : "Não foi possível carregar as sugestões. ")));
+  if (state === "error" || state === "unconfirmed") {
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.className = "rule-btn";
+    retry.textContent = state === "unconfirmed" ? "Atualizar lista" : "Tentar novamente";
+    retry.addEventListener("click", () => { void renderSuggestions().catch(() => {}); });
+    notice.append(retry);
+  }
+  if (!cached && state !== "ready") {
+    list.innerHTML = state === "loading" ? '<p class="empty-msg">Aguarde o carregamento.</p>' : "";
+    document.getElementById("suggestionCount")?.replaceChildren(document.createTextNode("—"));
+    document.getElementById("suggestionsUpdatedText")?.replaceChildren(document.createTextNode("Lista ainda não confirmada."));
+  }
+}
+
+function syncSuggestionsMutationControls() {
+  const busy = suggestionsSaving || suggestionsDeleting;
+  ["saveSuggestionBtn", "cancelSuggestionEditBtn"].forEach(id => { const button = document.getElementById(id); if (button) button.disabled = busy; });
+  ["suggestionTitle", "suggestionCategory", "suggestionContent"].forEach(id => { const field = document.getElementById(id); if (field) field.readOnly = busy; });
+  document.querySelectorAll("#suggestionsList .rule-actions button").forEach(button => { button.disabled = busy; });
+  const save = document.getElementById("saveSuggestionBtn");
+  if (suggestionsSaving) save?.setAttribute("aria-busy", "true");
+  else save?.removeAttribute("aria-busy");
+}
+
+function suggestionWriteErrorMessage(error) {
+  if ([401, 403].includes(Number(error?.status))) return "Você não tem autorização para salvar esta sugestão. Entre novamente com sua conta; seu rascunho foi mantido.";
+  if (Number(error?.status) === 400) return "Não foi possível salvar. Revise o título e o conteúdo; seu rascunho foi mantido.";
+  if (Number(error?.status) === 409) return "Esta sugestão mudou enquanto você a editava. Atualize a lista e confira a versão publicada antes de tentar novamente; seu rascunho foi mantido.";
+  return "Não foi possível confirmar o salvamento. Seu rascunho foi mantido. Atualize a lista e confira se a sugestão foi salva antes de tentar novamente.";
+}
+
+function showSuggestionWriteError(error) {
+  const notice = document.getElementById("suggestionFormError");
+  if (notice) notice.textContent = suggestionWriteErrorMessage(error);
+  const status = document.getElementById("suggestionFormStatus");
+  if (status) status.textContent = "";
+  if (AUTH.isBackendEnabled() && ![400, 401, 403].includes(Number(error?.status))) setSuggestionsLoadState("unconfirmed");
+}
+
+function renderSuggestionsFromCache() {
+  const suggestions = suggestionsCache;
   const suggestionCount = document.getElementById("suggestionCount");
   const lastSuggestionUpdate = document.getElementById("lastSuggestionUpdate");
   const suggestionsUpdatedText = document.getElementById("suggestionsUpdatedText");
@@ -199,7 +284,8 @@ async function renderSuggestions(options = {}) {
   if (!suggestionsList) return;
 
   if (!suggestions.length) {
-    suggestionsList.innerHTML = '<p class="empty-msg">Nenhuma sugestao enviada.</p>';
+    if (suggestionsLoadState !== "ready") { setSuggestionsLoadState(suggestionsLoadState); return; }
+    suggestionsList.innerHTML = '<p class="empty-msg">Nenhuma sugestão enviada. Use Nova sugestão para registrar a primeira ideia.</p>';
     return;
   }
 
@@ -225,6 +311,7 @@ async function renderSuggestions(options = {}) {
       `
     )
     .join("");
+  syncSuggestionsMutationControls();
 }
 
 /**
@@ -249,12 +336,13 @@ function renderSuggestionActions(suggestion, isMaster) {
   return `
     <div class="rule-actions">
       ${editar}
-      <button class="rule-btn rule-btn-danger" onclick="deleteSuggestion('${jsEsc(suggestion.id)}')">Excluir</button>
+      <button class="rule-btn rule-btn-danger" data-delete-suggestion="${esc(suggestion.id)}" onclick="deleteSuggestion('${jsEsc(suggestion.id)}')">Excluir</button>
     </div>
   `;
 }
 
-function resetSuggestionForm() {
+function resetSuggestionForm(force = false) {
+  if ((suggestionsSaving || suggestionsDeleting) && !force) return;
   editingSuggestionId = null;
 
   setFormValue("suggestionTitle", "");
@@ -282,7 +370,7 @@ function resetSuggestionForm() {
 }
 
 function editSuggestion(suggestionId) {
-  if (currentSession.role !== "master") return;
+  if (suggestionsSaving || suggestionsDeleting || currentSession.role !== "master") return;
 
   const suggestion = suggestionsCache.find(candidate => candidate.id === suggestionId);
   if (!suggestion) return;
@@ -314,6 +402,17 @@ function editSuggestion(suggestionId) {
 }
 
 async function saveSuggestion() {
+  if (suggestionsSaving || suggestionsDeleting) return;
+  suggestionsSaving = true;
+  syncSuggestionsMutationControls();
+  try { await saveSuggestionOnce(); }
+  catch (error) { showSuggestionWriteError(error); }
+  finally {
+    suggestionsSaving = false;
+    syncSuggestionsMutationControls();
+  }
+}
+async function saveSuggestionOnce() {
   const wasEditing = Boolean(editingSuggestionId);
   if (wasEditing && currentSession.role !== "master") return;
 
@@ -341,6 +440,8 @@ async function saveSuggestion() {
     return;
   }
 
+  if (suggestionFormStatus) suggestionFormStatus.textContent = "Salvando sugestão…";
+
   if (AUTH.isBackendEnabled()) {
     try {
       if (editingSuggestionId) {
@@ -349,7 +450,7 @@ async function saveSuggestion() {
         await APP.createSuggestion({ title, category, description });
       }
     } catch (error) {
-      if (suggestionFormError) suggestionFormError.textContent = error?.message || "Falha ao salvar a sugestao.";
+      showSuggestionWriteError(error);
       return;
     }
   } else {
@@ -384,8 +485,9 @@ async function saveSuggestion() {
     writeSuggestionsLocal(suggestions);
   }
 
-  await renderSuggestions();
-  resetSuggestionForm();
+  resetSuggestionForm(true);
+  try { await renderSuggestions(); }
+  catch { if (suggestionFormStatus) suggestionFormStatus.textContent = 'Sugestão salva. Não foi possível atualizar a lista; recarregue a página.'; return; }
 
   if (suggestionFormStatus) {
     suggestionFormStatus.textContent = wasEditing
@@ -396,6 +498,7 @@ async function saveSuggestion() {
 }
 
 async function deleteSuggestion(suggestionId) {
+  if (suggestionsSaving || suggestionsDeleting) return;
   const suggestion = suggestionsCache.find(candidate => candidate.id === suggestionId);
   if (!suggestion) return;
 
@@ -407,27 +510,39 @@ async function deleteSuggestion(suggestionId) {
     if (!author || !me || author !== me) return;
   }
 
-  const confirmed = await UI.confirm(`Excluir a sugestao "${suggestion.title || "Sugestao sem titulo"}"?`, {
-    title: "Excluir sugestao",
-    kicker: "// Melhorias do site",
-    confirmLabel: "Excluir",
-    cancelLabel: "Cancelar",
-    variant: "danger"
-  });
+  suggestionsDeleting = true;
+  syncSuggestionsMutationControls();
+  let deleted = false;
+  const deleteButton = [...document.querySelectorAll("[data-delete-suggestion]")].find(button => button.dataset.deleteSuggestion === suggestionId);
+  try {
+    const confirmed = await UI.confirm(`Excluir a sugestao "${suggestion.title || "Sugestao sem titulo"}"?`, {
+      title: "Excluir sugestao",
+      kicker: "// Melhorias do site",
+      confirmLabel: "Excluir",
+      cancelLabel: "Cancelar",
+      variant: "danger"
+    });
+    if (!confirmed) return;
+    if (deleteButton) deleteButton.textContent = "Excluindo…";
+    if (AUTH.isBackendEnabled()) await APP.deleteSuggestion(suggestionId);
+    else writeSuggestionsLocal(suggestionsCache.filter(candidate => candidate.id !== suggestionId));
+    deleted = true;
+    suggestionsCache = suggestionsCache.filter(candidate => candidate.id !== suggestionId);
+    renderSuggestionsFromCache();
 
-  if (!confirmed) return;
+    if (editingSuggestionId === suggestionId) resetSuggestionForm(true);
 
-  if (AUTH.isBackendEnabled()) {
-    await APP.deleteSuggestion(suggestionId);
-  } else {
-    writeSuggestionsLocal(suggestionsCache.filter(candidate => candidate.id !== suggestionId));
+    await renderSuggestions();
+  } catch (error) {
+    if (!deleted && AUTH.isBackendEnabled()) setSuggestionsLoadState("unconfirmed");
+    UI.toast(deleted
+      ? "Sugestão excluída. Não foi possível atualizar a lista; tente novamente na lista."
+      : "Não foi possível confirmar a exclusão. Atualize a lista e confira se a sugestão ainda existe antes de tentar novamente.", { kicker: "// Sugestões" });
+  } finally {
+    if (deleteButton?.isConnected) deleteButton.textContent = "Excluir";
+    suggestionsDeleting = false;
+    syncSuggestionsMutationControls();
   }
-
-  if (editingSuggestionId === suggestionId) {
-    resetSuggestionForm();
-  }
-
-  await renderSuggestions();
 }
 
 function getFormValue(id) {

@@ -94,6 +94,7 @@ function clearMultiSelection() {
   document.querySelectorAll(".mesa-token.is-multi-selected")
     .forEach(el => el.classList.remove("is-multi-selected"));
   _hideSelectionBox();
+  window.MesaDecorations?.render();
 }
 
 // ── Selection box ────────────────────────────────────────────
@@ -115,6 +116,7 @@ function _showSelectionBox(b) {
 }
 
 function _refreshSelectionBox() {
+  window.MesaDecorations?.render();
   const b = _computeSelectionBounds();
   if (b && (_selectedTokenIds.size > 0 || _selectedStrokeIds.size > 0)) {
     _showSelectionBox(b);
@@ -203,7 +205,7 @@ function _computeSelectionBounds() {
     const strokes = getDrawingsSnapshot();
     _selectedStrokeIds.forEach(id => {
       const s = strokes.find(s => String(s.id) === String(id));
-      if (s) expand(_strokeBounds(s));
+      if (s && !s.locked) expand(_strokeBounds(s));
     });
   }
 
@@ -249,6 +251,7 @@ function _strokesInBand(screenRect) {
 
   return getDrawingsSnapshot()
     .filter(s => {
+      if (s.template || s.locked) return false;
       const b = _strokeBounds(s);
       if (!b) return false;
       const sx1 = ir.left + (b.x1 / 100) * ir.width;
@@ -275,6 +278,7 @@ function _tryClickSelectStroke(clientX, clientY) {
 
   let best = null, bestArea = Infinity;
   getDrawingsSnapshot().forEach(s => {
+    if (s.template || s.locked) return;
     const b = _strokeBounds(s);
     if (!b) return;
     if (cpx < b.x1 || cpx > b.x2 || cpy < b.y1 || cpy > b.y2) return;
@@ -314,7 +318,7 @@ function _computeMovableBounds() {
     const strokes = getDrawingsSnapshot();
     _selectedStrokeIds.forEach(id => {
       const s = strokes.find(s => String(s.id) === String(id));
-      if (s) expand(_strokeBounds(s));
+      if (s && _canEraseStroke(s)) expand(_strokeBounds(s));
     });
   }
 
@@ -352,7 +356,7 @@ function _applyMoveDelta(dxPct, dyPct) {
   const dx = dxPct / 100, dy = dyPct / 100;
   const strokes = getDrawingsSnapshot();
   strokes.forEach(s => {
-    if (!_selectedStrokeIds.has(String(s.id))) return;
+    if (!_selectedStrokeIds.has(String(s.id)) || !_canEraseStroke(s)) return;
     // Pencil: move pontos [[px,py],...]
     if (s.points) {
       s.points.forEach(p => { p[0] += dx; p[1] += dy; });
@@ -397,7 +401,7 @@ function _applyResizeDelta(handle, newBounds, oldBounds) {
   const ax = anchorX / 100, ay = anchorY / 100;
   const strokes = getDrawingsSnapshot();
   strokes.forEach(s => {
-    if (!_selectedStrokeIds.has(String(s.id))) return;
+    if (!_selectedStrokeIds.has(String(s.id)) || !_canEraseStroke(s)) return;
     if (s.points) {
       s.points.forEach(p => {
         p[0] = ax + (p[0] - ax) * scaleX;
@@ -548,6 +552,14 @@ function initMesaSelect() {
       if (typeof mesaVisionActive === "function" && mesaVisionActive()) return;
       if (e.button !== 0 || !e.isPrimary || _interactionMode !== "select") return;
       if (e.target.classList.contains("sel-handle")) return;
+      if (_selectedTokenIds.size === 1 && _selectedStrokeIds.size === 0) {
+        const token = findToken([..._selectedTokenIds][0]);
+        const element = token && document.querySelector(`.mesa-token[data-token-id="${CSS.escape(token.id)}"]`);
+        if (!element || !canMoveTokens(token)) return;
+        e.preventDefault(); e.stopPropagation();
+        beginTokenDrag({ mode: "dom", tokenElement: element, tokenId: token.id }, token, e.clientX, e.clientY, e.pointerId);
+        return;
+      }
       // preventDefault tambem SUPRIME o mousedown de compatibilidade — sem
       // isso o pan do palco (mesa-map.js) comecava junto com o arrasto.
       e.preventDefault();

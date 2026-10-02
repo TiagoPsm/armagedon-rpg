@@ -3,7 +3,6 @@
     root: null,
     resolve: null,
     lastFocused: null,
-    focusTimer: 0,
     type: "confirm"
   };
   const managedModals = new Map();
@@ -122,21 +121,12 @@
         addResourceHint("prefetch", "ficha.html", "document");
       }
     };
-    const preloadFichaAssets = () => {
-      [
-        "css/ficha-page.bundle.css?v=2026-05-12-ficha-fast-1",
-        "js/ficha-page.bundle.js?v=2026-05-12-ficha-fast-1",
-        "css/ficha-base.css?v=2026-04-24-split-1",
-        "css/ficha-inventory-memory.css?v=2026-05-12-passives-1",
-        "js/ficha-core.js?v=2026-05-12-passives-1",
-        "js/ficha-inventory.js?v=2026-05-12-item-quantity-1"
-      ].forEach(href => addResourceHint("prefetch", href, href.split("?")[0].endsWith(".css") ? "style" : "script"));
-    };
-
+    // Asset versions come from ficha.html/the build; never prefetch hard-coded
+    // old bundles or modules which cannot be reused by the current page.
     fichaLinks.forEach(link => {
-      link.addEventListener("pointerenter", preloadFichaAssets, { once: true, passive: true });
-      link.addEventListener("focus", preloadFichaAssets, { once: true });
-      link.addEventListener("touchstart", preloadFichaAssets, { once: true, passive: true });
+      link.addEventListener("pointerenter", prefetchFichaDocument, { once: true, passive: true });
+      link.addEventListener("focus", prefetchFichaDocument, { once: true });
+      link.addEventListener("touchstart", prefetchFichaDocument, { once: true, passive: true });
     });
 
     if ("requestIdleCallback" in window) {
@@ -147,6 +137,7 @@
   }
 
   function onKeyDown(event) {
+    if (event.defaultPrevented || event.isComposing || !isCentralModalOpen()) return;
     if (event.key === "Escape") {
       event.preventDefault();
       close(getDismissResult());
@@ -172,6 +163,14 @@
     return Boolean(state.root?.classList.contains("is-open"));
   }
 
+  function getTopManagedModal() {
+    let top = null;
+    for (const root of managedModals.keys()) {
+      if (root.isConnected && !root.hidden && root.getAttribute("aria-hidden") !== "true") top = root;
+    }
+    return top;
+  }
+
   function lockModalBody() {
     bodyLockCount += 1;
     document.body.classList.add("modal-open");
@@ -184,16 +183,19 @@
     }
   }
 
+  function isAvailableForFocus(element) {
+    if (!(element instanceof HTMLElement) || !element.isConnected) return false;
+    if (element.closest('[hidden], [inert], [aria-hidden="true"]') || element.matches(":disabled")) return false;
+    const style = window.getComputedStyle(element);
+    return element.getClientRects().length > 0 && style.display !== "none" && style.visibility !== "hidden" && style.visibility !== "collapse";
+  }
+
   function getFocusableElements(root) {
     if (!root) return [];
     return [...root.querySelectorAll(
-      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    )].filter(element => {
-      if (!(element instanceof HTMLElement)) return false;
-      if (element.hidden || element.getAttribute("aria-hidden") === "true") return false;
-      const style = window.getComputedStyle(element);
-      return style.display !== "none" && style.visibility !== "hidden";
-    });
+      'a[href], button, textarea, input, select, [tabindex], [contenteditable="true"]'
+    )].filter(element => isAvailableForFocus(element) && element.tabIndex >= 0)
+      .sort((left, right) => (left.tabIndex || Number.MAX_SAFE_INTEGER) - (right.tabIndex || Number.MAX_SAFE_INTEGER));
   }
 
   function trapModalFocus(event) {
@@ -263,6 +265,8 @@
     confirmButton.style.display = isSelect ? "none" : "";
     optionList.hidden = !isSelect;
     message.style.display = options.message ? "" : "none";
+    if (options.message) panel.setAttribute("aria-describedby", "uiModalMessage");
+    else panel.removeAttribute("aria-describedby");
 
     if (isSelect) {
       optionList.innerHTML = (options.options || [])
@@ -301,19 +305,13 @@
       const focusInitialElement = () => {
         if (!root.classList.contains("is-open") || state.root !== root) return;
         if (isSelect) {
-          optionList.querySelector(".ui-modal-option.is-selected, .ui-modal-option")?.focus();
+          (optionList.querySelector(".ui-modal-option.is-selected, .ui-modal-option") || cancelButton).focus();
           return;
         }
         (isAlert ? confirmButton : cancelButton).focus();
       };
 
       focusInitialElement();
-      window.requestAnimationFrame(focusInitialElement);
-      if (state.focusTimer) window.clearTimeout(state.focusTimer);
-      state.focusTimer = window.setTimeout(() => {
-        state.focusTimer = 0;
-        focusInitialElement();
-      }, 60);
     });
   }
 
@@ -325,20 +323,13 @@
 
     state.root.classList.remove("is-open");
     state.root.setAttribute("aria-hidden", "true");
-    if (state.focusTimer) {
-      window.clearTimeout(state.focusTimer);
-      state.focusTimer = 0;
-    }
     unlockModalBody();
     document.removeEventListener("keydown", onKeyDown);
     document.removeEventListener("focusin", onFocusIn);
 
-    const focusTarget = state.lastFocused instanceof HTMLElement ? state.lastFocused : null;
+    const focusTarget = isAvailableForFocus(state.lastFocused) ? state.lastFocused : null;
     if (focusTarget) {
       focusTarget.focus();
-      window.requestAnimationFrame(() => {
-        if (document.activeElement !== focusTarget) focusTarget.focus();
-      });
     }
 
     resolve(result);
@@ -350,7 +341,10 @@
     if (toastRoot) return toastRoot;
     toastRoot = document.createElement("div");
     toastRoot.className = "ui-toast-root";
+    toastRoot.setAttribute("role", "status");
     toastRoot.setAttribute("aria-live", "polite");
+    toastRoot.setAttribute("aria-atomic", "false");
+    toastRoot.setAttribute("aria-relevant", "additions text");
     document.body.appendChild(toastRoot);
     return toastRoot;
   }
@@ -413,7 +407,7 @@
       };
 
       controller.onKeyDown = event => {
-        if (root.hidden || !managedModals.has(root) || isCentralModalOpen()) return;
+        if (event.defaultPrevented || event.isComposing || getTopManagedModal() !== root || isCentralModalOpen()) return;
         if (event.key === "Escape" && options.closeOnEscape !== false) {
           event.preventDefault();
           if (controller.onDismiss) controller.onDismiss("escape");
@@ -452,7 +446,7 @@
       };
 
       controller.onFocusIn = event => {
-        if (root.hidden || !managedModals.has(root) || isCentralModalOpen()) return;
+        if (getTopManagedModal() !== root || isCentralModalOpen()) return;
         if (panel.contains(event.target)) return;
 
         const focusable = getFocusableElements(panel);
@@ -466,7 +460,11 @@
       lockModalBody();
 
       const initialFocus = options.initialFocus instanceof HTMLElement ? options.initialFocus : panel;
-      window.requestAnimationFrame(() => initialFocus.focus());
+      window.requestAnimationFrame(() => {
+        if (managedModals.get(root) !== controller || getTopManagedModal() !== root || isCentralModalOpen()) return;
+        if (panel.contains(document.activeElement)) return;
+        (panel.contains(initialFocus) && isAvailableForFocus(initialFocus) ? initialFocus : panel).focus();
+      });
       return controller;
     },
 
@@ -474,6 +472,8 @@
       if (!(root instanceof HTMLElement)) return;
       const controller = managedModals.get(root);
       if (!controller) return;
+      // Existing callers may set hidden before deactivating the controller.
+      const wasTop = [...managedModals.keys()].pop() === root;
 
       document.removeEventListener("keydown", controller.onKeyDown);
       document.removeEventListener("focusin", controller.onFocusIn);
@@ -481,7 +481,7 @@
       root.setAttribute("aria-hidden", "true");
       unlockModalBody();
 
-      if (options.restoreFocus !== false && controller.lastFocused instanceof HTMLElement) {
+      if (options.restoreFocus !== false && wasTop && !isCentralModalOpen() && isAvailableForFocus(controller.lastFocused)) {
         controller.lastFocused.focus();
       }
     },
@@ -525,12 +525,14 @@
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       ensureModal();
+      ensureToastRoot();
       initCursorGlow();
       initFichaPrefetch();
       bindSoulNotifications();
     }, { once: true });
   } else {
     ensureModal();
+    ensureToastRoot();
     initCursorGlow();
     initFichaPrefetch();
     bindSoulNotifications();

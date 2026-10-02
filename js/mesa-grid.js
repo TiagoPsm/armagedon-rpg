@@ -24,21 +24,7 @@
 
 const MESA_GRID_UPDATE_TYPE = "mesa:grid:update";
 
-const MESA_GRID_DEFAULTS = Object.freeze({
-  enabled: false,
-  snap: false,
-  cellFrac: 0.05,      // 5% da largura do mapa ≈ 20 colunas
-  offsetXFrac: 0,      // deslocamento dentro da célula (0–1)
-  offsetYFrac: 0,
-  color: "#ffffff",
-  opacity: 0.18,
-  /* Escala da cena (Etapa 131): quanto vale UMA celula no mundo do jogo, em
-     metros. Era uma constante de 1,5 m dentro da regua — o que mentia em toda
-     cena que nao fosse um combate corpo a corpo: o mesmo mapa servia para uma
-     carruagem e para um vale, e a regua respondia a mesma coisa nos dois.
-     Mora na grade porque e a MESMA unidade: a celula e o que a regua conta. */
-  metersPerCell: 1.5
-});
+const MESA_GRID_DEFAULTS = MesaGridRules.defaults;
 const MESA_GRID_METERS_MIN = 0.1;
 const MESA_GRID_METERS_MAX = 5000;
 
@@ -50,28 +36,13 @@ let _gridState    = { ...MESA_GRID_DEFAULTS };
 let _gridCanvasEl = null;
 let _gridCtx      = null;
 let _gridStageEl  = null;
+let _gridPreview = null;
+function previewMesaGrid(grid) { _gridPreview = grid ? normalizeMesaGridState(grid) : null; renderMesaGrid(); }
 
 /* ── NORMALIZAÇÃO (mesmos limites do Worker) ────────────────── */
 
 function normalizeMesaGridState(grid) {
-  if (!grid || typeof grid !== "object") return { ...MESA_GRID_DEFAULTS };
-  const clampNum = (value, min, max, fallback) => {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return fallback;
-    return Math.min(max, Math.max(min, n));
-  };
-  return {
-    enabled: grid.enabled === true,
-    snap: grid.snap === true,
-    cellFrac: Math.round(clampNum(grid.cellFrac, MESA_GRID_CELL_MIN, MESA_GRID_CELL_MAX, MESA_GRID_DEFAULTS.cellFrac) * 10000) / 10000,
-    offsetXFrac: Math.round(clampNum(grid.offsetXFrac, 0, 1, 0) * 10000) / 10000,
-    offsetYFrac: Math.round(clampNum(grid.offsetYFrac, 0, 1, 0) * 10000) / 10000,
-    color: /^#[0-9a-f]{3,8}$/i.test(String(grid.color || "")) ? String(grid.color) : MESA_GRID_DEFAULTS.color,
-    opacity: Math.round(clampNum(grid.opacity, 0.05, 0.8, MESA_GRID_DEFAULTS.opacity) * 100) / 100,
-    // Cena antiga nao tem o campo: cai nos 1,5 m historicos, e nada muda.
-    metersPerCell: Math.round(clampNum(grid.metersPerCell, MESA_GRID_METERS_MIN, MESA_GRID_METERS_MAX,
-      MESA_GRID_DEFAULTS.metersPerCell) * 100) / 100
-  };
+  return MesaGridRules.normalize(grid);
 }
 
 /* ── ESTADO / CONTRATO DA CENA ──────────────────────────────── */
@@ -97,6 +68,7 @@ function getMesaGridScenePayload() {
 // assentar no boot — é o momento certo de revelar o grupo pro mestre
 // (no DOMContentLoaded do initMesaGrid o isMaster() ainda é falso).
 function applyMesaSceneGridFromSnapshot(grid) {
+  window.MesaGridEditor?.reset();
   if (grid !== undefined) {
     _gridState = normalizeMesaGridState(grid);
     renderMesaGrid();
@@ -106,6 +78,7 @@ function applyMesaSceneGridFromSnapshot(grid) {
 
 // Delta realtime "mesa:grid:update" (mestre → todos, via mesa-core.js).
 function setMesaGridFromRemote(grid) {
+  window.MesaGridEditor?.reset();
   _gridState = normalizeMesaGridState(grid);
   renderMesaGrid();
   _syncGridSettingsUI();
@@ -119,8 +92,9 @@ function _isGridMaster() {
 
 // Toda mudança do mestre passa por aqui: aplica, redesenha, transmite o
 // estado completo via DO e persiste a cena oficial (debounced no core).
-function updateMesaGrid(patch) {
+function updateMesaGrid(patch, { conform = true } = {}) {
   if (!_isGridMaster()) return;
+  window.MesaGridEditor?.reset();
   _gridState = normalizeMesaGridState({ ..._gridState, ...patch });
   renderMesaGrid();
   _syncGridSettingsUI();
@@ -133,7 +107,7 @@ function updateMesaGrid(patch) {
 
   // Grade mudou (ligou snap, trocou célula): re-conforma todos os tokens
   // para manter a mesa uniforme (tamanhos NxN, ninguém fora da grade).
-  _conformAllTokensToGrid();
+  if (conform) _conformAllTokensToGrid();
 }
 
 /* ── RENDER ─────────────────────────────────────────────────── */
@@ -165,6 +139,7 @@ function _gridRenderScale(w, h) {
 }
 
 function renderMesaGrid() {
+  const grid = _gridPreview || _gridState;
   if (!_gridCanvasEl || !_gridCtx || !_gridStageEl) return;
   // Deriva a escala do buffer REAL, não recalcula: se o zoom mudou e o
   // resize ainda não rodou, recalcular daria coordenadas fora do canvas.
@@ -172,7 +147,7 @@ function renderMesaGrid() {
   const cw = _gridCanvasEl.width;
   const ch = _gridCanvasEl.height;
   _gridCtx.clearRect(0, 0, cw, ch);
-  if (!_gridState.enabled || cw < 2 || ch < 2) return;
+  if (!grid.enabled || cw < 2 || ch < 2) return;
 
   // Superfície de referência (mapa exibido ou palco) em frações do palco,
   // convertida para px internos do canvas (que cobre o palco inteiro).
@@ -203,19 +178,27 @@ function renderMesaGrid() {
   if (Math.abs(surfTop  + surfH - ch) < FLUSH)  { surfH = ch - surfTop; }
 
   // Célula quadrada em px: fração da LARGURA da superfície.
-  const cellPx = Math.max(4 * dpr, _gridState.cellFrac * surfW);
+  const cellPx = Math.max(4 * dpr, grid.cellFrac * surfW);
 
   // Área desenhada: interseção superfície ∩ canvas (mapa em cover pode
   // transbordar o palco; não desenhamos grade fora do mapa).
-  const clipLeft   = Math.max(0, surfLeft);
-  const clipTop    = Math.max(0, surfTop);
-  const clipRight  = Math.min(cw, surfLeft + surfW);
-  const clipBottom = Math.min(ch, surfTop + surfH);
+  const originX = surfLeft + grid.offsetXFrac * cellPx, originY = surfTop + grid.offsetYFrac * cellPx;
+  const completeMin = (edge, origin) => origin + Math.ceil((edge - origin) / cellPx - 1e-7) * cellPx;
+  const completeMax = (edge, origin) => origin + Math.floor((edge - origin) / cellPx + 1e-7) * cellPx;
+  const clipLeft   = completeMin(Math.max(0, surfLeft), originX);
+  const clipTop    = completeMin(Math.max(0, surfTop), originY);
+  const clipRight  = completeMax(Math.min(cw, surfLeft + surfW), originX);
+  // Only complete square rows belong to the grid. A rectangular map may
+  // retain a small ungridded margin instead of displaying a sliced cell.
+  const clipBottom = completeMax(Math.min(ch, surfTop + surfH), originY);
+  _gridCanvasEl.dataset.gridBounds = JSON.stringify({ left: clipLeft / dpr, top: clipTop / dpr, right: clipRight / dpr, bottom: clipBottom / dpr, cell: cellPx / dpr });
   if (clipRight <= clipLeft || clipBottom <= clipTop) return;
 
   _gridCtx.save();
   _gridCtx.beginPath();
-  _gridCtx.rect(clipLeft, clipTop, clipRight - clipLeft, clipBottom - clipTop);
+  // Clip the paint on whole device pixels, not through a completed border.
+  // Fractional geometry bounds otherwise dim the last row differently at each zoom.
+  _gridCtx.rect(Math.floor(clipLeft), Math.floor(clipTop), Math.ceil(clipRight) + 1 - Math.floor(clipLeft), Math.ceil(clipBottom) + 1 - Math.floor(clipTop));
   _gridCtx.clip();
 
   // ALINHAMENTO AO PIXEL DE DISPOSITIVO — não remover (Etapa 60).
@@ -242,13 +225,13 @@ function renderMesaGrid() {
   const lineW = Math.max(1, Math.round(dpr / zoomEff));
   const snapToDevicePx = v => (lineW % 2 === 1 ? Math.round(v) + 0.5 : Math.round(v));
 
-  _gridCtx.globalAlpha = _gridState.opacity;
-  _gridCtx.strokeStyle = _gridState.color;
+  _gridCtx.globalAlpha = grid.opacity;
+  _gridCtx.strokeStyle = grid.color;
   _gridCtx.lineWidth   = lineW;
   _gridCtx.beginPath();
 
-  const offsetX = _gridState.offsetXFrac * cellPx;
-  const offsetY = _gridState.offsetYFrac * cellPx;
+  const offsetX = grid.offsetXFrac * cellPx;
+  const offsetY = grid.offsetYFrac * cellPx;
   const startX = surfLeft + offsetX - Math.ceil((surfLeft + offsetX - clipLeft) / cellPx) * cellPx;
   const startY = surfTop  + offsetY - Math.ceil((surfTop  + offsetY - clipTop)  / cellPx) * cellPx;
 
@@ -532,46 +515,33 @@ function _syncGridSettingsUI() {
   }
   const escalaLbl = document.getElementById("mesaGridScaleLabel");
   if (escalaLbl) escalaLbl.textContent = formatMesaGridScale(_gridState.metersPerCell);
+  window.MesaGridEditor?.render();
 }
 
 /** "1,5" · "12" · "1 km" — o rotulo curto do stepper de escala. */
 function formatMesaGridScale(metros) {
   const n = Number(metros) || MESA_GRID_DEFAULTS.metersPerCell;
   if (n >= 1000) return (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1).replace(".", ",") + " km";
+  if (Number.isInteger(n)) return String(n);
   if (n >= 10) return String(Math.round(n));
   return n.toFixed(1).replace(".", ",");
 }
 
-/* Passo do stepper de escala: cresce junto com a escala.
- *
- * Passo fixo nao serve para as duas pontas — 0,5 m e o passo certo para uma
- * masmorra e absurdo para um mapa de reino (seriam 2000 cliques ate 1 km). */
-function _passoDaEscala(atual) {
-  if (atual < 3) return 0.5;
-  if (atual < 10) return 1;
-  if (atual < 50) return 5;
-  if (atual < 200) return 25;
-  if (atual < 1000) return 100;
-  return 500;
-}
-
 function adjustMesaGridScale(direction) {
   if (!_isGridMaster()) return;
+  const values = [1, 5, 10, 15, 20, 25, 50, 75, 100, 200, 500, 1000, 2000, 5000];
   const atual = _gridState.metersPerCell;
-  // Descer usa o passo da FAIXA DE BAIXO, senao 3 m desceria para 2 e 2 para
-  // 1,5 com passos diferentes do que subiu — o stepper nao voltaria pelo
-  // mesmo caminho.
-  const passo = direction > 0 ? _passoDaEscala(atual) : _passoDaEscala(atual - 0.001);
-  const alvo = direction > 0 ? atual + passo : atual - passo;
-  updateMesaGrid({ metersPerCell: Math.round(alvo * 100) / 100 });
+  // Closed presets in either direction; legacy fractional scales are not offered.
+  const alvo = direction > 0 ? values.find(v => v > atual) : [...values].reverse().find(v => v < atual);
+  updateMesaGrid({ metersPerCell: alvo ?? (direction > 0 ? values.at(-1) : values[0]) });
 }
 
 // direction > 0 = mais colunas (células menores); < 0 = menos colunas.
 // O rótulo da UI exibe o número de colunas, então "+" aumenta colunas.
 function adjustMesaGridCell(direction) {
   if (!_isGridMaster()) return;
-  const step = MESA_GRID_CELL_STEP * (direction > 0 ? -1 : 1);
-  updateMesaGrid({ cellFrac: _gridState.cellFrac + step });
+  const columns = Math.round(1 / _gridState.cellFrac);
+  updateMesaGrid({ cellFrac: 1 / Math.max(4, Math.min(100, columns + (direction > 0 ? 1 : -1))), offsetXFrac: 0, offsetYFrac: 0 });
 }
 
 function _bindGridSettingsUI() {

@@ -1,3 +1,4 @@
+import {} from '../../js/mesa-template-rules.js';
 /* ============================================================
  * mesa-realtime-rules.js — Regras PURAS do Durable Object da Mesa
  * (Etapa 41). Sem imports de "cloudflare:workers": este modulo
@@ -298,6 +299,12 @@ function sanitizeRelayDrawingStroke(stroke) {
   if (stroke.layer === "dm") return null;
   const id = String(stroke.id || "").trim().slice(0, 40);
   if (!id) return null;
+  if (stroke.locked != null && typeof stroke.locked !== 'boolean') return null;
+  if (stroke.template != null) {
+    const template = globalThis.MesaTemplateRules.normalize(stroke.template);
+    if (!template) return null;
+    return { ...stroke, id, template };
+  }
   return { ...stroke, id };
 }
 
@@ -312,6 +319,12 @@ function sanitizeRelayDrawingIds(ids) {
     .filter(Boolean)
     .slice(0, MAX_RELAY_DRAWINGS);
   return clean.length ? clean : null;
+}
+
+function sanitizeRulerPoints(points) {
+  if (!Array.isArray(points) || points.length < 2 || points.length > 256 ||
+      points.some(p => !Number.isFinite(p?.u) || !Number.isFinite(p?.v) || Math.abs(p.u) > 1e6 || Math.abs(p.v) > 1e6)) return null;
+  return points.map(p => ({ u: p.u, v: p.v }));
 }
 
 /* ── Normalizacao de patch de ficha / vitais de Echo ────────── */
@@ -526,5 +539,6 @@ export {
   sanitizeRelayDrawingIds,
   sanitizeRelayDrawingStroke,
   sanitizeRelayDrawings,
+  sanitizeRulerPoints,
   takeRateToken
 };

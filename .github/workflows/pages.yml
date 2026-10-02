@@ -39,12 +39,26 @@ jobs:
       - name: Install browser for published bundle regression
         run: npx playwright install --with-deps chromium
 
+      - name: Verify source contracts and static integrity
+        run: |
+          npm run check:js
+          npm run audit:static
+          npm run audit:css
+          npm run audit:pendencias
+          npm run test:mesa:vision
+          node --test tests/css-syntax.test.cjs
+
       - name: Verify published bundle initialization
         run: npx playwright test tests/build-pages.spec.cjs --workers=1
 
       # build = build:pages (bundle) + minify (terser + clean-css)
       - name: Prepare static site
         run: npm run build
+
+      - name: Verify actual minified interface and corrected flows
+        env:
+          MESA_TEST_ARTIFACT: "1"
+        run: npx playwright test tests/project-ui-audit.spec.cjs tests/mesa-map-library.spec.cjs tests/mesa-templates.spec.cjs tests/mesa-lighting.spec.cjs tests/production- --workers=1
 
       - name: Setup Pages
         uses: actions/configure-pages@v6

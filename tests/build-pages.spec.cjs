@@ -20,6 +20,16 @@ test.beforeAll(() => {
   execFileSync(process.execPath, [path.join(repoRoot, "tools", "build-pages.cjs")], { cwd: repoRoot });
 });
 
+test('all linked product pages, including Echos, exist in the published artifact', () => {
+  for (const page of ['index.html', 'ficha.html', 'mesa.html', 'regras.html', 'sugestoes.html', 'echos.html']) {
+    const html = fs.readFileSync(path.join(siteDir, page), 'utf8');
+    for (const match of html.matchAll(/\bhref=["']([^"'#?]+\.html)(?:[?#][^"']*)?["']/g)) {
+      if (/^[a-z]+:|^\/\//i.test(match[1])) continue;
+      expect(fs.existsSync(path.resolve(siteDir, match[1])), `${page} links to unpublished ${match[1]}`).toBe(true);
+    }
+  }
+});
+
 test.describe("Boot real do pacote publicado", () => {
   for (const minified of [false, true]) {
     test(`Mesa inicia e edita paredes no bundle ${minified ? "minificado" : "normal"}`, async ({ page }, info) => {
@@ -35,7 +45,7 @@ test.describe("Boot real do pacote publicado", () => {
       await expect(page.locator("#mesaStage .mesa-token")).toHaveCount(3);
       await expect.poll(() => page.evaluate(() => state.bootCompleted)).toBe(true);
       await page.locator("#mesaMapSettingsBtn").click();
-      await page.locator("#mesaVisionPanel > summary").click();
+      await expect(page.locator("#mesaVisionTitle")).toBeVisible();
       await page.locator("#mesaVisionWall").click();
       const box = await page.locator("#mesaWallCanvas").boundingBox();
       await page.mouse.click(box.x + box.width * .2, box.y + box.height * .3);
@@ -43,7 +53,15 @@ test.describe("Boot real do pacote publicado", () => {
       await expect(page.locator("#mesaVisionCount")).toHaveText("1 segmento");
       await page.mouse.click(box.x + box.width * .5, box.y + box.height * .4, { button: "right" });
       await expect(page.locator("#mesaWallCanvas")).toBeHidden();
+      await page.locator("#mesaVisionSelect").click();
+      await expect(page.locator("#mesaVisionSelect")).toHaveAttribute("aria-pressed", "true");
+      await expect(page.locator("#mesaWallCanvas")).toBeVisible();
+      await page.mouse.click(box.x + box.width * .35, box.y + box.height * .3);
+      await expect(page.locator("#mesaVisionHint")).toContainText("Parede selecionada");
+      expect(await page.locator("#mesaWallCanvas").getAttribute("data-selected-wall")).toBeTruthy();
       await page.screenshot({ path: info.outputPath(`bundle-${minified ? "min" : "normal"}.png`) });
+      await page.keyboard.press("Escape");
+      await expect(page.locator("#mesaWallCanvas")).toBeHidden();
       await page.reload();
       await expect.poll(() => page.evaluate(() => mesaVision?.walls.length)).toBe(1);
       expect(errors).toEqual([]);

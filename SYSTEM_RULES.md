@@ -1,8 +1,88 @@
 # SYSTEM RULES
 
+- Manual do proprietario (2026-10-02): frontend nao autoriza alteracoes de regras/estrutura do RPG. Consultar Tiago antes dessas mudancas. O projeto permanece 100% gratuito; nao introduzir dependencia, infraestrutura ou funcionalidade paga.
+- Portal: consultar/atualizar lista pode ser repetido; POST/DELETE nunca recebem retry automatico. Resposta perdida pode deixar resultado incerto: orientar conferencia da lista sem afirmar falsamente sucesso/falha. Excluir/salvar nao concorrem; aceite remoto e a referencia, cache opcional nao transforma leitura aceita em falha.
+- Visao: otimizacao dos paineis nao altera iniciativa nem permissao. Resumo/lista atualizam quando muda conjunto de tokens visiveis, papel/sessao/cena/sincronizacao/retrato; giro/camera estaveis nao destroem botoes focados.
+- Dialogos: foco inicial e restauracao nao sobrescrevem navegação feita pelo usuario; apenas o dialogo superior captura Tab/Escape. Estado visual e aria-hidden de controles contextuais devem concordar.
+
+- QA: Regras/Sugestoes serializam envio do formulario e preservam rascunho em falha de escrita. Sucesso da escrita e falha posterior de leitura da lista devem ter mensagens distintas; falha de exclusao nao some com o card. Nao substituir confirmacao da API por cache.
+- Controle de direcao nao concorre com criacao/edicao de luz, grade, moldes, barreiras ou desenhos; ocultar no primeiro render desses modos, sem depender do timer de hover.
+
+- QA (2026-10-02): confirmar campo numerico com Enter deve mostrar o valor realmente aceito, inclusive quando recusado; reconfirmar o valor exibido nao cria historico, substituicao ou gravacao. Comparacao de formato respeita a precisao exibida, sem arredondar silenciosamente novos valores.
+- Miniaturas: URL removida do cache limitado invalida a linha conectada, que deve recarregar ao voltar ao viewport. Originais nunca sao removidos com o cache. Publicacao inclui todas as paginas de produto referenciadas, inclusive Echos; links internos do artefato sao verificados.
+
+- Biblioteca (C2, 2026-10-02): catalogo IndexedDB v4 e metadados/miniaturas separados dos originais, migracao aditiva. Busca por palavras ignora acentos/caixa e inclui caminhos. Leitura de imagens somente para miniaturas visiveis (duas tarefas); mapa original nunca substituido pela miniatura. Arquivo ausente nao deve confirmar colocacao.
+- Decoracoes (C3): `drawing.locked: true` opcional preservado na cena/relay. Ignorado por selecao, movimento, resize, borracha e undo normal; mestre desbloqueia por comando explicito. Substituicoes de desenho seguem autoria autenticada atual para concordar com relay.
+- Grade: `mesa-grid-rules.js` e a fonte compartilhada navegador/Worker para limites, colunas inteiras 1/N e normalizacao idempotente. Escalas historicas preservadas; stepper oferece presets fechados. Recorte raster nao pode enfraquecer bordas no zoom.
+- Edicoes locais de moldes/bloqueios nao recebem estado de confirmacao remota se backend descartar seus campos; erro conserva backup local. Preview de ajustes e gestos de ferramentas sao mutuamente exclusivos.
+
+- Atalhos (U1): mesmos comandos dos botoes; nao disparar em campos editaveis, dialogos visiveis ou planejamento de movimento/regua. Ctrl Z de desenhos nao apaga moldes ou texto digitado.
+- Ajustes reutilizaveis (C1): clipboard local da aba, somente grade/visao/cone/escuridao. Previa sem alterar confirmado; aplicar explicitamente em cena/configuracao ainda correspondentes. Conteudo da cena nao substituido.
+
+- Linha larga (T4): largura geometrica, nao grossura decorativa; origem e comprimento/direcao definem a area. Sem dano, alvo ou regra de RPG automatica.
+
+- Retangulo medido (T3): centro normalizado, duas dimensoes na fracao da largura fisica do palco, rotacao horaria; zoom/aspecto nao deformam dimensoes.
+
+- Cone medido (T2): direcao horaria normalizada em 0–360, abertura 10–360 graus e alcance na mesma escala do circulo; nao e o cone de visao do token.
+
+- Moldes medidos (T1, 2026-10-01): geometria normalizada e escala comum de grade/regua; reutilizar desenhos/autoria, nao criar estado persistido paralelo. Previa nao altera objeto confirmado. Editar/substituir confirma uma acao local com remove/add legados, IDs novos; conflitos no original recusam commit. Sem dano/alvos automaticos.
+
+- Luzes (V2/V3, 2026-10-01): escuridao opcional false por ausencia; fonte local limitada a 64 por cena, coordenadas/raio finitos e intensidade 5–100%. Luz nunca revela fora do cone individual nem atravessa parede/porta fechada. Proprio token permanece visivel. Previa local; mestre confirma pelo fluxo da visao, sem quadros persistidos.
+- Regua (T5, 2026-10-01): pontos de passagem opcionais no evento existente, maximo 256 pontos finitos; legado reto preservado. Somar trechos na mesma escala do movimento. Direito fixa ponto, Backspace remove, soltar/Escape/blur/troca de cena encerra; nunca salvar regua.
+
+- Viewport (P2, 2026-10-01): bitmap de barreiras/mascara recortado a area visivel, coordenadas de hit-testing na cena inteira. DPR inclui zoom com teto 24M pixels por camada; invalidar pintura quando viewport, geometria ou origem/direcao mudam. Nao mudar colisao para geometria recortada.
+- Percurso compartilhado (M2, 2026-10-01): metadados efemeros fora do schema/cache persistido, ate 256 pontos finitos em 0–100, origem/destino/versao correspondentes, duracao 120–450ms. Autoridade apos CAS, sem transmitir percurso secreto; ausencia/invalidez opcional preserva endpoint legado.
+
+- Origem da grade (G2, 2026-10-01): previa separada da configuracao confirmada; aplicar nao movimenta mapa/tokens. Render e limite do movimento usam apenas celulas inteiras dentro da superficie, sem casas cortadas por deslocamento.
+
+- Calibracao (G1, 2026-10-01): rascunho visual separado de getMesaGridState/payload. Aplicar exige mesma cena, papel e configuracao original; nao conforma/move tokens automaticamente. Referencia quantizada para 4–100 colunas inteiras, mantendo metros por celula existentes; interface declara aproximacao.
+
+- Percurso editavel (M1, 2026-10-01): Backspace durante planejamento remove ultimo waypoint, nunca origem ou token confirmado; recalcula distancia e colisao. Modificadores/teclas em campos editaveis nao executam acao do palco.
+
+- Copia de barreiras (W9, 2026-10-01): clipboard interno efemero, propriedades e proporcoes preservadas, IDs independentes ao confirmar. Original inalterado; cancelamento sem gravacao, um desfazer para a colagem inteira. Nao redimensionar implicitamente estrutura maior que cena.
+
+- Translacao de barreiras (W8, 2026-10-01): corpo do trecho selecionado move apenas o conjunto explicitamente selecionado, mantendo distancias/juncoes internas; trechos fora dele permanecem. Borda limita delta do conjunto, nao cada parede separadamente. Um gesto aceito, um desfazer.
+
+- Selecao coletiva (W7, 2026-10-01): Shift adiciona/remove trechos; caixa seleciona intersecoes. Selecionar nunca grava; regua/ping nao roubam modificadores do editor ativo. Configuracoes individuais exigem exatamente um trecho selecionado.
+
+- Estado da porta no editor (W6, 2026-10-01): somente mestre configura aberta/fechada/trancada; recusar fechamento/tranca se token ocupa o vao. Jogador continua abrindo apenas porta destrancada e alcancavel; configuracao nao amplia permissoes.
+
+- Unir (W5, 2026-10-01): dois trechos colineares/contiguos, sem sobreposicao e com mesmo tipo/estado. Nunca elimina curvas, fecha vaos ou converte porta implicitamente. Historico atomico.
+
+- Dividir (W4, 2026-10-01): apenas parede; corte projetado e afastado das extremidades. Dois segmentos equivalentes, IDs novos, um passo de historico. Portas conservam identidade indivisivel.
+
+- Juncoes (W3, 2026-10-01): extremidades com coordenadas coincidentes compoem um vertice compartilhado; mover uma delas move todas em um gesto. Encaixe opcional aproxima vertices em 10px de tela e grava coordenadas exatas; Alt ignora encaixe durante o gesto. Alt+ping nao intercepta editor ativo.
+
+- Edicao de extremidade (W2, 2026-10-01): previa local; gravar somente ao soltar, com papel, cena e geometria original ainda validos. Cancelar nunca grava. Mudanca remota de barreiras invalida o gesto; desfazer/refazer considera uma edicao inteira.
+
+- Selecao de barreira (W1, 2026-10-01): somente mestre; estado local/efemero, nunca parte do payload da cena, revisao, persistencia ou desfazer. Selecionar nao edita extremidades nem abre porta. Area vazia limpa; sair do modo/painel, troca de cena e perda de papel retiram destaque.
+
+- Previa encaixada (2026-09-30): quantizacao do rastro e visual; nao muda colisao, destino autorizado ou distancia real. Controle de visao deve sumir imediatamente ao iniciar arrasto e permanecer indisponivel durante animacao.
+
+- Diagonais (2026-09-30, revisao mais recente): permitidas novamente. Percurso direto e distancia euclidiana substituem a restricao horizontal/vertical; colisao continua limitando o segmento. Footprints inteiros preservados.
+
+- Movimento com grade (2026-09-30): percurso minimo por eixos, horizontal seguido de vertical, sem diagonal; distancia soma os trechos, nao multiplica pelo tamanho do token. Colisao valida cada trecho e interrompe ao bloquear, sem desvio automatico. Servidor recebe os pontos de mudanca de direcao na mesma acao. Animacao segue os eixos. Substitui a regra anterior de reta quando a grade esta ligada; sem grade, continua reta.
+
+- Controle de direcao integrado a borda (2026-09-30): muda somente a apresentacao do giro, preservando autorizacao, previa e confirmacao ao soltar. Centro de rotacao acompanha camera e redimensionamento durante o gesto.
+
+- Modos de movimento individual (2026-09-30): grade habilitada encaixa destino nas casas durante a previa e confirmacao; grade desabilitada permite destino livre e exibe somente medida em metros, sem rastro de celulas. Escala da cena continua aplicada em ambos. Colisao pode limitar o destino antes da casa pretendida; nao encaixar novamente atraves de paredes.
+
+- Previa proporcional (2026-09-28): o percurso destaca a uniao das celulas ocupadas pela area quadrada inteira do token (1x1, 2x2, 3x3...), nao apenas pela linha central. Distancia continua sendo deslocamento em metros/celulas, sem multiplicar pelo tamanho do token. Sem mudanca em iluminacao ou autorizacao.
+
+- Movimento individual (2026-09-28): arrastar cria somente previa local em linha reta da origem ao destino atual. Token real, cone e posicao salva nao se movem antes de soltar. A previa preenche as celulas atravessadas por essa reta e mede distancia euclidiana com a escala `metersPerCell` da grade (mesma regua); nao soma voltas do cursor nem inventa rota ao redor de paredes.
+- Ao soltar: snap, limites e colisao determinam o destino permitido; envia uma unica posicao. Com visao ativa, servidor/regra compartilhada valida antes de animar. Animacao e efemera, sem gravar cada quadro; cone acompanha posicao visual. Falha mantem a origem/ultimo estado aceito. Movimento reduzido elimina a animacao. Selecoes de varios tokens/desenhos do mestre mantem fluxo de edicao anterior (somente sem visao).
+- Escape, botao direito, pointercancel, blur, pinca e troca de cena cancelam a previa de movimento sem transmitir posicoes. Ao confirmar, revalidar trava do mestre, posse, cena e origem; atualizar a cena durante o gesto nao autoriza sobrescrever movimento remoto.
+- Anel de direcao (2026-09-30): arrastar a seta calcula angulo do ponteiro em torno do centro do token, em ambos os sentidos, atualizando cone antes de soltar. Substitui giro lateral da bolinha. Corpo do token permanece reservado a movimento. Teclado esquerda/direita continua ajustando 15 graus.
+- Controle global por cena (2026-09-26): somente mestre liga/desliga "Visao e colisao na cena"; todos os jogadores usam a mesma configuracao, cada um com sua propria origem de visao. Desligar nao apaga paredes/portas.
+- Anel de direcao ao passar o mouse no token controlavel: confirmacoes de rede sao serializadas, preservando a ultima direcao pedida. "Mostrar controle de direcao" nas configuracoes do token oculta apenas o anel, nao o nome: preferencia local por usuario/cena/token, nunca altera permissoes nem desliga a visao.
+- Concluir edicao tem a mesma preservacao do botao direito. Escape cancela rascunho e sai do editor; segmentos ja confirmados permanecem. Cliques sem comprimento/area nao geram segmentos.
+
+- Giro de visao: arrastar a alca do token atualiza somente a previa; soltar confirma a direcao no servidor. Cancelamento descarta a previa. Ownership e bloqueio de movimento continuam aplicados.
+- Portas: o icone aparece no campo de visao ou por proximidade mesmo fora do cone. Abrir exige proximidade, mas nao orientacao. Nevoa manual continua ocultando icones; trancas e paredes intermediarias bloqueiam a interacao. Portas distantes visiveis e portas trancadas mostram icone desabilitado com descricao.
+
 Este arquivo registra regras funcionais e de gameplay que nao devem ser alteradas sem autorizacao explicita.
 
-- Editor de paredes: botao direito no palco encerra parede, poligono, retangulo, porta, apagar ou trancar. Mantem segmentos confirmados; no poligono salva apenas ligacoes entre pontos clicados (cadeia aberta, um desfazer). Ponto isolado e previa do cursor nao viram barreira. Se a edicao nao for aceita, preserva o rascunho para nova tentativa.
+- Editor reconstruido (2026-09-26): Parede (ponto a ponto, poligono, retangulo), Porta e Apagar. Botao direito no palco encerra qualquer modo, mantendo segmentos confirmados; no poligono salva apenas ligacoes entre pontos clicados (cadeia aberta, um desfazer). Ponto isolado e previa do cursor nao viram barreira. Se a validacao rejeitar a edicao, preserva o rascunho. Trancas de cenas existentes continuam respeitadas, mas esta interface simplificada nao tem ferramenta de trancar.
 
 ## Regra Obrigatoria de Documentacao
 
@@ -29,7 +109,7 @@ Nao use a pasta antiga `rpg-campaign` para alterar regras ou publicar commits.
 
 ### Visao dinamica da Mesa — escopo confirmado em 2026-09-18
 
-- Editor acessivel pela engrenagem da cena > Paredes e visao, exclusivo do mestre. Fechar as configuracoes ou recolher a secao encerra ferramenta/cadeia e simulacao, sem desativar a visao persistida.
+- Editor acessivel diretamente ao abrir as configuracoes da cena: secao Paredes e portas, exclusivo do mestre, sem segundo painel/acordeao. Fechar as configuracoes encerra ferramenta/cadeia e simulacao, sem desativar a visao persistida.
 
 - Visao individual do proprio personagem, em cone orientado, sem uniao do grupo.
 - Fora da visao atual fica totalmente preto; nao existe memoria de exploracao.
@@ -39,8 +119,8 @@ Nao use a pasta antiga `rpg-campaign` para alterar regras ou publicar commits.
 - Padroes iniciais de implementacao: cone de 120 graus, giro manual e interacao
   com porta a uma celula de distancia, sem parede intermediaria.
 - Integracao local implementada em 2026-09-20, opt-in por cena; desativada em cenas legadas. O Worker valida dono, cena ativa, bloqueio do mestre, trajeto e revisao antes de persistir.
-- Giro manual em passos de 15 graus. Com visao ativa, movimento individual e tamanho fixo: redimensionamento e arrasto de grupos ficam desativados; envio remoto ocorre ao soltar.
-- Criar porta recorta automaticamente um trecho de uma unica parede com dois cliques; tambem aceita vao livre. Preserva partes laterais e nasce fechada/destrancada. Jogador abre porta destrancada ao alcance de uma celula mais o raio do token, dentro do cone e sem barreira intermediaria; mestre pode fechar se nao houver token sobre a porta.
+- Giro continuo pela bolinha: cone acompanha o ponteiro enquanto pressionado; envio remoto ocorre ao soltar. Teclado oferece passos de 15 graus. Com visao ativa, movimento individual e tamanho fixo: redimensionamento e arrasto de grupos ficam desativados.
+- Criar porta recorta automaticamente um trecho de uma unica parede com dois cliques; tambem aceita vao livre. Preserva partes laterais e nasce fechada/destrancada. Jogador abre porta destrancada ao alcance de uma celula mais o raio do token, inclusive fora do cone, sem barreira intermediaria; mestre pode fechar se nao houver token sobre a porta.
 - Criar parede oferece cadeia aberta, poligono fechado e retangulo. Formas fechadas sao confirmadas/desfeitas como uma operacao; Escape descarta apenas o rascunho, sem apagar paredes confirmadas.
 - Nevoa manual continua ocultando; o proprio disco do personagem fica legivel. A mascara nao protege os dados publicos do mapa contra DevTools. Nao ha promessa de filtragem individual do mapa no servidor.
 
@@ -397,3 +477,6 @@ Se uma etapa mexer no site e nao atualizar documentacao, ela deve ser considerad
 - **Gestos da Mesa (2026-08-27, Etapa 129)**: a Mesa fala Pointer Events — mouse, dedo e caneta pelo mesmo caminho. A regra e uma so: **um dedo** faz o que o botao esquerdo faz no modo atual (pan no modo mao, faixa de selecao no modo seta, traco com ferramenta armada) e **dois dedos sao sempre camera** (arrastam o palco e dao zoom pela distancia entre eles). O segundo dedo ABORTA o gesto do primeiro, e o traco ou a faixa em curso sao descartados sem gravar — quem faz isso sao `mesaAbortDrawingGesture` e `mesaAbortSelectionGesture`, chamados pelo mesa-map.js. Todo handler novo de gesto no palco nasce em `pointer*`, com `setPointerCapture` e `preventDefault()` no `pointerdown` (o preventDefault e o que impede o evento de mouse de compatibilidade de disparar um segundo gesto por cima do primeiro).
 
 - **Escala da cena (2026-08-27, Etapa 131)**: quanto vale UMA celula em metros e campo da grade da cena (`grid.metersPerCell`, 0,1 a 5000, duas casas), nao constante de codigo. A regua conta celulas pelo `cellFrac` e traduz por esse numero; cena sem o campo cai nos 1,5 m historicos. A escala viaja na cena mesmo com a grade DESLIGADA — a regua vale sem linha desenhada —, e por isso tanto `getMesaGridScenePayload` (cliente) quanto `normalizeSceneGrid` (Worker) tratam "grade desligada com escala propria" como grade valida. Campo novo na grade exige deploy do Worker: o que ele nao conhece e descartado em silencio no save.
+# Percurso com curvas — 2026-10-01
+
+Enquanto segura token com esquerdo, direito fixa ponto de passagem valido. Nenhuma posicao e persistida ate soltar esquerdo; caminho completo tem colisao validada trecho a trecho, ate 256 segmentos. Escape cancela rascunho completo. Ponto bloqueado nao e fixado. Botao direito no editor de paredes continua concluindo a construcao.

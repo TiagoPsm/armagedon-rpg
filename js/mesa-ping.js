@@ -113,6 +113,8 @@ function showMesaPingFromRemote(payload) {
 
 function _handleMesaPingPointerDown(event) {
   if (!event.altKey || event.button !== 0) return;
+  if (typeof mesaVisionMode !== "undefined" && mesaVisionMode !== "off") return;
+  if (event.target.closest?.("#mesaGridEditCanvas,#mesaLightCanvas,#mesaTemplateCanvas[data-active='true']")) return;
   const inner = document.getElementById("mesaStageInner");
   if (!inner) return;
   // Rect do inner já embute o zoom (transform: scale) — a fração fica correta

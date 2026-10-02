@@ -101,7 +101,7 @@ async function handleMesaRealtime(request, env, origin) {
   return stub.fetch(new Request(realtimeUrl, { method: "GET", headers }));
 }
 
-async function broadcastMesaScene(env, scene, actor) {
+async function broadcastMesaScene(env, scene, actor, movement = null) {
   const stub = getMesaRealtimeStub(env);
   if (!stub) return;
 
@@ -114,6 +114,7 @@ async function broadcastMesaScene(env, scene, actor) {
       body: JSON.stringify({
         type: "mesa:scene",
         scene,
+        movement,
         actor: {
           id: actor.sub,
           username: actor.username,
@@ -716,7 +717,7 @@ export default {
         if (!stub) return errorJson("Coordenacao da Mesa indisponivel.", 503, origin);
         const locked = await stub.isPlayersMoveLocked();
         const saved = await applyMesaVisionAction(env, session, body, locked);
-        if (saved.active) await broadcastMesaScene(env, await getMesaScene(env, { role: "master" }, saved.id), session);
+        if (saved.active) await broadcastMesaScene(env, await getMesaScene(env, { role: "master" }, saved.id), session, saved.movement);
         return withCors(json(saved), origin);
       }
 
@@ -951,7 +952,7 @@ export default {
         const r2Key     = `maps/${safeUser}/${safeMapId}.webp`;
 
         await env.MAPS.put(r2Key, await file.arrayBuffer(), {
-          httpMetadata:   { contentType: "image/webp" },
+          httpMetadata:   { contentType: ["image/png", "image/jpeg", "image/webp"].includes(file.type) ? file.type : "image/webp" },
           customMetadata: { uploadedBy: session.username, mapId, uploadedAt: new Date().toISOString() },
         });
 

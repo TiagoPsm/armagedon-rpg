@@ -23,7 +23,7 @@
 
 .header-shell {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--sp-4);
   max-width: 1280px;
@@ -80,13 +80,14 @@
   font-weight: var(--fw-medium);
   letter-spacing: var(--tracking-widest);
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 /* ── NAVEGAÇÃO PRINCIPAL ────────────────────────────────────── */
 
 .main-nav {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: var(--sp-1);
@@ -115,7 +116,7 @@
 }
 
 .nav-link.active {
-  color: var(--accent);
+  color: var(--accent-text);
   background: rgba(168, 48, 40, 0.08);
   border-color: var(--border-accent);
 }
@@ -242,7 +243,7 @@
 }
 
 .btn-inline:hover {
-  color: var(--accent);
+  color: var(--accent-text);
   border-color: var(--border-accent);
 }
 
@@ -282,7 +283,8 @@
 }
 
 .form-input::placeholder {
-  color: var(--text-faint);
+  color: var(--text-placeholder);
+  opacity: 1;
 }
 
 .form-input:hover {
@@ -290,7 +292,8 @@
 }
 
 .form-input:focus-visible {
-  outline: none;
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-glow), inset 0 2px 6px rgba(0, 0, 0, 0.45);
 }
@@ -304,7 +307,7 @@ textarea.form-input {
 .form-error {
   font-family: var(--font-ui);
   font-size: var(--fs-xs);
-  color: var(--danger);
+  color: var(--danger-text);
   letter-spacing: var(--tracking-wide);
   min-height: 1.25rem;
 }
@@ -414,7 +417,7 @@ textarea.form-input {
 .panel-badge-soft {
   background: transparent;
   border-color: transparent;
-  color: var(--text-faint);
+  color: var(--text-soft);
 }
 
 /* ── MINI BOTÃO (tela cheia, ações compactas) ───────────────── */
@@ -600,8 +603,8 @@ textarea.form-input {
   color: var(--text-soft);
 }
 
-.save-msg.is-success { color: var(--success); }
-.save-msg.is-error   { color: var(--danger); }
+.save-msg.is-success { color: var(--success-text); }
+.save-msg.is-error   { color: var(--danger-text); }
 
 /* ── RESPONSIVO GLOBAL ──────────────────────────────────────── */
 
@@ -701,7 +704,7 @@ textarea.form-input {
   font-size: var(--fs-2xs);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .ui-toast-message {
@@ -710,4 +713,8 @@ textarea.form-input {
   font-size: var(--fs-sm);
   line-height: var(--lh-normal);
   color: var(--text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-toast { transition: none; transform: none; }
 }

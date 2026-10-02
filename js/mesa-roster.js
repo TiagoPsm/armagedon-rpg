@@ -184,23 +184,26 @@ function renderRosterEntry(entry) {
   const isOnStage = Boolean(token);
   const canAdd = isMaster() && !isOnStage;
   const canFocus = isOnStage;
-  const ownerCopy = getOwnerCopy(entry.ownerUsername);
-  const stageChip = isOnStage ? "Em cena" : canAdd ? "Pronto" : "Fora da cena";
   const primaryAction = canAdd ? "add" : canFocus ? "focus" : "noop";
   const primaryLabel = canAdd ? "Colocar" : "Focar";
+  const characterName = String(entry.name || "Personagem");
+  const primaryDescription = `${primaryLabel} ${characterName}`;
+  const removeDescription = `Retirar ${characterName} da cena`;
 
   return `
     <article class="roster-entry" data-type="${entry.type}" data-state="${isOnStage ? "on-stage" : "off-stage"}">
-      <strong class="roster-entry-name">${escapeHtml(entry.name)}</strong>
+      <strong class="roster-entry-name" title="${escapeAttribute(characterName)}">${escapeHtml(characterName)}</strong>
       <div class="roster-entry-actions">
         <button
           type="button"
-          class="mini-btn ${canAdd ? "is-primary" : ""}"
+          class="mini-btn ${canAdd ? "is-primary" : "roster-action-icon"}"
           data-roster-action="${primaryAction}"
-          data-entry-id="${entry.id}"
+          data-entry-id="${escapeAttribute(entry.id)}"
+          aria-label="${escapeAttribute(primaryDescription)}"
+          title="${escapeAttribute(primaryDescription)}"
           ${!canAdd && !canFocus ? "disabled" : ""}
-        >${primaryLabel}</button>
-        ${isOnStage && isMaster() ? `<button type="button" class="mini-btn" data-roster-action="remove" data-entry-id="${entry.id}">Retirar</button>` : ""}
+        >${canAdd ? primaryLabel : `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="5"/><path d="M10 1v5m0 8v5M1 10h5m8 0h5"/></svg><span class="sr-only">${primaryLabel}</span>`}</button>
+        ${isOnStage && isMaster() ? `<button type="button" class="mini-btn roster-action-icon" data-roster-action="remove" data-entry-id="${escapeAttribute(entry.id)}" aria-label="${escapeAttribute(removeDescription)}" title="${escapeAttribute(removeDescription)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3H4v14h8M8 10h10m-3-3 3 3-3 3"/></svg><span class="sr-only">Retirar</span></button>` : ""}
       </div>
     </article>
   `;
@@ -248,6 +251,7 @@ function renderPlayerSheetPanel(rosterList, rosterCountBadge) {
         </div>
 
         ${renderPlayerLifeBarsToggle()}
+        ${typeof renderMesaFacingPreference === "function" ? renderMesaFacingPreference(mesaVisionSource()) : ""}
 
         <a href="ficha.html" class="btn btn-primary btn-block player-open-sheet-btn">
           <span>Ficha Completa</span>

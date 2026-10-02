@@ -35,12 +35,23 @@
     if (typeof input !== "object" || Array.isArray(input)) throw new TypeError("Invalid vision");
     if (input.schemaVersion != null && input.schemaVersion !== 1) throw new RangeError("Unsupported vision version");
     if (input.enabled != null && typeof input.enabled !== "boolean") throw new TypeError("Invalid enabled");
+    if (input.darkness != null && typeof input.darkness !== "boolean") throw new TypeError("Invalid darkness");
+    if (input.lights !== undefined && (!Array.isArray(input.lights) || input.lights.length > 64)) throw new RangeError("Invalid lights count");
+    const lightIds = new Set();
+    const lights = (input.lights || []).map(light => {
+      if (!light || typeof light.id !== "string" || !/^[a-zA-Z0-9_-]{1,80}$/.test(light.id) || lightIds.has(light.id)) throw new TypeError("Invalid light id");
+      lightIds.add(light.id);
+      return { id: light.id, x: number(light.x, "light.x", 0, 1), y: number(light.y, "light.y", 0, 1),
+        radius: number(light.radius, "light.radius", .001, 4), intensity: number(light.intensity ?? 1, "light.intensity", .05, 1) };
+    });
     const walls = input.walls ?? [];
     if (!Array.isArray(walls) || walls.length > MAX_WALLS) throw new RangeError("Invalid walls count");
     const ids = new Set();
     return {
       schemaVersion: 1,
       enabled: input.enabled === true,
+      ...(input.darkness != null ? { darkness: input.darkness } : {}),
+      ...(input.lights !== undefined ? { lights } : {}),
       coneDeg: number(input.coneDeg ?? 120, "coneDeg", 1, 360),
       walls: walls.map(w => {
         if (!w || typeof w.id !== "string" || !/^[a-zA-Z0-9_-]{1,80}$/.test(w.id) || ids.has(w.id)) {
@@ -142,7 +153,8 @@
       polygon: (origin, facingDeg = 0, coneDeg = vision.coneDeg) => polygon(index, vertices, aspect, origin, facingDeg, coneDeg),
       canSee: (origin, target, facingDeg = 0, coneDeg = vision.coneDeg) => canSee(index, aspect, origin, target, facingDeg, coneDeg),
       sweep: (from, to, radius) => sweep(index, aspect, from, to, radius),
-      canReachDoor: (origin, doorId, reach) => canReachDoor(index, vision, aspect, origin, doorId, reach)
+      doorTarget: (origin, door) => closest(origin, segment(door.id, { x: door.ax, y: door.ay * aspect }, { x: door.bx, y: door.by * aspect })),
+      canReachDoor: (origin, doorId, reach, includeLocked = false) => canReachDoor(index, vision, aspect, origin, doorId, reach, includeLocked)
     });
   }
 
@@ -303,11 +315,11 @@
     return { ...at(from, delta, safe), fraction: safe, blocked: fraction < 1 };
   }
 
-  function canReachDoor(index, vision, aspect, origin, doorId, reach) {
+  function canReachDoor(index, vision, aspect, origin, doorId, reach, includeLocked = false) {
     number(reach, "reach", 0, Math.hypot(1, aspect));
     if (!validOrigin(index, aspect, origin)) return false;
     const door = vision.walls.find(w => w.id === doorId && w.kind === "door");
-    if (!door || door.doorState === "locked") return false;
+    if (!door || (!includeLocked && door.doorState === "locked")) return false;
     const s = segment(door.id, { x: door.ax, y: door.ay * aspect }, { x: door.bx, y: door.by * aspect });
     const target = closest(origin, s), d = sub(target, origin), distance = length(d);
     if (distance > reach + EPS) return false;

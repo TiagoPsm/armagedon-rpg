@@ -22,6 +22,8 @@ const MESA_RULER_REMOTE_TTL_MS = 4000;
 let _rulerActive = false;
 let _rulerStart = null;         // { fx, fy } fração do palco
 let _rulerEnd = null;
+let _rulerWaypoints = [];
+let _rulerSceneId = null;
 let _rulerLastBroadcastAt = 0;
 let _rulerPendingFinal = false;
 const _remoteRulers = new Map(); // nome do autor -> { el, expiresAt }
@@ -104,6 +106,7 @@ function _buildRulerElement(isSelf) {
   el.innerHTML =
     '<svg class="mesa-ruler-svg">' +
     '<line class="mesa-ruler-line" x1="0%" y1="0%" x2="0%" y2="0%" />' +
+    '<polyline class="mesa-ruler-line mesa-ruler-path" fill="none" />' +
     '<circle class="mesa-ruler-dot mesa-ruler-dot-a" cx="0%" cy="0%" r="4" />' +
     '<circle class="mesa-ruler-dot mesa-ruler-dot-b" cx="0%" cy="0%" r="4" />' +
     "</svg>" +
@@ -111,13 +114,17 @@ function _buildRulerElement(isSelf) {
   return el;
 }
 
-function _updateRulerElement(el, fx1, fy1, fx2, fy2, labelText) {
+function _updateRulerElement(el, fx1, fy1, fx2, fy2, labelText, points = []) {
   const pct = v => (v * 100) + "%";
-  const line = el.querySelector(".mesa-ruler-line");
+  const line = el.querySelector("line.mesa-ruler-line");
   line.setAttribute("x1", pct(fx1));
   line.setAttribute("y1", pct(fy1));
   line.setAttribute("x2", pct(fx2));
   line.setAttribute("y2", pct(fy2));
+  const inner = _rulerInner(), width = inner.offsetWidth || 1, height = inner.offsetHeight || 1;
+  const svg = el.querySelector("svg"); svg.setAttribute("viewBox", `0 0 ${width} ${height}`); svg.setAttribute("preserveAspectRatio", "none");
+  const polyline = el.querySelector(".mesa-ruler-path"); polyline.setAttribute("points", points.map(p => `${p.fx * width},${p.fy * height}`).join(" "));
+  line.style.display = points.length > 2 ? "none" : ""; polyline.style.display = points.length > 2 ? "" : "none";
   const dotA = el.querySelector(".mesa-ruler-dot-a");
   dotA.setAttribute("cx", pct(fx1));
   dotA.setAttribute("cy", pct(fy1));
@@ -142,8 +149,16 @@ function _renderLocalRuler() {
     el = _buildRulerElement(true);
     overlay.appendChild(el);
   }
-  const m = measureMesaRuler(_rulerStart.fx, _rulerStart.fy, _rulerEnd.fx, _rulerEnd.fy);
-  _updateRulerElement(el, _rulerStart.fx, _rulerStart.fy, _rulerEnd.fx, _rulerEnd.fy, _formatRulerLabel(m));
+  const points = [_rulerStart, ..._rulerWaypoints, _rulerEnd], m = measureMesaRulerPath(points);
+  el.dataset.waypoints = String(_rulerWaypoints.length);
+  _updateRulerElement(el, _rulerStart.fx, _rulerStart.fy, _rulerEnd.fx, _rulerEnd.fy, _formatRulerLabel(m), points);
+}
+
+function measureMesaRulerPath(points) {
+  return points.slice(1).reduce((sum, p, i) => {
+    const part = measureMesaRuler(points[i].fx, points[i].fy, p.fx, p.fy);
+    return { cells: sum.cells + part.cells, meters: sum.meters + part.meters };
+  }, { cells: 0, meters: 0 });
 }
 
 /* ── Broadcast ───────────────────────────────────────────────── */
@@ -171,6 +186,7 @@ function _broadcastRuler(active, force) {
     active: true,
     u1: a.u, v1: a.v,
     u2: b.u, v2: b.v,
+    points: [_rulerStart, ..._rulerWaypoints, _rulerEnd].map(p => { const v = _rulerPointToWire(p.fx, p.fy); return { u: v.u, v: v.v }; }),
     space: a.space
   });
 }
@@ -222,6 +238,16 @@ function applyMesaRulerFromRemote(payload) {
   const clamped = [fx1, fy1, fx2, fy2].map(v => _rulerClamp01(v));
   if (clamped.some(v => v === null)) return;
   [fx1, fy1, fx2, fy2] = clamped;
+  let points = [{ fx: fx1, fy: fy1 }, { fx: fx2, fy: fy2 }];
+  if (payload.points != null) {
+    if (!Array.isArray(payload.points) || payload.points.length < 2 || payload.points.length > 256 ||
+        payload.points.some(p => !Number.isFinite(p?.u) || !Number.isFinite(p?.v))) return;
+    points = payload.points.map(p => String(payload.space || "") === "map" && window.mesaMapFracToStageFrac
+      ? window.mesaMapFracToStageFrac(p.u, p.v) : { fx: p.u, fy: p.v });
+    if (points.some(p => _rulerClamp01(p.fx) === null || _rulerClamp01(p.fy) === null)) return;
+    points = points.map(p => ({ fx: _rulerClamp01(p.fx), fy: _rulerClamp01(p.fy) }));
+    if (Math.hypot(points[0].fx - fx1, points[0].fy - fy1, points.at(-1).fx - fx2, points.at(-1).fy - fy2) > 1e-6) return;
+  }
 
   const overlay = _ensureRulerOverlay();
   if (!overlay) return;
@@ -237,8 +263,8 @@ function applyMesaRulerFromRemote(payload) {
     }
     overlay.appendChild(el);
   }
-  const m = measureMesaRuler(fx1, fy1, fx2, fy2);
-  _updateRulerElement(el, fx1, fy1, fx2, fy2, _formatRulerLabel(m));
+  const m = measureMesaRulerPath(points);
+  _updateRulerElement(el, fx1, fy1, fx2, fy2, _formatRulerLabel(m), points);
   const nameEl = el.querySelector(".mesa-ruler-name");
   if (nameEl) {
     nameEl.style.left = (fx2 * 100) + "%";
@@ -265,6 +291,8 @@ function _rulerFracFromEvent(event) {
 
 function _handleRulerPointerDown(event) {
   if (!event.shiftKey || event.button !== 0) return;
+  if (typeof mesaVisionMode !== "undefined" && mesaVisionMode !== "off") return;
+  if (event.target.closest?.("#mesaGridEditCanvas,#mesaLightCanvas,#mesaTemplateCanvas[data-active='true']")) return;
   const point = _rulerFracFromEvent(event);
   if (!point || point.fx === null || point.fy === null) return;
   // Captura antes de drag/pan/rubber-band — Shift+arrastar é só régua.
@@ -273,16 +301,20 @@ function _handleRulerPointerDown(event) {
   _rulerActive = true;
   _rulerStart = point;
   _rulerEnd = point;
+  _rulerWaypoints = []; _rulerSceneId = state.sceneId;
   _rulerLastBroadcastAt = 0;
   _renderLocalRuler();
   window.addEventListener("pointermove", _handleRulerPointerMove, true);
   window.addEventListener("pointerup", _handleRulerPointerUp, true);
   window.addEventListener("pointercancel", _handleRulerPointerUp, true);
   window.addEventListener("keydown", _handleRulerKeyDown, true);
+  window.addEventListener("contextmenu", _handleRulerContextMenu, true);
+  window.addEventListener("blur", _endRulerMeasurement);
 }
 
 function _handleRulerPointerMove(event) {
   if (!_rulerActive) return;
+  if (_rulerSceneId !== state.sceneId) { _endRulerMeasurement(); return; }
   const point = _rulerFracFromEvent(event);
   if (!point) return;
   _rulerEnd = point;
@@ -290,25 +322,39 @@ function _handleRulerPointerMove(event) {
   _broadcastRuler(true, false);
 }
 
-function _handleRulerPointerUp() {
+function _handleRulerPointerUp(event) {
+  if (event?.type === "pointerup" && event.button !== 0) return;
   if (!_rulerActive) return;
   _endRulerMeasurement();
 }
 
 function _handleRulerKeyDown(event) {
-  if (event.key === "Escape" && _rulerActive) _endRulerMeasurement();
+  if (!_rulerActive || event.target.closest?.("input,textarea,select,[contenteditable='true']")) return;
+  if (event.key === "Escape") { event.preventDefault(); event.stopImmediatePropagation(); _endRulerMeasurement(); }
+  if (event.key === "Backspace") { event.preventDefault(); event.stopImmediatePropagation(); _rulerWaypoints.pop(); _renderLocalRuler(); _broadcastRuler(true, true); }
+}
+
+function _handleRulerContextMenu(event) {
+  if (!_rulerActive) return;
+  event.preventDefault(); event.stopImmediatePropagation();
+  const last = _rulerWaypoints.at(-1) || _rulerStart;
+  if (_rulerWaypoints.length >= 254 || Math.hypot(last.fx - _rulerEnd.fx, last.fy - _rulerEnd.fy) < 1e-6) return;
+  _rulerWaypoints.push({ ..._rulerEnd }); _renderLocalRuler(); _broadcastRuler(true, true);
 }
 
 function _endRulerMeasurement() {
   _rulerActive = false;
   _rulerStart = null;
   _rulerEnd = null;
+  _rulerWaypoints = [];
   _renderLocalRuler();
   _broadcastRuler(false, true);
   window.removeEventListener("pointermove", _handleRulerPointerMove, true);
   window.removeEventListener("pointerup", _handleRulerPointerUp, true);
   window.removeEventListener("pointercancel", _handleRulerPointerUp, true);
   window.removeEventListener("keydown", _handleRulerKeyDown, true);
+  window.removeEventListener("contextmenu", _handleRulerContextMenu, true);
+  window.removeEventListener("blur", _endRulerMeasurement);
 }
 
 function initMesaRuler() {

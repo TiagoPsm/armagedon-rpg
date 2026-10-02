@@ -4,6 +4,15 @@
 
 /* ─── Canvas de desenho (dentro do mesaStageInner) ──────────── */
 
+#mesaTemplateCanvas { position: absolute; z-index: 9; pointer-events: none; touch-action: none; }
+#mesaTemplateCanvas[data-active="true"] { z-index: 11; pointer-events: auto; cursor: crosshair; }
+#mesaTemplateCanvas[hidden] { display: none; }
+.mesa-template-tools { padding: 10px; display: grid; gap: 6px; border-top: 1px solid var(--border); }
+.mesa-template-tools input { min-width: 0; max-width: 100%; }
+.mesa-decoration-picker { display: grid; gap: var(--sp-1); font-size: var(--fs-control); }
+.mesa-barriers .mesa-decoration-picker select { width: 100%; max-width: 100%; }
+#mesaDecorationTools .mesa-barrier-history { grid-template-columns: minmax(0, 1fr); }
+
 #mesaDrawCanvas {
   position: absolute;
   inset: 0;
@@ -53,6 +62,9 @@
   top: 0;                    /* alinhado ao topo do vtt-canvas; JS ajusta se necessário */
   z-index: 50;
   width: 186px;
+  max-height: min(560px, calc(100dvh - 220px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 6px 0;
   background: rgba(10, 8, 16, 0.96);
   backdrop-filter: blur(16px) saturate(140%);
@@ -69,6 +81,9 @@
 @keyframes flyoutIn {
   from { opacity: 0; transform: translateX(-6px); }
   to   { opacity: 1; transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vtt-draw-flyout { animation: none; }
 }
 
 /* ─── Item do flyout ─────────────────────────────────────────── */
@@ -221,7 +236,7 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--text-dim);
+  color: var(--text-soft);
   min-width: 4.2rem;
 }
 
@@ -290,3 +305,4 @@
 
 .mesa-stage-wrap[data-draw-active="true"]   { cursor: crosshair !important; }
 .mesa-stage-wrap[data-draw-active="eraser"] { cursor: cell !important; }
+.vtt-draw-flyout .mesa-barrier-hint { font-size: .75rem; line-height: 1.45; color: var(--text-soft); margin: .45rem 0; }

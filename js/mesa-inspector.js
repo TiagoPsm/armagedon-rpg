@@ -60,6 +60,7 @@ function renderInspector() {
     <section class="token-inspector-controls">
       <h3>A&ccedil;&otilde;es</h3>
       <div class="inspector-action-list">
+        ${typeof renderMesaFacingPreference === "function" ? renderMesaFacingPreference(token) : ""}
         ${buildInspectorSegmented("Visibilidade", "set-visibility", [
           { value: "visible", label: "Vis&iacute;vel", active: token.visibleToPlayers },
           { value: "hidden",  label: "Oculto",         active: !token.visibleToPlayers }

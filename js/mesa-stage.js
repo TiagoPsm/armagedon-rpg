@@ -1,11 +1,7 @@
 const mesaStageTokenElements = new Map();
-let pendingRealtimeDragMove = null;
-let realtimeDragMoveTimer = 0;
-let lastRealtimeDragMoveAt = 0;
 let lastMesaDragEndAt = 0;
 let pendingRemotePersistSceneId = "default";
 let _tokenResizeDrag = null; // { tokenId, startX, startY, startScale, tokenEl }
-const MESA_REALTIME_DRAG_INTERVAL_MS = 50;
 
 function renderStage() {
   // Token da Mesa e sempre o estilo redondo (minimal), renderizado via DOM.
@@ -29,7 +25,7 @@ function renderDomStage() {
     }
   });
 
-  renderedTokens.forEach(token => {
+  renderedTokens.forEach((token, index) => {
     let element = mesaStageTokenElements.get(token.id);
     const contentSignature = getTokenContentSignature(token);
 
@@ -48,7 +44,10 @@ function renderDomStage() {
     }
 
     updateMesaTokenElementState(element, token);
-    stage.appendChild(element);
+    // Keep a captured token in place during a draft. Reordering every frame
+    // needlessly detaches DOM nodes and can interrupt pointer capture.
+    const slot = stage.children[index];
+    if (slot !== element) stage.insertBefore(element, slot || null);
   });
 }
 
@@ -101,9 +100,10 @@ function getTokenContentSignature(token) {
 
 function updateMesaTokenElementState(element, token) {
   if (!element) return;
+  const position = typeof MesaMovement !== "undefined" ? MesaMovement.visual(token) : token;
   element.classList.toggle("is-selected", token.id === state.selectedTokenId);
-  element.style.left = `${token.x}%`;
-  element.style.top = `${token.y}%`;
+  element.style.left = `${position.x}%`;
+  element.style.top = `${position.y}%`;
   element.style.zIndex = String(token.order || 1);
   element.style.setProperty("--token-scale", String(token.tokenScale || 1));
   if (typeof mesaVisionTokenStyle === "function") mesaVisionTokenStyle(element, token);
@@ -684,6 +684,10 @@ function beginTokenDrag(target, token, clientX, clientY, pointerId) {
   const tokenTop = Number.isFinite(tokenRect.top) ? tokenRect.top : stageRect.top + (target.bounds?.y || 0);
 
   state.drag = {
+    origin: { x: token.x, y: token.y },
+    sceneId: state.sceneId || "default",
+    vision: mesaVisionActive(),
+    pointerId,
     tokenId: token.id,
     mode: target.mode,
     tokenElement: target.tokenElement,
@@ -699,13 +703,9 @@ function beginTokenDrag(target, token, clientX, clientY, pointerId) {
     pointerOffsetFracY: tokenRect.height > 0 ? (clientY - tokenTop) / tokenRect.height : 0.5
   };
 
-  token.order = getNextOrder();
-  if (typeof mesaVisionActive === "function" && mesaVisionActive()) {
-    state.drag.visionStart = { x: token.x, y: token.y };
-    state.drag.visionPath = [];
-  }
   pendingDragPoint = null;
   target.tokenElement?.classList.add("is-dragging");
+  MesaFacingDot.render(token);
   updateMesaTokenElementState(target.tokenElement, token);
   if (pointerId !== null && pointerId !== undefined) {
     target.tokenElement?.setPointerCapture?.(pointerId);
@@ -716,37 +716,38 @@ function beginTokenDrag(target, token, clientX, clientY, pointerId) {
 function handleDragMove(event) {
   if (_tokenResizeDrag) { handleResizePointerMove(event); return; }
   if (!state.drag) return;
+  if (state.drag.pointerId != null && event.pointerId !== state.drag.pointerId) return;
   scheduleDragPosition(event.clientX, event.clientY);
 }
 
-function handleDragEnd() {
+function handleDragEnd(event) {
+  if (event?.button === 2 || (event?.buttons & 1)) return;
   if (_tokenResizeDrag) { handleResizePointerUp(); return; }
   if (!state.drag) return;
+  if (event?.pointerId != null && state.drag.pointerId != null && event.pointerId !== state.drag.pointerId) return;
+  if (Number.isFinite(event?.clientX) && Number.isFinite(event?.clientY)) scheduleDragPosition(event.clientX, event.clientY);
   flushPendingDragPosition();
-  const token = findToken(state.drag.tokenId);
-  // Snap-to-grid (Etapa 42): ajusta ANTES do flush realtime/persist para a
-  // posição final transmitida e salva já ser a célula, não o ponto do soltar.
-  // Conformidade completa: tamanho quantizado em NxN células + alinhamento.
-  if (token && !state.drag.visionPath && typeof window.mesaConformTokenToGrid === "function") {
-    window.mesaConformTokenToGrid(token, state.drag.tokenElement);
+  if (!state.drag) return;
+  const draft = state.drag;
+  cancelTokenDrag();
+  lastMesaDragEndAt = Date.now();
+  if (draft.requested) void MesaMovement.commit(draft);
+}
+
+function cancelTokenDrag() {
+  const draft = state.drag;
+  state.drag = null;
+  if (dragAnimationFrame) cancelMesaRenderFrame(dragAnimationFrame);
+  dragAnimationFrame = 0; pendingDragPoint = null;
+  draft?.tokenElement?.classList.remove("is-dragging");
+  if (draft?.pointerId != null) {
+    try { draft.tokenElement?.releasePointerCapture?.(draft.pointerId); } catch { /* capture already released */ }
   }
-  flushRealtimeDragMove();
-  state.drag.tokenElement?.classList.remove("is-dragging");
   const stage = getMesaDomRef("stage");
   if (stage?.dataset) delete stage.dataset.dragging;
   document.body.classList.remove("mesa-drag-active");
-  const visionDrag = state.drag.visionPath ? { path: state.drag.visionPath, start: state.drag.visionStart } : null;
-  state.drag = null;
-  lastMesaDragEndAt = Date.now();
-  if (visionDrag && token) {
-    if (visionDrag.path.length) void mesaVisionAction({ kind: "move", tokenId: token.id, path: visionDrag.path }, visionDrag.start);
-    scheduleMesaRender({ stage: true, inspector: true });
-    return;
-  }
-  bumpMesaSceneVersion();
-  if (token) broadcastMesaTokenMove(token);
-  persistState({ immediate: true });
-  scheduleMesaRender({ stage: true, inspector: true });
+  if (typeof MesaMovement !== "undefined") MesaMovement.clearPreview();
+  if (draft) { lastMesaDragEndAt = Date.now(); scheduleMesaRender({ stage: true }); }
 }
 
 function shouldIgnoreMesaStageClickAfterDrag() {
@@ -756,12 +757,14 @@ function shouldIgnoreMesaStageClickAfterDrag() {
 function handleMouseDragMove(event) {
   if (_tokenResizeDrag) { handleResizePointerMove(event); return; }
   if (!state.drag) return;
+  if (state.drag.pointerId != null) return;
   scheduleDragPosition(event.clientX, event.clientY);
 }
 
-function handleMouseDragEnd() {
+function handleMouseDragEnd(event) {
   if (!state.drag) return;
-  handleDragEnd();
+  if (state.drag.pointerId != null) return;
+  handleDragEnd(event);
 }
 
 function updateDragPosition(clientX, clientY) {
@@ -793,30 +796,7 @@ function updateDragPosition(clientX, clientY) {
   const leftPx = clamp(clientX - stageRect.left - pointerOffsetX, 0, usableWidth);
   const topPx = clamp(clientY - stageRect.top - pointerOffsetY, 0, usableHeight);
 
-  let next = { x: clamp((leftPx / stageRect.width) * 100, 0, 100), y: clamp((topPx / stageRect.height) * 100, 0, 100) };
-  if (state.drag.visionPath) {
-    next = mesaVisionConstrain(token, next.x, next.y);
-    const path = state.drag.visionPath;
-    if (Math.hypot(next.x - token.x, next.y - token.y) > 1e-8) {
-      // Compact only shortcuts that the SAME collision kernel approves.
-      const previous = path.length > 1 ? path[path.length - 2] : state.drag.visionStart;
-      const shortcut = mesaVisionConstrain({ ...token, ...previous }, next.x, next.y);
-      if (path.length && Math.hypot(shortcut.x - next.x, shortcut.y - next.y) < 1e-8) path[path.length - 1] = next;
-      else if (path.length < 256) path.push(next);
-      else { mesaVisionNotice("Percurso muito longo: solte o token para continuar."); return; }
-    }
-  }
-  token.x = next.x; token.y = next.y;
-  if (state.drag.visionPath) requestMesaVisionRender();
-
-  if (state.drag.tokenElement?.isConnected) {
-    state.drag.tokenElement.style.left = `${token.x}%`;
-    state.drag.tokenElement.style.top = `${token.y}%`;
-    state.drag.tokenElement.style.zIndex = String(token.order || 1);
-    state.drag.tokenElement.dataset.contentSignature = getTokenContentSignature(token);
-  }
-
-  queueRealtimeDragMove(token);
+  MesaMovement.preview(state.drag, { x: clamp((leftPx / stageRect.width) * 100, 0, 100), y: clamp((topPx / stageRect.height) * 100, 0, 100) });
 }
 
 function scheduleDragPosition(clientX, clientY) {
@@ -841,41 +821,6 @@ function flushPendingDragPosition() {
   }
   updateDragPosition(pendingDragPoint.clientX, pendingDragPoint.clientY);
   pendingDragPoint = null;
-}
-
-function queueRealtimeDragMove(token) {
-  if (typeof mesaVisionActive === "function" && mesaVisionActive()) return;
-  if (!token) return;
-  // Mestre transmite qualquer token; jogador transmite o próprio em tempo
-  // real também (sem isto o token dele "teleporta" na tela dos outros).
-  // broadcastMesaTokenMove revalida permissão e bloqueia a camada "dm".
-  if (!isMaster() && !(typeof canPlayerMoveOwnToken === "function" && canPlayerMoveOwnToken(token))) return;
-  pendingRealtimeDragMove = token;
-  const elapsed = Date.now() - lastRealtimeDragMoveAt;
-
-  if (elapsed >= MESA_REALTIME_DRAG_INTERVAL_MS) {
-    flushRealtimeDragMove();
-    return;
-  }
-
-  if (realtimeDragMoveTimer) return;
-  realtimeDragMoveTimer = window.setTimeout(flushRealtimeDragMove, MESA_REALTIME_DRAG_INTERVAL_MS - elapsed);
-}
-
-function flushRealtimeDragMove() {
-  if (realtimeDragMoveTimer) {
-    window.clearTimeout(realtimeDragMoveTimer);
-    realtimeDragMoveTimer = 0;
-  }
-
-  const token = pendingRealtimeDragMove;
-  pendingRealtimeDragMove = null;
-  if (!token) return;
-  // Mesma regra do queueRealtimeDragMove: mestre transmite qualquer token,
-  // jogador transmite o proprio (broadcastMesaTokenMove revalida).
-  if (!isMaster() && !(typeof canPlayerMoveOwnToken === "function" && canPlayerMoveOwnToken(token))) return;
-  lastRealtimeDragMoveAt = Date.now();
-  broadcastMesaTokenMove(token);
 }
 
 function resetPrototype() {
@@ -982,7 +927,16 @@ async function runRemoteMesaPersist() {
         keepalive: document.visibilityState === "hidden"
       });
       if ((state.sceneId || "default") !== persistSceneId) continue;
+      const savedDrawings = new Map((saved?.data?.drawings || []).map(s => [s.id, s]));
+      if (payload.drawings?.some(s => (s.template && JSON.stringify(savedDrawings.get(s.id)?.template) !== JSON.stringify(s.template)) || (s.locked && !savedDrawings.get(s.id)?.locked))) {
+        mesaDeferredVisionSnapshot = null;
+        throw Object.assign(new Error("O servidor precisa da atualização de moldes e decorações. As alterações ainda não foram confirmadas."), { code: 'mesa-feature-compat' });
+      }
       if (payload.vision && !saved?.data?.vision) throw new Error("O servidor precisa da atualização de visão dinâmica. A cena ainda não foi confirmada.");
+      if (payload.vision && ["darkness", "lights"].some(field => payload.vision[field] !== undefined && saved?.data?.vision?.[field] === undefined)) {
+        mesaDeferredVisionSnapshot = null;
+        throw new Error("O servidor precisa da atualização de iluminação. As luzes ainda não foram confirmadas.");
+      }
       if (saved?.data?.vision && saved.data.vision.revision !== (payload.vision?.revision || 0) + 1) {
         pendingRemotePersistPayload = null;
         applyMesaSceneSnapshot(saved.data, { keepSelection: true });
@@ -1005,12 +959,17 @@ async function runRemoteMesaPersist() {
       }
       console.warn("Falha ao salvar cena oficial da mesa.", error);
       if (payload.vision && error.status !== 409) mesaVisionNotice(error.message || "Não foi possível confirmar a cena.");
+      else if (error.code === 'mesa-feature-compat') window.UI?.toast?.(error.message, { kicker: '// Mesa' });
     } finally {
       activeRemotePersistSignature = "";
     }
   }
 
   mesaRemotePersistInFlight = false;
+  const deferredVision = mesaDeferredVisionSnapshot;
+  mesaDeferredVisionSnapshot = null;
+  if (deferredVision?.sceneId === (state.sceneId || "default")) void applyRemoteMesaSceneSnapshot(deferredVision.data, { movement: deferredVision.movement });
+  if (typeof requestMesaVisionRender === "function") requestMesaVisionRender();
 }
 
 // A Mesa atualiza Vida e Integridade escrevendo primeiro na ficha local.
@@ -1585,6 +1544,7 @@ function isLocalMesaPreview() {
 // Sem token: capacidade geral (mestre, ou jogador com a trava aberta).
 // Com token: o jogador so pode arrastar o proprio token.
 function canMoveTokens(token = null) {
+  if (typeof MesaMovement !== "undefined" && MesaMovement.isAnimating(token)) return false;
   if (typeof mesaVisionActive === "function" && mesaVisionActive() && (mesaVisionBusy || mesaRemotePersistInFlight || mesaVisionMode !== "off")) return false;
   if (isMaster()) return true;
   if (state.role !== "player" || state.playersMoveLocked) return false;

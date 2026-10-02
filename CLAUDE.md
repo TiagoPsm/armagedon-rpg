@@ -4,6 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
+### Primary production guide (owner directive, 2026-10-02)
+
+Read `AGENTS.md` and `docs/GUIA-DE-PRODUCAO.md` before reviewing or changing
+the project. The guide is the complete owner-supplied frontend quality manual,
+not a source of RPG mechanics. Keep the project 100% free and ask Tiago before
+changing the structure or rules of his RPG system. Desktop comes first; mobile
+is a later phase. Evidence and scoped corrections take precedence over a
+framework migration or subjective redesign.
+
 **Armagedom** (official spelling, with M; the API URL keeps "armagedon" for historical reasons) — static RPG campaign portal for a tabletop group. Frontend is plain HTML/CSS/JS with no bundler. The live API runs on Cloudflare Workers + D1. Realtime (Mesa scene sync) uses Cloudflare Durable Objects via WebSocket.
 
 Owner: Tiago (TiagoPsm) — game master. Respond in **PT-BR**.

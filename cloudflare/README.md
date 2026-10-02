@@ -1,5 +1,19 @@
 # Migracao para Cloudflare
 
+Publicacao autorizada 2026-10-02: Worker `armagedon-api` atualizado para `b3c894c1-e252-42fc-a1ca-bc0a4d4b0a1c`, apos dry-run Wrangler 4.100.0 e OAuth com escopos limitados a conta/Workers. `--keep-vars`; nenhum secrets-file, migracao D1, rotacao de segredo, alteracao de cenas ou criacao de infraestrutura. Versao anterior conferida diretamente: `8fa53504-987c-4197-a2d6-e5a5efd88785`. Health 200. Conjunto inclui contratos M2/V2/V3/T1/T5, grade compartilhada, bloqueios de desenhos e MIME do mapa; testes locais continuam distintos da homologacao mestre/jogador. Registro do frontend e acompanhamento em `../DEV_STATUS.md`.
+
+Revisao local 2026-10-02: normalizador `js/mesa-grid-rules.js` compartilhado evita drift em celulas 1/N apos save/get. `drawing.locked` opcional preservado; relay recusa bloqueio por jogador e metadado nao booleano. Cliente recusa confirmacao se backend descarta moldes/bloqueios. Sem migracao D1; publicar frontend/Worker juntos. Catalogo de mapas IndexedDB v4 e migracao aditiva exclusivamente do navegador, preservando store de originais. Testes locais nao equivalem a homologacao conectada.
+
+V2/V3/T1/T5 local 2026-10-01: `vision.darkness` e `vision.lights` opcionais (64 fontes finitas), `drawing.template` com normalizador compartilhado e pontos opcionais de `mesa:ruler` (max256). Sem migracao D1; frontend e Worker devem publicar juntos. Cliente recusa confirmacao quando backend antigo descarta campos de iluminacao. Testes locais SQLite/DO/browser, nao homologacao real online.
+
+M2 local 2026-10-01: `movement` efemero fora de `scene.data`, origem/path ate 256 pontos/duracao/sceneVersion. A API anexa somente apos CAS autorizado; DO valida correspondencia com snapshot e remove caminhos secretos ou desatualizados. Delta legado sem visao aceita metadados opcionais sanitizados. GET/F5 nao repete animacao. Testes SQLite/DO controlado e dois clientes locais; sem deploy ou migracao.
+
+Movimento planejado local 2026-09-28: cliente envia `kind: move` com um unico destino em `path` depois de soltar. Rota, schema e validacao de colisao permanecem iguais. Previa/animacao sao apenas visuais; API continua autoritativa. Nenhum deploy/migracao nesta etapa.
+
+Reconstrucao local 2026-09-26: frontend separado em runtime de visao, editor de barreiras e bolinha de direcao. Preserva schema v1, bibliotecas compartilhadas de geometria/permissao e rota de acoes existente. Nenhum dado de cena apagado, migracao D1 ou deploy nesta etapa. A preferencia de ocultar bolinha e exclusivamente local, sem novo campo no servidor.
+
+Revisao local 2026-09-22: regras compartilhadas de portas usam o ponto mais proximo do segmento para alcance, sem exigir cone/orientacao. Ownership, tranca e barreiras intermediarias continuam validados. Requer publicar Worker e frontend juntos. Sem alteracao de schema D1.
+
 ## Visao dinamica — integracao local 2026-09-20
 
 `POST /api/mesa/vision/action` recebe cena, revisao e acao de movimento, orientacao ou porta. Autenticacao, ownership, cena ativa e bloqueio do mestre precedem a escrita. Geometria e regras puras sao compartilhadas com `js/mesa-vision-geometry.js` e `js/mesa-vision-rules.js`.
@@ -285,3 +299,7 @@ sem cofre.
 
 `MASTER_BOOTSTRAP_PASSWORD` do `.dev.vars` precisa bater com a variavel de
 ambiente `ARMAGEDON_LOCAL_MASTER_PASSWORD` usada pelos testes locais.
+
+# Mapas originais — 2026-10-01
+
+Upload de mapas guarda Content-Type PNG/JPEG/WebP conforme arquivo recebido; chave .webp permanece por compatibilidade, GET usa metadados reais. Limite de 12MB permanece. Frontend preserva originais dentro de 10MB e relay reconhece assinaturas raster. Mudanca local.
