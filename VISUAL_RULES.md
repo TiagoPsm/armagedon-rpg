@@ -1,5 +1,7 @@
 # VISUAL RULES
 
+- Publicacao/CI (2026-10-02): hero de Regras/Sugestoes quebra em linhas quando a tipografia exige, sem esconder overflow. Cards usam tracks `minmax(0, 1fr)` e minimo zero; painel cresce com rem para manter "Mestre"/"Nenhuma" legiveis em texto ampliado/fontes alternativas. Flex-basis da coluna de titulo vale somente no breakpoint em linha, evitando altura artificial nas telas estreitas. Fonte remota indisponivel faz parte da regressao visual.
+
 - Manual de producao (2026-10-02): revisar capturas reais, nao somente overflow; palavra recortada/quebrada e hierarquia comprimida podem passar nos testes de caixas. Desktop 1024/1280/1440/1920/2560 e texto ampliado sao o foco atual; mobile e fase posterior.
 - Texto necessario usa `--text-soft`, placeholders `--text-placeholder`, erro `--danger-text`, sucesso `--success-text`, carmesim escrito `--accent-text`. Reservar preenchimentos/bordas `--accent` e decoracao/inativo `--text-faint`; nao clarear a paleta inteira.
 - Navbar pode quebrar os links em linhas no desktop com texto ampliado, sem esconder navegacao nem ampliar horizontalmente a pagina. Pagina atual tem `aria-current="page"` quando existe link direto.

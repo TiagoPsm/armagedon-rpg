@@ -1,5 +1,9 @@
 # 📊 Smart Skill Feedback & Improvements Log
 
+### 2026-10-02 — Falha real do pipeline — game-ui-frontend / game-playtest
+
+Skills preservaram o tema e restringiram a correcao a contenção do hero/cards. Suite Windows aprovada nao cobre metricas de fontes Linux: forcar fallback mais largo e fonte externa indisponivel reproduziu overflow. Corrigir tracks/minimos/flex-wrap, nao ocultar rolagem nem afrouxar assert. Flex-basis em rem deve ficar apenas no breakpoint em linha para nao impor altura artificial no layout em coluna. Dois testes novos tiveram falha previa comprovada. Capturas de fonte e pacote minificado complementam CI remoto; publicacao secundaria so concluida apos sucesso real.
+
 ### 2026-10-02 — Publicacao autorizada — frontend-performance-checklist / plugin-management
 
 Checklist apropriada para preservar ordem/cache/build e distinguir pipeline de homologacao. Dispatcher aponta nome antigo 05; utilizado arquivo existente 04-frontend-performance-checklist.md. Minificacao usa build completo, nao somente build:pages. Descoberta de Cloudflare nao retornou plugin nesta sessao; CLI existente reutilizado, sem instalar dependencia. Login OAuth com escopos reduzidos conta/Workers; ausencia intencional de outros escopos nao justifica ampliacao automatica. Conferir versao/bindings antes e depois, preservar vars/secrets e nao confundir health com teste autenticado. Referencias Git invalidas de OneDrive precisam de backup recuperavel, nao reset/limpeza ampla. Dois destinos frontend exigem conferir conteudo real em ambos, pois hash de URL nao demonstra minificacao.

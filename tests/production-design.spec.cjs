@@ -86,3 +86,28 @@ for (const file of ['index.html', 'ficha.html', 'mesa.html', 'regras.html', 'sug
     await page.screenshot({ path: info.outputPath('header-150.png') });
   });
 }
+
+for (const file of ['regras.html', 'sugestoes.html']) {
+  test(`Guide fallback fonts: ${file} contains hero and status cards with enlarged text`, async ({ page }, info) => {
+    await page.route('https://fonts.googleapis.com/**', route => route.abort());
+    await page.setViewportSize({ width: 1024, height: 1000 });
+    await open(page, file);
+    // Exercise wider installed fallback metrics, not only the font served on
+    // this machine. Linux CI exposed intrinsic grid/flex widths at 150% text.
+    await page.addStyleTag({ content: 'body { --font-display: Verdana, sans-serif; --font-body: Verdana, sans-serif; --font-ui: Verdana, sans-serif; }' });
+    await page.evaluate(() => document.documentElement.style.fontSize = '24px');
+    const escaped = await page.locator('.rules-hero, .rules-status-grid').evaluateAll(parents => parents.flatMap(parent => {
+      const box = parent.getBoundingClientRect();
+      return [...parent.children].filter(child => {
+        const rect = child.getBoundingClientRect();
+        return rect.left < box.left - 1 || rect.right > box.right + 1;
+      }).map(child => child.className);
+    }));
+    expect(escaped).toEqual([]);
+    await expect.poll(() => page.locator('.rules-status-card strong').evaluateAll(values =>
+      values.every(value => value.scrollWidth <= value.clientWidth + 1)
+    )).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+    await page.screenshot({ path: info.outputPath('fallback-150.png'), fullPage: true });
+  });
+}
