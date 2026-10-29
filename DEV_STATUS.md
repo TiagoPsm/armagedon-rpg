@@ -2,6 +2,8 @@
 
 ## Correcao da publicacao e integracao da base — 2026-10-29
 
+Publicacao corretiva do commit `5f4c4a9`: Worker manual `f19dfef5-12d2-467a-a323-b8251a392d10` e Pages minificado `dfbb061c`, com push fast-forward para `main`. CI inicial `40818239573` parou antes dos testes porque `ubuntu-latest` passou a Ubuntu 26.04 e Playwright 1.59.1 nao suporta essa imagem. Workflow fixado em `ubuntu-24.04`, presente na matriz de dependencias do Playwright instalado; nenhuma assercao de teste foi desativada. Conferencia final dos destinos e da nova execucao registrada ao concluir.
+
 Incidente ALTO reproduzido: a publicacao anterior usou a base recuperada sem os tres commits remotos de outubro. Alem de retirar melhorias existentes, `indexedDB.open("armagedom_maps", 3)` recusou o banco versao 4 de quem ja usava a beta; `initMesaMap()` capturou o erro e terminou antes de revelar engrenagem/camadas. O papel continuava `master`. Testes anteriores com perfis novos nao cobriam a transicao.
 
 Correcao: integrados os tres commits de `origin/main`, preservando recuperacao, dependencias e ferramentas locais. Biblioteca/catalogo de mapas v4, calibracao/origem de grade, moldes, percursos, decoracoes e melhorias do portal/interface recuperados. Banco local nao e apagado: versao 3 migra somente metadados, versao 4 abre diretamente, blobs e preferencias permanecem. `tests/mesa-upgrade.spec.cjs` verifica ambos, controles de mestre e recarga. Nenhuma permissao ou mecanica do RPG foi alterada.
