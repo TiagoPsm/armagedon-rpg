@@ -18,7 +18,7 @@ let failed = false;
 
 function normalizeModuleSource(source) {
   return source
-    .replace(/^\s*import\s+[\s\S]*?from\s+["'][^"']+["'];?\s*$/gm, "")
+    .replace(/^\s*import\s+[\s\S]*?from\s+["'][^"']+["'](?:\s+with\s*\{[^}]*\})?;?\s*$/gm, "")
     .replace(/^\s*export\s+\{[^}]+\};?\s*$/gm, "")
     .replace(/\bexport\s+default\s+\{/g, "const __default__ = {")
     .replace(/\bexport\s+(async\s+function|function|class|const|let|var)\s+/g, "$1 ");

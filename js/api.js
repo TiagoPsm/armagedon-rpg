@@ -8,6 +8,45 @@
   const REALTIME_RECONNECT_DELAY_MS = 1800;
   const REALTIME_ENABLED = window.ARMAGEDON_CONFIG?.realtimeEnabled === true;
   const eventBus = new EventTarget();
+  const pendingReads = new Map();
+  const cachedReads = new Map();
+  let readGeneration = 0;
+  let identityGeneration = 0;
+  function invalidateReads() { readGeneration++; pendingReads.clear(); cachedReads.clear(); }
+  function staticAvatarsEnabled() { return window.ARMAGEDON_AVATAR_CATALOG?.enabled === true; }
+  function resolveAvatarUrl(value, fallbackKey = '') {
+    if (!staticAvatarsEnabled()) return value || '';
+    let key = fallbackKey;
+    try {
+      const match = new URL(String(value), window.location.href).pathname.match(/\/api\/avatars\/([^/]+)$/);
+      if (match) key = decodeURIComponent(match[1]);
+    } catch {}
+    const normalize = key => String(key).replace(/[^a-z0-9_-]/gi, '_').toLowerCase().slice(0, 64);
+    const catalog = window.ARMAGEDON_AVATAR_CATALOG;
+    const item = catalog.entries?.[normalize(fallbackKey)] || catalog.entries?.[normalize(key)];
+    return item && /^assets\/avatars\/[a-f0-9]{64}\.(webp|jpg|png|gif|avif)$/.test(item.path) ? catalog.origin + '/' + item.path : value;
+  }
+  function rewriteAvatars(value, key = '') {
+    if (!value || typeof value !== 'object' || !staticAvatarsEnabled()) return value;
+    if (Array.isArray(value)) { value.forEach(item => rewriteAvatars(item, key)); return value; }
+    const ownKey = value.key || (value.id ? 'echo-' + value.id : key);
+    for (const field of Object.keys(value)) {
+      if ((field === 'avatar' || field === 'imageUrl') && typeof value[field] === 'string') value[field] = resolveAvatarUrl(value[field], ownKey);
+      else if (value[field] && typeof value[field] === 'object') rewriteAvatars(value[field], ownKey);
+    }
+    return value;
+  }
+  function resolveSceneMap(ref) {
+    if (!ref) return ref;
+    try {
+      const key = ref.url ? decodeURIComponent(new URL(ref.url).pathname.split('/api/mesa/map/')[1] || '') : '';
+      const aliases = window.MESA_RECOVERY_MAP_HASHES || {};
+      const hash = aliases[key] || aliases[ref.id];
+      if (!hash) return ref;
+      const { url, ...local } = ref;
+      return { ...local, localOnly: true, hash };
+    } catch { return ref; }
+  }
 
   const state = {
     baseUrl: DEFAULT_BASE_URL,
@@ -90,6 +129,7 @@
 
     const eventName = String(payload?.type || "").trim();
     if (!eventName) return;
+    if (/^(sheet:changed|mesa:sheet:|mesa:echo:|directory:|character:|echo:|rules:|suggestions:)/.test(eventName)) invalidateReads();
     emitEvent(eventName, payload);
   }
 
@@ -238,13 +278,37 @@
   }
 
   function setToken(token) {
-    state.token = String(token || "");
+    const next = String(token || "");
+    if (next !== state.token) { identityGeneration++; invalidateReads(); }
+    state.token = next;
     if (!state.token) {
       disconnectSocket();
     }
   }
 
   async function request(path, options = {}) {
+    const reading = !options.method || options.method === 'GET';
+    if (!reading) invalidateReads();
+    const generation = readGeneration, identity = identityGeneration;
+    const key = JSON.stringify([state.baseUrl, path, options.auth !== false, options.headers || {}]);
+    const ttl = ['/directory', '/echos'].includes(path) ? 3000 : 0;
+    const cached = reading && cachedReads.get(key);
+    if (cached && cached.expires > Date.now()) return structuredClone(cached.value);
+    if (reading && pendingReads.has(key)) return structuredClone(await pendingReads.get(key));
+    const job = requestOnce(path, options).then(value => {
+      if (identity !== identityGeneration) throw new Error('A sessao mudou durante a consulta.');
+      if (reading && ttl && generation === readGeneration) cachedReads.set(key, { value, expires: Date.now() + ttl });
+      return value;
+    });
+    if (reading) pendingReads.set(key, job);
+    try { return structuredClone(await job); }
+    finally {
+      if (pendingReads.get(key) === job) pendingReads.delete(key);
+      if (!reading) invalidateReads();
+    }
+  }
+
+  async function requestOnce(path, options = {}) {
     const response = await fetch(buildUrl(path), {
       method: options.method || "GET",
       keepalive: options.keepalive === true,
@@ -271,7 +335,7 @@
       throw error;
     }
 
-    return payload;
+    return rewriteAvatars(payload);
   }
 
   function normalizeRulePayload(payload = {}) {
@@ -290,12 +354,16 @@
   }
 
   window.APP = {
+    resolveAvatarUrl,
+    resolveSceneMap,
+    staticAvatarsEnabled,
     init,
     isEnabled,
     getBaseUrl() {
       return state.baseUrl;
     },
     setBaseUrl(baseUrl) {
+      identityGeneration++; invalidateReads();
       state.baseUrl = String(baseUrl || "").trim() || DEFAULT_BASE_URL;
       localStorage.setItem("tc_api_base_url", state.baseUrl);
       state.initialized = false;
@@ -305,6 +373,7 @@
     },
     setToken,
     clearToken() {
+      identityGeneration++; invalidateReads();
       state.token = "";
       disconnectSocket();
     },
@@ -369,6 +438,8 @@
       });
     },
     async uploadAvatar(key, blob) {
+      if (staticAvatarsEnabled()) throw new Error('As imagens sao atualizadas pelo mestre nas publicacoes do site.');
+      invalidateReads();
       const contentType = blob.type || "image/webp";
       const response = await fetch(buildUrl(`/avatars/${encodeURIComponent(key)}`), {
         method: "POST",
@@ -382,7 +453,7 @@
         const err = await response.json().catch(() => ({}));
         throw new Error(err?.error || "Falha ao enviar avatar.");
       }
-      return response.json();
+      const result = await response.json(); invalidateReads(); return result;
     },
     async awardSoulEssence(key, payload) {
       return request(`/characters/${encodeURIComponent(key)}/soul-essence`, {
@@ -580,6 +651,8 @@
       });
     },
     async uploadEchoAvatar(id, blob) {
+      if (staticAvatarsEnabled()) throw new Error('As imagens sao atualizadas pelo mestre nas publicacoes do site.');
+      invalidateReads();
       const contentType = blob.type || "image/webp";
       const response = await fetch(buildUrl(`/avatars/echo/${encodeURIComponent(id)}`), {
         method: "POST",
@@ -593,7 +666,7 @@
         const err = await response.json().catch(() => ({}));
         throw new Error(err?.error || "Falha ao enviar avatar do Echo.");
       }
-      return response.json();
+      const result = await response.json(); invalidateReads(); return result;
     }
   };
 })();

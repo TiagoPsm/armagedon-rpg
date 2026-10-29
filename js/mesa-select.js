@@ -125,6 +125,14 @@ function _refreshSelectionBox() {
   }
 }
 
+// Motion changes token bounds, not drawing/decorations geometry. Avoid
+// repainting those canvases or reading selection bounds when none can move.
+function refreshMesaMovingSelection(ids) {
+  if (!ids.some(id => _selectedTokenIds.has(id))) return;
+  const bounds = _computeSelectionBounds();
+  if (bounds) _showSelectionBox(bounds);
+}
+
 // ── Helpers ──────────────────────────────────────────────────
 
 function _getInner() {

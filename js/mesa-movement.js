@@ -222,12 +222,16 @@ const MesaMovement = (() => {
   function isAnimating(token) { return token ? motions.has(token.id) : motions.size > 0; }
   function tick() {
     frame = 0;
+    const stage = getMesaDomRef('stage');
+    const dimensions = { clientWidth: stage.clientWidth, clientHeight: stage.clientHeight };
+    const moved = [];
     for (const [id, motion] of motions) {
       const token = findToken(id);
       if (!token || motion.sceneId !== sceneId() || different(token, motion.to) || performance.now() - motion.started >= motion.duration) motions.delete(id);
+      const element = mesaStageTokenElements.get(id);
+      if (token && element) { updateMesaTokenPosition(element, token, dimensions); moved.push(id); }
     }
-    renderStage();
-    if (typeof _refreshSelectionBox === "function") _refreshSelectionBox();
+    if (typeof refreshMesaMovingSelection === 'function') refreshMesaMovingSelection(moved);
     if (motions.size) frame = requestAnimationFrame(tick);
   }
   function animate(from, to, path, duration) {

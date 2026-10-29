@@ -1,4 +1,5 @@
 import { normalizeEchoRarity, normalizeSheetData } from "./sheet.js";
+import { allowsStaticAvatarEdit } from './static-avatars.js';
 
 function jsonError(message, status) {
   return new Response(JSON.stringify({ error: message }), {
@@ -438,6 +439,11 @@ async function updateEcho(env, actor, echoId, patch = {}) {
   const echo = await getEchoRowById(env, echoId);
   if (!echo) throw jsonError("Echo não encontrado.", 404);
   assertEchoReadAccess(actor, echo);
+
+  if (actor.role === 'master' && Object.prototype.hasOwnProperty.call(patch, 'avatar') &&
+      !allowsStaticAvatarEdit(echo.data?.avatar, patch.avatar, 'echo-' + echo.id)) {
+    throw jsonError('As imagens sao atualizadas pelo mestre nas publicacoes do site.', 409);
+  }
 
   const data = normalizeEchoData(echo.data);
   const next = { ...echo, data };

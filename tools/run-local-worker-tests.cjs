@@ -1,6 +1,6 @@
 // Validacao isolada: apenas Worker/D1 locais; segredos aleatorios em memoria.
 const { spawn, spawnSync } = require('node:child_process');
-const { mkdtempSync } = require('node:fs');
+const { mkdtempSync, cpSync, mkdirSync, readFileSync, writeFileSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const path = require('node:path');
 const net = require('node:net');
@@ -8,8 +8,20 @@ const { randomBytes } = require('node:crypto');
 const root = path.resolve(__dirname, '..');
 const wrangler = path.join(root, 'node_modules/wrangler/bin/wrangler.js');
 const playwright = path.join(root, 'node_modules/@playwright/test/cli.js');
-const config = path.join(root, 'cloudflare/wrangler.toml');
+let config = path.join(root, 'cloudflare/wrangler.toml');
 const stateDir = mkdtempSync(path.join(tmpdir(), 'armagedom-validation-'));
+const staticMode = process.argv.includes('--static');
+if (staticMode) {
+  const fixture = path.join(stateDir, 'static-fixture');
+  cpSync(path.join(root, 'cloudflare/src'), path.join(fixture, 'cloudflare/src'), { recursive: true });
+  mkdirSync(path.join(fixture, 'js'), { recursive: true });
+  for (const name of ['mesa-movement-rules.js', 'mesa-template-rules.js', 'mesa-grid-rules.js']) cpSync(path.join(root, 'js', name), path.join(fixture, 'js', name));
+  mkdirSync(path.join(fixture, 'assets/avatars'), { recursive: true });
+  const catalog = JSON.parse(readFileSync(path.join(root, 'assets/avatars/manifest.json'), 'utf8')); catalog.enabled = true;
+  writeFileSync(path.join(fixture, 'assets/avatars/manifest.json'), JSON.stringify(catalog));
+  const original = readFileSync(config, 'utf8').replace(/\[\[r2_buckets\]\][\s\S]*?(?=\n\[vars\])/, '');
+  config = path.join(fixture, 'cloudflare/wrangler.toml'); writeFileSync(config, original);
+}
 const masterPass = randomBytes(24).toString('hex');
 const playerPass = randomBytes(24).toString('hex');
 const helper = require(path.join(root, 'tests/mesa-test-server.cjs'));
@@ -39,7 +51,7 @@ let worker;
     const api = 'http://127.0.0.1:' + workerPort + '/api';
     let ready = false;
     for (let i = 0; i < 60; i++) {
-      try { const r = await fetch(api + '/health'); if (r.ok) { ready = true; break; } } catch {}
+      try { const r = await fetch(api + '/health', { signal: AbortSignal.timeout(1500) }); if (r.ok) { ready = true; break; } } catch {}
       if (worker.exitCode !== null) break;
       await new Promise(r => setTimeout(r, 500));
     }
@@ -54,7 +66,8 @@ let worker;
     const env = {...process.env, ARMAGEDON_LOCAL_WORKER: api, ARMAGEDON_LOCAL_SITE: site, ARMAGEDON_LOCAL_MASTER_PASSWORD: masterPass, ARMAGEDON_LOCAL_PLAYER_PASSWORD: playerPass};
     // Asynchronous child keeps the local HTTP server responsive during browser tests.
     const result = await new Promise((resolve, reject) => {
-      const p = spawn(process.execPath, [playwright, 'test', 'tests/mesa-resize-worker.spec.cjs', 'tests/mesa-local-worker.spec.cjs', '--workers=1', '--reporter=line', '--output=test-results/worker-validation'], {cwd: root, env, windowsHide: true, stdio: 'inherit'});
+      const specs = staticMode ? ['tests/static-avatars-worker.spec.cjs'] : ['tests/mesa-resize-worker.spec.cjs', 'tests/mesa-local-worker.spec.cjs', 'tests/mesa-traffic-worker.spec.cjs'];
+      const p = spawn(process.execPath, [playwright, 'test', ...specs, '--workers=1', '--reporter=line', '--output=test-results/' + (staticMode ? 'static-worker-validation' : 'worker-validation')], {cwd: root, env, windowsHide: true, stdio: 'inherit'});
       p.on('error', reject); p.on('exit', resolve);
     });
     if (result !== 0) throw new Error('Worker browser tests failed: ' + result);

@@ -29,7 +29,7 @@ const files = [
   "apple-touch-icon.png", "apple-touch-icon.webp",
   "_headers"
 ];
-const dirs = ["css", "js"];
+const dirs = ["css", "js", "assets"];
 
 const fichaCssBundle = "css/ficha-page.bundle.css";
 const fichaJsBundle  = "js/ficha-page.bundle.js";

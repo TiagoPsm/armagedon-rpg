@@ -320,6 +320,7 @@ async function listDirectory(env, user) {
         u.username as owner_username
       from characters c
       left join users u on u.id = c.owner_user_id
+      ${user.role === 'master' ? '' : "where c.kind = 'player'"}
       order by
         case c.kind
           when 'player' then 1

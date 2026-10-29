@@ -27,6 +27,7 @@ create table if not exists characters (
 );
 
 create unique index if not exists characters_sheet_key_uidx on characters (sheet_key);
+create index if not exists characters_sheet_key_lower_idx on characters (lower(sheet_key));
 create unique index if not exists characters_player_owner_uidx on characters (owner_user_id) where kind = 'player';
 create index if not exists characters_kind_idx on characters (kind);
 

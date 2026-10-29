@@ -24,6 +24,36 @@ async function dragTo(page, x, y) {
   await expect(page.locator("#mesaMovementCanvas")).toBeVisible();
 }
 
+test('animacao interpola sem redesenhar a mesa nem alterar tokens parados', async ({ page }) => {
+  await setup(page);
+  const result = await page.evaluate(async () => {
+    const token = findToken('ana'), from = { x: token.x, y: token.y };
+    token.x = 60; renderStage();
+    const moving = mesaStageTokenElements.get('ana'), idle = mesaStageTokenElements.get('secret');
+    let idleWrites = 0, stageRenders = 0;
+    const observer = new MutationObserver(records => { idleWrites += records.length; });
+    if (idle) observer.observe(idle, { attributes: true, childList: true, subtree: true });
+    const original = renderStage; renderStage = (...args) => { stageRenders++; return original(...args); };
+    const positions = [];
+    MesaMovement.animate(from, token, [{ x: token.x, y: token.y }], 600);
+    for (let i = 0; i < 8; i++) {
+      await new Promise(requestAnimationFrame);
+      const box = moving.getBoundingClientRect(); positions.push({ x: box.x, y: box.y });
+    }
+    const compositor = getComputedStyle(moving).translate;
+    observer.disconnect(); renderStage = original;
+    return { stageRenders, idleWrites, positions, compositor };
+  });
+  expect(result.stageRenders).toBe(0); expect(result.idleWrites).toBe(0);
+  expect(result.compositor).not.toBe('none');
+  for (let i = 1; i < result.positions.length; i++) {
+    expect(result.positions[i].x).toBeGreaterThanOrEqual(result.positions[i - 1].x);
+    expect(result.positions[i].y).toBeCloseTo(result.positions[0].y, 2);
+  }
+  await expect.poll(() => page.evaluate(() => MesaMovement.isAnimating(findToken('ana')))).toBe(false);
+  expect(await page.locator('.mesa-token[data-token-id="ana"]').evaluate(el => el.style.translate)).toBe('');
+});
+
 test("mesmo tempo percorre a mesma distancia em linha reta e diagonal", async ({ page }) => {
   const result = await page.evaluate(() => {
     window.motionClock = 1000; performance.now = () => window.motionClock;

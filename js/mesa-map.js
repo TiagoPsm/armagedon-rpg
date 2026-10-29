@@ -1456,6 +1456,7 @@ window.getMesaSceneMapPayload = function () {
 // Chamado por applyMesaSceneSnapshot (mesa-core.js) no boot e em snapshots
 // remotos. Antes do initMesaMap terminar, apenas guarda como pendente.
 window.applyMesaSceneMapFromSnapshot = function (map) {
+  map = window.APP?.resolveSceneMap?.(map) || map;
   const ref = map && (map.localOnly || map.url) ? map : null;
   mesaMapState.sceneMapRef = ref;
   if (!mesaMapState._initDone) {
@@ -1473,6 +1474,7 @@ function _applyPendingSceneMap() {
 }
 
 function _applySceneMapRef(ref) {
+  ref = window.APP?.resolveSceneMap?.(ref) || ref;
   if (window.MesaLocalSession?.active && !_isMasterRole() && !ref) {
     mesaMapState.activeMapId = ""; mesaMapState.remoteMapId = "";
     mesaMapState._imgW = 0; mesaMapState._imgH = 0;
@@ -1482,8 +1484,19 @@ function _applySceneMapRef(ref) {
   if (window.MesaLocalSession?.active && ref?.localOnly) {
     if (mesaMapState.activeMapId === ref.id || (!_isMasterRole() && mesaMapState.activeMapId && mesaMapState.remoteMapId === ref.id && _localMapBelongsToCurrentScene())) return;
     if (_isMasterRole()) {
-      if (ref.id.startsWith("cf-")) void (async () => { await _trocarMapaLocalDaCena(); await _restoreCFActiveMap(); })();
-      else void setActiveMapFromLibrary(ref.id);
+      if (ref.id.startsWith("cf-") && !ref.hash) void (async () => { await _trocarMapaLocalDaCena(); await _restoreCFActiveMap(); })();
+      else void (async () => {
+        const sceneId = _currentMesaSceneId(), generation = ++mesaLocalMapLoadGeneration;
+        const byId = await loadMesaMapFromDB(ref.id);
+        const entry = byId || (ref.hash ? await findCachedMapByHash(ref.hash) : null);
+        if (sceneId !== _currentMesaSceneId() || generation !== mesaLocalMapLoadGeneration) return;
+        if (entry) await setActiveMapFromLibrary(entry.id);
+        else {
+          const recovered = connectedFolder.entries.find(item => ref.hash && item.path.split('/').at(-1).startsWith(ref.hash + '.'));
+          if (recovered) await setMapFromConnectedFolder(recovered.path);
+          else window.UI?.toast?.('Mapa local nao encontrado. Reconecte a pasta dos mapas recuperados.', { kicker: '// Mapas' });
+        }
+      })();
     }
     else {
       mesaMapState.activeMapId = ""; mesaMapState._imgW = 0; mesaMapState._imgH = 0;
@@ -2944,6 +2957,20 @@ function _registerAutoReconnectOnClick(handle) {
  * Chamado manualmente pelo botao de recarregar ou ao conectar/reconectar.
  */
 async function _pollConnectedFolder(force) {
+  if (force && _isMasterRole() && connectedFolder.handle) {
+    try {
+      const file = await (await connectedFolder.handle.getFileHandle('recovery.json')).getFile();
+      if (file.size > 8 * 1024 * 1024) throw new Error('Recovery metadata too large');
+      const report = JSON.parse(await file.text()), aliases = {};
+      for (const item of report.objects || []) {
+        if (!String(item.key).startsWith('maps/') || !/^[a-f0-9]{64}$/.test(item.sha256)) continue;
+        aliases[item.key] = item.sha256;
+        aliases[item.key.split('/').at(-1).replace(/\.[^.]+$/, '')] = item.sha256;
+      }
+      window.MESA_RECOVERY_MAP_HASHES = aliases;
+      mesaMapState.sceneMapRef = window.APP?.resolveSceneMap?.(mesaMapState.sceneMapRef) || mesaMapState.sceneMapRef;
+    } catch (error) { if (error.name !== 'NotFoundError' && error.name !== 'TypeError') console.warn('Recovery metadata unavailable.', error); }
+  }
   if (!connectedFolder.handle) return;
 
   var entries;
@@ -2991,6 +3018,8 @@ async function _pollConnectedFolder(force) {
 
   connectedFolder.snapshot = newSnap;
   connectedFolder.entries  = entries;
+
+  if (force && mesaMapState._initDone && mesaMapState.sceneMapRef?.hash && !mesaMapState.activeMapId) _applySceneMapRef(mesaMapState.sceneMapRef);
 
   renderConnectedFolderUI();
 }

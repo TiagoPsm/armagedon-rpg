@@ -102,13 +102,26 @@ function getTokenContentSignature(token) {
 
 function updateMesaTokenElementState(element, token) {
   if (!element) return;
-  const position = typeof MesaMovement !== "undefined" ? MesaMovement.visual(token) : token;
+  updateMesaTokenPosition(element, token);
   element.classList.toggle("is-selected", token.id === state.selectedTokenId);
-  element.style.left = `${position.x}%`;
-  element.style.top = `${position.y}%`;
   element.style.zIndex = String(token.order || 1);
   element.style.setProperty("--token-scale", String(token.tokenScale || 1));
   element.dataset.contentSignature = getTokenContentSignature(token);
+}
+
+function updateMesaTokenPosition(element, token, dimensions) {
+  const moving = typeof MesaMovement !== 'undefined' && MesaMovement.isAnimating(token);
+  const position = moving ? MesaMovement.visual(token) : token;
+  // Keep layout anchored at the accepted endpoint. Only the compositor offset
+  // changes each frame, independently of token scale and the stage zoom.
+  const left = `${token.x}%`, top = `${token.y}%`;
+  if (element.style.left !== left) element.style.left = left;
+  if (element.style.top !== top) element.style.top = top;
+  if (element.classList.contains('is-moving') !== moving) element.classList.toggle('is-moving', moving);
+  if (moving) {
+    const stage = dimensions || getMesaDomRef('stage');
+    element.style.translate = `${(position.x - token.x) * stage.clientWidth / 100}px ${(position.y - token.y) * stage.clientHeight / 100}px`;
+  } else element.style.removeProperty('translate');
 }
 
 function updateStageTokenSelection(previousTokenId, nextTokenId) {

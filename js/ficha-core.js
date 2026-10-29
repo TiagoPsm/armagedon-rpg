@@ -475,7 +475,7 @@ function applySheetData(data, kind = "player") {
   const avatarPlaceholder = document.getElementById("avatarPlaceholder");
   if (avatarImg && avatarPlaceholder) {
     if (data.avatar) {
-      avatarImg.src = data.avatar;
+      avatarImg.src = APP.resolveAvatarUrl?.(data.avatar, currentSheetTarget?.key) || data.avatar;
       avatarImg.style.display = "block";
       avatarPlaceholder.style.display = "none";
     } else {
@@ -691,7 +691,7 @@ async function saveCurrentSheet(options = {}) {
 
     // Migração automática: se o avatar ainda é base64, faz upload para R2 e substitui pela URL.
     // Isso cobre fichas existentes e novos uploads que passam pelo canvas local antes do save.
-    if (String(data.avatar || "").startsWith("data:") && APP.uploadAvatar) {
+    if (!APP.staticAvatarsEnabled?.() && String(data.avatar || "").startsWith("data:") && APP.uploadAvatar) {
       try {
         const [, mime, b64] = data.avatar.match(/^data:([^;]+);base64,(.+)$/) || [];
         if (mime && b64) {

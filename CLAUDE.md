@@ -85,6 +85,8 @@ Scripts load via `<script src="...">` tags in order. **Script order in `ficha.ht
 
 - `js/runtime-config.js` holds the live API base URL (`https://armagedon-api.tiagopsm2008.workers.dev/api`). Edit this to point to a different backend.
 - `js/api.js` wraps all HTTP + WebSocket calls.
+- Read-only optimization: equivalent in-flight GETs share network; Directory/Echos have a three-second in-memory cache invalidated on writes, relevant events and identity/API changes. Writes never retry automatically. Preserve session isolation.
+- `assets/avatars/manifest.json` and generated `js/avatar-catalog.js` gate static avatar migration (currently disabled). Publish hashed images on both sites before activation; legacy URL read compatibility and upload rejection live in `cloudflare/src/static-avatars.js` / API. Private R2 recovery/map aliases stay under ignored `local-backups/`, never in the public catalog. See `docs/OTIMIZACAO-ENTREGAS.md` for rollout/reversal and measured limits.
 - Account, sheet and RPG data live in **Cloudflare D1** (SQLite). The owner-authorized exception is Mesa scenes: `mesaLocalScenes:true` makes the master's IndexedDB the source of truth, with a synchronous recovery journal and JSON export/import. Images remain separate. Do not move sheet/account data into that scene store.
 - Mesa's default local mode does not automatically GET/PUT scene endpoints. Legacy scenes can be copied explicitly by GET, without changing remote originals. Realtime (`GET /api/mesa/realtime` → WebSocket) remains an external authenticated relay; master-approved movement is saved locally before broadcast. See `docs/MESA-LOCAL-AUDITORIA.md` for dependency and billing limits.
 

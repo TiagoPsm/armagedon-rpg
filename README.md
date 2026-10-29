@@ -1,5 +1,11 @@
 # Armagedon
 
+Plano de otimizacao implementado localmente: [entregas, medidas e reversao](docs/OTIMIZACAO-ENTREGAS.md). Menos leituras repetidas, snapshot de reconexao direcionado e animacao sem renderizar toda a Mesa por quadro. Pipeline unico e corte de avatares estaticos preparados, ainda sem ativacao/publicacao externa. Originais R2 recuperados e preservados; nenhum objeto excluido. Estado efetivamente publicado continua no bloco abaixo.
+
+Validacao: `npm run test:optimization`, `npm run test:mesa:rules`, `npm run test:build` e `npm run test:mesa:worker:local`. Variante sem R2: `node tools/run-local-worker-tests.cjs --static`. Build completo: `npm run build`. Medicao: `npm run bench:optimization -- --artifact --label=optimized` (comparacao com `--ref=44400f6`). Recuperacao e atualizacao manual de avatares descritas no relatorio; pastas `local-backups/` privadas nunca entram no pacote.
+
+Auditoria atual de recursos que podem gerar cobranca: [docs/CUSTOS-ATUAIS.md](docs/CUSTOS-ATUAIS.md). Ajuste de suavidade da animacao preparado localmente, preservando velocidade e duracao; ainda nao publicado. Detalhes de validacao em DEV_STATUS.md.
+
 ## Publicacao atual — 2026-10-29
 
 Mesa local do commit `92069c4` publicada no [Cloudflare Pages](https://armagedon-rpg.pages.dev), com Worker correspondente e painel "Cenas neste computador" removido. Salvamento automatico local, confirmacao de movimentos e bloqueio de novos uploads de mapas R2 ativos no codigo servido. Dois testes publicos e hashes dos arquivos principais conferidos. Registros abaixo de implementacao "ainda local" sao historicos; resultados completos em DEV_STATUS.md. Nenhum plano ou servico pago ativado.

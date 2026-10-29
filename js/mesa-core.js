@@ -1597,7 +1597,7 @@ function createRosterEntry(data) {
     ownerUsername: String(data.ownerUsername || "mestre"),
     createdBy: String(data.createdBy || "mestre"),
     name: String(data.name || "Sem nome").trim() || "Sem nome",
-    imageUrl: String(data.imageUrl || "").trim(),
+    imageUrl: window.APP?.resolveAvatarUrl?.(String(data.imageUrl || '').trim(), data.characterKey) || String(data.imageUrl || '').trim(),
     currentLife: clamp(asPositiveInt(data.currentLife, asPositiveInt(data.maxLife, 10)), 0, asPositiveInt(data.maxLife, 10)),
     maxLife: asPositiveInt(data.maxLife, 10),
     currentIntegrity: clamp(asPositiveInt(data.currentIntegrity, asPositiveInt(data.maxIntegrity, 0)), 0, asPositiveInt(data.maxIntegrity, 0)),

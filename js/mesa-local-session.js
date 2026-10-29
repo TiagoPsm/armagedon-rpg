@@ -53,14 +53,19 @@ window.MesaLocalSession = (() => {
       return saved;
     });
   }
-  let syncing = false, snapshotAgain = false;
-  async function snapshot() {
-    if (syncing) { snapshotAgain = true; return; }
+  let syncing = false;
+  const snapshotAudience = new Set();
+  async function snapshot(to = '') {
+    snapshotAudience.add(to || '*');
+    if (syncing) return;
     syncing = true;
-    try { do { snapshotAgain = false; await snapshotOnce(); } while (snapshotAgain); }
+    try { while (snapshotAudience.size) {
+      const audience = snapshotAudience.has('*') ? [''] : [...snapshotAudience]; snapshotAudience.clear();
+      for (const target of audience) await snapshotOnce(target);
+    } }
     finally { syncing = false; }
   }
-  async function snapshotOnce() {
+  async function snapshotOnce(to) {
     await serial;
     if (!active || !master() || !host || denied) return;
     const meta = await MesaLocalStore.read('$meta');
@@ -74,7 +79,7 @@ window.MesaLocalSession = (() => {
     if (text.length > 2 * 1024 * 1024) { notify('Cena grande demais para sincronizar. O backup local foi preservado.'); return; }
     const total = Math.max(1, Math.ceil(text.length / 12000));
     for (let i = 0; i < total; i++) {
-      if (!await send({ type: 'mesa:host:chunk', transferId, index: i, total, text: text.slice(i * 12000, (i + 1) * 12000) })) break;
+      if (!await send({ type: 'mesa:host:chunk', to, transferId, index: i, total, text: text.slice(i * 12000, (i + 1) * 12000) })) break;
       if (i + 1 < total) await new Promise(resolve => setTimeout(resolve, 45));
     }
   }
@@ -181,7 +186,7 @@ window.MesaLocalSession = (() => {
       }
       if (host) void snapshot();
     });
-    app.on('mesa:host:request', () => { if (host) void snapshot(); });
+    app.on('mesa:host:request', message => { if (host) void snapshot(message.actor?.username); });
     app.on('mesa:host:chunk', message => { void receiveChunk(message); });
     app.on('mesa:host:move', message => { void approve(message).catch(error => notify(error.message)); });
     app.on('mesa:host:decision', message => {

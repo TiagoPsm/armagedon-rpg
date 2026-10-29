@@ -32,6 +32,13 @@
   Cache-Control: public, max-age=2592000
 
 # HTML — sempre revalida para garantir ?v= atualizados
+/assets/avatars/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Catalog is versioned by the release, not by its stable filename.
+/assets/avatars/manifest.json
+  Cache-Control: public, no-cache
+
 /*.html
   Cache-Control: public, no-cache
 

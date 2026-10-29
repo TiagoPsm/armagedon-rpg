@@ -14,21 +14,21 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap"></noscript>
-  <link rel="stylesheet" href="css/tokens.css?v=2026-10-29-cenas-locais" />
-  <link rel="stylesheet" href="css/reset.css?v=2026-10-29-cenas-locais" />
-  <link rel="stylesheet" href="css/components.css?v=2026-10-29-cenas-locais" />
-  <link rel="stylesheet" href="css/mesa.css?v=2026-10-29-cenas-locais" />
-  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-10-29-cenas-locais" />
-  <link rel="stylesheet" href="css/mesa-roster.css?v=2026-10-29-cenas-locais" />
-  <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-10-29-cenas-locais" />
-  <link rel="stylesheet" href="css/mesa-tools.css?v=2026-10-29-cenas-locais" />
-  <link rel="stylesheet" href="css/mesa-map.css?v=2026-10-29-cenas-locais" />
-  <link rel="stylesheet" href="css/mesa-drawing.css?v=2026-10-29-cenas-locais" />
-  <link rel="stylesheet" href="css/mesa-scenes.css?v=2026-10-29-cenas-locais" />
+  <link rel="stylesheet" href="css/tokens.css?v=2026-10-29-otimizacao" />
+  <link rel="stylesheet" href="css/reset.css?v=2026-10-29-otimizacao" />
+  <link rel="stylesheet" href="css/components.css?v=2026-10-29-otimizacao" />
+  <link rel="stylesheet" href="css/mesa.css?v=2026-10-29-otimizacao" />
+  <link rel="stylesheet" href="css/mesa-stage.css?v=2026-10-29-otimizacao" />
+  <link rel="stylesheet" href="css/mesa-roster.css?v=2026-10-29-otimizacao" />
+  <link rel="stylesheet" href="css/mesa-inspector.css?v=2026-10-29-otimizacao" />
+  <link rel="stylesheet" href="css/mesa-tools.css?v=2026-10-29-otimizacao" />
+  <link rel="stylesheet" href="css/mesa-map.css?v=2026-10-29-otimizacao" />
+  <link rel="stylesheet" href="css/mesa-drawing.css?v=2026-10-29-otimizacao" />
+  <link rel="stylesheet" href="css/mesa-scenes.css?v=2026-10-29-otimizacao" />
   <!-- Permissoes (Etapa 75): esconde tudo marcado com data-mesa-master-only
        enquanto o body nao estiver com data-role="master". Carrega DEPOIS dos
        demais para vencer por ordem em caso de especificidade empatada. -->
-  <link rel="stylesheet" href="css/mesa-permissions.css?v=2026-10-29-cenas-locais" />
+  <link rel="stylesheet" href="css/mesa-permissions.css?v=2026-10-29-otimizacao" />
   <style>
     /* ── TOKEN SCALE ── */
     .mesa-token { transform-origin: top left; transform: scale(var(--token-scale, 1)); }
@@ -989,46 +989,47 @@
     </form>
   </div>
 
-    <script src="js/runtime-config.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/api.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/ui.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/auth.js?v=2026-10-29-cenas-locais" defer></script>
+    <script src="js/runtime-config.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/avatar-catalog.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/api.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/ui.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/auth.js?v=2026-10-29-otimizacao" defer></script>
   <!-- Permissoes da Mesa (Etapa 75): precisa vir ANTES de todo modulo mesa-*,
        porque eles chamam mesaCan()/requireMesaMaster()/applyMesaRolePermissions(). -->
-  <script src="js/mesa-permissions.js?v=2026-10-29-cenas-locais" defer></script>
+  <script src="js/mesa-permissions.js?v=2026-10-29-otimizacao" defer></script>
   <!-- Ordem importante: dependências antes de mesa-core -->
-  <script src="js/mesa-stage.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-roster.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-inspector.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-storage.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-core.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-map.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-grid-rules.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-grid.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-fog.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-scenes.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-ping.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-ruler.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-dice.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-drawing.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-select.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-initiative.js?v=2026-10-29-cenas-locais" defer></script>
+  <script src="js/mesa-stage.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-roster.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-inspector.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-storage.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-core.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-map.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-grid-rules.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-grid.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-fog.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-scenes.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-ping.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-ruler.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-dice.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-drawing.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-select.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-initiative.js?v=2026-10-29-otimizacao" defer></script>
   <!-- Depois de mesa-stage.js (whitelist/toggle) e mesa-inspector.js (linha do inspetor) -->
-  <script src="js/mesa-markers.js?v=2026-10-29-cenas-locais" defer></script>
+  <script src="js/mesa-markers.js?v=2026-10-29-otimizacao" defer></script>
   <!-- Unico ponto de entrada: inicia somente depois de todos os modulos acima. -->
-  <script src="js/mesa-movement-rules.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-canvas-viewport.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-movement.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-grid-editor.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-template-rules.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-map-library.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-decorations.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-templates.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-shortcuts.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-scene-settings.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-local-store.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-local-session.js?v=2026-10-29-cenas-locais" defer></script>
-  <script src="js/mesa-bootstrap.js?v=2026-10-29-cenas-locais" defer></script>
+  <script src="js/mesa-movement-rules.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-canvas-viewport.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-movement.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-grid-editor.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-template-rules.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-map-library.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-decorations.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-templates.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-shortcuts.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-scene-settings.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-local-store.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-local-session.js?v=2026-10-29-otimizacao" defer></script>
+  <script src="js/mesa-bootstrap.js?v=2026-10-29-otimizacao" defer></script>
   <script>
   /* VTT Toolbar — camadas + painéis da sidebar */
   (function () {

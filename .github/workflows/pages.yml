@@ -1,9 +1,11 @@
-name: Deploy GitHub Pages
+name: Verify and publish static sites
 
 on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
   workflow_dispatch:
 
 env:
@@ -13,6 +15,10 @@ permissions:
   contents: read
   pages: write
   id-token: write
+
+concurrency:
+  group: armagedom-production
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -24,6 +30,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -46,6 +54,7 @@ jobs:
           npm run audit:css
           npm run audit:pendencias
           npm run test:mesa:rules
+          npm run test:optimization
 
       - name: Verify published bundle initialization
         run: npx playwright test tests/build-pages.spec.cjs --workers=1
@@ -57,7 +66,32 @@ jobs:
       - name: Verify actual minified interface and corrected flows
         env:
           MESA_TEST_ARTIFACT: "1"
-        run: npx playwright test tests/project-ui-audit.spec.cjs tests/mesa-map-library.spec.cjs tests/mesa-templates.spec.cjs tests/mesa-upgrade.spec.cjs tests/mesa-local-session.spec.cjs tests/mesa-no-cloud-maps.spec.cjs tests/production- --workers=1
+        run: npx playwright test tests/project-ui-audit.spec.cjs tests/mesa-map-library.spec.cjs tests/mesa-templates.spec.cjs tests/mesa-upgrade.spec.cjs tests/mesa-local-session.spec.cjs tests/mesa-no-cloud-maps.spec.cjs tests/mesa-movement.spec.cjs tests/static-avatars.spec.cjs tests/production- --workers=1
+
+      - name: Determine whether Worker changed
+        id: worker
+        if: vars.CLOUDFLARE_CI_ENABLED == 'true'
+        run: node tools/worker-fingerprint.cjs --check-live
+
+      # Enable only after scoped API token secrets are configured and the
+      # replacement workflow has been validated. Keep existing builds until then.
+      - name: Publish changed Worker
+        if: vars.CLOUDFLARE_CI_ENABLED == 'true' && steps.worker.outputs.changed == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          node node_modules/wrangler/bin/wrangler.js deploy --dry-run --config cloudflare/wrangler.toml
+          node node_modules/wrangler/bin/wrangler.js deploy --config cloudflare/wrangler.toml --keep-vars --var WORKER_BUILD_HASH:${{ steps.worker.outputs.hash }}
+
+      - name: Publish identical artifact to Cloudflare Pages
+        if: vars.CLOUDFLARE_CI_ENABLED == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          node node_modules/wrangler/bin/wrangler.js pages deploy _site --project-name armagedon-rpg --branch main
+          node tools/verify-release.cjs https://armagedon-rpg.pages.dev
 
       - name: Setup Pages
         uses: actions/configure-pages@v6
@@ -71,3 +105,6 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v5
+
+      - name: Verify GitHub Pages artifact
+        run: node tools/verify-release.cjs https://tiagopsm.github.io/armagedon-rpg

@@ -1,5 +1,19 @@
 # Migracao para Cloudflare
 
+## Publicacao das otimizacoes autorizada — 2026-10-29
+
+Conjunto validado autorizado por Tiago: Worker com --keep-vars e fingerprint em WORKER_BUILD_HASH, catalogo estatico ainda false e binding MAPS preservado. Aplicacao aditiva do indice usa somente d1/migrations/20261029_character_lookup.sql, separada do deploy e sem schema completo. Sem exclusoes R2, mudanca de planos ou secrets. Conferir versao/health e bindings apos deploy; resultados em ../DEV_STATUS.md.
+
+## Otimizacoes preparadas localmente — 2026-10-29
+
+PUT de Echo tambem recusa alteracao de avatar nao publicada antes de persistir qualquer campo em modo estatico; mesma validacao de ficha, apos autorizacao existente. Teste integrado descarta um patch com avatar inline e anota original preservado, sem binding MAPS.
+
+Sem publicacao, migracao remota, mudanca de plano ou exclusao. `d1/migrations/20261029_character_lookup.sql` acrescenta indice lower(sheet_key), testado em banco descartavel de 10 mil registros (SCAN para SEARCH). Nao aplicar schema completo em producao como atalho de otimizacao. Directory filtra NPCs/monstros antes da normalizacao para jogadores, preservando contratos e validacoes existentes.
+
+`mesa:host:chunk` admite `to` opcional; destinatario e comparado ao username autenticado, e privacidade filtrada antes da entrega. Ausencia conserva broadcast. Health inclui buildHash quando WORKER_BUILD_HASH estiver configurado; pipeline compara fingerprint de fontes/configuracao com o publicado, conservando vars via --keep-vars.
+
+Modo estatico depende de `assets/avatars/manifest.json enabled:true`, ainda false. GET avatar legado retorna 302 ao estatico (404 se ausente); POSTs de avatar/migracao retornam 410 apos autenticacao; PUT de ficha com alteracao de avatar nao publicada retorna 409 antes de salvar. GET legado de mapa retorna 410, sem bucket. Testado Worker sem binding MAPS nesse modo. Binding real e 15 objetos existentes preservados; nao declarar encerramento do R2 ate corte publicado/homologado e retirada expressamente autorizada. Recuperacao privada em local-backups, procedimento em ../docs/OTIMIZACAO-ENTREGAS.md.
+
 ## Mesa local publicada — 2026-10-29
 
 Tiago autorizou commit/push e deploy do codigo `92069c4`. Worker publicado com `--keep-vars`, versao `e586c3f0-ff98-4ed7-bb1d-466f60e7c4ed`; tres secrets, cinco bindings e compatibility_date preservados. Sem migracao D1, limpeza R2, rotacao de segredos ou mudanca de planos. Novos uploads de mapas bloqueados; relay do mestre e cenas locais ativos no frontend correspondente, sem painel de backups. Pages final minificado `577e68e0`; hashes e dois testes publicos aprovados. Detalhes e CI em `../DEV_STATUS.md`; limites de homologacao e faturamento permanecem.

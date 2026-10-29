@@ -104,6 +104,10 @@
     0 0 28px rgba(176, 47, 57, 0.12);
 }
 
+.mesa-token.is-moving {
+  will-change: translate;
+}
+
 .mesa-token.is-hidden-master {
   opacity: 0.52;
   border-style: dashed;

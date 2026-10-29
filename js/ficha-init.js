@@ -1,4 +1,14 @@
 document.addEventListener("DOMContentLoaded", async () => {
+  if (window.APP?.staticAvatarsEnabled?.()) {
+    const input = document.getElementById('avatarFile');
+    if (input) {
+      input.disabled = true;
+      const label = input.closest('label'); if (label) label.hidden = true;
+      const notice = document.createElement('p'); notice.className = 'help-text';
+      notice.textContent = 'As imagens sao atualizadas pelo mestre nas publicacoes do site.';
+      label?.after(notice);
+    }
+  }
   // Modulos de UI pura armam ANTES de qualquer await (Etapa 83). Todos
   // dependem so de DOM estatico do ficha.html, e ficavam depois de tres
   // awaits (AUTH_READY, refreshDirectory, openSheet): a ficha aparecia

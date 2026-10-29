@@ -25,7 +25,7 @@
     "optimize:images": "node tools/optimize-images.cjs",
     "minify:css": "node tools/minify.cjs --css",
     "minify:js": "node tools/minify.cjs --js",
-    "build": "node tools/build-pages.cjs && node tools/minify.cjs",
+    "build": "node tools/build-pages.cjs && node tools/minify.cjs && node tools/release-manifest.cjs",
     "test:mesa:worker:local": "node tools/run-local-worker-tests.cjs",
     "audit:css": "node tools/audit-css.cjs",
     "test:ui:audit": "playwright test tests/project-ui-audit.spec.cjs",
@@ -33,7 +33,9 @@
     "test:mesa:rules": "node --test tests/mesa-movement-rules.test.cjs tests/mesa-template-rules.test.cjs tests/css-syntax.test.cjs",
     "test:mesa:movement": "playwright test tests/mesa-movement.spec.cjs",
     "test:mesa:persist": "playwright test tests/mesa-persist-compat.spec.cjs",
-    "test:mesa:local": "playwright test tests/mesa-local-session.spec.cjs tests/mesa-no-cloud-maps.spec.cjs"
+    "test:mesa:local": "playwright test tests/mesa-local-session.spec.cjs tests/mesa-no-cloud-maps.spec.cjs",
+    "test:optimization": "node --test tests/api-read-cache.test.cjs tests/d1-query-plan.test.cjs tests/static-avatars.test.cjs",
+    "bench:optimization": "node tools/benchmark-optimization.cjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

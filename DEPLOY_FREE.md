@@ -1,5 +1,17 @@
 # Deploy Gratuito do Armagedon
 
+## Publicacao das otimizacoes autorizada — 2026-10-29
+
+Tiago autorizou publicar o conjunto validado. Primeira etapa conserva catalogo enabled:false e binding R2; imagens sao publicadas antes do corte. CI GitHub valida e publica o espelho; Cloudflare continua com envio manual do pacote minificado apos builds automaticos, pois secrets restritos da CI ainda nao foram configurados. Aguardar CI e conferir hashes/health antes de encerrar. Sem contratacao ou exclusao externa. Resultados efetivos ficam no topo de DEV_STATUS.md.
+
+## Pipeline unico preparado, ainda sem ativacao — 2026-10-29
+
+`.github/workflows/pages.yml` executa contratos/testes, build/minificacao uma vez e publica o mesmo `_site` em Cloudflare Pages e GitHub Pages quando `CLOUDFLARE_CI_ENABLED=true`. Configurar somente por secrets da CI: CLOUDFLARE_API_TOKEN com escopo minimo dos recursos existentes e CLOUDFLARE_ACCOUNT_ID. Consulta atual encontrou repositorio e ambiente github-pages sem esses valores. Nao enviar token OAuth local para o workflow, nem contratar recursos. Ate validar a publicacao substituta, manter os builds Cloudflare existentes.
+
+`tools/worker-fingerprint.cjs` compara fontes/configuracao/regras/catalogo ao hash publicado em health; Worker so recebe deploy quando diferir, incluindo recuperacao de run anterior incompleto. Nao aplica migracoes D1. `tools/release-manifest.cjs` registra hashes do pacote minificado; `tools/verify-release.cjs URL` verifica paginas e assets servidos. Depois de run autorizado aprovado nos dois destinos, desativar automacoes duplicadas da Cloudflare e conferir uma alteracao subsequente.
+
+Avatares exigem publicacao em duas etapas: imagens primeiro com catalogo false, verificar ambos os sites, atualizar inventario/recuperacao durante janela sem edicoes, executar prepare-static-avatars --activate, testar e publicar catalogo/Worker/frontend. A ferramenta recusa ativacao se bytes publicados diferirem. Nao remover binding/bucket nesta publicacao. Procedimento e reversao em docs/OTIMIZACAO-ENTREGAS.md. Cada commit/push/deploy continua dependendo da autorizacao do proprietario.
+
 ## Publicacao da Mesa local executada — 2026-10-29
 
 Codigo `92069c4` enviado a main. Worker com `--keep-vars`: `e586c3f0-ff98-4ed7-bb1d-466f60e7c4ed`; Cloudflare Pages final minificado: `577e68e0`. Build automatico do Pages concluiu antes do upload manual, preservando como resultado final o pacote minificado conferido por hash. Sem mudanca de planos, schema, bindings ou secrets. Dois testes publicos no destino Cloudflare aprovados. CI/espelho GitHub e fechamento em DEV_STATUS.md.
@@ -31,12 +43,12 @@ Sempre que qualquer etapa de deploy, workflow, dominio, API publicada ou lista d
 Execute commits, pushes e validacoes de publicacao somente a partir de:
 
 ```text
-C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
+C:\Users\Usuario\Projects\Armagedom
 ```
 
-A pasta `rpg-campaign` ficou como copia antiga/local e nao deve ser usada para publicar no GitHub Pages.
+A copia no OneDrive e os caminhos antigos `rpg-campaign`/`rpg-campaign-git-sync` sao historicos; nao sao a pasta oficial atual.
 
-Antes de qualquer deploy, confirme que o terminal ou a sessao do Codex esta em `rpg-campaign-git-sync`. Se uma conversa antiga ainda estiver vinculada a `rpg-campaign`, crie/abra um novo chat no projeto `rpg-campaign-git-sync` antes de continuar.
+Antes de qualquer deploy autorizado, confirme o caminho atual acima e o estado do Git. Nao publicar automaticamente ao executar a validacao local.
 
 Este arquivo existe para evitar depender do historico de conversa na hora de publicar.
 
@@ -44,11 +56,11 @@ Este arquivo existe para evitar depender do historico de conversa na hora de pub
 
 O caminho publicado do projeto e:
 
-- frontend: GitHub Pages
+- frontend: Cloudflare Pages e espelho GitHub Pages
 - API: Cloudflare Workers
 - banco: Cloudflare D1
 - realtime: Durable Objects
-- avatares/mapas: Cloudflare R2
+- avatares e mapas legados: R2 enquanto o corte estatico preparado nao for publicado; novos mapas ficam na pasta/cache do mestre e sao transmitidos sem upload remoto
 
 O roteiro legado com Render + Neon (backend Express/PostgreSQL em `server/`) foi
 removido junto com a pasta `server/` em 2026-06-12; o historico do git preserva

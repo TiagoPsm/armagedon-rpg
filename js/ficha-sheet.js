@@ -203,6 +203,10 @@ function updateBar(type) {
 }
 
 function handleAvatar(event) {
+  if (window.APP?.staticAvatarsEnabled?.()) {
+    window.UI?.toast?.('As imagens sao atualizadas pelo mestre nas publicacoes do site.');
+    return;
+  }
   const file = event.target.files?.[0];
   if (!file) return;
 

@@ -1,3 +1,4 @@
+import { allowsStaticAvatarEdit, legacyStaticAvatarResponse, staticAvatarsEnabled } from './static-avatars.js';
 import {
   createCorsHeaders,
   createPasswordHash,
@@ -374,7 +375,7 @@ export default {
 
     try {
       if (path === "/api/health" && request.method === "GET") {
-        return withCors(json({ ok: true, service: "armagedon-cloudflare" }), origin);
+        return withCors(json({ ok: true, service: "armagedon-cloudflare", buildHash: env.WORKER_BUILD_HASH || '' }), origin);
       }
 
       if (path === "/api/mesa/realtime" && request.method === "GET") {
@@ -608,6 +609,10 @@ export default {
         assertCharacterAccess(session, character, "write");
         // Ficha completa (inventario, memorias, habilidades): cap de 256KB
         const body = await readJson(request, 256 * 1024);
+        const proposed = body?.data || body || {};
+        if (Object.prototype.hasOwnProperty.call(proposed, 'avatar') && !allowsStaticAvatarEdit(character.data?.avatar, proposed.avatar, character.key)) {
+          return errorJson('As imagens sao atualizadas pelo mestre nas publicacoes do site. Recarregue a ficha antes de salvar.', 409, origin);
+        }
         const saved = await saveCharacterBundle(env, character, body, session);
         await broadcastSheetChanged(env, key, session);
         return withCors(json(saved), origin);
@@ -729,6 +734,7 @@ export default {
       const echoAvatarMatch = path.match(/^\/api\/avatars\/echo\/([^/]+)$/);
       if (echoAvatarMatch && request.method === "POST") {
         const session = await requireAuth(request, env);
+        if (staticAvatarsEnabled()) return errorJson('As imagens sao atualizadas pelo mestre nas publicacoes do site.', 410, origin);
         if (!env.MAPS) return errorJson("Bucket R2 de avatares nao configurado.", 503, origin);
 
         const echoId = decodePathParam(echoAvatarMatch[1]);
@@ -766,6 +772,7 @@ export default {
       const avatarUploadMatch = path.match(/^\/api\/avatars\/([^/]+)$/);
       if (avatarUploadMatch && request.method === "POST") {
         const session = await requireAuth(request, env);
+        if (staticAvatarsEnabled()) return errorJson('As imagens sao atualizadas pelo mestre nas publicacoes do site.', 410, origin);
         if (!env.MAPS) return errorJson("Bucket R2 de avatares nao configurado.", 503, origin);
 
         const key = decodePathParam(avatarUploadMatch[1]);
@@ -805,6 +812,8 @@ export default {
 
       const avatarServeMatch = path.match(/^\/api\/avatars\/([^/]+)$/);
       if (avatarServeMatch && request.method === "GET") {
+        const staticResponse = legacyStaticAvatarResponse(decodePathParam(avatarServeMatch[1]));
+        if (staticResponse) return withCors(staticResponse, origin);
         if (!env.MAPS) return errorJson("Bucket R2 nao configurado.", 503, origin);
 
         const key = decodePathParam(avatarServeMatch[1]);
@@ -830,6 +839,7 @@ export default {
 
       if (path === "/api/maintenance/migrate-avatars" && request.method === "POST") {
         const session = await requireAuth(request, env);
+        if (staticAvatarsEnabled()) return errorJson('Migracao para R2 desativada; catalogo estatico ativo.', 410, origin);
         if (session.role !== "master") return errorJson("Apenas o mestre pode migrar avatares.", 403, origin);
         if (!env.MAPS) return errorJson("Bucket R2 nao configurado.", 503, origin);
 
@@ -920,6 +930,7 @@ export default {
 
       const mapServeMatch = path.match(/^\/api\/mesa\/map\/(.+)$/);
       if (mapServeMatch && request.method === "GET") {
+        if (staticAvatarsEnabled()) return errorJson('Mapa mantido no computador do mestre. Reconecte a pasta local.', 410, origin);
         if (!env.MAPS) return errorJson("Bucket R2 nao configurado.", 503, origin);
 
         // Sem auth (a URL e usada como background-image, sem headers),

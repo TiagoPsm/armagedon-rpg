@@ -22,3 +22,6 @@ cloudflare/.wrangler/
 # commit que acabou de nascer — nunca cabe dentro do proprio commit, entao
 # vivia eternamente "modificado". E contexto local, nao fonte.
 docs/obsidian/10-SNAPSHOT-AUTOMATICO.md
+
+# Recovery originals and private metadata. Published avatars are separate.
+local-backups/

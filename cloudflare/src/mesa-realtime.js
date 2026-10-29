@@ -283,7 +283,7 @@ class MesaRealtimeRoom extends DurableObject {
     this.localTransfers ||= new WeakMap();
     let transfer = this.localTransfers.get(ws);
     if (!transfer || transfer.id !== payload.transferId || Date.now() - transfer.started > 30000) {
-      transfer = { id: payload.transferId, total: payload.total, parts: [], started: Date.now() }; this.localTransfers.set(ws, transfer);
+      transfer = { id: payload.transferId, to: String(payload.to || '').slice(0, 80), total: payload.total, parts: [], started: Date.now() }; this.localTransfers.set(ws, transfer);
     }
     if (transfer.total !== payload.total) return;
     transfer.parts[payload.index] = payload.text;
@@ -300,7 +300,10 @@ class MesaRealtimeRoom extends DurableObject {
       const total = Math.ceil(text.length / 12000);
       for (let index = 0; index < total; index++) {
         const message = { type: 'mesa:host:chunk', transferId: transfer.id, index, total, text: text.slice(index * 12000, (index + 1) * 12000), actor };
-        for (const socket of sockets) if (readAttachment(socket)?.role === 'player') sendJson(socket, message);
+        for (const socket of sockets) {
+          const recipient = readAttachment(socket);
+          if (recipient?.role === 'player' && (!transfer.to || recipient.username === transfer.to)) sendJson(socket, message);
+        }
       }
     } catch { sendJson(ws, { type: 'mesa:scene:ack', ok: false, reason: 'Cena local invalida; backup preservado.' }); }
   }

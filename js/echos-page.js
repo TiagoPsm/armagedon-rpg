@@ -278,10 +278,10 @@ function renderEchoModalContent(echo) {
             ? `<img src="${escEcho(avatar)}" alt="${escEcho(echoDisplayName(echo))}" />`
             : `<span class="echo-portrait-fallback">${escEcho(echoInitials(echo))}</span>`
         }
-        <label class="btn btn-ghost btn-sm echo-avatar-btn">
+        ${window.APP?.staticAvatarsEnabled?.() ? '<p class="help-text">As imagens sao atualizadas pelo mestre nas publicacoes do site.</p>' : `<label class="btn btn-ghost btn-sm echo-avatar-btn">
           Trocar imagem
           <input type="file" id="echoAvatarFile" accept="image/*" hidden />
-        </label>
+        </label>`}
       </div>
 
       <div class="echo-modal-headline">

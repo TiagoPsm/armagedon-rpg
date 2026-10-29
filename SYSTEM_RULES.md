@@ -1,5 +1,17 @@
 # SYSTEM RULES
 
+## Otimizacoes locais e compatibilidade de imagens — 2026-10-29
+
+Cache somente de leitura: GET simultaneos compartilham request mas retornam copias; listagens Directory/Echos expiram em tres segundos. Escritas, eventos relevantes, troca de identidade/API e logout invalidam resultados. Resposta de sessao anterior nao e entregue. Escritas nunca sao repetidas automaticamente. Fichas detalhadas continuam carregadas quando solicitadas. SQL da listagem filtra os mesmos personagens acessiveis antes de normalizar dados; indice lower(sheet_key) e aditivo, sem mudanca de permissao ou mecanica.
+
+Snapshot de reconexao usa destino autenticado opcional: relay filtra o documento privado e entrega somente ao jogador solicitado. Sem destino, conserva broadcast para alteracoes da cena. Movimento definitivo e rolagens mantem protocolo/duracao, sem agrupamento atrasando confirmacoes.
+
+Avatares estaticos tem catalogo de ativacao, inicialmente false. Enquanto false, contratos atuais permanecem. Quando ativo, URLs antigas sao resolvidas para arquivos publicados previamente por hash; antigos uploads retornam 410, alteracao de avatar nao publicado via PUT retorna 409 antes de gravar. Atualizacoes sao preparadas pelo mestre e aplicadas na publicacao, preservando campos URL existentes. Mapas recuperados sao reconhecidos por aliases privados lidos da pasta conectada; nomes/metadados de mapas nao entram no catalogo publico. GET R2 de mapa e bloqueado no modo estatico, imagens transmitidas pelo fluxo local existente. Nenhuma exclusao de cena/imagem ou limpeza de navegador. Procedimento e limites em docs/OTIMIZACAO-ENTREGAS.md.
+
+## Suavidade visual dos tokens — 2026-10-29
+
+Interpolacao de movimento usa deslocamento visual independente de escala, mantendo ancora de layout na posicao confirmada. Atualiza somente tokens em movimento, sem redesenhar a Mesa inteira por quadro. Velocidade, duracao, percurso e regras permanecem; movimento reduzido continua respeitado. Nenhuma nova escrita/requisicao de rede causada pela animacao.
+
 ## Interface de cenas locais — 2026-10-29
 
 Tiago solicitou retirar o painel "Cenas neste computador" e seus tres botoes dos ajustes. Otimizacoes e salvamento automatico local continuam ativos. Funcoes internas de backup permanecem no armazenamento, sem controles na interface. Este ajuste substitui referencias anteriores aos botoes; sem alteracao de gameplay ou publicacao.

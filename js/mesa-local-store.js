@@ -44,6 +44,7 @@ globalThis.MesaLocalStore = (() => {
     for (const token of copy.tokens || []) {
       if (/^(data:|blob:)/i.test(token.imageUrl || '')) delete token.imageUrl;
     }
+    if (copy.map) copy.map = window.APP?.resolveSceneMap?.(copy.map) || copy.map;
     if (copy.map) copy.map = { id: String(copy.map.id || ''), localOnly: true,
       name: String(copy.map.name || ''), hash: String(copy.map.hash || ''), fit: copy.map.fit !== false, transform: copy.map.transform || null };
     return copy;

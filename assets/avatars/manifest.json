@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "enabled": false,
+  "origin": "https://armagedon-rpg.pages.dev",
+  "entries": {
+    "a": {
+      "path": "assets/avatars/4a0d2776280f26951bfd06af46f49756354e65fe34389a191787b8b0b3a4ad6b.webp",
+      "sha256": "4a0d2776280f26951bfd06af46f49756354e65fe34389a191787b8b0b3a4ad6b",
+      "bytes": 73098
+    },
+    "ab": {
+      "path": "assets/avatars/3344d70cb8ac4c0d6cb11e5a5ca24dd47a108979f16b584d5e15cb7f8e1eed9a.webp",
+      "sha256": "3344d70cb8ac4c0d6cb11e5a5ca24dd47a108979f16b584d5e15cb7f8e1eed9a",
+      "bytes": 13454
+    },
+    "abc": {
+      "path": "assets/avatars/1dec1b76c421f9e86f455d488ddbb6eefa2d8b6a7e472a80e5110e0f18386828.webp",
+      "sha256": "1dec1b76c421f9e86f455d488ddbb6eefa2d8b6a7e472a80e5110e0f18386828",
+      "bytes": 19226
+    }
+  }
+}
