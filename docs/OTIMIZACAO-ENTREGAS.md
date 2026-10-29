@@ -1,6 +1,6 @@
 # Otimizacoes em pequenas entregas — 2026-10-29
 
-Implementacao local solicitada por Tiago. Sem commit, push, publicacao, migracao remota, mudanca de plano ou exclusao de imagens. O codigo servido ainda e a base registrada em DEV_STATUS.md. A unica lista de acoes abertas continua sendo `DEV_STATUS.md > Pendencias Vivas`.
+Publicacao autorizada concluida em 2026-10-29: commit `cfdc5bc`, CI 40971749060 aprovada, Worker `b45824b9-f1a0-4034-b53e-03e87d278cdb` e Cloudflare Pages `4591b336`. O mesmo pacote da CI foi enviado ao Cloudflare; seis paginas e dez hashes conferidos em ambos os sites, quatro testes publicos aprovados. Indice D1 aplicado separadamente e uso confirmado por EXPLAIN. Catalogo estatico ainda false: imagens publicadas primeiro, sem corte de referencias nem exclusao de R2. CI substituta Cloudflare aguarda segredos restritos; sem mudanca de plano. A tabela e os registros locais abaixo documentam a preparacao; este bloco atualiza o estado da publicacao. A unica lista de acoes abertas continua sendo `DEV_STATUS.md > Pendencias Vivas`.
 
 ## Situacao das nove entregas
 

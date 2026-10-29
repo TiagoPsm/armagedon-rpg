@@ -1,5 +1,9 @@
 # Migracao para Cloudflare
 
+## Otimizacoes publicadas — 2026-10-29
+
+Worker final `b45824b9-f1a0-4034-b53e-03e87d278cdb` (commit `cfdc5bc`), fingerprint em health conferido; tres secrets, bindings e vars anteriores preservados, WORKER_BUILD_HASH acrescentado. Pages final `4591b336` recebeu exatamente o artefato aprovado na CI GitHub `40971749060`; dez hashes/seis paginas conferidos nos dois sites e quatro testes publicos aprovados. Migracao isolada `20261029_character_lookup.sql` aplicada em D1: SCAN antes, SEARCH usando characters_sheet_key_lower_idx depois; dados de fichas preservados. R2/binding mantidos, catalogo estatico false e imagens previamente publicadas nos dois destinos. Sem mudanca de plano, limpeza externa ou homologacao autenticada de campanha. Os registros locais abaixo sao historicos da preparacao.
+
 ## Publicacao das otimizacoes autorizada — 2026-10-29
 
 Conjunto validado autorizado por Tiago: Worker com --keep-vars e fingerprint em WORKER_BUILD_HASH, catalogo estatico ainda false e binding MAPS preservado. Aplicacao aditiva do indice usa somente d1/migrations/20261029_character_lookup.sql, separada do deploy e sem schema completo. Sem exclusoes R2, mudanca de planos ou secrets. Conferir versao/health e bindings apos deploy; resultados em ../DEV_STATUS.md.

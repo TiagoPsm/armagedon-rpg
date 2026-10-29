@@ -1,5 +1,9 @@
 # Deploy Gratuito do Armagedon
 
+## Otimizacoes publicadas — 2026-10-29
+
+Commit `cfdc5bc`, CI `40971749060` aprovada e GitHub Pages atualizado. Artefato da CI recuperado e hash ZIP conferido, enviado sem recompilar a Cloudflare Pages `4591b336`; seis paginas e dez hashes de cada site conferidos. Worker `b45824b9-f1a0-4034-b53e-03e87d278cdb` com --keep-vars, fingerprint/health conferidos e tres secrets preservados. Indice aditivo aplicado separadamente, uso confirmado; sem schema completo. Quatro testes publicos aprovados. Catalogo de avatares false, imagens preparadas ja presentes nos dois destinos; corte e CI unica ainda conforme lista viva. Nenhum objeto R2 excluido ou plano alterado.
+
 ## Publicacao das otimizacoes autorizada — 2026-10-29
 
 Tiago autorizou publicar o conjunto validado. Primeira etapa conserva catalogo enabled:false e binding R2; imagens sao publicadas antes do corte. CI GitHub valida e publica o espelho; Cloudflare continua com envio manual do pacote minificado apos builds automaticos, pois secrets restritos da CI ainda nao foram configurados. Aguardar CI e conferir hashes/health antes de encerrar. Sem contratacao ou exclusao externa. Resultados efetivos ficam no topo de DEV_STATUS.md.

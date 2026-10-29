@@ -1,5 +1,15 @@
 # DEV STATUS
 
+## Otimizacoes publicadas e verificadas — 2026-10-29
+
+Publicacao autorizada concluida do commit `cfdc5bc`: push fast-forward para main, [CI 40971749060](https://github.com/TiagoPsm/armagedon-rpg/actions/runs/40971749060) aprovada em contratos, dez testes de build, regressao minificada e deploy/verificacao GitHub Pages. Artefato github-pages `12941450294` recuperado pelo conector GitHub e SHA-256 `b2d6fd706089f646747b1da24eec7765c35dde9e8a452f8eea1e48eff78a5249` conferido antes da extracao. Exatamente esse pacote enviado a Cloudflare Pages, publicacao final `4591b336` (apos build automatico `2750513d`). Ambos os sites com seis paginas HTTP 200 e dez arquivos do manifesto identicos por SHA-256 ao artefato aprovado; dois testes publicos em cada dominio aprovados.
+
+Worker final `b45824b9-f1a0-4034-b53e-03e87d278cdb`, publicado com --keep-vars e WORKER_BUILD_HASH conferido pelo health. Tres secrets, bindings DB/MAPS/MESA_REALTIME, duas vars anteriores e compatibility_date preservados; unica var acrescentada e o fingerprint publico do build. Build automatico anterior `f899f8c9-04e3-4040-9866-d53fa8e1c531` concluiu antes do deploy final. Sem alteracao de planos/segredos ou exclusao externa.
+
+Indice aplicado separadamente com apenas `cloudflare/d1/migrations/20261029_character_lookup.sql`: uma consulta aditiva, 2,22 ms; D1 informou 24 leituras/12 escritas de indice/metadados. Plano antes `SCAN characters`, depois `SEARCH characters USING INDEX characters_sheet_key_lower_idx (<expr>=?)`. Sem executar schema completo, atualizar fichas ou mudar regras. Baixa da aplicacao do indice na lista viva.
+
+Catalogo estatico continua false; tres avatares por hash publicados e conferidos nos dois destinos, como primeira etapa da migracao. Leituras/uploads legados de avatares continuam ate o corte coordenado e conferencia da pasta do mestre. Quinze objetos R2 preservados e recuperacao local validada. Sem homologacao autenticada de campanha nesta publicacao. Automacao unica Cloudflare ainda nao ativada por ausencia dos segredos restritos da CI; builds duplicados nao foram desativados. Fechamento documental separado com skip ci, sem novo runtime.
+
 ## Publicacao das otimizacoes autorizada — 2026-10-29
 
 Tiago autorizou colocar no ar se os testes passarem. Preflight repetiu 21 contratos Node, sintaxe de 63 JS e auditorias estatica/CSS/pendencias/diff; aprovados. Regressao final anterior: 137 testes minificados, seis testes Worker atual e dois estaticos aprovados. Dry-run final Worker: 216,86 KiB (gzip 43,59 KiB), bindings D1/DO/R2 e duas vars preservados. Main remota conferida igual ao HEAD antes da consolidacao, sem integrar alteracoes desconhecidas.
@@ -427,7 +437,7 @@ Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daq
 
 - **[Codex/Tiago]** Confirmar plano Cloudflare e condicoes de cobranca da conta: assinaturas retornam 403. Tiago nunca foi cobrado e presume Free; isso nao identifica explicitamente o plano. Workers/D1/DO e R2 ainda existem, sem mudanca de assinatura ou promessa de gratuidade ilimitada. — aberta em 2026-10-29 (solicitacao do Tiago: auditoria de custos)
 
-- **[Codex/Tiago]** Concluir corte estatico preparado: publicar avatares antes de ativar catalogo, atualizar inventario/recuperacao na janela sem edicoes, verificar ambas as publicacoes, referencias legadas e pasta recuperada do mestre; homologar ausencia de R2 no fluxo ativo. So depois apresentar recuperacao/reversao para autorizacao especifica de excluir objetos/remover binding/encerrar bucket e fechar entrega 9. Quinze objetos recuperados localmente por hash; nenhum excluido, catalogo ainda desativado. Migracao D1 de indice separada tambem aguarda aplicacao autorizada apos teste descartavel aprovado. — aberta em 2026-10-29 (plano de otimizacao em pequenas entregas)
+- **[Codex/Tiago]** Concluir corte estatico preparado: imagens ja publicadas e verificadas nos dois destinos; atualizar inventario/recuperacao na janela sem edicoes, conferir referencias legadas e pasta recuperada do mestre antes da ativacao coordenada; homologar ausencia de R2 no fluxo ativo. So depois apresentar recuperacao/reversao para autorizacao especifica de excluir objetos/remover binding/encerrar bucket e fechar entrega 9. Quinze objetos recuperados localmente por hash; nenhum excluido, catalogo ainda desativado. Indice D1 aplicado e plano de consulta conferido em 2026-10-29, encerrando essa subetapa. — aberta em 2026-10-29 (plano de otimizacao em pequenas entregas)
 
 ## Regra Obrigatoria de Documentacao
 

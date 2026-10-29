@@ -1,10 +1,10 @@
 # Armagedon
 
-Plano de otimizacao implementado localmente: [entregas, medidas e reversao](docs/OTIMIZACAO-ENTREGAS.md). Menos leituras repetidas, snapshot de reconexao direcionado e animacao sem renderizar toda a Mesa por quadro. Pipeline unico e corte de avatares estaticos preparados, ainda sem ativacao/publicacao externa. Originais R2 recuperados e preservados; nenhum objeto excluido. Estado efetivamente publicado continua no bloco abaixo.
+Otimizacoes do commit `cfdc5bc` publicadas nos dois sites em 2026-10-29: menos leituras repetidas, snapshot de reconexao direcionado, animacao sem renderizar toda a Mesa por quadro e indice D1 aplicado. CI 40971749060 aprovada, mesmo pacote minificado nos dois destinos, quatro testes publicos e hashes conferidos. [Entregas, medidas e reversao](docs/OTIMIZACAO-ENTREGAS.md). Avatares por hash ja publicados como preparacao; catalogo estatico ainda desativado. CI unica Cloudflare aguarda segredos restritos. Originais R2 recuperados e preservados; nenhum objeto excluido. Blocos anteriores abaixo sao historicos.
 
 Validacao: `npm run test:optimization`, `npm run test:mesa:rules`, `npm run test:build` e `npm run test:mesa:worker:local`. Variante sem R2: `node tools/run-local-worker-tests.cjs --static`. Build completo: `npm run build`. Medicao: `npm run bench:optimization -- --artifact --label=optimized` (comparacao com `--ref=44400f6`). Recuperacao e atualizacao manual de avatares descritas no relatorio; pastas `local-backups/` privadas nunca entram no pacote.
 
-Auditoria atual de recursos que podem gerar cobranca: [docs/CUSTOS-ATUAIS.md](docs/CUSTOS-ATUAIS.md). Ajuste de suavidade da animacao preparado localmente, preservando velocidade e duracao; ainda nao publicado. Detalhes de validacao em DEV_STATUS.md.
+Auditoria atual de recursos que podem gerar cobranca: [docs/CUSTOS-ATUAIS.md](docs/CUSTOS-ATUAIS.md). Suavidade da animacao publicada, preservando velocidade e duracao. Detalhes de validacao em DEV_STATUS.md.
 
 ## Publicacao atual — 2026-10-29
 
