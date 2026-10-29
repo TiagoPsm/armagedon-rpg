@@ -4,7 +4,9 @@
 
 Publicacao autorizada por Tiago: Worker `armagedon-api` e artefato minificado no Pages `armagedon-rpg`, a partir de `C:\Users\Usuario\Projects\Armagedom`. Base recuperada sem visao dinamica; substitui a beta de outubro no Cloudflare. Integracao de `origin/main` e espelho GitHub Pages separados desta operacao. Sem migracao D1, escrita em cenas, rotacao de secrets ou nova infraestrutura. Deploy Worker com `--keep-vars`; D1/R2/DO, tres secrets e compatibility_date preservados.
 
-Antes da publicacao: versao ativa `5483c50b-0f18-435a-8736-9a8981eeceb0`, Pages `3975b3d5-95b4-48b4-8a4d-9037c5e61886`. Dry-run Wrangler 4.154.0 aprovado (202,42 KiB; gzip 39,67 KiB); dez testes do pacote aprovados, incluindo boot normal/minificado sem Vision e referencias das seis paginas. Resultado final e nova versao registrados apos deploy.
+Antes da publicacao: versao ativa `5483c50b-0f18-435a-8736-9a8981eeceb0`, Pages `3975b3d5-95b4-48b4-8a4d-9037c5e61886`. Dry-run Wrangler 4.154.0 aprovado (202,42 KiB; gzip 39,67 KiB); dez testes do pacote aprovados, incluindo boot normal/minificado sem Vision e referencias das seis paginas.
+
+Publicado o commit `7e8c3a4`: Worker `ea479876-9a95-4118-b7be-779531818b06` e Pages `https://7bda574f.armagedon-rpg.pages.dev`, ativo em `https://armagedon-rpg.pages.dev`. Tres secrets, cinco bindings e compatibility_date identicos apos deploy. Dois testes publicos de readiness/acesso anonimo aprovados; seis paginas HTTP 200 e referencias corretas; bundles Mesa/Ficha e CSS Regras/API comparados por hash com o pacote minificado local, todos identicos. Sem teste autenticado de campanha nesta maquina. Nao houve push: GitHub Pages e `origin/main` permanecem como estavam.
 
 ## Remoção da visão dinâmica — 2026-10-28
 

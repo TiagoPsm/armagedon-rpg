@@ -1,10 +1,14 @@
 # DEV STATUS
 
-## Preparacao da publicacao da base recuperada — 2026-10-29
+## Publicacao da base recuperada concluida — 2026-10-29
 
 Tiago autorizou atualizar o site publicado com a base consolidada. Publicacao direta do artefato minificado no projeto Cloudflare Pages `armagedon-rpg` e do Worker `armagedon-api`, preservando `origin/main`: os tres commits remotos contêm outra implementacao de visao e novas funcionalidades, cuja integracao mudaria o escopo validado. A publicacao da base recuperada substitui o conjunto beta de outubro no destino Cloudflare; nao representa integracao dessas funcionalidades. Sem migracao D1 ou rotacao de secrets.
 
-Conferencia do pacote encontrou `echos.html` ausente da lista de copia do build. Incorporada a correcao pontual ja existente em `origin/main`, sem trazer os demais modulos; regressao de referencias do artefato ampliada para as seis paginas. Worker anterior conferido: `5483c50b-0f18-435a-8736-9a8981eeceb0`; Pages anterior: `3975b3d5-95b4-48b4-8a4d-9037c5e61886`. Dry-run Wrangler 4.154.0 aprovado (202,42 KiB; gzip 39,67 KiB), bindings D1/R2/DO e variaveis conferidos. Validacao e resultado finais serao registrados apos publicacao.
+Conferencia do pacote encontrou `echos.html` ausente da lista de copia do build. Incorporada a correcao pontual ja existente em `origin/main`, sem trazer os demais modulos; regressao de referencias do artefato ampliada para as seis paginas. Worker anterior conferido: `5483c50b-0f18-435a-8736-9a8981eeceb0`; Pages anterior: `3975b3d5-95b4-48b4-8a4d-9037c5e61886`. Dry-run Wrangler 4.154.0 aprovado (202,42 KiB; gzip 39,67 KiB), bindings D1/R2/DO e variaveis conferidos.
+
+Publicado o commit `7e8c3a4`: Worker ativo `ea479876-9a95-4118-b7be-779531818b06`; Pages `7bda574f` em `https://armagedon-rpg.pages.dev`, pacote minificado enviado diretamente com branch de ambiente `main`. Isso nao modifica a branch Git `main` nem o espelho GitHub Pages. Sem push ou integracao remota nesta etapa. Tres secrets, cinco bindings e compatibility_date conferidos apos deploy; sem alteracoes diretas no banco ou nos dados da campanha.
+
+Validacao final: dez testes de build/boot aprovados, incluindo normal/minificado e referencias das seis paginas; sintaxe de 48 JS, auditorias estatica/de pendencias, build/minificacao e diff check aprovados. Chromium instalado foi usado fora do sandbox apos a primeira tentativa apontar para o cache isolado inexistente; nao houve falha funcional reproduzida. Pos-deploy: dois testes publicos aprovados no dominio Cloudflare; seis paginas HTTP 200 e referencias identicas ao artefato; seis arquivos JS/CSS (bundles Mesa/Ficha, CSS Regras e API) com hash identico ao pacote local. Homologacao autenticada nao executada por ausencia de credenciais locais; a lista viva permanece inalterada.
 
 ## Base recuperada consolidada — 2026-10-29
 

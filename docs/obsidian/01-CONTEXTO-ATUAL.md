@@ -13,7 +13,7 @@ Atualizado em 2026-10-29. Historico detalhado em DEV_STATUS.md.
 
 ## Estado funcional local
 
-Ficha, inventario, Echos e Mesa mantidos. Visao dinamica antiga removida em 2026-10-28 para futura reconstrucao. Nevoa manual, grade, tokens, iniciativa e permissoes tradicionais permanecem. A remocao ainda nao foi publicada; frontend e Worker precisam ser publicados juntos.
+Ficha, inventario, Echos e Mesa mantidos. Visao dinamica antiga removida em 2026-10-28 para futura reconstrucao. Nevoa manual, grade, tokens, iniciativa e permissoes tradicionais permanecem. Base recuperada publicada no Cloudflare em 2026-10-29: Worker `ea479876-9a95-4118-b7be-779531818b06` e Pages `7bda574f` (commit `7e8c3a4`), com frontend minificado e Echos incluido no pacote. Seis paginas HTTP 200, bundles conferidos por hash e dois testes publicos aprovados. Publicacao direta, sem push, integracao de origin/main ou atualizacao do espelho GitHub Pages.
 
 ## Ambiente validado
 
