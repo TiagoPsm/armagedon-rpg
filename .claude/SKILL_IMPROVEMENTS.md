@@ -1,5 +1,9 @@
 # 📊 Smart Skill Feedback & Improvements Log
 
+### 2026-10-29 — frontend-performance-checklist — publicacao da base recuperada
+
+Skill apropriada para conferir ordem/hash de bundles, minificacao e inicializacao real. Conferir todas as paginas do artefato revelou `echos.html` fora da lista de copia; correcao pontual remota incorporada e regressao ampliada para seis paginas. Integracao completa de origin/main mudaria a base validada e permanece separada da publicacao direta autorizada.
+
 ### 2026-09-22 — game-ui-frontend / game-playtest — portas contextuais
 
 Skills apropriadas: reutilizar SVG do editor preserva identidade e reduz ruido no palco; proximidade e visibilidade nao equivalem a permissao de abrir. Amostragem dos pixels durante pointerdown confirma que a mascara acompanha o giro, alem de asserts no rotulo. Reutilizar botoes evita perder foco/clique durante repintura.

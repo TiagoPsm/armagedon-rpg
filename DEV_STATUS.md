@@ -1,5 +1,11 @@
 # DEV STATUS
 
+## Preparacao da publicacao da base recuperada — 2026-10-29
+
+Tiago autorizou atualizar o site publicado com a base consolidada. Publicacao direta do artefato minificado no projeto Cloudflare Pages `armagedon-rpg` e do Worker `armagedon-api`, preservando `origin/main`: os tres commits remotos contêm outra implementacao de visao e novas funcionalidades, cuja integracao mudaria o escopo validado. A publicacao da base recuperada substitui o conjunto beta de outubro no destino Cloudflare; nao representa integracao dessas funcionalidades. Sem migracao D1 ou rotacao de secrets.
+
+Conferencia do pacote encontrou `echos.html` ausente da lista de copia do build. Incorporada a correcao pontual ja existente em `origin/main`, sem trazer os demais modulos; regressao de referencias do artefato ampliada para as seis paginas. Worker anterior conferido: `5483c50b-0f18-435a-8736-9a8981eeceb0`; Pages anterior: `3975b3d5-95b4-48b4-8a4d-9037c5e61886`. Dry-run Wrangler 4.154.0 aprovado (202,42 KiB; gzip 39,67 KiB), bindings D1/R2/DO e variaveis conferidos. Validacao e resultado finais serao registrados apos publicacao.
+
 ## Base recuperada consolidada — 2026-10-29
 
 Consolidacao do trabalho local na branch `codex/recuperacao-local`, a pedido do Tiago: remocao da visao dinamica antiga, documentacao da migracao, dependencias atualizadas, ferramenta de contexto corrigida e teste isolado do Worker. Incluidos `migration-report.json`, a pagina manual `mesa-mechanics-test.html` e `tools/set-dev-secrets.ps1` (ferramenta de cofre, sem segredos reais). Configuracoes e registros recuperados de `.claude` preservados. Segredos locais, dependencias e artefatos gerados permanecem ignorados pelo Git.

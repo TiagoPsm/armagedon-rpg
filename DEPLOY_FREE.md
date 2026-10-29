@@ -1,5 +1,9 @@
 # Deploy Gratuito do Armagedon
 
+## Publicacao direta da base recuperada — 2026-10-29
+
+Workspace oficial atual: `C:\Users\Usuario\Projects\Armagedom`. Tiago autorizou publicar a base recuperada no Cloudflare Pages `armagedon-rpg` e Worker `armagedon-api`. Gerar o pacote com `npm run build` e enviar `_site` por `wrangler pages deploy _site --project-name armagedon-rpg --branch main`; o argumento de branch seleciona o ambiente de producao do Pages, sem alterar a branch Git. Worker exige dry-run antes e `--keep-vars` no deploy. Nao aplicar schema, alterar banco ou rotacionar secrets nesta publicacao. O espelho GitHub Pages e os tres commits de `origin/main` ficam fora desta publicacao direta. Versoes e verificacoes em `DEV_STATUS.md` e `cloudflare/README.md`.
+
 ## Regra Obrigatoria de Documentacao
 
 Sempre que qualquer etapa de deploy, workflow, dominio, API publicada ou lista de arquivos publicados mudar, atualize este arquivo e `DEV_STATUS.md`. Se a mudanca for em Cloudflare, atualize tambem `cloudflare/README.md`.

@@ -1,5 +1,11 @@
 # Migracao para Cloudflare
 
+## Publicacao da base recuperada — 2026-10-29
+
+Publicacao autorizada por Tiago: Worker `armagedon-api` e artefato minificado no Pages `armagedon-rpg`, a partir de `C:\Users\Usuario\Projects\Armagedom`. Base recuperada sem visao dinamica; substitui a beta de outubro no Cloudflare. Integracao de `origin/main` e espelho GitHub Pages separados desta operacao. Sem migracao D1, escrita em cenas, rotacao de secrets ou nova infraestrutura. Deploy Worker com `--keep-vars`; D1/R2/DO, tres secrets e compatibility_date preservados.
+
+Antes da publicacao: versao ativa `5483c50b-0f18-435a-8736-9a8981eeceb0`, Pages `3975b3d5-95b4-48b4-8a4d-9037c5e61886`. Dry-run Wrangler 4.154.0 aprovado (202,42 KiB; gzip 39,67 KiB); dez testes do pacote aprovados, incluindo boot normal/minificado sem Vision e referencias das seis paginas. Resultado final e nova versao registrados apos deploy.
+
 ## Remoção da visão dinâmica — 2026-10-28
 
 A pedido do usuário, removida a implementação anterior de Mesa Vision para reconstrução futura: editor de paredes/portas, cone, giro, colisão, filtros de visão, endpoint de ações e integrações de persistência/realtime. Névoa manual, grade, tokens, iniciativa e permissões tradicionais permanecem. Frontend e Worker precisam ser publicados juntos. Nenhum deploy ou alteração direta no D1 foi realizado; campos antigos de visão deixam de ser usados e são descartados na normalização ao salvar uma cena. Não existe nova implementação de visão nesta etapa.

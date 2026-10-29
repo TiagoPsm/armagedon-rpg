@@ -66,7 +66,7 @@ test.describe("Artefato do GitHub Pages (Etapa 118)", () => {
   });
 
   test("nenhum arquivo referenciado pelo HTML fica de fora do que e publicado", () => {
-    for (const nome of ["mesa.html", "ficha.html", "index.html"]) {
+    for (const nome of ["mesa.html", "ficha.html", "index.html", "regras.html", "sugestoes.html", "echos.html"]) {
       const html = lerHtml(nome);
       const refs = [...html.matchAll(/(?:href|src)="((?:css|js)\/[^"?]+)(?:\?[^"]*)?"/g)].map(m => m[1]);
       for (const ref of refs) {
