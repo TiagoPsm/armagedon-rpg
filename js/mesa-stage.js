@@ -873,14 +873,16 @@ function flushPersistState() {
     return;
   }
 
-  localStorage.setItem(mesaSceneStorageKey(), JSON.stringify(payload));
+  try { window.MesaLocalSession?.journal(payload); }
+  catch (error) { console.warn('Rascunho de fechamento indisponivel; tentando salvar o documento IndexedDB.', error); }
+  writeMesaSceneCache(payload);
   mesaPersistPending = false;
   lastPersistedMesaSceneSignature = payloadSignature;
   queueRemoteMesaPersist(payload, payloadSignature);
 }
 
 function canPersistRemoteMesaScene() {
-  return Boolean(isMaster() && window.AUTH?.isBackendEnabled?.() && window.APP?.saveMesaScene);
+  return Boolean(isMaster() && (window.MesaLocalSession?.active || window.AUTH?.isBackendEnabled?.()) && window.APP?.saveMesaScene);
 }
 
 function queueRemoteMesaPersist(payload, signature = getMesaSceneSignature(payload)) {
@@ -917,7 +919,7 @@ async function runRemoteMesaPersist() {
       // so existem no cliente do mestre. (Tracos de desenho "dm" sao diferentes:
       // desde a Etapa 38 persistem na cena oficial via PUT master-only e o
       // Worker os filtra no GET para jogadores.)
-      const remotePayload = {
+      const remotePayload = window.MesaLocalSession?.active ? payload : {
         ...payload,
         tokens: payload.tokens.filter(token => token.layer !== "dm")
       };
@@ -930,12 +932,13 @@ async function runRemoteMesaPersist() {
       if (payload.drawings?.some(s => (s.template && JSON.stringify(savedDrawings.get(s.id)?.template) !== JSON.stringify(s.template)) || (s.locked && !savedDrawings.get(s.id)?.locked))) {
         throw Object.assign(new Error("O servidor precisa da atualização de moldes e decorações. As alterações ainda não foram confirmadas."), { code: 'mesa-feature-compat' });
       }
-      state.scenePersistence = "remote";
+      state.scenePersistence = window.MesaLocalSession?.active ? "local" : "remote";
       lastRemoteMesaSceneSignature = payloadSignature;
     } catch (error) {
       if ((state.sceneId || "default") !== persistSceneId) continue;
       state.scenePersistence = "local";
       console.warn("Falha ao salvar cena oficial da mesa.", error);
+      if (window.MesaLocalSession?.active) window.UI?.toast?.(error.message || "Falha ao salvar cena local. Exporte um backup antes de fechar.", { kicker: "// Cenas locais" });
       if (error.code === 'mesa-feature-compat') window.UI?.toast?.(error.message, { kicker: '// Mesa' });
     } finally {
       activeRemotePersistSignature = "";

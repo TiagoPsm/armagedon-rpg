@@ -1,5 +1,19 @@
 # Migracao para Cloudflare
 
+## Relay de cenas locais (implementacao nao publicada) — 2026-10-29
+
+`mesa:host:claim/request/chunk/move/decision` elege um mestre autenticado por sala. Solicitar movimento nao consulta D1: o relay substitui o ator pela identidade do socket e encaminha ao mestre; somente o anfitriao envia confirmacoes/snapshots. Mestre valida, salva IndexedDB, calcula percurso/duracao e transmite delta. Snapshots chegam em partes limitadas, com filtro adicional de tokens/vitais privados. Saida do anfitriao avisa jogadores e cancela solicitacoes pendentes. Estado da cena nao e gravado no DO nem no D1 por esse protocolo; trava e historico de dados continuam no DO. API legada continua disponivel para copia explicita e recuperacao, sem exclusao remota. Nenhuma migracao D1, binding, plano ou secret alterado.
+
+Validar com `npm run test:mesa:worker:local`: contas/banco descartaveis e WebSockets reais locais. Frontend e Worker devem ser publicados juntos, somente em etapa autorizada. Testes locais nao comprovam conectividade P2P em todas as redes; relay WebSocket de mapas permanece e ainda consome recursos externos. Detalhes em `../docs/MESA-LOCAL-AUDITORIA.md`.
+
+## Mapas: interrupcao de novos uploads (local) — 2026-10-29
+
+POST `/api/mesa/map` autentica, recusa jogador com 403 e mestre com 410; DELETE de mapas autentica e recusa mestre com 409, preservando objetos existentes. GET legado e avatares inalterados; bucket/bindings nao removidos. Testes contra Worker/D1/DO locais aprovados. Conta: subscriptions 403, settings standard nao confirma plano. Nenhum deploy ou assinatura alterados. Evidencias e limites em `../docs/MESA-LOCAL-AUDITORIA.md`.
+
+## Contrato local de movimento — 2026-10-29
+
+`js/mesa-movement-rules.js`, compartilhado pelo navegador e Worker, gera duracao proporcional ao percurso real (46 ms por unidade) sem piso/teto visual; reta e diagonal mantem a mesma velocidade fisica. Normalizacao aceita 1–3600000 ms, preservando mensagens antigas; valores fora desse limite sao rejeitados, nunca encurtados para acelerar o token. Atualizar frontend e Worker juntos para que metadados maiores nao sejam descartados pela API/relay antigos. Sem schema D1, mudanca de gameplay, permissao ou infraestrutura. Alteracao ainda local; validacoes em DEV_STATUS.md.
+
 ## Correcao integrada da publicacao — 2026-10-29
 
 Integradas as melhorias remotas de outubro com a remocao de visao preservada. Worker mantem contratos de movimento, moldes medidos e decoracoes bloqueadas; runtime/geometria/rota de visao continuam removidos. Frontend preserva schema IndexedDB v4 e mapas/preferencias existentes, corrigindo a falha dos controles do mestre. Sem alteracao de schema D1, dados de campanha, bindings, secrets ou infraestrutura. Frontend/Worker publicados juntos. Versao anterior desta correcao: `ea479876-9a95-4118-b7be-779531818b06`; Pages `7bda574f`.

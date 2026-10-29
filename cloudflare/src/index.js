@@ -912,41 +912,8 @@ export default {
 
       if (path === "/api/mesa/map" && request.method === "POST") {
         const session = await requireAuth(request, env);
-        if (session.role !== "master") {
-          return errorJson("Apenas o mestre pode enviar mapas.", 403, origin);
-        }
-        if (!env.MAPS) {
-          return errorJson("Bucket R2 de mapas nao configurado.", 503, origin);
-        }
-
-        const formData = await request.formData();
-        const file  = formData.get("file");
-        const mapId = String(formData.get("mapId") || "").trim();
-
-        if (!file || !(file instanceof File)) return errorJson("Campo 'file' obrigatorio.", 400, origin);
-        if (!mapId) return errorJson("Campo 'mapId' obrigatorio.", 400, origin);
-        // Cap de upload de mapa (Etapa 41; elevado na Etapa 55): 12MB. O
-        // cliente comprime para WebP mirando um orcamento de 10MB
-        // (MAP_BYTES_BUDGET em mesa-map.js), entao os 12MB sao a folga para
-        // o envelope multipart — nao um alvo. Continua sendo um teto
-        // protetivo: acima disso o cliente nao comprimiu como deveria.
-        if (file.size > 12 * 1024 * 1024) {
-          return errorJson("Mapa excede o limite de 12 MB.", 413, origin);
-        }
-
-        // Chave no R2: maps/<username>/<mapId>.webp
-        const safeUser  = String(session.username || "unknown").replace(/[^a-z0-9_-]/gi, "_").toLowerCase().slice(0, 32);
-        const safeMapId = String(mapId).replace(/[^a-z0-9_-]/gi, "_").slice(0, 64);
-        const r2Key     = `maps/${safeUser}/${safeMapId}.webp`;
-
-        await env.MAPS.put(r2Key, await file.arrayBuffer(), {
-          httpMetadata:   { contentType: ["image/png", "image/jpeg", "image/webp"].includes(file.type) ? file.type : "image/webp" },
-          customMetadata: { uploadedBy: session.username, mapId, uploadedAt: new Date().toISOString() },
-        });
-
-        // URL pública servida pelo próprio Worker (não depende de domínio R2 customizado)
-        const publicUrl = `${new URL(request.url).origin}/api/mesa/map/${encodeURIComponent(r2Key)}`;
-        return withCors(json({ ok: true, r2Key, url: publicUrl }, { status: 201 }), origin);
+        if (session.role !== "master") return errorJson("Apenas o mestre pode gerenciar mapas.", 403, origin);
+        return errorJson("Upload remoto de mapas desativado. Use a transmissao pelo mestre.", 410, origin);
       }
 
       /* ── MAPA: servir imagem do R2 (sem auth — URL é efêmera) ────────── */
@@ -977,17 +944,8 @@ export default {
       const mapDeleteMatch = path.match(/^\/api\/mesa\/map\/(.+)$/);
       if (mapDeleteMatch && request.method === "DELETE") {
         const session = await requireAuth(request, env);
-        if (session.role !== "master") return errorJson("Apenas o mestre pode remover mapas.", 403, origin);
-        if (!env.MAPS) return errorJson("Bucket R2 nao configurado.", 503, origin);
-
-        const r2Key    = decodePathParam(mapDeleteMatch[1]);
-        const safeUser = String(session.username || "").replace(/[^a-z0-9_-]/gi, "_").toLowerCase().slice(0, 32);
-        if (!r2Key.startsWith(`maps/${safeUser}/`)) {
-          return errorJson("Sem permissao para remover este mapa.", 403, origin);
-        }
-
-        await env.MAPS.delete(r2Key);
-        return withCors(json({ ok: true, r2Key }), origin);
+        if (session.role !== "master") return errorJson("Apenas o mestre pode gerenciar mapas.", 403, origin);
+        return errorJson("Mapas remotos preservados ate recuperacao local conferida.", 409, origin);
       }
 
       if (path === "/api/transfers/proposals" && request.method === "POST") {

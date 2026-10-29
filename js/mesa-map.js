@@ -5,7 +5,7 @@
  * ARQUITETURA DE ENTREGA (ordem de prioridade)
  * ─────────────────────────────────────────────────────────────
  *  1. WebRTC DataChannel (P2P direto mestre → jogador)
- *     Zero custo de servidor. Imagem nunca toca o Worker.
+ *     Imagem segue diretamente entre navegadores quando a rede permite.
  *     Sinalização (SDP + ICE) viaja pelos ~200B via Durable Object.
  *
  *  2. Chunked WebSocket via Durable Object (fallback automático)
@@ -13,10 +13,8 @@
  *     firewall corporativo, etc.). Mesmo DO que já existe — sem nova
  *     infra. Imagem relayed em chunks base64.
  *
- *  3. Cloudflare R2 (último recurso)
- *     Só ativado se P2P + WS ambos falharem. Imagem deletada
- *     automaticamente quando todos os jogadores saírem.
- *     R2 free tier: 10 GB storage, zero egress fee.
+ *  3. Falha visivel, sem armazenamento remoto de mapas.
+ *     Objetos legados sao preservados para recuperacao local.
  *
  * OTIMIZAÇÕES
  * ─────────────────────────────────────────────────────────────
@@ -177,7 +175,7 @@ const mesaPeerConnections = new Map();
 // userId → true quando jogador enviou EV_MAP_HAVE
 const mesaMapAckSet = new Set();
 let   mesaMapFallbackTimer = null;
-const MAP_R2_FALLBACK_MS   = 30_000; // 30s sem confirmação → tenta R2
+const MAP_DELIVERY_TIMEOUT_MS   = 30_000; // 30s sem confirmacao: aviso, sem upload
 
 // jogador: conexão inbound (recebendo do mestre)
 let mesaInboundPeer = null;
@@ -611,9 +609,9 @@ async function initMesaMap() {
     // Aplica o mapa da cena oficial que chegou durante o hydrate (o boot do
     // mesa-core roda antes deste init — ver applyMesaSceneMapFromSnapshot).
     _applyPendingSceneMap();
+    if (window.MesaLocalSession?.active && !mesaMapState.isMaster) void MesaLocalSession.ready();
 
-    // Migração suave: mestre com mapa ativo local mas cena oficial sem mapa
-    // persiste o mapa atual (upload R2 + PUT da cena) para os jogadores.
+    // Mestre com mapa ativo e sem referencia guarda o vinculo da cena local.
     if (mesaMapState.isMaster && mesaMapState.activeEntry && !mesaMapState.sceneMapRef) {
       _ensureActiveMapPersisted();
     }
@@ -968,14 +966,21 @@ async function restoreActiveMap() {
 }
 
 async function _restoreCFActiveMap() {
+  const restoringSceneId = _currentMesaSceneId();
   if (!mesaMapState.db) return;
   try {
     var record = await new Promise(function(resolve) {
       var tx  = mesaMapState.db.transaction(MESA_MAP_SETTINGS_STORE, "readonly");
-      var req = tx.objectStore(MESA_MAP_SETTINGS_STORE).get("cfActiveMap");
+      var req = tx.objectStore(MESA_MAP_SETTINGS_STORE).get(window.MesaLocalSession?.active ? "cfActiveMap:" + _currentMesaSceneId() : "cfActiveMap");
       req.onsuccess = function() { resolve(req.result); };
       req.onerror   = function() { resolve(null); };
     });
+    if (!record && window.MesaLocalSession?.active) {
+      record = await new Promise(resolve => {
+        const request = mesaMapState.db.transaction(MESA_MAP_SETTINGS_STORE).objectStore(MESA_MAP_SETTINGS_STORE).get('cfActiveMap');
+        request.onsuccess = () => resolve(request.result); request.onerror = () => resolve(null);
+      });
+    }
     if (!record || !record.value) return;
 
     var saved = record.value; // { blob, name, cfPath, sceneId }
@@ -986,6 +991,7 @@ async function _restoreCFActiveMap() {
     if (savedSceneId !== _currentMesaSceneId()) return;
     var blobUrl = URL.createObjectURL(saved.blob);
     var hash = await computeBlobHash(saved.blob);
+    if (restoringSceneId !== _currentMesaSceneId()) { URL.revokeObjectURL(blobUrl); return; }
 
     if (mesaMapState.activeMapUrl) URL.revokeObjectURL(mesaMapState.activeMapUrl);
     // Entry completo mesmo no restore: permite anunciar a jogadores novos e
@@ -1427,6 +1433,10 @@ function _normalizedMapTransform() {
 
 // Consumido por createMesaScenePayloadFromState (mesa-core.js) em todo persist.
 window.getMesaSceneMapPayload = function () {
+  if (window.MesaLocalSession?.active) {
+    if (mesaMapState.activeMapId && _localMapBelongsToCurrentScene()) return { id: mesaMapState.activeMapId, localOnly: true, name: mesaMapState.activeEntry?.name || "", hash: mesaMapState.activeEntry?.hash || "", fit: isStageFitToMap(), transform: _normalizedMapTransform() };
+    return mesaMapState.sceneMapRef?.localOnly ? mesaMapState.sceneMapRef : null;
+  }
   // O `_localMapBelongsToCurrentScene()` e o que impede o persist de gravar o
   // mapa de uma cena dentro de outra (Etapa 90) — era assim que o vazamento
   // saia da tela e chegava ao D1, virando o mapa oficial da cena errada.
@@ -1446,7 +1456,7 @@ window.getMesaSceneMapPayload = function () {
 // Chamado por applyMesaSceneSnapshot (mesa-core.js) no boot e em snapshots
 // remotos. Antes do initMesaMap terminar, apenas guarda como pendente.
 window.applyMesaSceneMapFromSnapshot = function (map) {
-  const ref = map && map.url ? map : null;
+  const ref = map && (map.localOnly || map.url) ? map : null;
   mesaMapState.sceneMapRef = ref;
   if (!mesaMapState._initDone) {
     mesaMapState._pendingSceneMap = ref;
@@ -1463,6 +1473,29 @@ function _applyPendingSceneMap() {
 }
 
 function _applySceneMapRef(ref) {
+  if (window.MesaLocalSession?.active && !_isMasterRole() && !ref) {
+    mesaMapState.activeMapId = ""; mesaMapState.remoteMapId = "";
+    mesaMapState._imgW = 0; mesaMapState._imgH = 0;
+    renderMesaMapLayer("", "");
+    return;
+  }
+  if (window.MesaLocalSession?.active && ref?.localOnly) {
+    if (mesaMapState.activeMapId === ref.id || (!_isMasterRole() && mesaMapState.activeMapId && mesaMapState.remoteMapId === ref.id && _localMapBelongsToCurrentScene())) return;
+    if (_isMasterRole()) {
+      if (ref.id.startsWith("cf-")) void (async () => { await _trocarMapaLocalDaCena(); await _restoreCFActiveMap(); })();
+      else void setActiveMapFromLibrary(ref.id);
+    }
+    else {
+      mesaMapState.activeMapId = ""; mesaMapState._imgW = 0; mesaMapState._imgH = 0;
+      renderMesaMapLayer("", "");
+      const sceneId = _currentMesaSceneId(), generation = ++mesaLocalMapLoadGeneration;
+      if (ref.hash) void findCachedMapByHash(ref.hash).then(async cached => {
+        if (!cached || sceneId !== _currentMesaSceneId() || generation !== mesaLocalMapLoadGeneration) return;
+        mesaMapState.remoteMapId = ref.id; await applyActiveMap(cached);
+      }).catch(error => console.warn("[mesa-map] Falha ao recuperar mapa recebido.", error));
+    }
+    return;
+  }
   // Etapa 90: a pergunta que faltava era "de que cena e o mapa que estou
   // exibindo?". Sem ela, as duas guardas abaixo — escritas quando existia UMA
   // cena — protegiam o mapa local do mestre a ponto de carrega-lo para dentro
@@ -1604,23 +1637,15 @@ function _renderSceneMapFromUrl(ref) {
 // Persiste a cena oficial com a referência atual do mapa (master-only).
 function _persistMesaSceneMap() {
   if (!_isMasterRole()) return;
-  if (!window.AUTH?.isBackendEnabled?.()) return;
+  if (!window.MesaLocalSession?.active && !window.AUTH?.isBackendEnabled?.()) return;
   if (typeof bumpMesaSceneVersion === "function") bumpMesaSceneVersion();
   if (typeof persistState === "function") persistState({ immediate: true });
 }
 
-// Garante que o mapa ativo do mestre está no R2 e referenciado na cena.
+// Guarda somente a referencia local; transmissao nao cria objetos R2.
 function _ensureActiveMapPersisted() {
-  if (!_isMasterRole() || !window.AUTH?.isBackendEnabled?.()) return;
-  if (!mesaMapState.activeEntry) return;
-  if (
-    mesaMapState._uploadedMapId === mesaMapState.activeEntry.id
-    && mesaMapState.activeMapPublicUrl
-  ) {
-    _persistMesaSceneMap();
-    return;
-  }
-  uploadActiveMapToR2();
+  if (window.MesaLocalSession?.active && _isMasterRole()) { _persistMesaSceneMap(); void MesaLocalSession.snapshot(); }
+  return;
 }
 
 // Pan/zoom do mestre também persiste (debounced, mais lento que o broadcast
@@ -1836,6 +1861,7 @@ function bindMesaMapPresence() {
 
   window.APP.on("mesa:ready",    handle);
   window.APP.on("mesa:presence", handle);
+  if (window.MesaLocalSession?.active) void window.APP.sendRealtime({ type: "mesa:presence:request" });
 }
 
 /* ── ENTREGA: LADO DO MESTRE ────────────────────────────────── */
@@ -1856,16 +1882,11 @@ function bindMasterMapListeners() {
   });
 
   // Jogador confirmou que tem o mapa (cache hit ou recebeu via P2P/WS)
-  // Registrar confirmação e cancelar timer de fallback R2 se todos confirmaram
+  // Registrar confirmacao do mapa atual. O prazo verifica todos os jogadores.
   window.APP.on(EV_MAP_HAVE, ({ from, hash }) => {
+    if (hash !== mesaMapState.activeEntry?.hash) return;
     console.info(`[mesa-map] Jogador ${from} tem mapa ${hash?.slice(0, 8)}.`);
-    if (from) mesaMapAckSet.add(from);
-    // Se recebemos pelo menos uma confirmação, o canal funcionou
-    // → cancelar fallback R2 (evita upload desnecessário)
-    if (mesaMapAckSet.size > 0 && mesaMapFallbackTimer) {
-      clearTimeout(mesaMapFallbackTimer);
-      mesaMapFallbackTimer = null;
-    }
+    if (from) mesaMapAckSet.add(String(from).toLowerCase());
   });
 
   // Resposta SDP do jogador
@@ -1890,8 +1911,7 @@ function bindMasterMapListeners() {
 /**
  * Anuncia o mapa para todos os jogadores.
  * Jogadores verificam o cache pelo hash e respondem com have/need.
- * Inicia timer de fallback R2: se nenhum jogador confirmar em
- * MAP_R2_FALLBACK_MS, tenta upload para R2 como último recurso.
+ * Inicia prazo de confirmacao; expirar informa falha sem upload.
  *
  * @param {{ id, name, blob, hash }} entry
  */
@@ -1909,13 +1929,16 @@ function announceMapToPlayers(entry) {
     from:  mesaMapState.myUserId,
   });
 
-  // Fallback R2: ativado se nenhum EV_MAP_HAVE chegar em 30s
+  // Sem confirmacao, informar falha sem mudar o meio de armazenamento.
   mesaMapFallbackTimer = setTimeout(() => {
-    if (mesaMapAckSet.size === 0 && mesaMapState.playersOnline) {
-      console.warn("[mesa-map] Nenhuma confirmação em 30s. Tentando fallback R2...");
-      uploadActiveMapToR2();
+    mesaMapFallbackTimer = null;
+    const players = (state.onlineUsers || []).filter(user => user.role !== 'master').map(user => String(user.username).toLowerCase());
+    const missing = players.length ? players.some(name => !mesaMapAckSet.has(name)) : mesaMapAckSet.size === 0;
+    if (missing && mesaMapState.playersOnline) {
+      console.warn("[mesa-map] Transmissao do mapa sem confirmacao; nenhum upload remoto foi feito.");
+      window.UI?.toast?.("Nao foi possivel confirmar a entrega do mapa. Confira a conexao e tente novamente; o mapa nao foi enviado para a nuvem.", { kicker: "// Mapas" });
     }
-  }, MAP_R2_FALLBACK_MS);
+  }, MAP_DELIVERY_TIMEOUT_MS);
 
   // Alinha quem acabou de entrar ao pan/zoom atual do mestre (quem ainda
   // não tem a imagem guarda como pendente e aplica quando ela chegar).
@@ -1930,6 +1953,7 @@ function announceMapToPlayers(entry) {
  * @param {{ blob: Blob, hash: string, name: string }} entry
  */
 async function openP2PToPlayer(userId, entry) {
+  const sceneId = _currentMesaSceneId();
   // Fechar conexão anterior com este usuário
   const existing = mesaPeerConnections.get(userId);
   if (existing) { existing.close(); mesaPeerConnections.delete(userId); }
@@ -1945,7 +1969,7 @@ async function openP2PToPlayer(userId, entry) {
     if (dc.readyState !== "open") {
       fallbackFired = true;
       console.warn(`[mesa-map] WebRTC timeout para ${userId} — usando WS chunked.`);
-      sendMapViaWS(userId, entry);
+      if (sceneId === _currentMesaSceneId()) sendMapViaWS(userId, entry);
     }
   }, P2P_TIMEOUT_MS);
 
@@ -1986,6 +2010,7 @@ async function openP2PToPlayer(userId, entry) {
       hash: entry.hash,
       name: entry.name,
       size: entry.blob.size,
+      sceneId,
     });
   } catch (e) {
     console.error("[mesa-map] Falha ao criar offer WebRTC:", e);
@@ -2032,12 +2057,13 @@ async function sendBlobViaDataChannel(dc, blob, hash, name) {
  * @param {{ blob: Blob, hash: string, name: string }} entry
  */
 async function sendMapViaWS(userId, entry) {
+  const sceneId = _currentMesaSceneId();
   const { blob, hash, name } = entry;
   const buffer      = await blob.arrayBuffer();
   const totalChunks = Math.ceil(buffer.byteLength / CHUNK_SIZE);
 
   _sendRealtime({ type: EV_MAP_WS_START, to: userId, from: mesaMapState.myUserId,
-    hash, name, size: buffer.byteLength, chunks: totalChunks });
+    hash, name, size: buffer.byteLength, chunks: totalChunks, sceneId });
 
   for (let i = 0; i < totalChunks; i++) {
     const start = i * CHUNK_SIZE;
@@ -2108,6 +2134,7 @@ function bindPlayerMapListeners() {
     mesaWsBuffer.hash     = hash;
     mesaWsBuffer.name     = name;
     mesaWsBuffer.size     = size;
+    mesaWsBuffer.sceneId  = msg.sceneId;
   });
 
   // 5. Chunk WS
@@ -2152,7 +2179,7 @@ function bindPlayerMapListeners() {
 /**
  * Cria RTCPeerConnection de entrada para receber blob do mestre.
  */
-async function _setupInboundP2P({ from, sdp, hash, name, size }) {
+async function _setupInboundP2P({ from, sdp, hash, name, size, sceneId }) {
   if (mesaInboundPeer) { mesaInboundPeer.close(); mesaInboundPeer = null; }
 
   const pc = new RTCPeerConnection({ iceServers: STUN_SERVERS });
@@ -2169,7 +2196,7 @@ async function _setupInboundP2P({ from, sdp, hash, name, size }) {
         const msg = JSON.parse(data);
         if (msg.type === "map:start") {
           p2pBuf = { chunks: new Array(msg.chunks), received: 0,
-            total: msg.size, hash: msg.hash, name: msg.name, size: msg.size };
+            total: msg.size, hash: msg.hash, name: msg.name, size: msg.size, sceneId };
         } else if (msg.type === "map:end") {
           await _reassembleAndApply(p2pBuf);
           dc.close();
@@ -2224,6 +2251,7 @@ async function _reassembleAndApply(buffer) {
     try { await saveMesaMapToDB(mapEntry); } catch {}
   }
 
+  if (window.MesaLocalSession?.active && buffer.sceneId && buffer.sceneId !== _currentMesaSceneId()) return;
   await applyActiveMap(mapEntry);
 
   // Confirmar ao mestre que o mapa foi recebido e exibido.
@@ -2234,74 +2262,16 @@ async function _reassembleAndApply(buffer) {
 /* ── SINCRONIZAÇÃO REMOTA R2 (FASE 3) ──────────────────────── */
 
 /**
- * Upload do mapa ativo para Cloudflare R2.
- * Usado apenas como último recurso (P2P + WS falharam).
- *
- * Endpoint do Worker:
- *   POST /mesa/map
- *   Body: FormData { file: Blob, mapId: string }
- *   Response: { url: string, r2Key: string }
+ * Entrada legada mantida para chamadas existentes. Armazenamento remoto bloqueado.
  */
 async function uploadActiveMapToR2() {
-  if (!mesaMapState.activeEntry) return;
-  if (mesaMapState.uploadInFlight) return;
-  if (!window.AUTH?.isBackendEnabled?.()) return;
-
-  mesaMapState.uploadInFlight = true;
-  setMesaMapUploading(true);
-
-  try {
-    if (!window.APP?.uploadMesaMap) {
-      console.warn("[mesa-map] Upload R2: fachada APP indisponivel.");
-      return;
-    }
-
-    const { url, r2Key } = await window.APP.uploadMesaMap(
-      mesaMapState.activeEntry.blob,
-      mesaMapState.activeEntry.id
-    );
-    mesaMapState.activeMapR2Key = r2Key;
-    mesaMapState.activeMapPublicUrl = url;
-    mesaMapState._uploadedMapId = mesaMapState.activeEntry.id;
-
-    // Broadcast da URL pública R2 para jogadores que ainda não têm o mapa
-    _sendRealtime({
-      type:  EV_MAP_SET,
-      mapId: mesaMapState.activeEntry.id,
-      url,
-      hash:  mesaMapState.activeEntry.hash,
-      name:  mesaMapState.activeEntry.name,
-    });
-
-    // Salva a referência { id, url, transform } na cena oficial — jogadores
-    // passam a carregar o mapa no boot mesmo com o mestre offline.
-    _persistMesaSceneMap();
-
-    console.info("[mesa-map] Upload R2 concluído:", r2Key);
-  } catch (err) {
-    console.error("[mesa-map] Falha no upload R2:", err);
-  } finally {
-    mesaMapState.uploadInFlight = false;
-    setMesaMapUploading(false);
-  }
+  window.UI?.toast?.("Armazenamento remoto de mapas desativado. Mantenha a pasta do mestre conectada.", { kicker: "// Mapas" });
+  return false;
 }
 
 async function deleteActiveMapFromR2() {
-  if (!mesaMapState.activeMapR2Key) return;
-  if (!window.AUTH?.isBackendEnabled?.()) return;
-
-  const r2Key = mesaMapState.activeMapR2Key;
-  mesaMapState.activeMapR2Key = "";
-
-  try {
-    if (!window.APP?.deleteMesaMap) return;
-
-    await window.APP.deleteMesaMap(r2Key);
-
-    console.info("[mesa-map] Mapa removido do R2:", r2Key);
-  } catch (err) {
-    console.warn("[mesa-map] Falha ao remover do R2:", err);
-  }
+  // Existing cloud objects are preserved until local recovery is verified.
+  return false;
 }
 
 /* ── UTILITÁRIOS ────────────────────────────────────────────── */
@@ -2505,7 +2475,7 @@ async function setActiveMapFromLibrary(mapId) {
     if (mesaMapState.playersOnline) {
       announceMapToPlayers(mapEntry);
     }
-    // R2 + cena oficial (jogadores offline/futuros recebem no boot)
+    // Persistir somente a referencia local; nenhum upload remoto.
     _ensureActiveMapPersisted();
     await renderMapLibrary();
   } catch (err) {
@@ -3406,7 +3376,7 @@ function _saveCFActiveMapToIDB(blob, name, cfPath) {
       var store = tx.objectStore(MESA_MAP_SETTINGS_STORE);
       // sceneId junto (Etapa 90): sem ele o restore devolvia o mapa da pasta
       // conectada em QUALQUER cena, inclusive nas que nao tem mapa.
-      store.put({ key: "cfActiveMap", value: { blob: blob, name: name, cfPath: cfPath, sceneId: _currentMesaSceneId() } });
+      store.put({ key: window.MesaLocalSession?.active ? "cfActiveMap:" + _currentMesaSceneId() : "cfActiveMap", value: { blob: blob, name: name, cfPath: cfPath, sceneId: _currentMesaSceneId() } });
       tx.oncomplete = function() { resolve(); };
       tx.onerror    = function(e) { reject(e.target.error); };
       tx.onabort    = function(e) { reject(new Error("IDB transaction aborted")); };
@@ -3421,7 +3391,7 @@ function _deleteCFActiveMapFromIDB() {
     if (!mesaMapState.db) { resolve(); return; }
     var tx    = mesaMapState.db.transaction(MESA_MAP_SETTINGS_STORE, "readwrite");
     var store = tx.objectStore(MESA_MAP_SETTINGS_STORE);
-    store.delete("cfActiveMap");
+    store.delete(window.MesaLocalSession?.active ? "cfActiveMap:" + _currentMesaSceneId() : "cfActiveMap");
     tx.oncomplete = function() { resolve(); };
     tx.onerror    = function(e) { reject(e.target.error); };
   });

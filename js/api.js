@@ -438,38 +438,10 @@
     // Upload do mapa da Mesa para o R2. FormData nao passa pelo request()
     // (que forca JSON): o browser define o Content-Type multipart sozinho.
     async uploadMesaMap(blob, mapId) {
-      const response = await (() => {
-        const formData = new FormData();
-        formData.append("file", blob);
-        formData.append("mapId", String(mapId || ""));
-        return fetch(buildUrl("/mesa/map"), {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-            ...(state.token ? { Authorization: `Bearer ${state.token}` } : {})
-          },
-          body: formData
-        });
-      })();
-
-      let payload = null;
-      try {
-        payload = await response.json();
-      } catch {
-        payload = null;
-      }
-      if (!response.ok) {
-        const error = new Error(payload?.error || "Falha no upload do mapa.");
-        error.status = response.status;
-        error.payload = payload;
-        throw error;
-      }
-      return payload; // { url, r2Key }
+      throw new Error("Upload remoto de mapas desativado.");
     },
-    async deleteMesaMap(r2Key) {
-      return request(`/mesa/map/${encodeURIComponent(r2Key)}`, {
-        method: "DELETE"
-      });
+    async deleteMesaMap() {
+      throw new Error("Mapas remotos preservados ate conferencia de recuperacao local.");
     },
     async listRules() {
       return request("/rules");

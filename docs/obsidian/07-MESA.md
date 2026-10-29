@@ -1,5 +1,9 @@
 # Mesa
 
+## Contrato atual da implementacao local — 2026-10-29
+
+`mesaLocalScenes:true`: fonte de verdade no IndexedDB do mestre, JSON de backup separado das imagens, rascunho de fechamento e revisoes contra sobrescrita. O mestre confirma/salva movimentos antes de distribuir percurso e duracao; jogadores animam localmente. Relay WebSocket autenticado permanece, sem leituras/gravacoes automaticas de cena D1. Novos uploads e exclusoes de mapas R2 bloqueados; arquivos existentes preservados. `js/mesa-local-store.js` e `js/mesa-local-session.js` carregam antes do bootstrap. Implementacao ainda nao publicada; instrucoes em `docs/MESA-LOCAL-AUDITORIA.md`. Registros D1 abaixo descrevem o modo legado, mantido apenas para compatibilidade e copia explicita.
+
 ## Responsabilidade
 
 `mesa.html` concentra:

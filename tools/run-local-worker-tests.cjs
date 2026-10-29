@@ -54,7 +54,7 @@ let worker;
     const env = {...process.env, ARMAGEDON_LOCAL_WORKER: api, ARMAGEDON_LOCAL_SITE: site, ARMAGEDON_LOCAL_MASTER_PASSWORD: masterPass, ARMAGEDON_LOCAL_PLAYER_PASSWORD: playerPass};
     // Asynchronous child keeps the local HTTP server responsive during browser tests.
     const result = await new Promise((resolve, reject) => {
-      const p = spawn(process.execPath, [playwright, 'test', 'tests/mesa-resize-worker.spec.cjs', '--workers=1', '--reporter=line', '--output=test-results/worker-validation'], {cwd: root, env, windowsHide: true, stdio: 'inherit'});
+      const p = spawn(process.execPath, [playwright, 'test', 'tests/mesa-resize-worker.spec.cjs', 'tests/mesa-local-worker.spec.cjs', '--workers=1', '--reporter=line', '--output=test-results/worker-validation'], {cwd: root, env, windowsHide: true, stdio: 'inherit'});
       p.on('error', reject); p.on('exit', resolve);
     });
     if (result !== 0) throw new Error('Worker browser tests failed: ' + result);

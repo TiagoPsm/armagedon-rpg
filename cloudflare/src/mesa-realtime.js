@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { getMesaScene } from "./mesa.js";
+import { getMesaScene, normalizeMesaScene } from "./mesa.js";
 // Regras puras (tipos permitidos, limites, sanitizacao, normalizacao) vivem
 // em mesa-realtime-rules.js — modulo sem dependencia de "cloudflare:workers",
 // entao os testes unitarios (tests/mesa-audit.spec.cjs) exercitam exatamente
@@ -236,6 +236,10 @@ class MesaRealtimeRoom extends DurableObject {
       return;
     }
 
+    if (String(payload?.type || '').startsWith('mesa:host:')) {
+      await this.handleLocalHost(ws, payload);
+      return;
+    }
     if (RELAY_TYPES.has(String(payload?.type || ""))) {
       await this.handleRealtimeRelay(ws, payload);
       return;
@@ -246,9 +250,65 @@ class MesaRealtimeRoom extends DurableObject {
     }
   }
 
+  async handleLocalHost(ws, payload) {
+    const attachment = readAttachment(ws) || {};
+    const sockets = this.ctx.getWebSockets();
+    const elected = sockets.find(socket => readAttachment(socket)?.localHost === true && socket.readyState === 1);
+    const actor = { role: attachment.role, username: attachment.username };
+    if (payload.type === 'mesa:host:claim' && attachment.role === 'master') {
+      if (elected && elected !== ws) { sendJson(ws, { type: 'mesa:host:status', ok: false }); return; }
+      ws.serializeAttachment({ ...attachment, localHost: true });
+      sendJson(ws, { type: 'mesa:host:status', ok: true }); return;
+    }
+    if (payload.type === 'mesa:host:request') {
+      if (elected) sendJson(elected, { type: payload.type, actor });
+      else sendJson(ws, { type: 'mesa:host:status', ok: false });
+      return;
+    }
+    if (payload.type === 'mesa:host:move' && attachment.role === 'player') {
+      if (typeof payload.requestId !== 'string' || payload.requestId.length > 64) return;
+      if (elected) sendJson(elected, { ...payload, actor });
+      else sendJson(ws, { type: 'mesa:host:decision', requestId: payload.requestId, to: actor.username, ok: false, reason: 'Mestre anfitriao desconectado.' });
+      return;
+    }
+    if (elected !== ws || attachment.role !== 'master') return;
+    if (payload.type === 'mesa:host:decision') {
+      for (const socket of sockets) if (readAttachment(socket)?.username === payload.to) sendJson(socket, { ...payload, actor });
+      return;
+    }
+    if (payload.type !== 'mesa:host:chunk' || typeof payload.transferId !== 'string' || payload.transferId.length > 64 ||
+        !Number.isInteger(payload.total) || payload.total < 1 || payload.total > 175 ||
+        !Number.isInteger(payload.index) || payload.index < 0 || payload.index >= payload.total ||
+        typeof payload.text !== 'string' || payload.text.length > 12000) return;
+    this.localTransfers ||= new WeakMap();
+    let transfer = this.localTransfers.get(ws);
+    if (!transfer || transfer.id !== payload.transferId || Date.now() - transfer.started > 30000) {
+      transfer = { id: payload.transferId, total: payload.total, parts: [], started: Date.now() }; this.localTransfers.set(ws, transfer);
+    }
+    if (transfer.total !== payload.total) return;
+    transfer.parts[payload.index] = payload.text;
+    if (transfer.parts.filter(x => x !== undefined).length !== transfer.total) return;
+    this.localTransfers.delete(ws);
+    try {
+      const original = JSON.parse(transfer.parts.join(''));
+      if (typeof original.id !== 'string' || original.id.length > 160) return;
+      const data = normalizeMesaScene(original.data);
+      if (original.data?.map?.localOnly) data.map = { id: String(original.data.map.id || '').slice(0, 160), hash: String(original.data.map.hash || '').slice(0, 128), localOnly: true, fit: original.data.map.fit !== false, transform: original.data.map.transform || null };
+      data.tokens = data.tokens.filter(token => token.layer !== 'dm' && token.visibleToPlayers !== false).map(token => token.statsVisibleToPlayers ? token : { ...token, currentLife: null, maxLife: null, currentIntegrity: null, maxIntegrity: null });
+      data.drawings = data.drawings.filter(stroke => stroke.layer !== 'dm');
+      const text = JSON.stringify({ id: original.id, name: String(original.name || '').slice(0, 100), data });
+      const total = Math.ceil(text.length / 12000);
+      for (let index = 0; index < total; index++) {
+        const message = { type: 'mesa:host:chunk', transferId: transfer.id, index, total, text: text.slice(index * 12000, (index + 1) * 12000), actor };
+        for (const socket of sockets) if (readAttachment(socket)?.role === 'player') sendJson(socket, message);
+      }
+    } catch { sendJson(ws, { type: 'mesa:scene:ack', ok: false, reason: 'Cena local invalida; backup preservado.' }); }
+  }
+
   async handleMoveLockToggle(ws, payload) {
     const attachment = readAttachment(ws) || {};
-    if (attachment.role !== "master") {
+    const localHost = this.ctx.getWebSockets().find(socket => readAttachment(socket)?.localHost && socket.readyState === 1);
+    if (attachment.role !== "master" || (localHost && localHost !== ws)) {
       sendJson(ws, {
         type: "mesa:scene:ack",
         ok: false,
@@ -365,8 +425,12 @@ class MesaRealtimeRoom extends DurableObject {
   }
 
   async handleRealtimeRelay(ws, payload) {
+    const localHost = this.ctx.getWebSockets().find(socket => readAttachment(socket)?.localHost && socket.readyState === 1);
     const attachment = readAttachment(ws) || {};
     const type = String(payload?.type || "");
+    if (localHost && ((attachment.role === 'master' && (MASTER_ONLY_TYPES.has(type) || type === 'mesa:batch') && localHost !== ws) || (attachment.role !== 'master' && type === 'mesa:token:move'))) {
+      sendJson(ws, { type: 'mesa:scene:ack', ok: false, reason: 'Movimento exige confirmacao do mestre anfitriao.' }); return;
+    }
     if (type === SHEET_PATCH_TYPE) {
       this.handleSheetPatchRelay(ws, payload, attachment);
       return;
@@ -543,7 +607,8 @@ class MesaRealtimeRoom extends DurableObject {
     const targetUsername  = String(payload?.to || "").trim();
     const signalType = String(payload?.type || "");
 
-    if (MASTER_ONLY_MAP_SIGNAL_TYPES.has(signalType) && attachment.role !== "master") {
+    const localHost = this.ctx.getWebSockets().find(socket => readAttachment(socket)?.localHost && socket.readyState === 1);
+    if (MASTER_ONLY_MAP_SIGNAL_TYPES.has(signalType) && (attachment.role !== "master" || (localHost && localHost !== ws))) {
       sendJson(ws, {
         type:   "mesa:map:relay:ack",
         for:    signalType,
@@ -709,12 +774,20 @@ class MesaRealtimeRoom extends DurableObject {
 
   async webSocketClose(ws) {
     this.rateBuckets?.delete(ws);
+    const attachment = readAttachment(ws);
+    if (attachment?.localHost) {
+      ws.serializeAttachment({ ...attachment, localHost: false });
+      if (!this.ctx.getWebSockets().some(socket => socket !== ws && readAttachment(socket)?.localHost && socket.readyState === 1)) {
+        for (const socket of this.ctx.getWebSockets()) {
+          if (socket !== ws && readAttachment(socket)?.role === 'player') sendJson(socket, { type: 'mesa:host:status', ok: false });
+        }
+      }
+    }
     this.broadcastPresence();
   }
 
   async webSocketError(ws) {
-    this.rateBuckets?.delete(ws);
-    this.broadcastPresence();
+    await this.webSocketClose(ws);
   }
 
   broadcast(payload, excludeSocket = null) {

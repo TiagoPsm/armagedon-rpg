@@ -85,8 +85,8 @@ Scripts load via `<script src="...">` tags in order. **Script order in `ficha.ht
 
 - `js/runtime-config.js` holds the live API base URL (`https://armagedon-api.tiagopsm2008.workers.dev/api`). Edit this to point to a different backend.
 - `js/api.js` wraps all HTTP + WebSocket calls.
-- Production data lives in **Cloudflare D1** (SQLite). `localStorage` is only a fallback/cache — never make it the primary source for a logged-in session.
-- Mesa scene (`GET/PUT /api/mesa/scene`) and realtime (`GET /api/mesa/realtime` → WebSocket) are the two Mesa-specific API endpoints.
+- Account, sheet and RPG data live in **Cloudflare D1** (SQLite). The owner-authorized exception is Mesa scenes: `mesaLocalScenes:true` makes the master's IndexedDB the source of truth, with a synchronous recovery journal and JSON export/import. Images remain separate. Do not move sheet/account data into that scene store.
+- Mesa's default local mode does not automatically GET/PUT scene endpoints. Legacy scenes can be copied explicitly by GET, without changing remote originals. Realtime (`GET /api/mesa/realtime` → WebSocket) remains an external authenticated relay; master-approved movement is saved locally before broadcast. See `docs/MESA-LOCAL-AUDITORIA.md` for dependency and billing limits.
 
 ### Cloudflare Worker (`cloudflare/`)
 

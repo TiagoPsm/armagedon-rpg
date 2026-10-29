@@ -24,6 +24,23 @@ async function dragTo(page, x, y) {
   await expect(page.locator("#mesaMovementCanvas")).toBeVisible();
 }
 
+test("mesmo tempo percorre a mesma distancia em linha reta e diagonal", async ({ page }) => {
+  const result = await page.evaluate(() => {
+    window.motionClock = 1000; performance.now = () => window.motionClock;
+    const sample = state.tokens[0], start = { x: 20, y: 20 };
+    const stage = getMesaDomRef("stage"), aspect = stage.clientHeight / stage.clientWidth;
+    state.tokens = [{ ...sample, id: "straight", x: 40, y: 20 }, { ...sample, id: "diagonal", x: 40, y: 40 }];
+    for (const token of state.tokens) MesaMovement.animate(start, token);
+    window.motionClock += 230;
+    return state.tokens.map(token => {
+      const visual = MesaMovement.visual(token);
+      return Math.hypot(visual.x - start.x, (visual.y - start.y) * aspect);
+    });
+  });
+  expect(result[0]).toBeCloseTo(5, 3);
+  expect(result[1]).toBeCloseTo(result[0], 2);
+});
+
 test("M2 dois clientes percorrem a mesma curva e ignoram duplicata/atraso", async ({ page, context }) => {
   await setup(page);
   const other = await context.newPage();
@@ -63,7 +80,7 @@ test("M2 snapshot aceita curva apenas para origem, destino e versao corresponden
     const path = [{ x: 20, y: 20 }, { x: 40, y: 20 }];
     const motion = MesaMovementRules.create("ana", { x: 20, y: 45 }, path, 100, 1);
     Object.assign(data.tokens.find(t => t.id === "ana"), path.at(-1));
-    applyMesaSceneSnapshot(data, { keepSelection: true, movement: motion }); window.motionClock += 225;
+    applyMesaSceneSnapshot(data, { keepSelection: true, movement: motion }); window.motionClock += motion.duration / 2;
     return { visual: MesaMovement.visual(findToken("ana")), payload: createMesaScenePayloadFromState() };
   });
   expect(result.visual.x).toBeCloseTo(20, 3); expect(result.visual.y).toBeCloseTo(22.5, 3);

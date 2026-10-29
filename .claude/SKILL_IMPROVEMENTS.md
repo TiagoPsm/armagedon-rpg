@@ -1,5 +1,9 @@
 # 📊 Smart Skill Feedback & Improvements Log
 
+### 2026-10-29 — code-review-frontend / frontend-performance-checklist — cenas locais
+
+Checklists aplicados a persistencia, ordem dos scripts, privacidade de snapshots e compatibilidade do pacote minificado. Revisao evidenciou necessidade de concluir a escrita antes da troca de cena, isolar tokens secretos e reconhecer o mapa recebido por hash (id do cache difere do mestre). Contratos locais e integracao com Worker/DO descartaveis cobrem simultaneidade, reconexao, fechamento e transmissao; testes legados usam modo remoto explicito, os novos habilitam o modo local. Nao confundir aprovacao local com homologacao de redes externas nem ausencia de consumo com plano sem cobranca.
+
 ### 2026-10-29 — code-review-frontend / frontend-performance-checklist — transicao de versao publicada
 
 Skills apropriadas. Incidente demonstrou que perfil limpo e readiness HTTP nao validam atualizacao de usuarios existentes: banco IndexedDB v4 nao abre como v3, apesar do papel master correto. Integracao preserva schema/catalogo v4 e testa mapas/preferencias antes/depois de recarga em v3/v4. Recursos independentes foram separados da inicializacao/renderizacao de Vision, sem reativar a funcionalidade removida. Conferir o artefato minificado e a origem publicada antes de declarar correcao concluida.

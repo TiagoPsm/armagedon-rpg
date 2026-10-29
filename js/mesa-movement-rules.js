@@ -7,13 +7,15 @@
   function duration(origin, path, aspect = 1) {
     const points = [origin, ...path];
     const distance = points.slice(1).reduce((sum, p, i) => sum + Math.hypot(p.x - points[i].x, (p.y - points[i].y) * aspect), 0);
-    return Math.round(Math.max(120, Math.min(450, distance * 20)));
+    // One speed for the complete physical path, including diagonals and turns.
+    // Double the previous proportional time (23 ms), without a visual time cap.
+    return Math.max(1, Math.round(distance * 46));
   }
   function normalize(raw, { tokenId, to, from, version } = {}) {
     if (!raw || typeof raw.tokenId !== "string" || !raw.tokenId || raw.tokenId.length > 160 ||
         !point(raw.origin) || !Array.isArray(raw.path) || !raw.path.length || raw.path.length > 256 || !raw.path.every(point) ||
         !Number.isSafeInteger(raw.sceneVersion) || raw.sceneVersion < 0 ||
-        !Number.isInteger(raw.duration) || raw.duration < 120 || raw.duration > 450) return null;
+        !Number.isSafeInteger(raw.duration) || raw.duration < 1 || raw.duration > 3600000) return null;
     if ((tokenId != null && raw.tokenId !== tokenId) || (version != null && raw.sceneVersion !== version) ||
         (from && !near(raw.origin, from)) || (to && !near(raw.path.at(-1), to))) return null;
     return { tokenId: raw.tokenId, origin: copy(raw.origin), path: raw.path.map(copy), duration: raw.duration, sceneVersion: raw.sceneVersion };

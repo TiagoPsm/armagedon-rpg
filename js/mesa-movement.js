@@ -262,6 +262,11 @@ const MesaMovement = (() => {
     if (!token || drag.sceneId !== sceneId() || !canMoveTokens(token) || different(token, drag.origin)) return;
     const next = destination(drag, drag.requested || drag.origin);
     if (!next.path.length) return;
+    if (window.MesaLocalSession?.active) {
+      if (isMaster()) await MesaLocalSession.commitMove(token, next);
+      else await MesaLocalSession.requestMove(token, next);
+      return;
+    }
     {
       const origin = { x: token.x, y: token.y };
       Object.assign(token, { x: next.x, y: next.y, tokenScale: next.tokenScale, order: getNextOrder() });
@@ -298,5 +303,5 @@ const MesaMovement = (() => {
     }, true);
   }
   function refreshPreview() { if (state.drag?.destination) draw(state.drag); }
-  return { preview, commit, clearPreview, refreshPreview, visual, animate, beforeSnapshot, isAnimating, cellsBetween, route, footprints, init };
+  return { destination, preview, commit, clearPreview, refreshPreview, visual, animate, beforeSnapshot, isAnimating, cellsBetween, route, footprints, init };
 })();

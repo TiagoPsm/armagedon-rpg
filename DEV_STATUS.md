@@ -1,5 +1,45 @@
 # DEV STATUS
 
+## Publicacao da Mesa local autorizada — 2026-10-29
+
+Tiago autorizou commitar e colocar no ar o conjunto validado: cenas locais, confirmacao de movimentos pelo mestre, velocidade constante reduzida e bloqueio de novos uploads R2, com painel de backups removido a seu pedido. Pre-publicacao: branch remota conferida sem commits novos, sintaxe/auditorias/diff aprovados e dry-run Worker de 213,23 KiB (gzip 42,42 KiB). Versao anterior ativa `4730d613-ec94-4922-8e44-5378c92001c9`. Publicacao coordenada de Worker e frontend, preservando bindings, vars, secrets e dados; sem schema D1, contratacao ou mudanca de plano. Resultados e versoes finais serao registrados apos verificacao.
+
+## Remocao do painel de cenas locais — 2026-10-29
+
+A pedido do Tiago, retirado dos ajustes o grupo "Cenas neste computador", incluindo aviso e botoes de exportar/importar JSON e copiar cenas antigas. Removida a construcao dessa interface em mesa-local-session.js; funcoes internas de backup do armazenamento permanecem, sem botoes expostos. Salvamento automatico IndexedDB, recuperacao, sincronizacao pelo mestre, velocidade e bloqueio de upload R2 preservados. Teste de mapas/cenas passa a verificar ausencia do painel junto com persistencia/recarga. Sem commit ou publicacao. Este registro substitui as instrucoes de acesso aos botoes nos blocos historicos abaixo.
+
+Validacao: nove testes de cenas locais no pacote minificado aprovados, incluindo ausencia dos tres botoes, persistencia e recuperacao. Sintaxe de 61 JS, auditoria de pendencias, build e minificacao aprovados.
+
+## Cenas no computador do mestre e confirmacao local de movimentos — 2026-10-29
+
+Concluida a implementacao local das etapas de armazenamento e autoridade solicitadas pelo Tiago. `mesaLocalScenes:true` e o padrao do runtime. `js/mesa-local-store.js` guarda um documento IndexedDB por cena/usuario/API; `js/mesa-local-session.js` integra CRUD, pastas, backup JSON versionado, copia explicita das cenas antigas por GET e protocolo de anfitriao. Imagens ficam fora do JSON, na pasta conectada/cache. Salvamento automatico ocorre no navegador; arquivo portavel e gerado na exportacao. Nao houve commit, push, publicacao, remocao de dados remotos, contratacao ou mudanca de plano.
+
+Mestre valida origem, posse, trava, cena e percurso, salva antes de confirmar e distribui destino/duracao para animacao local. Pedidos simultaneos sao serializados, reconexao recebe snapshot em partes sem GET/PUT automatico de cena D1. Privacidade aplicada antes da transmissao e novamente no relay. Tokens secretos ficam no computador do mestre. Apenas um anfitriao conectado altera cenas; saida dele avisa jogadores e cancela solicitacoes pendentes. Velocidade reduzida pela metade e diagonal com velocidade fisica uniforme preservadas.
+
+Revisao funcional corrigiu isolamento de tokens secretos entre cenas, gravacao pendente na troca, cache antigo ressuscitando token excluido e quota de localStorage impedindo IndexedDB. Rascunho sincronico recupera fechamento antes de gravar; revisoes recusam sobrescrita concorrente. Mapas recebidos sao reconhecidos por hash e vinculados a cena: cache usa id diferente do original; transferencia atrasada nao substitui mapa de outra cena. Jogador solicita sincronizacao depois que o modulo de mapas inicia. Falta de confirmacao de qualquer jogador gera aviso apos o prazo, sem upload R2.
+
+Revisao visual por captura do pacote minificado: controles de backup dentro dos ajustes existentes, sem sobreposicao/estouro observado em desktop. Nenhuma mudanca de identidade visual, regra de RPG ou dependencia. Guia de uso, limites e auditoria em `docs/MESA-LOCAL-AUDITORIA.md`; contratos e documentacao atualizados em CLAUDE/SYSTEM_RULES/README/DEPLOY_FREE/Cloudflare/Obsidian. A consulta de faturamento continua 403; ausencia de consumo relatada por Tiago nao prova impossibilidade de cobranca. Login, fichas, avatares R2, relay e historico de dados continuam externos.
+
+Validacao final: 574 testes locais de interface/contratos aprovados; 43 testes finais de cenas/mapas/movimento/persistencia no pacote minificado aprovados. A bateria visual/funcional mais ampla do pacote teve 163 aprovados antes dos ultimos ajustes, cobertos novamente pela bateria final dedicada. Dez testes de build/ordem de scripts, dez contratos Node e cinco testes com Worker/DO/D1 locais reais aprovados. Sintaxe de 61 JS, auditorias estatica/CSS/de pendencias e diff check aprovados; build/minificacao e dry-run Worker (213,23 KiB; gzip 42,42 KiB) aprovados com mesmos bindings. O dry-run inicialmente compilou com aviso EPERM apenas no caminho global de logs; repetido com logs temporarios permitidos, sem erro. Sem deploy.
+
+Testes legados usam modo remoto explicito; suites locais habilitam o modo novo. Bateria de Worker/DO/D1 usa ambiente e contas descartaveis, sem dados de campanha. Limites: nenhuma homologacao autenticada em producao ou prova de conectividade direta em todas as redes. Nenhum arquivo remoto existente foi declarado recuperado integralmente. A lista viva abaixo continua sendo a unica lista de acoes abertas.
+
+## Mesa local: auditoria e bloqueio de novos uploads de mapas — 2026-10-29
+
+Primeira entrega do escopo solicitado, ainda local. Assinaturas Cloudflare: consulta 403; settings Workers 200 com usage_model standard, insuficiente para determinar plano. Tiago informa ausencia de consumo no painel. Nao confirmado risco zero de cobranca. Auditoria detalhada em `docs/MESA-LOCAL-AUDITORIA.md`.
+
+Removidos uploads automaticos de mapas; fachada e API bloqueiam novos uploads e exclusoes remotas para preservar recuperacao. Timeout de transmissao informa falha, sem fallback R2. GET legado, avatares, pasta/IndexedDB e relay P2P/WebSocket preservados. Nada apagado, contratado ou publicado; ajuste de velocidade anterior preservado. Dois testes de navegador e quatro de Worker/D1/DO locais aprovados nesta primeira entrega; cenas locais e protocolo novo foram implementados na continuacao registrada acima.
+
+## Movimento a velocidade constante e base reduzida pela metade — 2026-10-29
+
+A pedido do Tiago, substituido o ajuste local anterior (140–520 ms, 23 ms por unidade) por duracao proporcional ao comprimento real do percurso: 46 ms por unidade, metade da velocidade-base anterior. Removidos piso/teto visuais que faziam trechos maiores acelerarem. A distancia soma a hipotenusa de cada segmento e corrige o eixo vertical pela proporcao do palco; reta, diagonal e curvas mantem a mesma velocidade fisica. Diagonal mais longa leva proporcionalmente mais tempo. Nenhuma mudanca em destino, medida da regua, regra ou permissao.
+
+Contrato compartilhado `js/mesa-movement-rules.js` aceita duracoes antigas e novas de 1 ms ate uma hora (limite de validacao de mensagens, nao corte da animacao). Frontend e Worker devem ser publicados juntos. Tag de cache e testes atualizados; regressao de navegador mede a distancia realmente interpolada na reta/diagonal no mesmo intervalo. Alteracao local, sem commit ou publicacao nesta etapa; o ajuste anterior tambem nao havia sido publicado.
+
+Discussao sobre dependencia externa da grade adiada a pedido do Tiago. Nenhuma arquitetura ou infraestrutura de grade alterada nesta etapa.
+
+Validacao: dez contratos Node, 33 testes de build/movimento (incluindo interpolacao reta/diagonal no mesmo intervalo), sintaxe de 59 arquivos JS, auditorias estatica/de pendencias e diff check aprovados. Sem publicacao nesta etapa.
+
 ## Correcao da publicacao e integracao da base — 2026-10-29
 
 Publicacao corretiva do commit `5f4c4a9`: Worker manual `f19dfef5-12d2-467a-a323-b8251a392d10` e Pages minificado `dfbb061c`, com push fast-forward para `main`. CI inicial `40818239573` parou antes dos testes porque `ubuntu-latest` passou a Ubuntu 26.04 e Playwright 1.59.1 nao suporta essa imagem. Workflow fixado em `ubuntu-24.04`, presente na matriz de dependencias do Playwright instalado; nenhuma assercao de teste foi desativada.
@@ -350,6 +390,8 @@ Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daq
 - **[Codex/Tiago]** Alinhar o comando de build da Cloudflare Pages ao `npm run build` ja validado e usado no GitHub Pages. A publicacao `c5c9c55` entrega codigo atual, mas os bundles JS/CSS estao sem minificacao (816.520/235.848 bytes). Configuracao externa do projeto, sem nova dependencia, infraestrutura paga ou mudanca de regras do RPG. Conferir o conteudo servido apos ajustar, nao apenas o hash de cache calculado antes da minificacao. — aberta em 2026-10-02 (conferencia da publicacao)
 
 - **[Tiago]** Rotacionar em producao `JWT_SECRET` e `MASTER_BOOTSTRAP_PASSWORD` via `wrangler secret put` — os valores que estiveram em texto puro no OneDrive continuam validos no Worker. Comandos e ordem no bloco da Etapa 142. **`PASSWORD_PEPPER` fica de fora de proposito**: rotacionar invalida o hash de senha de TODOS os jogadores (PBKDF2 mistura o pepper, `cloudflare/src/auth.js:35`) e nao existe fluxo de recuperacao de senha. Rotacionar o pepper exige antes a migracao pepper-duplo descrita na Etapa 142. — aberta em 2026-08-28 (Etapa 142, herdada da Etapa 121)
+
+- **[Codex/Tiago]** Confirmar plano Cloudflare e condicoes de cobranca da conta: consulta de assinaturas retornou 403; ausencia de consumo no painel nao identifica Free/Paid. Cenas locais, backups, confirmacao de movimentos e bloqueio de novos uploads implementados e testados localmente; sem publicacao nesta etapa. — aberta em 2026-10-29 (solicitacao do Tiago: auditoria da Mesa local)
 
 ## Regra Obrigatoria de Documentacao
 

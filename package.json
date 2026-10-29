@@ -32,7 +32,8 @@
     "test:production": "playwright test tests/production- --workers=1",
     "test:mesa:rules": "node --test tests/mesa-movement-rules.test.cjs tests/mesa-template-rules.test.cjs tests/css-syntax.test.cjs",
     "test:mesa:movement": "playwright test tests/mesa-movement.spec.cjs",
-    "test:mesa:persist": "playwright test tests/mesa-persist-compat.spec.cjs"
+    "test:mesa:persist": "playwright test tests/mesa-persist-compat.spec.cjs",
+    "test:mesa:local": "playwright test tests/mesa-local-session.spec.cjs tests/mesa-no-cloud-maps.spec.cjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

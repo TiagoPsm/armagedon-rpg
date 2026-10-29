@@ -31,7 +31,7 @@ let _nameDialogSceneId = "";
 function _isScenesManagerEnabled() {
   return (
     typeof isMaster === "function" && isMaster()
-    && window.AUTH?.isBackendEnabled?.()
+    && (window.MesaLocalSession?.active || window.AUTH?.isBackendEnabled?.())
     && typeof window.APP?.getMesaScenes === "function"
   );
 }

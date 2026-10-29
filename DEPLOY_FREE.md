@@ -1,5 +1,13 @@
 # Deploy Gratuito do Armagedon
 
+## Publicacao da Mesa local autorizada — 2026-10-29
+
+Tiago autorizou commit/push e publicacao do conjunto local validado, incluindo remocao do painel de backup. Publicar Worker com `--keep-vars` e pacote minificado `_site` no Pages existente; acompanhar CI GitHub Pages e builds automaticos. Nao criar infraestrutura nem mudar plano, schema ou segredos. Evidencias finais ficam no topo de DEV_STATUS.md.
+
+## Preparacao local de cenas e mapas — 2026-10-29
+
+Workflow inclui testes de armazenamento/backup local e de falha de mapas no artefato minificado. `mesa.html` inclui `mesa-local-store.js` e `mesa-local-session.js` antes do bootstrap; o build deriva essa ordem do HTML. Cache das seis paginas atualizado. Padrao `mesaLocalScenes:true` exige frontend e Worker com o protocolo anfitriao publicados juntos. Esta etapa prepara e testa o pacote; nenhum commit, push, deploy, assinatura ou recurso pago foi criado. A regra de workspace atual esta no README; caminhos antigos abaixo sao historicos. Plano Cloudflare nao confirmado por API (403); detalhes em `docs/MESA-LOCAL-AUDITORIA.md`.
+
 ## Publicacao corretiva integrada — 2026-10-29
 
 A publicacao direta anterior foi substituida pela integracao dos tres commits remotos com a recuperacao local, mantendo a visao dinamica removida. Nao publicar novamente uma base anterior sem comparar schema local e funcionalidades ja disponiveis. Executar `npm run test:mesa:rules`, `npm run test:build`, regressao da interface e `tests/mesa-upgrade.spec.cjs` no pacote minificado. Build continua `npm run build`, incluindo Echos. Enviar Worker e frontend juntos, com dry-run e `--keep-vars`; nao aplicar schema D1 nem rotacionar segredos. A integracao permite atualizar `main` por fast-forward sem reescrever historico; conferir os builds automaticos e comparar os bundles servidos com `_site`.

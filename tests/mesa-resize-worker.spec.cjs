@@ -47,6 +47,16 @@ test.describe("Resize de token no Worker real (Etapa 117)", () => {
     return page;
   }
 
+  test("API bloqueia uploads e exclusoes remotas de mapas", async ({ request }) => {
+    const master = await login(request, MASTER_USER, MASTER_PASS);
+    const player = await login(request, PLAYER_USER, PLAYER_PASS);
+    for (const [method, path, status] of [['post', '/mesa/map', 410], ['delete', '/mesa/map/maps/master/preserved.webp', 409]]) {
+      expect((await request[method](`${API}${path}`, { headers: { authorization: `Bearer ${master.token}` } })).status()).toBe(status);
+      expect((await request[method](`${API}${path}`, { headers: { authorization: `Bearer ${player.token}` } })).status()).toBe(403);
+      expect((await request[method](`${API}${path}`)).status()).toBe(401);
+    }
+  });
+
   test("Worker preserva moldes, decoracoes e grade sem reativar visao", async ({ request }) => {
     const master = await login(request, MASTER_USER, MASTER_PASS);
     const player = await login(request, PLAYER_USER, PLAYER_PASS);

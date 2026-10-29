@@ -267,6 +267,7 @@ async function initMesaPage() {
 
   state.session = session;
   state.role = resolveInitialRole(session);
+  await window.MesaLocalSession?.init();
   // Fonte unica de verdade das permissoes (Etapa 75): a partir daqui todo
   // modulo consulta mesaCan()/isMesaMasterRole(), que leem state.role.
   if (typeof applyMesaRolePermissions === "function") {
@@ -591,6 +592,7 @@ function updateMesaPresence(payload) {
 let mesaHadRealtimeReady = false;
 
 async function resyncMesaSceneAfterReconnect() {
+  if (window.MesaLocalSession?.active) return;
   if (!mesaHadRealtimeReady) {
     // Primeira conexao da sessao: a cena acabou de ser hidratada no boot.
     mesaHadRealtimeReady = true;
@@ -652,6 +654,7 @@ async function resyncMesaSceneAfterReconnect() {
 }
 
 function applyRemoteMesaSceneMessage(payload) {
+  if (window.MesaLocalSession?.active) return;
   if (payload?.scene?.id && payload.scene.id !== (state.sceneId || "default")) return;
   const remoteData = extractMesaSceneData(payload);
   if (!remoteData) return;
@@ -705,6 +708,7 @@ function applyMesaRealtimeBatch(payload) {
 }
 
 async function applyMesaRealtimeDelta(payload) {
+  if (window.MesaLocalSession?.active && payload?.type === "mesa:token:move" && payload.actor?.role !== "master") return;
   const type = String(payload?.type || "");
   if (!MESA_REALTIME_DELTA_TYPES.has(type)) return;
   if (payload?.clientId === mesaClientId) return;
@@ -863,6 +867,7 @@ async function applyMesaRealtimeDelta(payload) {
 
   syncSelectedToken();
   cacheMesaSceneSnapshotLocally();
+  window.MesaLocalSession?.afterDelta();
 
   // Quando um jogador invoca/retira o proprio Echo, o mestre persiste a cena
   // para que a versao oficial reflita a mudanca e sobreviva a recarregamentos
@@ -1040,13 +1045,13 @@ async function applyRemoteMesaSceneSnapshot(remoteData, options = {}) {
       setMesaRoster(buildRoster());
     }
 
-    state.scenePersistence = "remote";
+    state.scenePersistence = window.MesaLocalSession?.active ? "local" : "remote";
     state.sceneRemoteExists = true;
     // Cena remota entra no cache sem selecao nenhuma (Etapa 88). Na Etapa 87
     // era preciso enxertar aqui a selecao DESTE cliente, senao o F5 seguinte
     // ressuscitava o token do emissor; agora a selecao mora em chave separada
     // e o cache de cena nao tem mais como contamina-la.
-    localStorage.setItem(mesaSceneStorageKey(), JSON.stringify(stripMesaSceneSelection(remoteData)));
+    writeMesaSceneCache(stripMesaSceneSelection(remoteData));
     applyMesaSceneSnapshot(remoteData, { keepSelection: true, movement: options.movement });
     lastPersistedMesaSceneSignature = remoteSignature;
     lastRemoteMesaSceneSignature = remoteSignature;
@@ -1866,7 +1871,7 @@ function buildFallbackRoster(sheets = {}) {
 // Busca a cena remotamente sem aplicar — usada para iniciar o request
 // em paralelo com /directory, antes do roster estar pronto.
 async function prefetchMesaSceneSnapshot() {
-  if (!window.AUTH?.isBackendEnabled?.() || !window.APP?.getMesaScene) return null;
+  if ((!window.MesaLocalSession?.active && !window.AUTH?.isBackendEnabled?.()) || !window.APP?.getMesaScene) return null;
   try {
     return await window.APP.getMesaScene();
   } catch {
@@ -1894,7 +1899,7 @@ async function hydrateState(prefetchedSceneResult) {
 }
 
 async function loadMesaSceneSnapshot(prefetchedResult) {
-  if (window.AUTH?.isBackendEnabled?.() && window.APP?.getMesaScene) {
+  if ((window.MesaLocalSession?.active || window.AUTH?.isBackendEnabled?.()) && window.APP?.getMesaScene) {
     try {
       const remoteScene = prefetchedResult !== undefined
         ? prefetchedResult
@@ -1911,7 +1916,7 @@ async function loadMesaSceneSnapshot(prefetchedResult) {
       // snapshot local do mestre. Sem este merge, o boot sobrescreveria o
       // localStorage com a cena remota e os tokens secretos sumiriam no F5
       // (a protecao de applyMesaSceneSnapshot usa state.tokens, vazio no boot).
-      if (isMaster()) {
+      if (isMaster() && !window.MesaLocalSession?.active) {
         const previousLocal = readJsonStorage(mesaSceneStorageKey(), {});
         const localSecretTokens = Array.isArray(previousLocal?.tokens)
           ? previousLocal.tokens.filter(token => token?.layer === "dm")
@@ -1927,8 +1932,8 @@ async function loadMesaSceneSnapshot(prefetchedResult) {
       }
       // Sem o campo de selecao (Etapa 88) — cena do D1 gravada antes da mudanca
       // ainda pode traze-lo, e o cache de cena nao e fonte de selecao.
-      localStorage.setItem(mesaSceneStorageKey(), JSON.stringify(stripMesaSceneSelection(remoteData)));
-      state.scenePersistence = "remote";
+      writeMesaSceneCache(stripMesaSceneSelection(remoteData));
+      state.scenePersistence = window.MesaLocalSession?.active ? "local" : "remote";
       rememberMesaSceneSignature(remoteData, { persisted: true, remote: true });
       return remoteData;
     } catch (error) {
@@ -1947,6 +1952,7 @@ async function loadMesaSceneSnapshot(prefetchedResult) {
 // zera versao e assinaturas de dedupe antes de recarregar, senao a versao
 // alta da cena antiga descartaria os deltas da nova.
 async function handleMesaSceneSwitch(payload) {
+  if (window.MesaLocalSession?.active && !payload.local) return;
   const sceneId = String(payload?.sceneId || "default");
   const previousSceneId = state.sceneId;
   state.sceneId = sceneId;
@@ -1957,6 +1963,7 @@ async function handleMesaSceneSwitch(payload) {
   lastRemoteMesaSceneSignature = "";
 
   const saved = await loadMesaSceneSnapshot(undefined);
+  if (window.MesaLocalSession?.active && previousSceneId !== sceneId) state.tokens = [];
   applyMesaSceneSnapshot(saved);
   syncSelectedToken();
   scheduleMesaRender({ summary: true, controls: true, roster: true, stage: true, inspector: true });
@@ -2199,8 +2206,16 @@ function bumpMesaSceneVersion() {
 
 function cacheMesaSceneSnapshotLocally() {
   const payload = createMesaScenePayloadFromState();
-  localStorage.setItem(mesaSceneStorageKey(), JSON.stringify(payload));
+  writeMesaSceneCache(payload);
   rememberMesaSceneSignature(payload, { persisted: true });
+}
+
+function writeMesaSceneCache(payload) {
+  try { localStorage.setItem(mesaSceneStorageKey(), JSON.stringify(payload)); }
+  catch (error) {
+    if (!window.MesaLocalSession?.active) throw error;
+    console.warn('Cache auxiliar indisponivel; a cena continua usando IndexedDB.', error);
+  }
 }
 
 function createMesaRealtimeEnvelope(type, payload = {}) {
@@ -2393,6 +2408,7 @@ function canPlayerMoveOwnToken(token) {
 }
 
 function broadcastMesaTokenMove(token, movement = null) {
+  if (window.MesaLocalSession?.active && !isMaster()) return MesaLocalSession.requestResize(token);
   if (!token) return false;
   if (!isMaster() && !canPlayerMoveOwnToken(token)) return false;
   // Token da camada secreta do mestre NUNCA trafega pela rede (mesmo padrao

@@ -35,7 +35,10 @@ async function getMesaBaseUrl() {
     response.writeHead(200, {
       "content-type": contentTypes[path.extname(target).toLowerCase()] || "application/octet-stream"
     });
-    fs.createReadStream(target).pipe(response);
+    if (path.extname(target) === '.html') {
+      const html = fs.readFileSync(target, 'utf8').replace('<head>', '<head><script>window.ARMAGEDON_CONFIG=Object.assign({mesaLocalScenes:false},window.ARMAGEDON_CONFIG||{});</script>');
+      response.end(html);
+    } else fs.createReadStream(target).pipe(response);
   });
 
   await new Promise(resolve => {

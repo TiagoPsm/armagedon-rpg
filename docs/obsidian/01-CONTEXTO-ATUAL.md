@@ -2,6 +2,10 @@
 
 Atualizado em 2026-10-29. Historico detalhado em DEV_STATUS.md.
 
+## Implementacao local ainda nao publicada
+
+Cenas em IndexedDB do mestre, backup JSON separado das imagens, recuperacao por rascunho e revisoes contra sobrescrita. Jogadores solicitam percurso; mestre valida e salva antes de confirmar. WebSocket autenticado continua externo. Novos uploads/exclusoes de mapas R2 bloqueados, imagens existentes preservadas. Fichas/login/avatares permanecem externos. Nada contratado, apagado, commitado ou publicado nesta etapa. Guia de uso e auditoria em `docs/MESA-LOCAL-AUDITORIA.md`; a unica lista de acoes abertas continua em DEV_STATUS.md > Pendencias Vivas.
+
 ## Projeto e workspace
 
 - Armagedom: portal de RPG em HTML, CSS e JavaScript.

@@ -1,5 +1,23 @@
 # SYSTEM RULES
 
+## Interface de cenas locais — 2026-10-29
+
+Tiago solicitou retirar o painel "Cenas neste computador" e seus tres botoes dos ajustes. Otimizacoes e salvamento automatico local continuam ativos. Funcoes internas de backup permanecem no armazenamento, sem controles na interface. Este ajuste substitui referencias anteriores aos botoes; sem alteracao de gameplay ou publicacao.
+
+## Cenas locais e mestre anfitriao — 2026-10-29
+
+Por autorizacao do Tiago, a fonte de verdade das cenas passa a ser IndexedDB no navegador do mestre (`mesaLocalScenes:true`), separado por usuario e API. Cada cena guarda tokens, grade, nevoa, desenhos, iniciativa e referencia local do mapa. Imagens ficam fora do JSON. Exportacao/importacao versionada cria uma nova cena sem sobrescrever originais; limpar dados do navegador apaga o armazenamento local. Rascunho sincronico protege fechamento antes de terminar a gravacao; revisoes transacionais recusam sobrescrita por outra aba. Trocar de cena conclui a gravacao anterior e isola tokens secretos.
+
+Jogador solicita movimento com origem e percurso; mestre valida dono, trava, cena e posicao, calcula destino/duracao, salva antes de confirmar e distribui o delta. Clientes animam localmente. Sem confirmacao, mantem-se a posicao anterior. Somente um mestre anfitriao por sala; segunda aba conectada nao altera cenas. Tokens secretos/invisiveis e vitais privados sao retirados antes de enviar snapshots. WebSocket/DO permanece como relay; nao ha escrita/leitura automatica de cenas no D1. Login, fichas, dados e avatares mantem seus contratos externos. Copia explicita de cenas antigas apenas le o servidor e preserva originais. Nenhuma mecanica do RPG alterada. Implementacao local, sem deploy; este contrato substitui os registros historicos de cena D1 abaixo quando o modo local esta ativo.
+
+## Mapas locais: bloqueio de armazenamento remoto — 2026-10-29
+
+Novos uploads de mapas ao R2 ficam desativados no cliente e na API. Falha de transmissao deve informar erro, sem upload silencioso. Objetos remotos existentes nao podem ser excluidos antes da conferencia de recuperacao local. Leitura legada e avatares permanecem; nao declarar garantia de custo zero da conta. Originais da pasta conectada e cache IndexedDB preservados. Sem alteracao de gameplay ou permissao.
+
+## Animacao de movimento — 2026-10-29
+
+Velocidade-base reduzida pela metade a pedido do Tiago: 46 ms por unidade de distancia real do percurso, com correcao de proporcao do palco. Sem piso/teto visual: diagonal e reta percorrem distancias fisicas iguais em tempos iguais; trajetos maiores levam mais tempo. Metadados antigos continuam aceitos. Animacao nao muda deslocamento, medida da regua, destino salvo ou permissao; preferencia de movimento reduzido continua aplicando destino sem animar.
+
 ## Contratos atuais da integracao — 2026-10-29
 
 As melhorias de outubro foram integradas sem reintroduzir visao dinamica, paredes/portas, iluminacao vinculada ou giro. Permissoes mestre/jogador e regras do RPG permanecem. Copia de ajustes da cena reutiliza somente grade; nao substitui mapa, tokens ou desenhos. Percursos, moldes e decoracoes conservam autoria, permissao, normalizacao e persistencia anteriores. Banco local de mapas usa schema v4, preservando mapas, catalogo e preferencias existentes; nunca apagar dados do navegador para corrigir incompatibilidade de versao. Referencias a visao abaixo documentam a implementacao historica removida.

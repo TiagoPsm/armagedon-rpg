@@ -1787,7 +1787,7 @@ test.describe("Correcoes de interacao (Etapa 39)", () => {
 });
 
 test.describe("Fachada do mapa (Etapa 40)", () => {
-  test("upload e delete de mapa passam pela fachada window.APP, sem fetch direto", async ({ page }) => {
+  test("upload e delete de mapa permanecem bloqueados e preservam a referencia antiga", async ({ page }) => {
     await seedMasterWithScene(page, BASE_TOKENS);
     const baseUrl = await getMesaBaseUrl();
     await page.goto(`${baseUrl}/mesa.html`);
@@ -1814,6 +1814,8 @@ test.describe("Fachada do mapa (Etapa 40)", () => {
       _sendRealtime = () => {};
 
       mesaMapState.activeEntry = { id: "m1", name: "Mapa", hash: "abc", blob: new Blob(["x"]) };
+      mesaMapState.activeMapR2Key = "maps/mestre/existing.webp";
+      mesaMapState.activeMapPublicUrl = "https://api.dev/api/mesa/map/maps/mestre/existing.webp";
       await uploadActiveMapToR2();
       const stateAfterUpload = {
         r2Key: mesaMapState.activeMapR2Key,
@@ -1826,12 +1828,9 @@ test.describe("Fachada do mapa (Etapa 40)", () => {
       return { facadeCalls, directFetches, stateAfterUpload };
     });
 
-    expect(result.facadeCalls).toEqual([
-      { fn: "upload", mapId: "m1", blobSize: 1 },
-      { fn: "delete", r2Key: "maps/mestre/m1.webp" }
-    ]);
-    expect(result.directFetches).toBe(0); // nenhum fetch fora da fachada
-    expect(result.stateAfterUpload.r2Key).toBe("maps/mestre/m1.webp");
+    expect(result.facadeCalls).toEqual([]);
+    expect(result.directFetches).toBe(0);
+    expect(result.stateAfterUpload.r2Key).toBe("maps/mestre/existing.webp");
     expect(result.stateAfterUpload.publicUrl).toContain("/api/mesa/map/");
   });
 });

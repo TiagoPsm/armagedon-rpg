@@ -1,5 +1,13 @@
 # Armagedon
 
+Atualizacao de interface em 2026-10-29: a pedido do Tiago, o painel "Cenas neste computador" e os botoes de backup/copia foram retirados dos ajustes. Salvamento local automatico e otimizacoes continuam ativos; as referencias aos botoes abaixo descrevem a implementacao anterior. Alteracao ainda local, sem publicacao.
+
+## Mesa local preparada, ainda sem publicacao — 2026-10-29
+
+Cenas passam a ser salvas automaticamente no navegador do mestre, com exportacao/importacao JSON e imagens separadas. Ajustes do mapa incluem os botoes de backup e copia explicita das cenas antigas do servidor. Movimentos de jogadores sao confirmados e salvos pelo mestre antes da animacao compartilhada; ele precisa manter a Mesa aberta. Novos uploads e exclusoes de mapas no R2 estao bloqueados. Originais locais e arquivos remotos existentes preservados.
+
+Login, fichas, avatares e relay WebSocket continuam usando Cloudflare; esta mudanca reduz dependencia e operacoes de cenas, sem garantir custo zero da conta. Nao limpar dados do navegador sem exportar cenas e conferir mapas originais. Procedimento, limites e auditoria em [docs/MESA-LOCAL-AUDITORIA.md](docs/MESA-LOCAL-AUDITORIA.md). `npm run test:mesa:local` valida armazenamento/backup e falha de mapas; `npm run test:mesa:worker:local` valida o fluxo conectado em ambiente descartavel. Sem commit ou deploy desta etapa.
+
 ## Correcao de compatibilidade e recuperacao da interface — 2026-10-29
 
 Integradas as melhorias de outubro de `origin/main` com a remocao de visao dinamica preservada. Biblioteca de mapas usa schema local v4: mapas, catalogo e preferencias existentes permanecem; nao e necessario apagar dados do navegador. Calibracao da grade, moldes, percursos, decoracoes e melhorias de portal/teclado recuperados. `tests/mesa-upgrade.spec.cjs` cobre bancos v3/v4 e recarga dos controles do mestre. Resultado de publicacao e validacoes em `DEV_STATUS.md`.
