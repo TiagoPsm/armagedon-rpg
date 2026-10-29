@@ -47,6 +47,32 @@ test.describe("Resize de token no Worker real (Etapa 117)", () => {
     return page;
   }
 
+  test("Worker preserva moldes, decoracoes e grade sem reativar visao", async ({ request }) => {
+    const master = await login(request, MASTER_USER, MASTER_PASS);
+    const player = await login(request, PLAYER_USER, PLAYER_PASS);
+    const drawings = [
+      { id: "template", tool: "circle", color: "#e7c366", width: 2, author: MASTER_USER, layer: "tokens", x1: .2, y1: .2, x2: .6, y2: .6,
+        template: { kind: "circle", x: .4, y: .4, length: .2 } },
+      { id: "decoration", tool: "rect", color: "#e7c366", width: 2, author: MASTER_USER, layer: "tokens", x1: .1, y1: .1, x2: .2, y2: .2, locked: true }
+    ];
+    const response = await request.put(`${API}/mesa/scene`, {
+      headers: { authorization: `Bearer ${master.token}` },
+      data: { sceneVersion: Date.now(), tokens: [], drawings, grid: { enabled: true, cellFrac: .1, metersPerCell: 5 }, vision: { enabled: true, walls: [] } }
+    });
+    expect(response.status()).toBe(200);
+    const read = await request.get(`${API}/mesa/scene`, { headers: { authorization: `Bearer ${master.token}` } });
+    expect(read.status()).toBe(200);
+    const saved = (await read.json()).data;
+    expect(saved.drawings.find(s => s.id === "template").template).toEqual(drawings[0].template);
+    expect(saved.drawings.find(s => s.id === "decoration").locked).toBe(true);
+    expect(saved.grid).toMatchObject({ enabled: true, cellFrac: .1, metersPerCell: 5 });
+    expect(saved).not.toHaveProperty("vision");
+    const denied = await request.put(`${API}/mesa/scene`, {
+      headers: { authorization: `Bearer ${player.token}` }, data: saved
+    });
+    expect(denied.status()).toBe(403);
+  });
+
   test("o jogador arrasta a alca e o token cresce na tela do mestre", async ({ browser, request }) => {
     const mestreLogin  = await login(request, MASTER_USER, MASTER_PASS);
     const jogadorLogin = await login(request, PLAYER_USER, PLAYER_PASS);

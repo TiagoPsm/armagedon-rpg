@@ -1,5 +1,9 @@
 # Deploy Gratuito do Armagedon
 
+## Publicacao corretiva integrada — 2026-10-29
+
+A publicacao direta anterior foi substituida pela integracao dos tres commits remotos com a recuperacao local, mantendo a visao dinamica removida. Nao publicar novamente uma base anterior sem comparar schema local e funcionalidades ja disponiveis. Executar `npm run test:mesa:rules`, `npm run test:build`, regressao da interface e `tests/mesa-upgrade.spec.cjs` no pacote minificado. Build continua `npm run build`, incluindo Echos. Enviar Worker e frontend juntos, com dry-run e `--keep-vars`; nao aplicar schema D1 nem rotacionar segredos. A integracao permite atualizar `main` por fast-forward sem reescrever historico; conferir os builds automaticos e comparar os bundles servidos com `_site`.
+
 ## Publicacao direta da base recuperada — 2026-10-29
 
 Workspace oficial atual: `C:\Users\Usuario\Projects\Armagedom`. Tiago autorizou publicar a base recuperada no Cloudflare Pages `armagedon-rpg` e Worker `armagedon-api`. Gerar o pacote com `npm run build` e enviar `_site` por `wrangler pages deploy _site --project-name armagedon-rpg --branch main`; o argumento de branch seleciona o ambiente de producao do Pages, sem alterar a branch Git. Worker exige dry-run antes e `--keep-vars` no deploy. Nao aplicar schema, alterar banco ou rotacionar secrets nesta publicacao. O espelho GitHub Pages e os tres commits de `origin/main` ficam fora desta publicacao direta. Versoes e verificacoes em `DEV_STATUS.md` e `cloudflare/README.md`.

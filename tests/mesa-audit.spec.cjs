@@ -814,7 +814,7 @@ test.describe("Regressao da auditoria — jogador", () => {
     expect(result.afterResize.other).toEqual(result.before.other);
   });
 
-  test("drag do jogador transmite o proprio token em tempo real e nunca o alheio (bug 8)", async ({ page }) => {
+  test("confirmacao do jogador transmite apenas o proprio token, nunca o alheio (bug 8)", async ({ page }) => {
     await seedPlayerWithScene(page, BASE_TOKENS);
     const baseUrl = await getMesaBaseUrl();
     await page.goto(`${baseUrl}/mesa.html`);
@@ -827,9 +827,9 @@ test.describe("Regressao da auditoria — jogador", () => {
       const own = state.tokens.find(t => t.id === "ana");
       const other = state.tokens.find(t => t.id === "bruno");
 
-      queueRealtimeDragMove(own);
+      broadcastMesaTokenMove(own);
       const ownStreams = calls.filter(c => c.type === "mesa:token:move" && c.tokenId === "ana").length;
-      queueRealtimeDragMove(other);
+      broadcastMesaTokenMove(other);
       const otherStreams = calls.filter(c => c.tokenId === "bruno").length;
 
       return { ownStreams, otherStreams };
@@ -1687,6 +1687,7 @@ test.describe("Correcoes de interacao (Etapa 39)", () => {
     await page.mouse.move(grabX + 80, grabY + 50, { steps: 8 });
     await page.mouse.up();
 
+    await expect.poll(() => page.evaluate(() => MesaMovement.isAnimating(findToken("ana")))).toBe(false);
     // O centro do token deve terminar (aprox.) sob o ponto de soltura —
     // com o rect congelado do bug antigo, o zoom de 1.5x fazia o token
     // andar mais que o cursor.
@@ -1716,6 +1717,7 @@ test.describe("Correcoes de interacao (Etapa 39)", () => {
     await page.mouse.move(grabX + 60, grabY + 40, { steps: 4 });
     await page.mouse.up();
 
+    await expect.poll(() => page.evaluate(() => MesaMovement.isAnimating(findToken("ana")))).toBe(false);
     // Com o rect fresco, o token continua (aprox.) sob o cursor na nova escala
     const finalBox = await token.boundingBox();
     const finalCx = finalBox.x + finalBox.width / 2;
@@ -2088,7 +2090,7 @@ test.describe("Grade funcional (Etapa 42)", () => {
     expect(result.blocked.enabled).toBe(false);
     expect(result.applied.enabled).toBe(true);
     expect(result.applied.snap).toBe(true);
-    expect(result.applied.cellFrac).toBe(0.08);
+    expect(result.applied.cellFrac).toBe(1 / 13); // integer columns, not 12.5 sliced cells
     expect(result.painted).toBeGreaterThan(100);
   });
 });
@@ -2246,7 +2248,7 @@ test.describe("Token em NxN celulas (Etapa 42c)", () => {
     const result = await page.evaluate(() => {
       const stage = document.getElementById("mesaStageInner");
       window.updateMesaGrid({ enabled: true, snap: true, cellFrac: 0.08, offsetXFrac: 0, offsetYFrac: 0 });
-      const cellPx = 0.08 * stage.offsetWidth;
+      const cellPx = getMesaGridState().cellFrac * stage.offsetWidth;
       const el = document.querySelector('#mesaStage [data-token-id="ana"]');
       const base = el.offsetWidth;
       const scales = state.tokens.map(t => t.tokenScale);
@@ -4373,7 +4375,7 @@ test.describe("Palco ajustado ao mapa + resolucao (Etapas 52-55)", () => {
     expect(r.jogador.surface).toMatchObject({ left: 0, top: 0, width: 1, height: 1 });
   });
 
-  test("compressao: respeita o cap de 4096, nunca faz upscale e nao re-encoda WebP", async ({ page }) => {
+  test("compressao: preserva original acima de 4096 quando cabe, sem upscale", async ({ page }) => {
     await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
     await waitForMesaSettled(page);
 
@@ -4413,8 +4415,8 @@ test.describe("Palco ajustado ao mapa + resolucao (Etapas 52-55)", () => {
       };
     });
 
-    expect(r.grande).toEqual([4096, 2048]);   // proporcao 2:1 preservada
-    expect(r.grandeTipo).toBe("image/webp");
+    expect(r.grande).toEqual([5000, 2500]);
+    expect(r.grandeTipo).toBe("image/png");
     expect(r.pequeno).toEqual([1200, 800]);   // sem upscale
     expect(r.passthrough).toBe(true);
     expect(r.passthroughDim).toEqual([1600, 1000]);
@@ -8298,11 +8300,11 @@ test.describe("Regua: escala por cena e marcacao (Etapa 131)", () => {
     await page.evaluate(() => updateMesaGrid({ enabled: false, snap: false, metersPerCell: 1.5 }));
     await expect(page.locator("#mesaGridScaleLabel")).toHaveText("1,5");
 
-    // Pelo stepper que o mestre clica, nao por chamada direta. 1,5 -> 2.
+    // Closed presets: a legacy 1.5 scale advances to 5, never another fraction.
     await page.locator("#mesaMapSettingsBtn").click();
     await expect(page.locator("#mesaGridGroup")).toBeVisible();
     await page.locator('button[onclick="adjustMesaGridScale(1)"]').click();
-    await expect(page.locator("#mesaGridScaleLabel")).toHaveText("2,0");
+    await expect(page.locator("#mesaGridScaleLabel")).toHaveText("5");
     expect(await page.evaluate(() => getMesaGridState().enabled),
       "o teste deixou de cobrir o caso da grade DESLIGADA").toBe(false);
 
@@ -8310,31 +8312,31 @@ test.describe("Regua: escala por cena e marcacao (Etapa 131)", () => {
     const assinatura = await page.evaluate(() =>
       normalizeMesaScenePayload(createMesaScenePayloadFromState()).grid);
     expect(assinatura, "a assinatura zerou a grade que so carregava a escala").toBeTruthy();
-    expect(assinatura.metersPerCell, "a escala nao entra na assinatura da cena").toBe(2);
+    expect(assinatura.metersPerCell, "a escala nao entra na assinatura da cena").toBe(5);
 
     // E o persist (debounced em 160ms) tem de ter escrito de fato.
     await expect.poll(
       () => page.evaluate(() =>
         JSON.parse(localStorage.getItem("tc_virtual_mesa_mock_v1") || "{}")?.grid?.metersPerCell ?? null),
       { message: "a escala nao chegou na cena gravada", timeout: 3000 }
-    ).toBe(2);
+    ).toBe(5);
 
     await page.reload();
     await waitForMesaSettled(page);
-    await expect(page.locator("#mesaGridScaleLabel")).toHaveText("2,0");
+    await expect(page.locator("#mesaGridScaleLabel")).toHaveText("5");
 
     // E a regua responde na escala nova depois do F5.
     const medida = await page.evaluate(() => window.measureMesaRuler(0.2, 0.5, 0.6, 0.5));
     expect(medida, "a regua nao mediu nada depois do F5").toBeTruthy();
     expect(medida.cells).toBeGreaterThan(0);
     expect(medida.meters, "a regua voltou a medir na escala antiga")
-      .toBeCloseTo(medida.cells * 2, 3);
+      .toBeCloseTo(medida.cells * 5, 3);
   });
 
   test("o stepper da escala sobe e desce pelo mesmo caminho", async ({ page }) => {
     await abrirMesa(page);
     const caminho = await page.evaluate(() => {
-      updateMesaGrid({ metersPerCell: 1.5 });
+      updateMesaGrid({ metersPerCell: 1 });
       const subida = [];
       for (let i = 0; i < 5; i += 1) { adjustMesaGridScale(1); subida.push(getMesaGridState().metersPerCell); }
       const descida = [];
@@ -8344,11 +8346,10 @@ test.describe("Regua: escala por cena e marcacao (Etapa 131)", () => {
       return { subida, descida, rotulo };
     });
 
-    // Passo fixo nao serve para as duas pontas (0,5 m ate 1 km seriam 2000
-    // cliques), entao ele cresce por faixa — e tem de VOLTAR igual.
-    expect(caminho.subida).toEqual([2, 2.5, 3, 4, 5]);
+    // The new closed presets must still be reversible.
+    expect(caminho.subida).toEqual([5, 10, 15, 20, 25]);
     expect(caminho.descida, "descer nao refez o caminho da subida")
-      .toEqual([4, 3, 2.5, 2, 1.5]);
+      .toEqual([20, 15, 10, 5, 1]);
     expect(caminho.rotulo).toEqual({ m1500: "1,5 km", m12: "12", m15: "1,5" });
   });
 });

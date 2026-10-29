@@ -100,7 +100,7 @@ async function handleMesaRealtime(request, env, origin) {
   return stub.fetch(new Request(realtimeUrl, { method: "GET", headers }));
 }
 
-async function broadcastMesaScene(env, scene, actor) {
+async function broadcastMesaScene(env, scene, actor, movement = null) {
   const stub = getMesaRealtimeStub(env);
   if (!stub) return;
 
@@ -113,6 +113,7 @@ async function broadcastMesaScene(env, scene, actor) {
       body: JSON.stringify({
         type: "mesa:scene",
         scene,
+        movement,
         actor: {
           id: actor.sub,
           username: actor.username,
@@ -939,7 +940,7 @@ export default {
         const r2Key     = `maps/${safeUser}/${safeMapId}.webp`;
 
         await env.MAPS.put(r2Key, await file.arrayBuffer(), {
-          httpMetadata:   { contentType: "image/webp" },
+          httpMetadata:   { contentType: ["image/png", "image/jpeg", "image/webp"].includes(file.type) ? file.type : "image/webp" },
           customMetadata: { uploadedBy: session.username, mapId, uploadedAt: new Date().toISOString() },
         });
 

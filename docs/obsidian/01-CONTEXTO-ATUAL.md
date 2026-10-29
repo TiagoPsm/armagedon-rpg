@@ -7,11 +7,13 @@ Atualizado em 2026-10-29. Historico detalhado em DEV_STATUS.md.
 - Armagedom: portal de RPG em HTML, CSS e JavaScript.
 - Fontes: C:\Users\Usuario\Projects\Armagedom, fora do OneDrive. A pasta da Area de Trabalho contem o atalho.
 - Branch local: codex/recuperacao-local, com trabalho recuperado consolidado em commit sobre a base fee2bd8.
-- Tres commits conhecidos de origin/main ainda nao integrados; preservar as alteracoes locais antes de integrar.
+- Tres commits de outubro de origin/main integrados com a recuperacao local; visao dinamica continua removida. Biblioteca, calibracao, moldes, percursos, decoracoes e melhorias do portal recuperados.
 - Backend publicado: Workers + D1 + Durable Objects/WebSocket. Express/PostgreSQL foi removido do repositorio; existe apenas no historico Git.
 - Build: npm run build gera _site com bundles e minificacao; nao publica.
 
 ## Estado funcional local
+
+Correcao integrada em 2026-10-29: schema local de mapas v4 preservado, incluindo migracao dos metadados v3 sem apagar blobs. Controles do mestre verificados com dados existentes e depois de recarga. 561 testes de interface/permissoes aprovados. Publicacao corretiva em verificacao; versoes finais no topo de DEV_STATUS.md. O registro abaixo descreve a publicacao anterior ao incidente de compatibilidade.
 
 Ficha, inventario, Echos e Mesa mantidos. Visao dinamica antiga removida em 2026-10-28 para futura reconstrucao. Nevoa manual, grade, tokens, iniciativa e permissoes tradicionais permanecem. Base recuperada publicada no Cloudflare em 2026-10-29: Worker `ea479876-9a95-4118-b7be-779531818b06` e Pages `7bda574f` (commit `7e8c3a4`), com frontend minificado e Echos incluido no pacote. Seis paginas HTTP 200, bundles conferidos por hash e dois testes publicos aprovados. Publicacao direta, sem push, integracao de origin/main ou atualizacao do espelho GitHub Pages.
 

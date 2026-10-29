@@ -322,7 +322,7 @@
   font-weight: var(--fw-semibold);
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .player-side-title::after {
@@ -907,7 +907,7 @@
 
 .player-inline-field > span,
 .player-stat-inputs label > span {
-  color: var(--accent);
+  color: var(--accent-text);
   font-family: var(--font-ui);
   font-size: var(--fs-2xs);
   font-weight: var(--fw-semibold);

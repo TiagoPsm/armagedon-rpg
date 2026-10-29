@@ -1,5 +1,9 @@
 # Armagedon
 
+## Correcao de compatibilidade e recuperacao da interface — 2026-10-29
+
+Integradas as melhorias de outubro de `origin/main` com a remocao de visao dinamica preservada. Biblioteca de mapas usa schema local v4: mapas, catalogo e preferencias existentes permanecem; nao e necessario apagar dados do navegador. Calibracao da grade, moldes, percursos, decoracoes e melhorias de portal/teclado recuperados. `tests/mesa-upgrade.spec.cjs` cobre bancos v3/v4 e recarga dos controles do mestre. Resultado de publicacao e validacoes em `DEV_STATUS.md`.
+
 Portal estatico para campanha de RPG com home, fichas, mesa virtual, regras, NPCs, monstros, memorias, inventario e API publicada em Cloudflare Workers + D1.
 
 ## Regra Obrigatoria de Documentacao
@@ -24,7 +28,7 @@ Desde 2026-10-29, os fontes ficam fora do OneDrive:
 C:\Users\Usuario\Projects\Armagedom
 ```
 
-A pasta Armagedom na Area de Trabalho contem apenas o atalho Abrir projeto. Abra a pasta dos fontes como workspace no editor/Codex para trabalhar nela diretamente. A base recuperada esta consolidada na branch `codex/recuperacao-local`; tres commits conhecidos de `origin/main` ainda nao foram integrados.
+A pasta Armagedom na Area de Trabalho contem apenas o atalho Abrir projeto. Abra a pasta dos fontes como workspace no editor/Codex para trabalhar nela diretamente. A base recuperada esta consolidada na branch `codex/recuperacao-local`, com os tres commits de outubro de `origin/main` integrados e visao dinamica removida.
 
 ## Ambiente de Desenvolvimento Validado — 2026-10-29
 
@@ -51,7 +55,7 @@ npx wrangler deploy --dry-run --config cloudflare/wrangler.toml
 python -m http.server 8000 --bind 127.0.0.1
 ```
 
-Abra http://127.0.0.1:8000. O teste `test:mesa:worker:local` cria D1 em uma pasta temporaria, gera segredos e contas descartaveis, inicia Worker e servidor estatico locais e executa os dois testes reais de realtime. Nao usa o D1 remoto nem credenciais de producao; encerra os servidores ao terminar. O estado de teste fica no diretorio temporario do Windows, separado do banco de desenvolvimento.
+Abra http://127.0.0.1:8000. O teste `test:mesa:worker:local` cria D1 em uma pasta temporaria, gera segredos e contas descartaveis, inicia Worker e servidor estatico locais e executa tres testes reais de persistencia, permissoes e realtime. Nao usa o D1 remoto nem credenciais de producao; encerra os servidores ao terminar. O estado de teste fica no diretorio temporario do Windows, separado do banco de desenvolvimento.
 
 No Windows, os comandos npm dos testes online ja usam `-ExecutionPolicy Bypass` apenas no processo. Para executar diretamente os scripts PowerShell de contexto, use o mesmo parametro; nao e necessario mudar a politica global.
 

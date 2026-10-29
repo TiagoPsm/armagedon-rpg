@@ -1,15 +1,14 @@
 const mesaStageTokenElements = new Map();
-let pendingRealtimeDragMove = null;
-let realtimeDragMoveTimer = 0;
-let lastRealtimeDragMoveAt = 0;
 let lastMesaDragEndAt = 0;
 let pendingRemotePersistSceneId = "default";
 let _tokenResizeDrag = null; // { tokenId, startX, startY, startScale, tokenEl }
-const MESA_REALTIME_DRAG_INTERVAL_MS = 50;
 
 function renderStage() {
   // Token da Mesa e sempre o estilo redondo (minimal), renderizado via DOM.
   renderDomStage();
+  window.MesaGridEditor?.render();
+  window.MesaTemplates?.render();
+  window.MesaSceneSettings?.render();
 }
 
 function renderDomStage() {
@@ -28,7 +27,7 @@ function renderDomStage() {
     }
   });
 
-  renderedTokens.forEach(token => {
+  renderedTokens.forEach((token, index) => {
     let element = mesaStageTokenElements.get(token.id);
     const contentSignature = getTokenContentSignature(token);
 
@@ -47,7 +46,10 @@ function renderDomStage() {
     }
 
     updateMesaTokenElementState(element, token);
-    stage.appendChild(element);
+    // Keep a captured token in place during a draft. Reordering every frame
+    // needlessly detaches DOM nodes and can interrupt pointer capture.
+    const slot = stage.children[index];
+    if (slot !== element) stage.insertBefore(element, slot || null);
   });
 }
 
@@ -100,9 +102,10 @@ function getTokenContentSignature(token) {
 
 function updateMesaTokenElementState(element, token) {
   if (!element) return;
+  const position = typeof MesaMovement !== "undefined" ? MesaMovement.visual(token) : token;
   element.classList.toggle("is-selected", token.id === state.selectedTokenId);
-  element.style.left = `${token.x}%`;
-  element.style.top = `${token.y}%`;
+  element.style.left = `${position.x}%`;
+  element.style.top = `${position.y}%`;
   element.style.zIndex = String(token.order || 1);
   element.style.setProperty("--token-scale", String(token.tokenScale || 1));
   element.dataset.contentSignature = getTokenContentSignature(token);
@@ -682,6 +685,9 @@ function beginTokenDrag(target, token, clientX, clientY, pointerId) {
   const tokenTop = Number.isFinite(tokenRect.top) ? tokenRect.top : stageRect.top + (target.bounds?.y || 0);
 
   state.drag = {
+    origin: { x: token.x, y: token.y },
+    sceneId: state.sceneId || "default",
+    pointerId,
     tokenId: token.id,
     mode: target.mode,
     tokenElement: target.tokenElement,
@@ -697,7 +703,6 @@ function beginTokenDrag(target, token, clientX, clientY, pointerId) {
     pointerOffsetFracY: tokenRect.height > 0 ? (clientY - tokenTop) / tokenRect.height : 0.5
   };
 
-  token.order = getNextOrder();
   pendingDragPoint = null;
   target.tokenElement?.classList.add("is-dragging");
   updateMesaTokenElementState(target.tokenElement, token);
@@ -710,31 +715,38 @@ function beginTokenDrag(target, token, clientX, clientY, pointerId) {
 function handleDragMove(event) {
   if (_tokenResizeDrag) { handleResizePointerMove(event); return; }
   if (!state.drag) return;
+  if (state.drag.pointerId != null && event.pointerId !== state.drag.pointerId) return;
   scheduleDragPosition(event.clientX, event.clientY);
 }
 
-function handleDragEnd() {
+function handleDragEnd(event) {
+  if (event?.button === 2 || (event?.buttons & 1)) return;
   if (_tokenResizeDrag) { handleResizePointerUp(); return; }
   if (!state.drag) return;
+  if (event?.pointerId != null && state.drag.pointerId != null && event.pointerId !== state.drag.pointerId) return;
+  if (Number.isFinite(event?.clientX) && Number.isFinite(event?.clientY)) scheduleDragPosition(event.clientX, event.clientY);
   flushPendingDragPosition();
-  const token = findToken(state.drag.tokenId);
-  // Snap-to-grid (Etapa 42): ajusta ANTES do flush realtime/persist para a
-  // posição final transmitida e salva já ser a célula, não o ponto do soltar.
-  // Conformidade completa: tamanho quantizado em NxN células + alinhamento.
-  if (token && typeof window.mesaConformTokenToGrid === "function") {
-    window.mesaConformTokenToGrid(token, state.drag.tokenElement);
+  if (!state.drag) return;
+  const draft = state.drag;
+  cancelTokenDrag();
+  lastMesaDragEndAt = Date.now();
+  if (draft.requested) void MesaMovement.commit(draft);
+}
+
+function cancelTokenDrag() {
+  const draft = state.drag;
+  state.drag = null;
+  if (dragAnimationFrame) cancelMesaRenderFrame(dragAnimationFrame);
+  dragAnimationFrame = 0; pendingDragPoint = null;
+  draft?.tokenElement?.classList.remove("is-dragging");
+  if (draft?.pointerId != null) {
+    try { draft.tokenElement?.releasePointerCapture?.(draft.pointerId); } catch { /* capture already released */ }
   }
-  flushRealtimeDragMove();
-  state.drag.tokenElement?.classList.remove("is-dragging");
   const stage = getMesaDomRef("stage");
   if (stage?.dataset) delete stage.dataset.dragging;
   document.body.classList.remove("mesa-drag-active");
-  state.drag = null;
-  lastMesaDragEndAt = Date.now();
-  bumpMesaSceneVersion();
-  if (token) broadcastMesaTokenMove(token);
-  persistState({ immediate: true });
-  scheduleMesaRender({ stage: true, inspector: true });
+  if (typeof MesaMovement !== "undefined") MesaMovement.clearPreview();
+  if (draft) { lastMesaDragEndAt = Date.now(); scheduleMesaRender({ stage: true }); }
 }
 
 function shouldIgnoreMesaStageClickAfterDrag() {
@@ -744,12 +756,14 @@ function shouldIgnoreMesaStageClickAfterDrag() {
 function handleMouseDragMove(event) {
   if (_tokenResizeDrag) { handleResizePointerMove(event); return; }
   if (!state.drag) return;
+  if (state.drag.pointerId != null) return;
   scheduleDragPosition(event.clientX, event.clientY);
 }
 
-function handleMouseDragEnd() {
+function handleMouseDragEnd(event) {
   if (!state.drag) return;
-  handleDragEnd();
+  if (state.drag.pointerId != null) return;
+  handleDragEnd(event);
 }
 
 function updateDragPosition(clientX, clientY) {
@@ -781,17 +795,7 @@ function updateDragPosition(clientX, clientY) {
   const leftPx = clamp(clientX - stageRect.left - pointerOffsetX, 0, usableWidth);
   const topPx = clamp(clientY - stageRect.top - pointerOffsetY, 0, usableHeight);
 
-  let next = { x: clamp((leftPx / stageRect.width) * 100, 0, 100), y: clamp((topPx / stageRect.height) * 100, 0, 100) };
-  token.x = next.x; token.y = next.y;
-
-  if (state.drag.tokenElement?.isConnected) {
-    state.drag.tokenElement.style.left = `${token.x}%`;
-    state.drag.tokenElement.style.top = `${token.y}%`;
-    state.drag.tokenElement.style.zIndex = String(token.order || 1);
-    state.drag.tokenElement.dataset.contentSignature = getTokenContentSignature(token);
-  }
-
-  queueRealtimeDragMove(token);
+  MesaMovement.preview(state.drag, { x: clamp((leftPx / stageRect.width) * 100, 0, 100), y: clamp((topPx / stageRect.height) * 100, 0, 100) });
 }
 
 function scheduleDragPosition(clientX, clientY) {
@@ -816,40 +820,6 @@ function flushPendingDragPosition() {
   }
   updateDragPosition(pendingDragPoint.clientX, pendingDragPoint.clientY);
   pendingDragPoint = null;
-}
-
-function queueRealtimeDragMove(token) {
-  if (!token) return;
-  // Mestre transmite qualquer token; jogador transmite o próprio em tempo
-  // real também (sem isto o token dele "teleporta" na tela dos outros).
-  // broadcastMesaTokenMove revalida permissão e bloqueia a camada "dm".
-  if (!isMaster() && !(typeof canPlayerMoveOwnToken === "function" && canPlayerMoveOwnToken(token))) return;
-  pendingRealtimeDragMove = token;
-  const elapsed = Date.now() - lastRealtimeDragMoveAt;
-
-  if (elapsed >= MESA_REALTIME_DRAG_INTERVAL_MS) {
-    flushRealtimeDragMove();
-    return;
-  }
-
-  if (realtimeDragMoveTimer) return;
-  realtimeDragMoveTimer = window.setTimeout(flushRealtimeDragMove, MESA_REALTIME_DRAG_INTERVAL_MS - elapsed);
-}
-
-function flushRealtimeDragMove() {
-  if (realtimeDragMoveTimer) {
-    window.clearTimeout(realtimeDragMoveTimer);
-    realtimeDragMoveTimer = 0;
-  }
-
-  const token = pendingRealtimeDragMove;
-  pendingRealtimeDragMove = null;
-  if (!token) return;
-  // Mesma regra do queueRealtimeDragMove: mestre transmite qualquer token,
-  // jogador transmite o proprio (broadcastMesaTokenMove revalida).
-  if (!isMaster() && !(typeof canPlayerMoveOwnToken === "function" && canPlayerMoveOwnToken(token))) return;
-  lastRealtimeDragMoveAt = Date.now();
-  broadcastMesaTokenMove(token);
 }
 
 function resetPrototype() {
@@ -951,17 +921,22 @@ async function runRemoteMesaPersist() {
         ...payload,
         tokens: payload.tokens.filter(token => token.layer !== "dm")
       };
-      await window.APP.saveMesaScene(remotePayload, {
+      const saved = await window.APP.saveMesaScene(remotePayload, {
         sceneId: persistSceneId,
         keepalive: document.visibilityState === "hidden"
       });
       if ((state.sceneId || "default") !== persistSceneId) continue;
+      const savedDrawings = new Map((saved?.data?.drawings || []).map(s => [s.id, s]));
+      if (payload.drawings?.some(s => (s.template && JSON.stringify(savedDrawings.get(s.id)?.template) !== JSON.stringify(s.template)) || (s.locked && !savedDrawings.get(s.id)?.locked))) {
+        throw Object.assign(new Error("O servidor precisa da atualização de moldes e decorações. As alterações ainda não foram confirmadas."), { code: 'mesa-feature-compat' });
+      }
       state.scenePersistence = "remote";
       lastRemoteMesaSceneSignature = payloadSignature;
     } catch (error) {
       if ((state.sceneId || "default") !== persistSceneId) continue;
       state.scenePersistence = "local";
       console.warn("Falha ao salvar cena oficial da mesa.", error);
+      if (error.code === 'mesa-feature-compat') window.UI?.toast?.(error.message, { kicker: '// Mesa' });
     } finally {
       activeRemotePersistSignature = "";
     }
@@ -1542,6 +1517,7 @@ function isLocalMesaPreview() {
 // Sem token: capacidade geral (mestre, ou jogador com a trava aberta).
 // Com token: o jogador so pode arrastar o proprio token.
 function canMoveTokens(token = null) {
+  if (typeof MesaMovement !== "undefined" && MesaMovement.isAnimating(token)) return false;
   if (isMaster()) return true;
   if (state.role !== "player" || state.playersMoveLocked) return false;
   return token ? isOwnPlayerToken(token) : true;

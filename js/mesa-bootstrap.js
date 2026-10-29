@@ -10,6 +10,7 @@
 "use strict";
 
 if (typeof initMesaFog === "function") initMesaFog();
+if (typeof MesaMovement !== "undefined") MesaMovement.init();
 
 if (typeof window.bootMesaPage !== "function") {
   console.error("Falha ao iniciar a mesa virtual: mesa-core.js nao foi carregado.");

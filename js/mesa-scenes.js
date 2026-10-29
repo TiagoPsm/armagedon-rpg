@@ -60,7 +60,10 @@ function _setScenesStatus(message, tone = "info") {
 async function refreshMesaScenesUI() {
   const toggle = _el("mesaScenesToggle");
   const enabled = _isScenesManagerEnabled();
-  if (toggle) toggle.hidden = !enabled;
+  if (toggle) {
+    toggle.hidden = !enabled;
+    toggle.setAttribute("aria-hidden", String(!enabled));
+  }
 
   if (!enabled) {
     if (_drawerOpen) closeMesaScenesDrawer();

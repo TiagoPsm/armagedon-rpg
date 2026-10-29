@@ -177,6 +177,7 @@ function _drawAuthorKey() {
 }
 
 function _canEraseStroke(stroke) {
+  if (stroke?.locked) return false; // Even the master must explicitly unlock decorations.
   if (typeof isMaster === "function" && isMaster()) return true;
   const author = String(stroke?.author || "").trim().toLowerCase();
   if (!author) return false;              // órfão: só o mestre
@@ -403,6 +404,7 @@ function _scheduleDrawCanvasResize() {
 
 // ── Ativar / desativar ferramenta ─────────────────────────────────
 function setDrawTool(tool) {
+  if (tool) window.MesaTemplates?.cancel();
   // toggle: clicar na mesma ferramenta desativa
   _activeTool = (_activeTool === tool) ? null : tool;
 
@@ -503,6 +505,7 @@ function _bindDrawEvents() {
 
   // Tecla Escape cancela ferramenta + fecha flyout
   document.addEventListener("keydown", e => {
+    if (e.defaultPrevented || e.target.closest?.('input,textarea,select,[contenteditable]')) return;
     if (e.key === "Escape") {
       if (_activeTool) {
         _isDrawing    = false;
@@ -519,9 +522,10 @@ function _bindDrawEvents() {
       const me = _drawAuthorKey();
       let index = -1;
       for (let i = _strokes.length - 1; i >= 0; i -= 1) {
-        if (String(_strokes[i]?.author || "").trim().toLowerCase() === me) { index = i; break; }
+        if (!_strokes[i].template && !_strokes[i].locked && String(_strokes[i]?.author || "").trim().toLowerCase() === me) { index = i; break; }
       }
       if (index === -1) return;   // nada meu para desfazer
+      e.preventDefault();
       const [undone] = _strokes.splice(index, 1);
       renderDrawings();
       _commitStrokeRemove([undone]);
@@ -818,6 +822,8 @@ function _hitTest(s, mx, my) {
 
 // ── Renderização ───────────────────────────────────────────────────
 function renderDrawings(options = {}) {
+  window.MesaDecorations?.render();
+  window.MesaTemplates?.render();
   if (!_drawCtx || !_drawCanvasEl) return;
   const w = _drawCanvasEl.offsetWidth;
   const h = _drawCanvasEl.offsetHeight;
@@ -960,6 +966,7 @@ function _cacheCompletedDrawings() {
 }
 
 function _renderStroke(s, canvasWidth, canvasHeight) {
+  if (s.template) return; // measured areas have their own viewport renderer, same storage
   const ctx = _drawCtx;
   const w = canvasWidth || _drawCanvasEl.offsetWidth || 1;
   const h = canvasHeight || _drawCanvasEl.offsetHeight || 1;
@@ -1186,6 +1193,7 @@ function applyMesaDrawingRemoveFromRemote(ids, actor) {
   _strokes = _strokes.filter(s => {
     if (!idSet.has(String(s.id))) return true;
     if (actorIsMaster) return false;                        // mestre remove
+    if (s.locked) return true;
     const author = String(s.author || "").trim().toLowerCase();
     return !(author && actorKey && author === actorKey);    // jogador: só o dele
   });
@@ -1196,6 +1204,37 @@ function applyMesaDrawingRemoveFromRemote(ids, actor) {
 
 function getDrawingsSnapshot() {
   return _strokes.slice();
+}
+
+// Atomic local replacement; legacy remove/add messages preserve drawing authorship.
+function changeMesaMeasuredDrawing(next, previous = null) {
+  const current = previous && _strokes.find(s => s.id === previous.id);
+  if (previous && (!current || JSON.stringify(current) !== JSON.stringify(previous) || !_canEraseStroke(current))) return false;
+  if (next && !_canEraseStroke(next)) return false;
+  if (!previous && next && _strokes.length >= DRAW_MAX_STROKES) return false;
+  const created = next ? normalizeMesaSceneDrawings([{ ...next, author: _drawAuthorKey(), id: crypto.randomUUID() }])[0] : null;
+  if (next && !created) return false;
+  _strokes = _strokes.filter(s => s.id !== previous?.id);
+  if (created) _strokes.push(created);
+  if (previous) sendMesaRealtimeDelta('mesa:drawings:remove', { ids: [previous.id] });
+  if (created) sendMesaRealtimeDelta('mesa:drawings:add', { stroke: created });
+  renderDrawings(); _persistDrawingsAndScene(); return created;
+}
+
+// An explicit master action, separate from erase/move permissions. One group commit.
+function setMesaDrawingLocks(ids, locked) {
+  if (!isMaster() || typeof locked !== 'boolean') return false;
+  const set = new Set(ids.map(String));
+  const targets = _strokes.filter(s => set.has(String(s.id)) && !s.template && !!s.locked !== locked);
+  if (!targets.length) return false;
+  const replacements = normalizeMesaSceneDrawings(targets.map(s => ({ ...s, locked, id: crypto.randomUUID(), author: _drawAuthorKey() })));
+  if (replacements.length !== targets.length) return false;
+  const removed = new Set(targets.map(s => s.id));
+  _strokes = _strokes.filter(s => !removed.has(s.id)).concat(replacements);
+  clearMultiSelection();
+  sendMesaRealtimeDelta('mesa:drawings:remove', { ids: targets.map(s => s.id) });
+  for (const stroke of replacements) sendMesaRealtimeDelta('mesa:drawings:add', { stroke });
+  renderDrawings(); _persistDrawingsAndScene(); return true;
 }
 
 // Persiste local + cena oficial. Comum aos três caminhos de mutação.
@@ -1256,7 +1295,9 @@ function _openFlyout() {
   if (toggleBtn) {
     const tbRect = toggleBtn.getBoundingClientRect();
     const canvasRect = document.getElementById("mesaPanelStage")?.getBoundingClientRect() || { top: 0 };
-    flyout.style.top = (tbRect.top - canvasRect.top) + "px";
+    const top = Math.max(6, Math.min(tbRect.top - canvasRect.top, (canvasRect.height || innerHeight) - 220));
+    flyout.style.top = top + "px";
+    flyout.style.maxHeight = Math.max(160, (canvasRect.height || innerHeight) - top - 12) + "px";
   }
 
   flyout.hidden   = false;

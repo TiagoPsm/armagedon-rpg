@@ -1,5 +1,9 @@
 # Migracao para Cloudflare
 
+## Correcao integrada da publicacao — 2026-10-29
+
+Integradas as melhorias remotas de outubro com a remocao de visao preservada. Worker mantem contratos de movimento, moldes medidos e decoracoes bloqueadas; runtime/geometria/rota de visao continuam removidos. Frontend preserva schema IndexedDB v4 e mapas/preferencias existentes, corrigindo a falha dos controles do mestre. Sem alteracao de schema D1, dados de campanha, bindings, secrets ou infraestrutura. Frontend/Worker devem ser publicados juntos. Versao anterior desta correcao: `ea479876-9a95-4118-b7be-779531818b06`; Pages `7bda574f`. Versoes finais serao registradas apos dry-run, verificacoes e publicacao.
+
 ## Publicacao da base recuperada — 2026-10-29
 
 Publicacao autorizada por Tiago: Worker `armagedon-api` e artefato minificado no Pages `armagedon-rpg`, a partir de `C:\Users\Usuario\Projects\Armagedom`. Base recuperada sem visao dinamica; substitui a beta de outubro no Cloudflare. Integracao de `origin/main` e espelho GitHub Pages separados desta operacao. Sem migracao D1, escrita em cenas, rotacao de secrets ou nova infraestrutura. Deploy Worker com `--keep-vars`; D1/R2/DO, tres secrets e compatibility_date preservados.
@@ -12,6 +16,22 @@ Publicado o commit `7e8c3a4`: Worker `ea479876-9a95-4118-b7be-779531818b06` e Pa
 
 A pedido do usuário, removida a implementação anterior de Mesa Vision para reconstrução futura: editor de paredes/portas, cone, giro, colisão, filtros de visão, endpoint de ações e integrações de persistência/realtime. Névoa manual, grade, tokens, iniciativa e permissões tradicionais permanecem. Frontend e Worker precisam ser publicados juntos. Nenhum deploy ou alteração direta no D1 foi realizado; campos antigos de visão deixam de ser usados e são descartados na normalização ao salvar uma cena. Não existe nova implementação de visão nesta etapa.
 
+
+Publicacao autorizada 2026-10-02: Worker `armagedon-api` atualizado para `b3c894c1-e252-42fc-a1ca-bc0a4d4b0a1c`, apos dry-run Wrangler 4.100.0 e OAuth com escopos limitados a conta/Workers. `--keep-vars`; nenhum secrets-file, migracao D1, rotacao de segredo, alteracao de cenas ou criacao de infraestrutura. Versao anterior conferida diretamente: `8fa53504-987c-4197-a2d6-e5a5efd88785`. Health 200. Conjunto inclui contratos M2/V2/V3/T1/T5, grade compartilhada, bloqueios de desenhos e MIME do mapa; testes locais continuam distintos da homologacao mestre/jogador. Registro do frontend e acompanhamento em `../DEV_STATUS.md`.
+
+O push autorizado `c5c9c55` acionou tambem Workers Builds e publicou `8df49c13-0810-485b-b3e4-b66ec9808151`. Conferencia posterior encontrou os oito bindings identicos aos da publicacao manual: D1, R2, namespace DO, tres secrets e duas variaveis preservados; compatibility_date e migration_tag mantidos. A integracao existente pode criar novas versoes em pushes posteriores; a versao manual acima e um registro da publicacao, nao uma promessa de permanecer a versao ativa. Cloudflare Pages concluiu o mesmo commit; entrega o bundle concatenado atual, ainda sem minificacao por sua configuracao externa de build. Melhoria acompanhada somente na lista viva do DEV_STATUS.
+
+Fechamento apos correcao de layout `e597141`: versao automatica conferida `5483c50b-0f18-435a-8736-9a8981eeceb0`, mesmos oito bindings, runtime/migration_tag preservados; health 200 e rota de visao exige autenticacao (401 anonimo). Cloudflare Pages e GitHub Pages publicaram a beta; pipeline GitHub `37031765142` concluiu 51 Node, 11 build e 167 casos de frontend. Conferencia de conteudo distingue Cloudflare concatenado de GitHub minificado. Nao houve mutacao de dados de jogo, nem sessao conectada autenticada nesta publicacao.
+
+Revisao local 2026-10-02: normalizador `js/mesa-grid-rules.js` compartilhado evita drift em celulas 1/N apos save/get. `drawing.locked` opcional preservado; relay recusa bloqueio por jogador e metadado nao booleano. Cliente recusa confirmacao se backend descarta moldes/bloqueios. Sem migracao D1; publicar frontend/Worker juntos. Catalogo de mapas IndexedDB v4 e migracao aditiva exclusivamente do navegador, preservando store de originais. Testes locais nao equivalem a homologacao conectada.
+
+V2/V3/T1/T5 local 2026-10-01: `vision.darkness` e `vision.lights` opcionais (64 fontes finitas), `drawing.template` com normalizador compartilhado e pontos opcionais de `mesa:ruler` (max256). Sem migracao D1; frontend e Worker devem publicar juntos. Cliente recusa confirmacao quando backend antigo descarta campos de iluminacao. Testes locais SQLite/DO/browser, nao homologacao real online.
+
+M2 local 2026-10-01: `movement` efemero fora de `scene.data`, origem/path ate 256 pontos/duracao/sceneVersion. A API anexa somente apos CAS autorizado; DO valida correspondencia com snapshot e remove caminhos secretos ou desatualizados. Delta legado sem visao aceita metadados opcionais sanitizados. GET/F5 nao repete animacao. Testes SQLite/DO controlado e dois clientes locais; sem deploy ou migracao.
+
+Movimento planejado local 2026-09-28: cliente envia `kind: move` com um unico destino em `path` depois de soltar. Rota, schema e validacao de colisao permanecem iguais. Previa/animacao sao apenas visuais; API continua autoritativa. Nenhum deploy/migracao nesta etapa.
+
+Reconstrucao local 2026-09-26: frontend separado em runtime de visao, editor de barreiras e bolinha de direcao. Preserva schema v1, bibliotecas compartilhadas de geometria/permissao e rota de acoes existente. Nenhum dado de cena apagado, migracao D1 ou deploy nesta etapa. A preferencia de ocultar bolinha e exclusivamente local, sem novo campo no servidor.
 
 Revisao local 2026-09-22: regras compartilhadas de portas usam o ponto mais proximo do segmento para alcance, sem exigir cone/orientacao. Ownership, tranca e barreiras intermediarias continuam validados. Requer publicar Worker e frontend juntos. Sem alteracao de schema D1.
 
@@ -300,3 +320,7 @@ sem cofre.
 
 `MASTER_BOOTSTRAP_PASSWORD` do `.dev.vars` precisa bater com a variavel de
 ambiente `ARMAGEDON_LOCAL_MASTER_PASSWORD` usada pelos testes locais.
+
+# Mapas originais — 2026-10-01
+
+Upload de mapas guarda Content-Type PNG/JPEG/WebP conforme arquivo recebido; chave .webp permanece por compatibilidade, GET usa metadados reais. Limite de 12MB permanece. Frontend preserva originais dentro de 10MB e relay reconhece assinaturas raster. Mudanca local.

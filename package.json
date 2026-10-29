@@ -26,7 +26,13 @@
     "minify:css": "node tools/minify.cjs --css",
     "minify:js": "node tools/minify.cjs --js",
     "build": "node tools/build-pages.cjs && node tools/minify.cjs",
-    "test:mesa:worker:local": "node tools/run-local-worker-tests.cjs"
+    "test:mesa:worker:local": "node tools/run-local-worker-tests.cjs",
+    "audit:css": "node tools/audit-css.cjs",
+    "test:ui:audit": "playwright test tests/project-ui-audit.spec.cjs",
+    "test:production": "playwright test tests/production- --workers=1",
+    "test:mesa:rules": "node --test tests/mesa-movement-rules.test.cjs tests/mesa-template-rules.test.cjs tests/css-syntax.test.cjs",
+    "test:mesa:movement": "playwright test tests/mesa-movement.spec.cjs",
+    "test:mesa:persist": "playwright test tests/mesa-persist-compat.spec.cjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

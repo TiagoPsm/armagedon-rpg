@@ -1,3 +1,6 @@
+import {} from "../../js/mesa-movement-rules.js";
+import {} from "../../js/mesa-template-rules.js";
+import {} from "../../js/mesa-grid-rules.js";
 const DEFAULT_SCENE_ID = "default";
 const MAX_TOKENS = 120;
 const MAX_TEXT_LENGTH = 160;
@@ -212,6 +215,13 @@ function normalizeSceneDrawing(stroke) {
     if (normalized.points.length < 2) return null;
   }
 
+  if (stroke.locked != null && typeof stroke.locked !== 'boolean') return null;
+  if (stroke.locked === true) normalized.locked = true;
+  if (stroke.template != null) {
+    const template = globalThis.MesaTemplateRules.normalize(stroke.template);
+    if (!template) return null;
+    normalized.template = template;
+  }
   return normalized;
 }
 
@@ -249,21 +259,7 @@ function normalizeSceneGrid(grid) {
   const escalaPropria = Number.isFinite(Number(grid.metersPerCell))
     && Math.abs(Number(grid.metersPerCell) - 1.5) > 0.001;
   if (grid.enabled !== true && grid.snap !== true && !escalaPropria) return null;
-  const color = /^#[0-9a-f]{3,8}$/i.test(String(grid.color || "")) ? String(grid.color) : "#ffffff";
-  return {
-    enabled: grid.enabled === true,
-    snap: grid.snap === true,
-    cellFrac: Math.round(clamp(grid.cellFrac ?? 0.05, 0.01, 0.25) * 10000) / 10000,
-    offsetXFrac: Math.round(clamp(grid.offsetXFrac ?? 0, 0, 1) * 10000) / 10000,
-    offsetYFrac: Math.round(clamp(grid.offsetYFrac ?? 0, 0, 1) * 10000) / 10000,
-    color,
-    opacity: Math.round(clamp(grid.opacity ?? 0.18, 0.05, 0.8) * 100) / 100,
-    /* Escala da cena (Etapa 131): quanto vale uma celula em metros, o numero
-       que a regua usa. Campo que este arquivo nao conhece e descartado em
-       silencio, entao sem ele a escala escolhida pelo mestre voltaria aos
-       1,5 m no F5. Cena antiga nao tem o campo e cai no default do cliente. */
-    metersPerCell: Math.round(clamp(grid.metersPerCell ?? 1.5, 0.1, 5000) * 100) / 100
-  };
+  return globalThis.MesaGridRules.normalize(grid);
 }
 
 function normalizeMesaScene(payload) {
@@ -623,6 +619,7 @@ async function saveMesaScene(env, actor, payload, requestedId) {
   const now = new Date().toISOString();
 
   const previous = await env.DB.prepare("select data_json from mesa_scenes where id = ?").bind(sceneId).first();
+
   if (previous) {
     const result = await env.DB.prepare("update mesa_scenes set data_json = ?, updated_by_user_id = ?, updated_at = ? where id = ? and data_json = ?")
       .bind(JSON.stringify(data), actor.sub, now, sceneId, previous.data_json).run();

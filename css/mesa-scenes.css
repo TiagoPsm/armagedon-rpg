@@ -194,7 +194,8 @@
 }
 
 .mesa-scenes-search-field::placeholder {
-  color: var(--text-faint);
+  color: var(--text-placeholder);
+  opacity: 1;
 }
 
 .mesa-scenes-search-field:focus-visible {

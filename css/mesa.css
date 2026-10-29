@@ -6,11 +6,13 @@
 /* ─── BODY FULL-SCREEN (somente na página da mesa) ─────────── */
 
 .mesa-page {
+  /* The rail and its dock share the same text-scaled geometry. */
+  --mesa-rail-width: max(60px, 3.75rem);
   display: flex;
   flex-direction: column;
   height: 100dvh;
   height: 100vh; /* fallback para browsers sem dvh */
-  overflow: hidden;
+  overflow: clip; /* focus inside overlays must not scroll the full-screen body */
 }
 
 /* FAIXA PRETA LATERAL A DIREITA — causa raiz: `reset.css` define
@@ -47,7 +49,7 @@ html {
 /* ─── TOOLBAR ESQUERDA ──────────────────────────────────────── */
 
 .vtt-toolbar {
-  width: 60px;
+  width: var(--mesa-rail-width);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -193,7 +195,7 @@ html {
 .vtt-tb-btn span,
 .vtt-layer-btn span {
   font-family: var(--font-ui);
-  font-size: 0.5rem;
+  font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -784,6 +786,7 @@ body:not([data-role="master"]) .vtt-overlay-tr {
 
 .vtt-sidebar-block-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.6rem;
@@ -791,6 +794,7 @@ body:not([data-role="master"]) .vtt-overlay-tr {
 
 .vtt-sidebar-block-title {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: 0.15rem;
 }
@@ -821,7 +825,8 @@ body:not([data-role="master"]) .vtt-overlay-tr {
 .vtt-count-badge {
   display: inline-flex;
   align-items: center;
-  height: 22px;
+  min-height: 22px;
+  max-width: 100%;
   padding: 0 0.55rem;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -832,7 +837,7 @@ body:not([data-role="master"]) .vtt-overlay-tr {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-soft);
-  white-space: nowrap;
+  white-space: normal;
   flex-shrink: 0;
   margin-top: 0.1rem;
 }
@@ -914,7 +919,7 @@ body[data-role="master"] [data-role-label="player"] {
   transition: border-color 0.15s;
 }
 
-.search-field input::placeholder { color: var(--text-faint); }
+.search-field input::placeholder { color: var(--text-placeholder); }
 .search-field input:focus-visible {
   outline: none;
   border-color: rgba(168, 48, 40, 0.5);
@@ -925,6 +930,61 @@ body[data-role="master"] [data-role-label="player"] {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
+}
+
+/* Names are the primary content, not the actions. Scoped selectors override
+   the compact roster/inspector sheets without changing shared mini-buttons. */
+.vtt-sidebar .roster-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+}
+
+.vtt-sidebar .roster-entry-name {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  letter-spacing: normal;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+
+.vtt-sidebar .roster-entry-actions {
+  gap: var(--sp-1);
+}
+
+.vtt-sidebar .roster-entry-actions .roster-action-icon {
+  width: 1.75rem;
+  min-width: 28px;
+  min-height: 28px;
+  padding: var(--sp-1);
+  aspect-ratio: 1;
+}
+
+.roster-action-icon svg {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.vtt-sidebar .roster-entry-actions button:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+
+.vtt-sidebar .token-inspector-name {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  letter-spacing: normal;
+  line-height: 1.3;
+}
+
+.vtt-sidebar .token-inspector-hero {
+  gap: var(--sp-2);
 }
 
 /* Inspector na sidebar */
@@ -1378,10 +1438,10 @@ body[data-role="master"] [data-role-label="player"] {
  * ------------------------------------------------------------------ */
 .mesa-dock-left {
   position: fixed;
-  left: calc(60px + var(--sp-3));   /* 60px = largura de .vtt-toolbar */
+  left: calc(var(--mesa-rail-width) + var(--sp-3));
   bottom: var(--sp-3);
   z-index: 2400;
-  width: min(300px, calc(100vw - 60px - 2rem));
+  width: min(300px, calc(100vw - var(--mesa-rail-width) - 2rem));
   /* 96px = altura do cabecalho do site + folga; o limite existe para que
      dois paineis abertos nunca passem do topo da janela. */
   max-height: calc(100dvh - 96px - var(--sp-3));
