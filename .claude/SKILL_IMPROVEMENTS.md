@@ -1,5 +1,13 @@
 # 📊 Smart Skill Feedback & Improvements Log
 
+### 2026-09-22 — game-ui-frontend / game-playtest — portas contextuais
+
+Skills apropriadas: reutilizar SVG do editor preserva identidade e reduz ruido no palco; proximidade e visibilidade nao equivalem a permissao de abrir. Amostragem dos pixels durante pointerdown confirma que a mascara acompanha o giro, alem de asserts no rotulo. Reutilizar botoes evita perder foco/clique durante repintura.
+
+### 2026-09-22 — code-review-frontend / game-playtest — giro e portas
+
+Skills apropriadas: separar previa visual de estado persistido evita esperar rede durante gestos. Cobertura inclui arrasto, cancelamento e porta longa com centro fora do cone, mantendo alcance e paredes intermediarias.
+
 ### 2026-09-22 — code-review-frontend / game-playtest — regressao de bundle
 
 Skills apropriadas: erro de hoisting/TDZ so apareceu na concatenacao publicada. Testar arquivos separados e somente inspecionar tags nao basta. Acrescentados browser tests nos pacotes normal/minificado, com criacao e recarga de paredes; 330 cenarios existentes tambem passaram contra artefato. Captura confirma papel e controles do mestre. Erros de rede bloqueada de assets externos no sandbox sao separados dos erros JS, sem ignorar pageerror.

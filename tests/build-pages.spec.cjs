@@ -22,7 +22,7 @@ test.beforeAll(() => {
 
 test.describe("Boot real do pacote publicado", () => {
   for (const minified of [false, true]) {
-    test(`Mesa inicia e edita paredes no bundle ${minified ? "minificado" : "normal"}`, async ({ page }, info) => {
+    test(`Mesa inicia sem visão dinâmica no bundle ${minified ? "minificado" : "normal"}`, async ({ page }, info) => {
       const errors = [];
       page.on("pageerror", error => errors.push(error.message));
       page.on("console", message => {
@@ -34,18 +34,9 @@ test.describe("Boot real do pacote publicado", () => {
       await page.goto(`${await getMesaBaseUrl()}/_site/mesa.html`);
       await expect(page.locator("#mesaStage .mesa-token")).toHaveCount(3);
       await expect.poll(() => page.evaluate(() => state.bootCompleted)).toBe(true);
-      await page.locator("#mesaMapSettingsBtn").click();
-      await page.locator("#mesaVisionPanel > summary").click();
-      await page.locator("#mesaVisionWall").click();
-      const box = await page.locator("#mesaWallCanvas").boundingBox();
-      await page.mouse.click(box.x + box.width * .2, box.y + box.height * .3);
-      await page.mouse.click(box.x + box.width * .5, box.y + box.height * .3);
-      await expect(page.locator("#mesaVisionCount")).toHaveText("1 segmento");
-      await page.mouse.click(box.x + box.width * .5, box.y + box.height * .4, { button: "right" });
-      await expect(page.locator("#mesaWallCanvas")).toBeHidden();
-      await page.screenshot({ path: info.outputPath(`bundle-${minified ? "min" : "normal"}.png`) });
+      await expect(page.locator("#mesaVisionPanel, #mesaWallCanvas, #mesaVisionCanvas")).toHaveCount(0);
       await page.reload();
-      await expect.poll(() => page.evaluate(() => mesaVision?.walls.length)).toBe(1);
+      await expect(page.locator("#mesaStage .mesa-token")).toHaveCount(3);
       expect(errors).toEqual([]);
     });
   }

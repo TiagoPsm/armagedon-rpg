@@ -1,38 +1,18 @@
 # Pendencias e Riscos
 
-## Pendencias Ativas
+Atualizado em 2026-10-29. A unica lista de acoes abertas e a secao Pendencias Vivas de DEV_STATUS.md. Esta nota nao mantem uma lista paralela.
 
-- Monitorar aviso do GitHub Actions sobre deprecacao futura de Actions em Node.js 20.
-- Validar periodicamente se GitHub Pages continua em `build_type: workflow`.
-- Manter `docs/obsidian/` atualizado apos decisoes importantes.
-- Revisar em navegador real apos mudancas visuais grandes, especialmente mobile.
-- Validar visualmente a Mesa logada no site oficial apos publicar cache bust `2026-05-05-mesa-light-1`.
-- Testar com mestre e jogador conectados ao mesmo tempo: adicionar, mover, remover token e confirmar sincronizacao sem recarregar e sem lentidao perceptivel.
+## Limites da validacao desta maquina
 
-## Riscos Tecnicos
+Os testes locais, o Worker/D1/DO isolado e o readiness publico passaram. O smoke autenticado de producao nao foi executado por ausencia de credenciais. O cadastro usa npm run test:online:setup e cofre DPAPI fora do repositorio. Consulte README.md e DEV_STATUS.md para os resultados completos.
 
-- Ordem de scripts da ficha e da mesa e sensivel.
-- Muitas regras CSS foram acumuladas por overrides; novas mudancas devem ser pontuais.
-- `localStorage` ainda atua como cache/fallback e pode divergir do D1 se a API cair.
-- Cena remota vazia agora pode ser uma escolha real do mestre; nao tratar automaticamente toda cena vazia como falha visual.
-- WebSocket depende do Worker publicado com binding `MESA_REALTIME`; se a conexao cair, a cena ainda carrega via `GET /api/mesa/scene`.
-- Dedupe de cena no frontend reduz `PUT` redundante; mudancas futuras nao devem recolocar save remoto em cada movimento de drag.
-- Render incremental do palco depende de `data-token-id`; alterar markup de token exige preservar esse contrato.
-- Backend Express em `server/` e legado; nao validar producao apenas por ele.
+## Contratos a preservar
 
-## Possiveis Melhorias Futuras
-
-- Criar um indice automatico de arquivos e responsabilidades.
-- Criar uma nota de "contratos de API" do Worker.
-- Adicionar checklist de QA por pagina.
-- Integrar Obsidian via plugin/API local ou MCP se isso trouxer ganho real.
-- Exibir presenca online na UI da Mesa se isso for util para a mesa oficial.
-- Criar contador/debug temporario de renders para auditorias futuras da Mesa.
-
-## Nao Fazer Sem Confirmar
-
-- Apagar arquivos grandes locais.
-- Redesenhar estrutura das paginas.
-- Alterar regras de gameplay.
-- Mudar persistencia ou autorizacao.
-- Trocar stack de publicacao.
+- Ordem dos scripts da ficha e da Mesa.
+- Permissoes de mestre/jogador e isolamento da camada dm.
+- API como fonte principal para sessao autenticada; cache/fallback local pode divergir durante indisponibilidade.
+- Cena vazia pode ser uma escolha real do mestre.
+- WebSocket depende do Worker/DO e snapshots pela API mantem a recuperacao.
+- Nao salvar a cena a cada movimento de drag.
+- Preservar trabalho local recuperado ao comparar os tres commits conhecidos de origin/main.
+- Frontend e Worker devem acompanhar a mesma versao ao publicar a remocao de Vision.

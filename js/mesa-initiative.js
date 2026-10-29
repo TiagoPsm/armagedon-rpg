@@ -662,10 +662,7 @@ function _visibleEntries() {
   const master = isInitMaster();
   return s.order
     .map((entry, index) => ({ entry, index }))
-    .filter(item => master || (!item.entry.secret && (typeof mesaVisionActive !== "function" || !mesaVisionActive() || (() => {
-      const token = findInitiativeToken(item.entry);
-      return token && mesaVisionTokenVisible(token);
-    })())));
+    .filter(item => master || !item.entry.secret);
 }
 
 function _entryAvatarHtml(entry) {

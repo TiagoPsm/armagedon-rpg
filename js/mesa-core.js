@@ -282,7 +282,6 @@ async function initMesaPage() {
 
   setMesaRoster(buildRoster());
   await hydrateState(prefetchedScene);
-  if (typeof initMesaVision === "function") initMesaVision();
   bindMesaRealtime();
   bindMesaStorageSync();
   renderAll();
@@ -885,7 +884,6 @@ async function applyMesaRealtimeDelta(payload) {
 }
 
 function applyMesaTokenMoveDelta(payload) {
-  if (typeof mesaVisionActive === "function" && mesaVisionActive()) return false;
   const token = findToken(payload?.tokenId);
   if (!token) return false;
 
@@ -1009,9 +1007,7 @@ async function handleMesaSheetChanged(payload) {
 async function applyRemoteMesaSceneSnapshot(remoteData) {
   if (!remoteData) return;
 
-  const localVisionRevision = typeof mesaVision !== "undefined" ? mesaVision?.revision : null;
-  if (remoteData.vision && localVisionRevision != null && remoteData.vision.revision < localVisionRevision) return;
-  if (isStaleMesaSceneVersion(remoteData?.sceneVersion) && !(remoteData.vision?.revision > (localVisionRevision ?? -1))) {
+  if (isStaleMesaSceneVersion(remoteData?.sceneVersion)) {
     return;
   }
 
@@ -1973,7 +1969,6 @@ async function handleMesaSceneSwitch(payload) {
  *   para cena que chega em tempo real (Etapa 87) — ver applyRemoteMesaSceneSnapshot.
  */
 function applyMesaSceneSnapshot(saved, options = {}) {
-  if (typeof applyMesaVisionSnapshot === "function") applyMesaVisionSnapshot(saved?.vision);
   const savedTokens = Array.isArray(saved?.tokens) ? saved.tokens : [];
   // hasExplicitSave = true quando o usuário já salvou a cena ao menos uma vez
   // (mesmo que vazia). Impede o auto-seed sobrescrever uma cena intencionalmente limpa.
@@ -2149,8 +2144,6 @@ function mergeTokenWithRoster(savedToken, rosterEntry) {
     ),
     x: clamp(Number(savedToken?.x), 0, 100),
     y: clamp(Number(savedToken?.y), 0, 100),
-    facingDeg: Number(savedToken?.facingDeg) || 0,
-    visionRadius: Number(savedToken?.visionRadius) || null,
     order: asPositiveInt(savedToken?.order, 1),
     tokenScale: clampMesaTokenScale(savedToken?.tokenScale),
     statusMarkers: normalizeMesaStatusMarkers(savedToken?.statusMarkers)
@@ -2389,7 +2382,6 @@ function canPlayerMoveOwnToken(token) {
 }
 
 function broadcastMesaTokenMove(token) {
-  if (typeof mesaVisionActive === "function" && mesaVisionActive()) return;
   if (!token) return false;
   if (!isMaster() && !canPlayerMoveOwnToken(token)) return false;
   // Token da camada secreta do mestre NUNCA trafega pela rede (mesmo padrao
@@ -2469,7 +2461,6 @@ function hasPendingMesaScenePersist() {
 
 function createMesaScenePayloadFromState() {
   return {
-    vision: typeof getMesaVisionPayload === "function" ? getMesaVisionPayload() : null,
     sceneVersion: asPositiveInt(state.sceneVersion, 0),
     tokenStyle: "minimal",
     // Sem `selectedTokenId` (Etapa 88) — ver mesaSelectionStorageKey. De
@@ -2481,8 +2472,6 @@ function createMesaScenePayloadFromState() {
       characterKey: token.characterKey,
       x: roundTo(token.x, 6),
       y: roundTo(token.y, 6),
-      facingDeg: Number(token.facingDeg) || 0,
-      visionRadius: Number(token.visionRadius) || null,
       visibleToPlayers: token.visibleToPlayers !== false,
       layer: normalizeTokenLayer(token.layer),
       statsVisibleToPlayers: normalizeStatsVisibility(token.type, token.statsVisibleToPlayers),
@@ -2607,7 +2596,6 @@ function normalizeMesaSceneDrawings(list) {
 function normalizeMesaScenePayload(payload = {}) {
   const tokens = Array.isArray(payload?.tokens) ? payload.tokens : [];
   return {
-    vision: payload.vision || null,
     sceneVersion: asPositiveInt(payload?.sceneVersion, 0),
     tokenStyle: "minimal",
     // `selectedTokenId` ignorado de proposito (Etapa 88): cena legada no D1
@@ -2618,8 +2606,6 @@ function normalizeMesaScenePayload(payload = {}) {
         characterKey: String(token?.characterKey || ""),
         x: roundTo(clamp(Number(token?.x), 0, 100), 6),
         y: roundTo(clamp(Number(token?.y), 0, 100), 6),
-        facingDeg: Number(token?.facingDeg) || 0,
-        visionRadius: Number(token?.visionRadius) || null,
         visibleToPlayers: token?.visibleToPlayers !== false,
         layer: normalizeTokenLayer(token?.layer),
         statsVisibleToPlayers: token?.statsVisibleToPlayers === true,

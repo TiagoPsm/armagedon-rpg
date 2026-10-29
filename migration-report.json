@@ -1,0 +1,18 @@
+{
+  "copied": 156,
+  "removed": [
+    "css/mesa-vision.css",
+    "docs/ILUMINACAO-DINAMICA.md",
+    "js/mesa-vision-geometry.js",
+    "js/mesa-vision-rules.js",
+    "js/mesa-vision.js",
+    "tests/mesa-vision-geometry.test.cjs",
+    "tests/mesa-vision-server.test.cjs",
+    "tests/mesa-vision.spec.cjs"
+  ],
+  "unreadable": [],
+  "extras": [
+    "mesa-mechanics-test.html",
+    "tools/set-dev-secrets.ps1"
+  ]
+}

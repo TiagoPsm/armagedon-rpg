@@ -545,7 +545,6 @@ function initMesaSelect() {
   const box = document.getElementById("mesaSelectionBox");
   if (box) {
     box.addEventListener("pointerdown", e => {
-      if (typeof mesaVisionActive === "function" && mesaVisionActive()) return;
       if (e.button !== 0 || !e.isPrimary || _interactionMode !== "select") return;
       if (e.target.classList.contains("sel-handle")) return;
       // preventDefault tambem SUPRIME o mousedown de compatibilidade — sem
@@ -562,7 +561,6 @@ function initMesaSelect() {
 
     box.querySelectorAll(".sel-handle").forEach(h => {
       h.addEventListener("pointerdown", e => {
-        if (typeof mesaVisionActive === "function" && mesaVisionActive()) return;
         if (e.button !== 0 || !e.isPrimary || _interactionMode !== "select") return;
         e.preventDefault();
         e.stopPropagation();

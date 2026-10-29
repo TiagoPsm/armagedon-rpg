@@ -18,21 +18,42 @@ Cada atualizacao deve registrar: o que mudou, quais arquivos foram afetados, com
 
 ## Pasta Oficial de Trabalho
 
-Use sempre esta pasta como copia principal do projeto:
+Desde 2026-10-29, os fontes ficam fora do OneDrive:
 
 ```text
-C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync
+C:\Users\Usuario\Projects\Armagedom
 ```
 
-A pasta antiga `rpg-campaign` nao e um checkout Git e deve ser tratada apenas como copia historica/local. Toda alteracao, validacao, commit, push e publicacao deve acontecer em `rpg-campaign-git-sync`.
+A pasta Armagedom na Area de Trabalho contem apenas o atalho Abrir projeto. Abra a pasta dos fontes como workspace no editor/Codex para trabalhar nela diretamente. A base recuperada esta consolidada na branch `codex/recuperacao-local`; tres commits conhecidos de `origin/main` ainda nao foram integrados.
 
-Nota operacional: se a pasta antiga `rpg-campaign` nao puder ser apagada ou renomeada, primeiro feche chats, terminais, Explorer, VS Code ou qualquer app ainda aberto nela. O Codex pode manter uma pasta bloqueada quando uma conversa antiga ainda esta vinculada a esse workspace.
+## Ambiente de Desenvolvimento Validado — 2026-10-29
 
-Status em 2026-04-30:
+Node 24.22.0, npm 11.19.1, Playwright/Chromium e Wrangler 4.154.0 conferidos. Dependencias instaladas e auditoria npm sem vulnerabilidades. Hooks locais configurados em `.githooks`.
 
-- a pasta oficial preservada e em uso e `rpg-campaign-git-sync`
-- a pasta antiga `rpg-campaign` foi excluida depois que o Windows liberou o bloqueio
-- a unica pasta de trabalho em `FichaApp` agora deve ser `rpg-campaign-git-sync`
+Na pasta oficial:
+
+```powershell
+npm run check:js
+npm run audit:static
+npm run audit:pendencias
+node test-worker.mjs
+npm run test:ficha
+npm run test:mesa
+npm run test:mesa:audit
+npm run test:controles
+npm run perf:mesa
+npm run test:mesa:worker:local
+npm run test:build
+npm run build
+npx wrangler deploy --dry-run --config cloudflare/wrangler.toml
+python -m http.server 8000 --bind 127.0.0.1
+```
+
+Abra http://127.0.0.1:8000. O teste `test:mesa:worker:local` cria D1 em uma pasta temporaria, gera segredos e contas descartaveis, inicia Worker e servidor estatico locais e executa os dois testes reais de realtime. Nao usa o D1 remoto nem credenciais de producao; encerra os servidores ao terminar. O estado de teste fica no diretorio temporario do Windows, separado do banco de desenvolvimento.
+
+No Windows, os comandos npm dos testes online ja usam `-ExecutionPolicy Bypass` apenas no processo. Para executar diretamente os scripts PowerShell de contexto, use o mesmo parametro; nao e necessario mudar a politica global.
+
+As credenciais do smoke autenticado de producao ainda nao foram cadastradas nesta maquina. O cadastro e feito por `npm run test:online:setup`, em cofre DPAPI. Resultados e limites desta verificacao estao no topo de `DEV_STATUS.md`.
 
 ## Leitura Rapida Para Reduzir Contexto
 

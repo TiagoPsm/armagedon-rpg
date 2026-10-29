@@ -1,5 +1,13 @@
 # SYSTEM RULES
 
+## Remoção da visão dinâmica — 2026-10-28
+
+A pedido do usuário, removida a implementação anterior de Mesa Vision para reconstrução futura: editor de paredes/portas, cone, giro, colisão, filtros de visão, endpoint de ações e integrações de persistência/realtime. Névoa manual, grade, tokens, iniciativa e permissões tradicionais permanecem. Frontend e Worker precisam ser publicados juntos. Nenhum deploy ou alteração direta no D1 foi realizado; campos antigos de visão deixam de ser usados e são descartados na normalização ao salvar uma cena. Não existe nova implementação de visão nesta etapa.
+
+
+- Giro de visao: arrastar a alca do token atualiza somente a previa; soltar confirma a direcao no servidor. Cancelamento descarta a previa. Ownership e bloqueio de movimento continuam aplicados.
+- Portas: o icone aparece no campo de visao ou por proximidade mesmo fora do cone. Abrir exige proximidade, mas nao orientacao. Nevoa manual continua ocultando icones; trancas e paredes intermediarias bloqueiam a interacao. Portas distantes visiveis e portas trancadas mostram icone desabilitado com descricao.
+
 Este arquivo registra regras funcionais e de gameplay que nao devem ser alteradas sem autorizacao explicita.
 
 - Editor de paredes: botao direito no palco encerra parede, poligono, retangulo, porta, apagar ou trancar. Mantem segmentos confirmados; no poligono salva apenas ligacoes entre pontos clicados (cadeia aberta, um desfazer). Ponto isolado e previa do cursor nao viram barreira. Se a edicao nao for aceita, preserva o rascunho para nova tentativa.
@@ -39,8 +47,8 @@ Nao use a pasta antiga `rpg-campaign` para alterar regras ou publicar commits.
 - Padroes iniciais de implementacao: cone de 120 graus, giro manual e interacao
   com porta a uma celula de distancia, sem parede intermediaria.
 - Integracao local implementada em 2026-09-20, opt-in por cena; desativada em cenas legadas. O Worker valida dono, cena ativa, bloqueio do mestre, trajeto e revisao antes de persistir.
-- Giro manual em passos de 15 graus. Com visao ativa, movimento individual e tamanho fixo: redimensionamento e arrasto de grupos ficam desativados; envio remoto ocorre ao soltar.
-- Criar porta recorta automaticamente um trecho de uma unica parede com dois cliques; tambem aceita vao livre. Preserva partes laterais e nasce fechada/destrancada. Jogador abre porta destrancada ao alcance de uma celula mais o raio do token, dentro do cone e sem barreira intermediaria; mestre pode fechar se nao houver token sobre a porta.
+- Giro continuo pela alca: cone e seta acompanham o ponteiro enquanto pressionado; envio remoto ocorre ao soltar. Botoes e teclado mantem passos de 15 graus. Com visao ativa, movimento individual e tamanho fixo: redimensionamento e arrasto de grupos ficam desativados.
+- Criar porta recorta automaticamente um trecho de uma unica parede com dois cliques; tambem aceita vao livre. Preserva partes laterais e nasce fechada/destrancada. Jogador abre porta destrancada ao alcance de uma celula mais o raio do token, inclusive fora do cone, sem barreira intermediaria; mestre pode fechar se nao houver token sobre a porta.
 - Criar parede oferece cadeia aberta, poligono fechado e retangulo. Formas fechadas sao confirmadas/desfeitas como uma operacao; Escape descarta apenas o rascunho, sem apagar paredes confirmadas.
 - Nevoa manual continua ocultando; o proprio disco do personagem fica legivel. A mascara nao protege os dados publicos do mapa contra DevTools. Nao ha promessa de filtragem individual do mapa no servidor.
 

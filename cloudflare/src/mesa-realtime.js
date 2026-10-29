@@ -366,14 +366,6 @@ class MesaRealtimeRoom extends DurableObject {
   async handleRealtimeRelay(ws, payload) {
     const attachment = readAttachment(ws) || {};
     const type = String(payload?.type || "");
-    // Enabled vision scenes use authoritative HTTP actions, never a blind relay.
-    if (attachment.role !== "master" && ["mesa:token:move", "mesa:token:upsert", "mesa:token:remove", "mesa:batch"].includes(type)) {
-      const scene = await getMesaScene(this.env, { role: "player" });
-      if (scene.data.vision?.enabled) {
-        sendJson(ws, { type: "mesa:scene:ack", ok: false, reason: "Use as acoes validadas da cena.", messageId: payload?.messageId || "" });
-        return;
-      }
-    }
     if (type === SHEET_PATCH_TYPE) {
       this.handleSheetPatchRelay(ws, payload, attachment);
       return;

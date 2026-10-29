@@ -1,5 +1,12 @@
 # Migracao para Cloudflare
 
+## Remoção da visão dinâmica — 2026-10-28
+
+A pedido do usuário, removida a implementação anterior de Mesa Vision para reconstrução futura: editor de paredes/portas, cone, giro, colisão, filtros de visão, endpoint de ações e integrações de persistência/realtime. Névoa manual, grade, tokens, iniciativa e permissões tradicionais permanecem. Frontend e Worker precisam ser publicados juntos. Nenhum deploy ou alteração direta no D1 foi realizado; campos antigos de visão deixam de ser usados e são descartados na normalização ao salvar uma cena. Não existe nova implementação de visão nesta etapa.
+
+
+Revisao local 2026-09-22: regras compartilhadas de portas usam o ponto mais proximo do segmento para alcance, sem exigir cone/orientacao. Ownership, tranca e barreiras intermediarias continuam validados. Requer publicar Worker e frontend juntos. Sem alteracao de schema D1.
+
 ## Visao dinamica — integracao local 2026-09-20
 
 `POST /api/mesa/vision/action` recebe cena, revisao e acao de movimento, orientacao ou porta. Autenticacao, ownership, cena ativa e bloqueio do mestre precedem a escrita. Geometria e regras puras sao compartilhadas com `js/mesa-vision-geometry.js` e `js/mesa-vision-rules.js`.

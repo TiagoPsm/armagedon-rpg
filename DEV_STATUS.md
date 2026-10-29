@@ -1,6 +1,56 @@
 # DEV STATUS
 
+## Base recuperada consolidada — 2026-10-29
+
+Consolidacao do trabalho local na branch `codex/recuperacao-local`, a pedido do Tiago: remocao da visao dinamica antiga, documentacao da migracao, dependencias atualizadas, ferramenta de contexto corrigida e teste isolado do Worker. Incluidos `migration-report.json`, a pagina manual `mesa-mechanics-test.html` e `tools/set-dev-secrets.ps1` (ferramenta de cofre, sem segredos reais). Configuracoes e registros recuperados de `.claude` preservados. Segredos locais, dependencias e artefatos gerados permanecem ignorados pelo Git.
+
+A bateria completa ja aprovada nesta data permanece como evidencia da base. Na consolidacao, sintaxe de 48 arquivos JS, auditorias estatica/de pendencias e diff staged aprovados; busca heuristica por chaves privadas e tokens nas adicoes sem ocorrencias. Nenhuma nova mudanca de gameplay nesta etapa. Os tres commits conhecidos de `origin/main` continuam sem integracao; commit local nao publica frontend nem Worker. A unica acao aberta continua na lista viva.
+
+## Ambiente de desenvolvimento validado — 2026-10-29
+
+Validacao executada na pasta oficial C:\Users\Usuario\Projects\Armagedom, fora do OneDrive. Git integro (fsck sem erros), branch codex/recuperacao-local no commit fee2bd8. O erro anterior de git status foi limitado ao acesso do executor deste chat a pasta externa; com acesso autorizado o checkout funciona normalmente. Alteracoes locais da recuperacao preservadas. Os tres commits ja conhecidos de origin/main foram inspecionados, sem merge, reset, commit ou push nesta etapa.
+
+Ferramentas: Node 24.22.0, npm 11.19.1, Playwright 1.59.1 com Chromium funcional e Wrangler 4.154.0. npm ls consistente e npm audit com zero vulnerabilidades. Cloudflare autenticado por OAuth; empacotamento wrangler deploy --dry-run aprovado, sem publicacao.
+
+Resultados executados:
+- check:js aprovado (48 arquivos), audit:static e audit:pendencias aprovados.
+- node test-worker.mjs: 60 verificacoes aprovadas (parte usa replicas de logica; a integracao real foi validada separadamente).
+- bateria Playwright local de ficha, Mesa, auditoria, permissoes, mapas/cenas, tokens, toque, controles e performance: 365 aprovados e 2 ignorados por exigirem Worker configurado.
+- os mesmos 2 testes de Worker foram executados separadamente com Wrangler local, D1 isolado, mestre/jogador descartaveis e WebSocket real: 2 aprovados. Schema local, bootstrap do mestre e criacao de jogador tambem aprovados.
+- test:build: 10 aprovados, incluindo boot e recarga dos bundles normal e minificado sem Vision.
+- readiness publico de producao: 2 aprovados (site/API e bloqueio de acesso anonimo). Smoke autenticado nao executado porque esta maquina nao tem credenciais cadastradas.
+- build completo e minificacao aprovados; git diff --check sem erros.
+
+Ferramenta de contexto corrigida: tools/update-obsidian-context.ps1 agora passa a lista completa de argumentos ao Git e trata avisos de stderr no Windows PowerShell 5 sem interromper a geracao; o codigo de saida continua determinando falhas. Snapshot e hook verificados apos a correcao.
+
+Preparacao: core.hooksPath configurado para .githooks; README e contexto do Obsidian atualizados com o caminho atual. Novo tools/run-local-worker-tests.cjs e comando npm run test:mesa:worker:local tornam repetivel a validacao isolada do backend, com segredos aleatorios em memoria e sem acesso ao banco remoto. O teste encerra os servidores; seu banco descartavel fica na pasta temporaria do Windows. Nenhuma regra de gameplay ou dado de campanha foi alterado. A lista viva abaixo continua sendo a fonte unica das acoes abertas.
+
+
+## Migração para pasta local — 2026-10-29
+
+Pasta oficial recuperada: C:\Users\Usuario\Projects\Armagedom. A pasta Armagedom na Área de Trabalho contém o atalho Abrir projeto; os fontes ficam fora do OneDrive. Clone íntegro no commit fee2bd8, branch codex/recuperacao-local, seguido de cópia e conferência de 156 arquivos versionados e dois arquivos locais, sem falhas de leitura. Remoção de Vision reaplicada. Relatório em migration-report.json. Dependências reinstaladas; auditoria npm sem vulnerabilidades e build completo aprovado. A cópia antiga permanece como backup. origin/main possui três commits posteriores ainda não integrados; nenhuma publicação executada.
+
+
+## Recuperação das ferramentas locais — 2026-10-28
+
+Dependências reinstaladas com npm ci --ignore-scripts, Chromium do Playwright instalado e build completo com minificação aprovado. Os 10 testes de build passaram, incluindo boot e recarga da Mesa sem Vision nos bundles normal e minificado. Isso resolve o bloqueio de dependências registrado abaixo. Wrangler disponível via npx; autenticação Cloudflare em andamento. Git ainda apresenta arquivo pack/idx ilegível na pasta OneDrive; nenhum histórico removido ou substituído.
+
+## Remoção da visão dinâmica — 2026-10-28
+
+Validação: sintaxe de 48 arquivos JS, auditoria estática, auditoria de pendências e build:pages aprovados. Testes Playwright e minificação não puderam executar: ERR_INVALID_PACKAGE_CONFIG ao ler node_modules/@playwright/test/package.json e node_modules/clean-css/package.json. Regressão de boot ajustada para conferir inicialização/recarga e ausência dos controles removidos; ainda não executada neste ambiente.
+
+A pedido do usuário, removida a implementação anterior de Mesa Vision para reconstrução futura: editor de paredes/portas, cone, giro, colisão, filtros de visão, endpoint de ações e integrações de persistência/realtime. Névoa manual, grade, tokens, iniciativa e permissões tradicionais permanecem. Frontend e Worker precisam ser publicados juntos. Nenhum deploy ou alteração direta no D1 foi realizado; campos antigos de visão deixam de ser usados e são descartados na normalização ao salvar uma cena. Não existe nova implementação de visão nesta etapa.
+
+
 Este arquivo registra o estado atual do projeto e deve ser atualizado ao final de cada etapa importante.
+
+## Giro e alcance de portas — 2026-09-22
+
+Alca de direcao junto ao token oferece previa local por frame, sem escrita durante arrasto; soltar confirma pela API e cancelamento descarta a previa. Botoes de giro tambem antecipam a imagem enquanto aguardam confirmacao. Portas usam o ponto mais proximo no segmento, nao o centro distante, com o mesmo contrato no cliente e servidor. Alteracoes locais, sem publicacao nesta etapa.
+
+Refinamento: portas aparecem dentro do cone ou por proximidade fora dele, com SVG identico ao editor e sem revelar o restante da area. Abertura nao exige orientacao; alcance, tranca e barreiras continuam obrigatorios. Elementos de porta sao reutilizados por ID entre frames, preservando foco e cliques. Teste do giro amostra os pixels reais da mascara em 90 e 180 graus antes de soltar, nao apenas o rotulo numerico.
+
+Validacao: 333 testes de Mesa contra o artefato passaram; 27 testes puros/servidor e 10 de build (normal/minificado) passaram. Os 3 novos fluxos foram repetidos no artefato final. Captura do giro inspecionada; sintaxe de 51 arquivos, auditorias estatica/pendencias e diff check sem erros. Sessao de jogador simulada, sem alterar cenas online.
 
 ## Pendencias Vivas
 
@@ -10,7 +60,6 @@ Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencia
 
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
 
-- **[Codex/Tiago]** Homologar a beta de visao dinamica em sessao mestre/jogador conectados: salvar/reabrir paredes, colisao, giro e portas. API publicada em 2026-09-21 apos dry-run; health e autenticacao da rota conferidos. Sem cofre de credenciais online nesta maquina para round-trip autenticado. Com visao ativa, invocacao de Echo pelo relay legado do jogador continua bloqueada. — aberta em 2026-09-20 (integracao da visao dinamica)
 
 - **[Tiago]** Rotacionar em producao `JWT_SECRET` e `MASTER_BOOTSTRAP_PASSWORD` via `wrangler secret put` — os valores que estiveram em texto puro no OneDrive continuam validos no Worker. Comandos e ordem no bloco da Etapa 142. **`PASSWORD_PEPPER` fica de fora de proposito**: rotacionar invalida o hash de senha de TODOS os jogadores (PBKDF2 mistura o pepper, `cloudflare/src/auth.js:35`) e nao existe fluxo de recuperacao de senha. Rotacionar o pepper exige antes a migracao pepper-duplo descrita na Etapa 142. — aberta em 2026-08-28 (Etapa 142, herdada da Etapa 121)
 
@@ -3979,7 +4028,7 @@ Apos auditoria completa da Mesa (5 frentes via agentes), corrigidos os bugs crit
 - Informar exatamente quais arquivos foram alterados
 - Informar exatamente o que precisa ser enviado ao GitHub
 - Nao mudar regras do sistema sem autorizacao explicita
-- Usar sempre `C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign-git-sync` como pasta oficial de trabalho
+- Usar sempre `C:\Users\Usuario\Projects\Armagedom` como pasta oficial de trabalho (migracao de 2026-10-29)
 - Tratar `C:\Users\tiago\Desktop\Próxima Campanha\FichaApp\rpg-campaign` como copia antiga/local, nao como fonte para commits
 - Manter este arquivo e os demais documentos locais de referencia atualizados em toda mudanca
 

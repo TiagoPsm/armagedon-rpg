@@ -399,9 +399,6 @@
     async getMesaScene(sceneId) {
       return request("/mesa/scene" + (sceneId ? `?id=${encodeURIComponent(sceneId)}` : ""));
     },
-    async mesaVisionAction(sceneId, revision, action) {
-      return request("/mesa/vision/action", { method: "POST", body: { sceneId, revision, action } });
-    },
     // Múltiplas cenas (Etapa 49) — gestão master-only (o Worker valida).
     async getMesaScenes() {
       return request("/mesa/scenes");

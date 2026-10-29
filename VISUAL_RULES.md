@@ -1,5 +1,14 @@
 # VISUAL RULES
 
+## Remoção da visão dinâmica — 2026-10-28
+
+A pedido do usuário, removida a implementação anterior de Mesa Vision para reconstrução futura: editor de paredes/portas, cone, giro, colisão, filtros de visão, endpoint de ações e integrações de persistência/realtime. Névoa manual, grade, tokens, iniciativa e permissões tradicionais permanecem. Frontend e Worker precisam ser publicados juntos. Nenhum deploy ou alteração direta no D1 foi realizado; campos antigos de visão deixam de ser usados e são descartados na normalização ao salvar uma cena. Não existe nova implementação de visão nesta etapa.
+
+
+- Icones de portas no palco reutilizam exatamente o SVG de Criar porta; alvo de 36px, fundo escuro e contorno do tema. Portas abertas usam cor de sucesso; trancadas, borda tracejada. Nome acessivel e tooltip explicam estado/alcance. Nao revelar mapa ou tokens ao mostrar apenas uma porta proxima fora do cone.
+
+- Direcao da visao: alca circular com seta acompanha o contorno do token; arrasto gira cone em tempo real sem girar textos e barras de vida. Controles de 15 graus continuam disponiveis.
+
 ## Paredes e visao — 2026-09-20
 
 - Distribuicao beta autorizada em 2026-09-21: titulo da secao exibe "Paredes e visao · Beta", mantendo a tipografia existente.

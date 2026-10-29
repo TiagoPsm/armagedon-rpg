@@ -23,8 +23,17 @@ Set-Location -LiteralPath $RepoRoot
 function Invoke-Git {
   param([string[]]$Arguments)
 
-  $result = & git @Arguments 2>$null
-  if ($LASTEXITCODE -ne 0) {
+  # Windows PowerShell 5 converts native stderr warnings into ErrorRecords.
+  # Keep warnings from aborting the snapshot; the exit code still decides failure.
+  $previousPreference = $ErrorActionPreference
+  try {
+    $ErrorActionPreference = "Continue"
+    $result = & git @Arguments 2>$null
+    $gitExitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousPreference
+  }
+  if ($gitExitCode -ne 0) {
     return @()
   }
 
@@ -49,19 +58,19 @@ function To-RelativePath {
 }
 
 $generatedAt = Get-Date -Format "yyyy-MM-dd HH:mm:ss zzz"
-$branch = (Invoke-Git @("branch", "--show-current") | Select-Object -First 1)
+$branch = (Invoke-Git -Arguments @("branch", "--show-current") | Select-Object -First 1)
 if ([string]::IsNullOrWhiteSpace($branch)) {
   $branch = "(sem branch detectada)"
 }
 
-$lastCommit = (Invoke-Git @("log", "-1", "--format=%h %ad %s", "--date=short") | Select-Object -First 1)
+$lastCommit = (Invoke-Git -Arguments @("log", "-1", "--format=%h %ad %s", "--date=short") | Select-Object -First 1)
 if ([string]::IsNullOrWhiteSpace($lastCommit)) {
   $lastCommit = "(sem commit detectado)"
 }
 
-$status = Invoke-Git @("status", "--short")
-$trackedChanges = Invoke-Git @("diff", "--name-only")
-$stagedChanges = Invoke-Git @("diff", "--cached", "--name-only")
+$status = Invoke-Git -Arguments @("status", "--short")
+$trackedChanges = Invoke-Git -Arguments @("diff", "--name-only")
+$stagedChanges = Invoke-Git -Arguments @("diff", "--cached", "--name-only")
 
 $topLevel = Get-ChildItem -LiteralPath $RepoRoot -Force |
   Where-Object { $_.Name -ne ".git" } |

@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste: Polling vs P2P - Armagedom Mesa</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #ff6b00;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(255, 107, 0, 0.3);
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: rgba(20, 25, 45, 0.8);
+            border: 1px solid #ff6b00;
+            border-radius: 8px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .panel h2 {
+            color: #ff6b00;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .config-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #b0b0b0;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(10, 14, 39, 0.6);
+            border: 1px solid #ff6b00;
+            color: #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #ff6b00;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #ff8030;
+            box-shadow: 0 0 15px rgba(255, 107, 0, 0.5);
+        }
+
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .status {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #888;
+        }
+
+        .status-indicator.active {
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Mesa Visualization */
+        .mesa-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .mesa-view {
+            background: rgba(10, 14, 39, 0.8);
+            border: 2px solid #ff6b00;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mesa-view h3 {
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            color: #ff6b00;
+            z-index: 10;
+            font-size: 16px;
+        }
+
+        .mesa-canvas {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            background: linear-gradient(45deg, rgba(50, 30, 20, 0.3) 0%, rgba(30, 20, 40, 0.3) 100%);
+            border: 1px dashed #ff6b00;
+            border-radius: 4px;
+            margin-top: 40px;
+        }
+
+        .token {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: #ff6b00;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            color: #000;
+            cursor: move;
+            user-select: none;
+            transition: all 0.15s;
+            box-shadow: 0 0 10px rgba(255, 107, 0, 0.5);
+        }
+
+        .token:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 107, 0, 0.8);
+        }
+
+        .token.dragging {
+            opacity: 0.7;
+            z-index: 100;
+        }
+
+        /* Setas */
+        svg.trail {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        svg.trail line {
+            stroke: #ff6b00;
+            stroke-width: 2;
+            stroke-linecap: round;
+            filter: drop-shadow(0 0 3px rgba(255, 107, 0, 0.5));
+        }
+
+        /* Stats */
+        .stats {
+            background: rgba(20, 25, 45, 0.8);
+            border: 1px solid #ff6b00;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stats h2 {
+            color: #ff6b00;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            background: rgba(10, 14, 39, 0.6);
+            padding: 12px;
+            border-radius: 4px;
+            border-left: 3px solid #ff6b00;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ff6b00;
+        }
+
+        .log {
+            background: rgba(10, 14, 39, 0.9);
+            border: 1px solid #ff6b00;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid rgba(255, 107, 0, 0.2);
+        }
+
+        .log-entry.polling {
+            color: #00ff00;
+        }
+
+        .log-entry.peering {
+            color: #00ddff;
+        }
+
+        .log-entry.error {
+            color: #ff4444;
+        }
+
+        .info-box {
+            background: rgba(255, 107, 0, 0.1);
+            border-left: 4px solid #ff6b00;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .comparison-item {
+            background: rgba(10, 14, 39, 0.6);
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .comparison-item strong {
+            color: #ff6b00;
+        }
+
+        @media (max-width: 1024px) {
+            .controls, .mesa-container, .comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎲 Teste de Mecânicas: Polling vs P2P</h1>
+            <p>Teste contra o banco de dados real do Armagedom</p>
+        </header>
+
+        <!-- Controls Panel -->
+        <div class="controls">
+            <!-- Polling Config -->
+            <div class="panel">
+                <h2>📊 Configuração Polling</h2>
+                <div class="config-group">
+                    <label>URL da API (D1):</label>
+                    <input type="text" id="apiUrl" value="https://armagedon-api.tiagopsm2008.workers.dev/api" placeholder="/api/mesa/state">
+                </div>
+                <div class="config-group">
+                    <label>Intervalo (ms):</label>
+                    <input type="number" id="pollInterval" value="500" min="100" max="5000" step="100">
+                </div>
+                <div class="config-group">
+                    <label>Duração da Seta (ms):</label>
+                    <input type="number" id="trailDuration" value="1500" min="500" max="5000" step="100">
+                </div>
+                <button onclick="startPolling()">▶ Iniciar Polling</button>
+                <button onclick="stopPolling()">⏹ Parar</button>
+                <div class="status">
+                    <div class="status-indicator" id="pollStatus"></div>
+                    <span id="pollStatusText">Parado</span>
+                </div>
+            </div>
+
+            <!-- P2P Config -->
+            <div class="panel">
+                <h2>🌐 Configuração P2P (PeerJS)</h2>
+                <div class="config-group">
+                    <label>Seu ID (Peer):</label>
+                    <input type="text" id="peerId" placeholder="gerado automaticamente" disabled>
+                </div>
+                <div class="config-group">
+                    <label>ID Remoto (Outro Peer):</label>
+                    <input type="text" id="remotePeerId" placeholder="ex: abc123def456">
+                </div>
+                <div class="info-box">
+                    ℹ️ Para testar P2P, abra esta página em 2 abas diferentes. Copie o ID da primeira aba e cole aqui na segunda.
+                </div>
+                <button onclick="initPeerJS()">🔌 Conectar P2P</button>
+                <button onclick="disconnectPeerJS()">❌ Desconectar</button>
+                <div class="status">
+                    <div class="status-indicator" id="p2pStatus"></div>
+                    <span id="p2pStatusText">Desconectado</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mesa Views -->
+        <div class="mesa-container">
+            <!-- Polling View -->
+            <div class="mesa-view">
+                <h3>Polling + Setas</h3>
+                <div class="mesa-canvas" id="pollingCanvas">
+                    <svg class="trail" id="pollingSvg"></svg>
+                </div>
+                <p style="margin-top: 10px; font-size: 12px; color: #888;">
+                    Clique e arraste tokens para simular movimento. Polling detecta mudanças a cada 500ms.
+                </p>
+            </div>
+
+            <!-- P2P View -->
+            <div class="mesa-view">
+                <h3>P2P (WebRTC)</h3>
+                <div class="mesa-canvas" id="p2pCanvas">
+                    <svg class="trail" id="p2pSvg"></svg>
+                </div>
+                <p style="margin-top: 10px; font-size: 12px; color: #888;">
+                    Com P2P, latência é minimizada (direto entre navegadores).
+                </p>
+            </div>
+        </div>
+
+        <!-- Comparison -->
+        <div class="stats">
+            <h2>📈 Comparação em Tempo Real</h2>
+            <div class="comparison">
+                <div class="comparison-item">
+                    <strong>Polling:</strong><br>
+                    ⏱ Latência: <span id="pollingLatency">-</span>ms<br>
+                    📦 Requests: <span id="pollingRequests">0</span><br>
+                    ✅ Últimas mudanças: <span id="pollingChanges">0</span><br>
+                    🔄 Taxa erro: <span id="pollingErrors">0</span>
+                </div>
+                <div class="comparison-item">
+                    <strong>P2P (WebRTC):</strong><br>
+                    ⏱ Latência: <span id="p2pLatency">-</span>ms<br>
+                    📦 Mensagens: <span id="p2pMessages">0</span><br>
+                    ✅ Conexão: <span id="p2pConnection">-</span><br>
+                    🔋 Bandwidth: <span id="p2pBandwidth">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats">
+            <h2>📊 Estatísticas Detalhadas</h2>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">Tokens na Mesa</div>
+                    <div class="stat-value" id="tokenCount">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Movimentos Detectados</div>
+                    <div class="stat-value" id="movementCount">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Tempo de Poll</div>
+                    <div class="stat-value" id="pollTime">-</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Eficiência Polling</div>
+                    <div class="stat-value" id="efficiency">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs -->
+        <div style="margin-top: 30px;">
+            <h2 style="color: #ff6b00; margin-bottom: 15px;">📝 Logs</h2>
+            <div class="log" id="logs"></div>
+        </div>
+    </div>
+
+    <script>
+        // ===== STATE =====
+        const state = {
+            isPolling: false,
+            isP2P: false,
+            pollingInterval: null,
+            peer: null,
+            connection: null,
+            tokens: [],
+            previousTokens: [],
+            stats: {
+                pollingLatency: 0,
+                pollingRequests: 0,
+                pollingChanges: 0,
+                pollingErrors: 0,
+                p2pMessages: 0,
+                p2pLatency: 0,
+                movementCount: 0
+            }
+        };
+
+        // ===== LOGGER =====
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logsDiv.insertBefore(entry, logsDiv.firstChild);
+
+            // Manter máximo 50 logs
+            while (logsDiv.children.length > 50) {
+                logsDiv.removeChild(logsDiv.lastChild);
+            }
+        }
+
+        // ===== POLLING MECÂNICA =====
+        async function startPolling() {
+            if (state.isPolling) return;
+
+            state.isPolling = true;
+            const interval = parseInt(document.getElementById('pollInterval').value);
+            const apiUrl = document.getElementById('apiUrl').value;
+
+            updatePollStatus(true);
+            log('Iniciando polling...', 'polling');
+
+            state.pollingInterval = setInterval(async () => {
+                await pollMesaState(apiUrl);
+            }, interval);
+
+            // Poll imediato
+            await pollMesaState(apiUrl);
+        }
+
+        function stopPolling() {
+            if (state.pollingInterval) {
+                clearInterval(state.pollingInterval);
+            }
+            state.isPolling = false;
+            updatePollStatus(false);
+            log('Polling parado', 'polling');
+        }
+
+        async function pollMesaState(apiUrl) {
+            const startTime = performance.now();
+
+            try {
+                const response = await fetch(apiUrl + '/mesa/state');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const newState = await response.json();
+                const endTime = performance.now();
+                const latency = Math.round(endTime - startTime);
+
+                state.stats.pollingLatency = latency;
+                state.stats.pollingRequests++;
+
+                // Detectar mudanças
+                const deltas = detectDeltas(state.previousTokens, newState.tokens || []);
+                if (deltas.length > 0) {
+                    state.stats.pollingChanges++;
+                    state.stats.movementCount += deltas.filter(d => d.type === 'move').length;
+
+                    log(`✅ Detectadas ${deltas.length} mudanças (latência: ${latency}ms)`, 'polling');
+
+                    // Renderizar setas
+                    deltas.forEach(delta => {
+                        if (delta.type === 'move') {
+                            drawArrow('pollingCanvas', delta.tokenId, delta.from, delta.to);
+                        }
+                    });
+                }
+
+                // Renderizar tokens
+                renderTokens('pollingCanvas', newState.tokens || []);
+                state.previousTokens = JSON.parse(JSON.stringify(newState.tokens || []));
+
+                updateStats();
+            } catch (error) {
+                state.stats.pollingErrors++;
+                log(`❌ Erro no poll: ${error.message}`, 'error');
+            }
+        }
+
+        function detectDeltas(prevTokens, newTokens) {
+            const deltas = [];
+            const prevMap = new Map(prevTokens.map(t => [t.id, t]));
+            const newMap = new Map(newTokens.map(t => [t.id, t]));
+
+            newMap.forEach((newToken, id) => {
+                const prevToken = prevMap.get(id);
+                if (!prevToken) return;
+
+                if (prevToken.x !== newToken.x || prevToken.y !== newToken.y) {
+                    deltas.push({
+                        type: 'move',
+                        tokenId: id,
+                        from: { x: prevToken.x, y: prevToken.y },
+                        to: { x: newToken.x, y: newToken.y }
+                    });
+                }
+            });
+
+            return deltas;
+        }
+
+        // ===== RENDERING =====
+        function renderTokens(canvasId, tokens) {
+            const canvas = document.getElementById(canvasId);
+            const rect = canvas.getBoundingClientRect();
+
+            // Manter tokens já existentes
+            const existingTokens = new Set();
+            tokens.forEach(token => {
+                let el = canvas.querySelector(`[data-token-id="${token.id}"]`);
+                if (!el) {
+                    el = document.createElement('div');
+                    el.className = 'token';
+                    el.dataset.tokenId = token.id;
+                    el.textContent = token.name?.charAt(0).toUpperCase() || 'T';
+                    canvas.appendChild(el);
+
+                    // Drag handler
+                    enableDrag(el, canvasId);
+                }
+
+                const x = (token.x || 0) * rect.width / 100;
+                const y = (token.y || 0) * rect.height / 100;
+                el.style.left = `${x - 20}px`;
+                el.style.top = `${y - 20}px`;
+                existingTokens.add(token.id);
+            });
+
+            // Remover tokens que não existem mais
+            canvas.querySelectorAll('.token').forEach(el => {
+                if (!existingTokens.has(el.dataset.tokenId)) {
+                    el.remove();
+                }
+            });
+
+            document.getElementById('tokenCount').textContent = tokens.length;
+        }
+
+        function drawArrow(canvasId, tokenId, fromPos, toPos) {
+            const svg = document.getElementById(canvasId === 'pollingCanvas' ? 'pollingSvg' : 'p2pSvg');
+            const canvas = document.getElementById(canvasId);
+            const rect = canvas.getBoundingClientRect();
+
+            const x1 = (fromPos.x || 0) * rect.width / 100;
+            const y1 = (fromPos.y || 0) * rect.height / 100;
+            const x2 = (toPos.x || 0) * rect.width / 100;
+            const y2 = (toPos.y || 0) * rect.height / 100;
+
+            // Remover seta antiga
+            svg.querySelectorAll(`[data-token-id="${tokenId}"]`).forEach(el => el.remove());
+
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('data-token-id', tokenId);
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', x1);
+            line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2);
+            line.setAttribute('y2', y2);
+
+            g.appendChild(line);
+            svg.appendChild(g);
+
+            const duration = parseInt(document.getElementById('trailDuration').value);
+            setTimeout(() => {
+                g.style.opacity = '0';
+                g.style.transition = `opacity 300ms`;
+                setTimeout(() => g.remove(), 300);
+            }, duration);
+        }
+
+        // ===== DRAG =====
+        function enableDrag(element, canvasId) {
+            let isDragging = false;
+
+            element.addEventListener('mousedown', () => {
+                isDragging = true;
+                element.classList.add('dragging');
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+
+                const canvas = document.getElementById(canvasId);
+                const rect = canvas.getBoundingClientRect();
+                const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+                const y = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+
+                element.style.left = `${x - 20}px`;
+                element.style.top = `${y - 20}px`;
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (!isDragging) return;
+                isDragging = false;
+                element.classList.remove('dragging');
+
+                // Simular movimento (para testes locais)
+                const canvas = document.getElementById(canvasId);
+                const rect = canvas.getBoundingClientRect();
+                const x = (parseFloat(element.style.left) + 20) / rect.width * 100;
+                const y = (parseFloat(element.style.top) + 20) / rect.height * 100;
+
+                log(`Token movido para (${x.toFixed(1)}%, ${y.toFixed(1)}%)`, 'polling');
+            });
+        }
+
+        // ===== P2P MECÂNICA (Placeholder) =====
+        async function initPeerJS() {
+            log('⏳ Carregando PeerJS...', 'peering');
+
+            // Simulação: Em produção, carregaria PeerJS
+            const peerId = generateId();
+            document.getElementById('peerId').value = peerId;
+
+            log(`✅ Peer ID: ${peerId}`, 'peering');
+            log('Copie o ID acima e cole em outro navegador para conectar P2P', 'info');
+
+            updateP2PStatus(true);
+        }
+
+        function disconnectPeerJS() {
+            if (state.peer) {
+                state.peer.destroy();
+                state.peer = null;
+            }
+            state.isP2P = false;
+            updateP2PStatus(false);
+            log('P2P desconectado', 'peering');
+        }
+
+        function generateId() {
+            return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        }
+
+        // ===== UI UPDATES =====
+        function updatePollStatus(isActive) {
+            const indicator = document.getElementById('pollStatus');
+            const text = document.getElementById('pollStatusText');
+
+            if (isActive) {
+                indicator.classList.add('active');
+                text.textContent = '🟢 Polling ativo';
+            } else {
+                indicator.classList.remove('active');
+                text.textContent = '⚫ Parado';
+            }
+        }
+
+        function updateP2PStatus(isActive) {
+            const indicator = document.getElementById('p2pStatus');
+            const text = document.getElementById('p2pStatusText');
+
+            if (isActive) {
+                indicator.classList.add('active');
+                text.textContent = '🟢 P2P pronto';
+            } else {
+                indicator.classList.remove('active');
+                text.textContent = '⚫ Desconectado';
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('pollingLatency').textContent = state.stats.pollingLatency;
+            document.getElementById('pollingRequests').textContent = state.stats.pollingRequests;
+            document.getElementById('pollingChanges').textContent = state.stats.pollingChanges;
+            document.getElementById('pollingErrors').textContent = state.stats.pollingErrors;
+            document.getElementById('movementCount').textContent = state.stats.movementCount;
+
+            const efficiency = state.stats.pollingRequests > 0
+                ? ((state.stats.pollingChanges / state.stats.pollingRequests) * 100).toFixed(1)
+                : '-';
+            document.getElementById('efficiency').textContent = efficiency + '%';
+        }
+
+        // ===== INIT =====
+        log('🚀 Teste de Mecânicas iniciado', 'info');
+        log('Escolha entre Polling (gratuito) ou P2P (baixa latência)', 'info');
+    </script>
+</body>
+</html>

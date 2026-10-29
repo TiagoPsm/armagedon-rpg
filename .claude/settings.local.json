@@ -238,7 +238,9 @@
       "PowerShell(git -C \"C:\\\\Users\\\\tiago\\\\OneDrive\\\\Desktop\\\\Pr�xima Campanha\\\\FichaApp\\\\rpg-campaign-git-sync\" log --oneline -5)",
       "PowerShell($p=\"C:\\\\Users\\\\tiago\\\\OneDrive\\\\Desktop\\\\Próxima Campanha\\\\FichaApp\\\\rpg-campaign-git-sync\"; git -C $p log --oneline -8; \"---\"; git -C $p status --short; \"--- head do DEV_STATUS ---\"; Get-Content \"$p\\\\DEV_STATUS.md\" -TotalCount 20 | Select-String -Pattern \"Etapa\")",
       "PowerShell($p=\"C:\\\\Users\\\\tiago\\\\OneDrive\\\\Desktop\\\\Próxima Campanha\\\\FichaApp\\\\rpg-campaign-git-sync\"; \\(Get-Content \"$p\\\\DEV_STATUS.md\" -Encoding UTF8\\) | Select-Object -First 60)",
-      "PowerShell($p=\"C:\\\\Users\\\\tiago\\\\OneDrive\\\\Desktop\\\\Próxima Campanha\\\\FichaApp\\\\rpg-campaign-git-sync\"; \\(Get-Content \"$p\\\\DEV_STATUS.md\" -Encoding UTF8\\) | Select-Object -Skip 60 -First 75)"
+      "PowerShell($p=\"C:\\\\Users\\\\tiago\\\\OneDrive\\\\Desktop\\\\Próxima Campanha\\\\FichaApp\\\\rpg-campaign-git-sync\"; \\(Get-Content \"$p\\\\DEV_STATUS.md\" -Encoding UTF8\\) | Select-Object -Skip 60 -First 75)",
+      "WebFetch(domain:developers.cloudflare.com)",
+      "Bash(xargs grep -l \"usuario\\\\|session\\\\|concurrent\\\\|simultane\\\\|capacidade\\\\|limit\")"
     ]
   }
 }
