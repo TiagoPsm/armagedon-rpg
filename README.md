@@ -1,5 +1,11 @@
 # Armagedon
 
+## Publicacao atual — 2026-10-29
+
+Mesa local do commit `92069c4` publicada no [Cloudflare Pages](https://armagedon-rpg.pages.dev), com Worker correspondente e painel "Cenas neste computador" removido. Salvamento automatico local, confirmacao de movimentos e bloqueio de novos uploads de mapas R2 ativos no codigo servido. Dois testes publicos e hashes dos arquivos principais conferidos. Registros abaixo de implementacao "ainda local" sao historicos; resultados completos em DEV_STATUS.md. Nenhum plano ou servico pago ativado.
+
+Espelho GitHub Pages tambem atualizado: CI `40941018013` aprovada, dois testes publicos e arquivos minificados conferidos no destino.
+
 Atualizacao de interface em 2026-10-29: a pedido do Tiago, o painel "Cenas neste computador" e os botoes de backup/copia foram retirados dos ajustes. Salvamento local automatico e otimizacoes continuam ativos; as referencias aos botoes abaixo descrevem a implementacao anterior. Alteracao ainda local, sem publicacao.
 
 ## Mesa local preparada, ainda sem publicacao — 2026-10-29

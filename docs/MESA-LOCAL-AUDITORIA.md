@@ -1,5 +1,7 @@
 # Mesa local: auditoria de dependencia e cobranca — 2026-10-29
 
+Publicacao autorizada e executada em 2026-10-29: codigo `92069c4`, Worker correspondente e Pages minificado conferidos no Cloudflare. Dois testes publicos aprovados, sem teste autenticado de campanha. Plano e condicoes de cobranca da conta continuam sem confirmacao; nenhum recurso pago contratado. Os registros de "ainda local" abaixo descrevem a fase de implementacao. Versoes e fechamento em DEV_STATUS.md.
+
 Atualizacao apos revisao do Tiago: o painel "Cenas neste computador", aviso e tres botoes foram removidos da interface. Salvamento automatico e otimizacoes permanecem. Funcoes de exportacao/importacao continuam internas ao armazenamento, sem acesso pelos ajustes. As instrucoes de botoes e a captura descritas abaixo documentam a versao anterior e nao devem ser usadas como guia da interface atual.
 
 Escopo autorizado: retirar armazenamento remoto de mapas, manter cenas no computador do mestre com backup e estabelecer confirmacao de movimentos pelo mestre antes de substituir a publicacao. Nenhum recurso pago, assinatura, exclusao remota, commit ou deploy autorizado nesta etapa de implementacao.

@@ -1,5 +1,13 @@
 # DEV STATUS
 
+## Mesa local publicada no Cloudflare — 2026-10-29
+
+Commit `92069c4` enviado por fast-forward a main apos autorizacao do Tiago. Worker manual ativo `e586c3f0-ff98-4ed7-bb1d-466f60e7c4ed`; build automatico do mesmo codigo tambem gerou `2a4cf985-13fb-4927-a6a6-de880c9c4821`. Tres secrets e cinco bindings, compatibility_date e variaveis conferidos/preservados; sem schema, limpeza de banco ou mudanca de plano. Pages automatico `7d1754ca` concluido; pacote minificado validado enviado em seguida como `577e68e0` para `https://armagedon-rpg.pages.dev`.
+
+Pos-deploy Cloudflare: dois testes publicos aprovados; seis paginas HTTP 200 e seis arquivos principais (bundles Mesa/Ficha JS/CSS, API e runtime-config) identicos por SHA-256 ao pacote local. Painel de backups permanece removido do codigo publicado; cenas locais, movimento e bloqueio R2 preservados. Sem homologacao autenticada de campanha. Nenhum recurso pago ativado; plano da conta continua sem confirmacao por API.
+
+Fechamento: [CI GitHub Pages 40941018013](https://github.com/TiagoPsm/armagedon-rpg/actions/runs/40941018013) concluida com sucesso, incluindo contratos, build, regressao minificada e deploy. Dois testes publicos adicionais no espelho aprovados; os mesmos seis arquivos minificados identicos ao pacote local por SHA-256. Tags de cache do HTML geradas no Linux diferem das locais pelo hash anterior a minificacao/finais de linha; conteudo final conferido e identico. Commit de fechamento apenas documental com skip ci; nenhum novo codigo de runtime.
+
 ## Publicacao da Mesa local autorizada — 2026-10-29
 
 Tiago autorizou commitar e colocar no ar o conjunto validado: cenas locais, confirmacao de movimentos pelo mestre, velocidade constante reduzida e bloqueio de novos uploads R2, com painel de backups removido a seu pedido. Pre-publicacao: branch remota conferida sem commits novos, sintaxe/auditorias/diff aprovados e dry-run Worker de 213,23 KiB (gzip 42,42 KiB). Versao anterior ativa `4730d613-ec94-4922-8e44-5378c92001c9`. Publicacao coordenada de Worker e frontend, preservando bindings, vars, secrets e dados; sem schema D1, contratacao ou mudanca de plano. Resultados e versoes finais serao registrados apos verificacao.

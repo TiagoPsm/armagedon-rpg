@@ -1,5 +1,11 @@
 # Migracao para Cloudflare
 
+## Mesa local publicada — 2026-10-29
+
+Tiago autorizou commit/push e deploy do codigo `92069c4`. Worker publicado com `--keep-vars`, versao `e586c3f0-ff98-4ed7-bb1d-466f60e7c4ed`; tres secrets, cinco bindings e compatibility_date preservados. Sem migracao D1, limpeza R2, rotacao de segredos ou mudanca de planos. Novos uploads de mapas bloqueados; relay do mestre e cenas locais ativos no frontend correspondente, sem painel de backups. Pages final minificado `577e68e0`; hashes e dois testes publicos aprovados. Detalhes e CI em `../DEV_STATUS.md`; limites de homologacao e faturamento permanecem.
+
+CI GitHub Pages `40941018013` concluida com sucesso; espelho atualizado e validado com dois testes publicos e seis arquivos principais identicos ao pacote minificado local. Nao executada sessao autenticada de campanha nesta publicacao.
+
 ## Relay de cenas locais (implementacao nao publicada) — 2026-10-29
 
 `mesa:host:claim/request/chunk/move/decision` elege um mestre autenticado por sala. Solicitar movimento nao consulta D1: o relay substitui o ator pela identidade do socket e encaminha ao mestre; somente o anfitriao envia confirmacoes/snapshots. Mestre valida, salva IndexedDB, calcula percurso/duracao e transmite delta. Snapshots chegam em partes limitadas, com filtro adicional de tokens/vitais privados. Saida do anfitriao avisa jogadores e cancela solicitacoes pendentes. Estado da cena nao e gravado no DO nem no D1 por esse protocolo; trava e historico de dados continuam no DO. API legada continua disponivel para copia explicita e recuperacao, sem exclusao remota. Nenhuma migracao D1, binding, plano ou secret alterado.

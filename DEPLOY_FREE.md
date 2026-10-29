@@ -1,5 +1,11 @@
 # Deploy Gratuito do Armagedon
 
+## Publicacao da Mesa local executada — 2026-10-29
+
+Codigo `92069c4` enviado a main. Worker com `--keep-vars`: `e586c3f0-ff98-4ed7-bb1d-466f60e7c4ed`; Cloudflare Pages final minificado: `577e68e0`. Build automatico do Pages concluiu antes do upload manual, preservando como resultado final o pacote minificado conferido por hash. Sem mudanca de planos, schema, bindings ou secrets. Dois testes publicos no destino Cloudflare aprovados. CI/espelho GitHub e fechamento em DEV_STATUS.md.
+
+GitHub Pages atualizado pela CI `40941018013`, concluida com sucesso. Espelho com dois testes publicos aprovados e conteudo dos seis arquivos principais identico ao pacote local. Tags de cache pre-minificacao variam entre Windows/Linux; comparar bytes minificados, nao exigir a mesma query string. Fechamento documental usa skip ci para evitar nova publicacao desnecessaria.
+
 ## Publicacao da Mesa local autorizada — 2026-10-29
 
 Tiago autorizou commit/push e publicacao do conjunto local validado, incluindo remocao do painel de backup. Publicar Worker com `--keep-vars` e pacote minificado `_site` no Pages existente; acompanhar CI GitHub Pages e builds automaticos. Nao criar infraestrutura nem mudar plano, schema ou segredos. Evidencias finais ficam no topo de DEV_STATUS.md.

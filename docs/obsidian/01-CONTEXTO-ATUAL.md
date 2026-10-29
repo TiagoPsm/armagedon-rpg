@@ -2,6 +2,8 @@
 
 Atualizado em 2026-10-29. Historico detalhado em DEV_STATUS.md.
 
+Publicacao autorizada da Mesa local: codigo `92069c4` enviado a main, Worker `e586c3f0-ff98-4ed7-bb1d-466f60e7c4ed` e Cloudflare Pages minificado `577e68e0`. Painel de backups removido; salvamento automatico/otimizacoes ativos. Testes publicos e hashes conferidos, sem alterar planos, banco ou segredos. Resultados de CI/espelho GitHub no topo de DEV_STATUS.md. Registros de implementacao ainda nao publicada abaixo sao historicos.
+
 ## Implementacao local ainda nao publicada
 
 Cenas em IndexedDB do mestre, backup JSON separado das imagens, recuperacao por rascunho e revisoes contra sobrescrita. Jogadores solicitam percurso; mestre valida e salva antes de confirmar. WebSocket autenticado continua externo. Novos uploads/exclusoes de mapas R2 bloqueados, imagens existentes preservadas. Fichas/login/avatares permanecem externos. Nada contratado, apagado, commitado ou publicado nesta etapa. Guia de uso e auditoria em `docs/MESA-LOCAL-AUDITORIA.md`; a unica lista de acoes abertas continua em DEV_STATUS.md > Pendencias Vivas.
