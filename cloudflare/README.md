@@ -2,7 +2,9 @@
 
 ## Correcao integrada da publicacao — 2026-10-29
 
-Integradas as melhorias remotas de outubro com a remocao de visao preservada. Worker mantem contratos de movimento, moldes medidos e decoracoes bloqueadas; runtime/geometria/rota de visao continuam removidos. Frontend preserva schema IndexedDB v4 e mapas/preferencias existentes, corrigindo a falha dos controles do mestre. Sem alteracao de schema D1, dados de campanha, bindings, secrets ou infraestrutura. Frontend/Worker devem ser publicados juntos. Versao anterior desta correcao: `ea479876-9a95-4118-b7be-779531818b06`; Pages `7bda574f`. Versoes finais serao registradas apos dry-run, verificacoes e publicacao.
+Integradas as melhorias remotas de outubro com a remocao de visao preservada. Worker mantem contratos de movimento, moldes medidos e decoracoes bloqueadas; runtime/geometria/rota de visao continuam removidos. Frontend preserva schema IndexedDB v4 e mapas/preferencias existentes, corrigindo a falha dos controles do mestre. Sem alteracao de schema D1, dados de campanha, bindings, secrets ou infraestrutura. Frontend/Worker publicados juntos. Versao anterior desta correcao: `ea479876-9a95-4118-b7be-779531818b06`; Pages `7bda574f`.
+
+Dry-run aprovado (209,72 KiB; gzip 41,63 KiB). Publicacao manual Worker `f19dfef5-12d2-467a-a323-b8251a392d10`, seguida dos Workers Builds do push integrado; versao ativa conferida `4730d613-ec94-4922-8e44-5378c92001c9`, mesmos tres secrets/cinco bindings/compatibility_date. Frontend minificado final `https://116b8ee6.armagedon-rpg.pages.dev`, ativo no dominio principal. Commit de codigo/CI `39cf881`; GitHub Pages tambem publicado com CI aprovada (nove Node, dez build, 154 artefato). Dois testes publicos por destino e cinco JS/CSS de cada dominio com hash identico ao pacote validado. Fonte Cloudflare automatica ainda concatena sem minificar; upload direto do pacote apos os builds. Sem nova sessao autenticada de campanha em producao.
 
 ## Publicacao da base recuperada — 2026-10-29
 

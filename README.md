@@ -32,7 +32,7 @@ A pasta Armagedom na Area de Trabalho contem apenas o atalho Abrir projeto. Abra
 
 ## Ambiente de Desenvolvimento Validado — 2026-10-29
 
-Base recuperada publicada em `https://armagedon-rpg.pages.dev` em 2026-10-29, com pacote minificado e Worker atualizado juntos (commit `7e8c3a4`). Echos incluido no build; seis paginas conferidas e testes publicos aprovados. A publicacao direta nao atualizou `origin/main` nem o espelho GitHub Pages; detalhes, versoes e limites em `DEV_STATUS.md`.
+Base integrada corrigida publicada em `https://armagedon-rpg.pages.dev` e no espelho GitHub Pages em 2026-10-29, com pacote minificado e Worker atualizado (codigo/CI `39cf881`, em main). Echos incluido no build, dados locais v3/v4 preservados e controles do mestre restaurados. CI e verificacoes publicas aprovadas; bundles dos dois destinos identicos ao pacote validado. Detalhes, versoes e limites em `DEV_STATUS.md`.
 
 Node 24.22.0, npm 11.19.1, Playwright/Chromium e Wrangler 4.154.0 conferidos. Dependencias instaladas e auditoria npm sem vulnerabilidades. Hooks locais configurados em `.githooks`.
 
