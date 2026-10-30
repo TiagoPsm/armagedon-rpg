@@ -1,5 +1,13 @@
 # DEV STATUS
 
+## Correcao de escala/rodape e diagnostico publicados — 2026-10-29
+
+O build automatico existente tambem publicou o Worker `5ea8e9cc-60fb-457a-90cf-da556c71f64a`, embora esta correcao nao tenha mudado fontes/configuracao do backend. API saudavel nos testes publicos; nenhum deploy manual de Worker realizado. Essa publicacao duplicada permanece parte da configuracao externa ja registrada na lista viva.
+
+Publicacao autorizada concluida do commit `fb1a72c`: [CI 40977047127](https://github.com/TiagoPsm/armagedon-rpg/actions/runs/40977047127) aprovada em contratos/build/regressao minificada/deploy/verificacao GitHub Pages. Artefato github-pages `12942644535`, SHA-256 do ZIP `8bf80e64b721c6389a437dc26149281a024a2b57220c3c24393431827c06a75f`, recuperado e conferido. Mesmo pacote enviado a Cloudflare Pages `22f8ae42`, apos conclusao do build automatico `c59afaf9`. Seis paginas e dez arquivos do manifesto conferidos por hash em cada site; dois testes publicos em cada dominio aprovados. Sem deploy manual de Worker, SQL, alteracao de planos, R2 ou catalogo.
+
+Escala de movimento normal e faixa inferior da grade corrigidas no codigo servido. Atraso/teletransporte da campanha continua sem causa demonstrada; nao declarado resolvido. Para observar um movimento real, recarregar mestre/jogadores, executar o movimento e coletar `JSON.stringify(MesaMovement.diagnostics())` no console dos dois lados antes de recarregar novamente. Relatorio traz apenas ultimos eventos/tempos/flags e preferencia de movimento reduzido, sem nomes/IDs/imagens/fichas/credenciais. Publicacao verificada nao substitui homologacao autenticada; item da lista viva continua aberto. Fechamento documental separado com skip ci.
+
 ## Publicacao corretiva multiplayer autorizada — 2026-10-29
 
 Tiago autorizou publicar as correcoes de escala/precisao/rodape e o diagnostico local de animacao. Preflight repetiu sintaxe de 63 JS, auditorias estatica/pendencias/diff e alinhamento com main, aprovados. Ultima regressao: seis testes de Worker real no pacote minificado (mestre e dois jogadores em ambos os sentidos) e 35 testes de movimento/cenas locais aprovados. Sem mudanca de Worker, schema, planos, R2 ou catalogo de avatares. Publicar o pacote aprovado pela CI nos dois destinos; atraso online segue em investigacao, sem declarar resolvido. Resultados finais serao registrados apos conferencia.

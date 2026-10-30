@@ -1,6 +1,6 @@
 # Armagedon
 
-Correcao multiplayer preparada apos relato de producao: movimento de jogador preserva escala do mestre, destinos mantem precisao e grade desenha verticais ate o rodape. Ainda local; o atraso/teletransporte online continua em investigacao. Diagnostico temporario sem nomes/imagens/fichas: `MesaMovement.diagnostics()` no console da Mesa, para confrontar recebimento e animacao. Detalhes e lista viva em DEV_STATUS.md.
+Correcao multiplayer `fb1a72c` publicada nos dois sites, CI 40977047127 aprovada, hashes e quatro testes publicos conferidos: movimento de jogador preserva escala do mestre, destinos mantem precisao e grade desenha verticais ate o rodape. O atraso/teletransporte online continua em investigacao. Depois de recarregar e reproduzir um movimento, coletar `JSON.stringify(MesaMovement.diagnostics())` no console de mestre e jogador; diagnostico temporario sem nomes/imagens/fichas. Detalhes e lista viva em DEV_STATUS.md.
 
 Otimizacoes do commit `cfdc5bc` publicadas nos dois sites em 2026-10-29: menos leituras repetidas, snapshot de reconexao direcionado, animacao sem renderizar toda a Mesa por quadro e indice D1 aplicado. CI 40971749060 aprovada, mesmo pacote minificado nos dois destinos, quatro testes publicos e hashes conferidos. [Entregas, medidas e reversao](docs/OTIMIZACAO-ENTREGAS.md). Avatares por hash ja publicados como preparacao; catalogo estatico ainda desativado. CI unica Cloudflare aguarda segredos restritos. Originais R2 recuperados e preservados; nenhum objeto excluido. Blocos anteriores abaixo sao historicos.
 

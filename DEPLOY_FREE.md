@@ -1,5 +1,9 @@
 # Deploy Gratuito do Armagedon
 
+## Correcao multiplayer publicada — 2026-10-29
+
+Commit `fb1a72c`, CI `40977047127` aprovada. Artefato `12942644535` recuperado com SHA-256 conferido e enviado sem recompilar a Cloudflare Pages `22f8ae42`, apos build automatico `c59afaf9`. Mesmo pacote servido pelo GitHub Pages: seis paginas e dez hashes conferidos em cada site, quatro testes publicos aprovados. Nenhum deploy manual de Worker, SQL, plano ou limpeza R2. Correcoes de escala/rodape e diagnostico ativos; atraso online nao declarado resolvido. Para observar, recarregar mestre/jogador e coletar diagnostico apos um movimento; detalhes em DEV_STATUS.md.
+
 ## Publicacao corretiva multiplayer autorizada — 2026-10-29
 
 Tiago autorizou publicar correcoes de escala/precisao/rodape e diagnostico temporario em memoria. Apenas frontend/testes/documentacao; nenhum schema, plano, bucket ou catalogo alterado. Aguardar CI GitHub aprovada e usar o mesmo artefato minificado na Cloudflare, depois conferir hashes e testes publicos. Nao declarar o atraso de producao resolvido apenas por regressao local. Versoes finais em DEV_STATUS.md.
