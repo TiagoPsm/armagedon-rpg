@@ -5,6 +5,21 @@ test.beforeEach(async ({ page }) => {
   await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
   await expect.poll(() => page.evaluate(() => state.bootCompleted)).toBe(true);
 });
+
+test('grade desenha verticais ate o rodape mesmo com linha parcial', async ({ page }) => {
+  const pixels = await page.evaluate(() => {
+    const inner = document.getElementById('mesaStageInner');
+    inner.style.height = Math.round(inner.offsetWidth * .73) + 'px';
+    _resizeGridCanvas();
+    applyMesaSceneGridFromSnapshot({ ...MesaGridRules.defaults, enabled: true, cellFrac: .1, opacity: 1, color: '#ffffff' });
+    const c = document.getElementById('mesaGridCanvas'), b = JSON.parse(c.dataset.gridBounds);
+    const dpr = c.width / document.getElementById('mesaStageInner').offsetWidth;
+    const x = Math.round((b.left + b.cell) * dpr), y = c.height - 3;
+    const values = c.getContext('2d').getImageData(Math.max(0, x - 2), y, 5, 1).data;
+    return Array.from(values).filter((_, i) => i % 4 === 3);
+  });
+  expect(Math.max(...pixels)).toBeGreaterThan(100);
+});
 async function setup(page) {
   await page.evaluate(() => {
     const sample = state.tokens[0];

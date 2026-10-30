@@ -108,7 +108,7 @@ window.MesaLocalSession = (() => {
     const requestId = crypto.randomUUID();
     if (requests.size) { notify('Aguarde a confirmacao do movimento anterior.'); return false; }
     const accepted = await send({ type: 'mesa:host:move', requestId, sceneId: state.sceneId, tokenId: token.id,
-      origin: { x: token.x, y: token.y }, path: next.path, tokenScale: next.tokenScale });
+      origin: { x: token.x, y: token.y }, path: next.path, tokenScale: next.tokenScale, resize: next.resize === true });
     if (!accepted) { notify('Mestre indisponivel. Nenhum movimento foi confirmado.'); return false; }
     requests.set(requestId, setTimeout(() => { requests.delete(requestId); notify('Sem confirmacao do mestre. A posicao anterior foi mantida.'); }, 10000));
     return true;
@@ -123,7 +123,9 @@ window.MesaLocalSession = (() => {
           !message.path.length || message.path.length > 256 || message.path.some(p => !Number.isFinite(p.x) || !Number.isFinite(p.y) || p.x < 0 || p.y < 0 || p.x > 100 || p.y > 100)) return reject('Posicao ou percurso desatualizado.');
       const origin = { x: token.x, y: token.y };
       const next = MesaMovement.destination({ tokenId: token.id, origin, waypoints: message.path.slice(0, -1) }, message.path.at(-1));
-      if (message.tokenScale != null) next.tokenScale = clampMesaTokenScale(message.tokenScale);
+      // Moving must not import a pixel scale computed on another viewport.
+      // Only an explicit resize can change size; normal moves use the host grid.
+      if (message.resize === true && message.tokenScale != null) next.tokenScale = clampMesaTokenScale(message.tokenScale);
       const version = Math.max(state.sceneVersion + 1, Date.now());
       const movement = MesaMovementRules.create(token.id, origin, next.path, version, getMesaDomRef('stage').clientHeight / getMesaDomRef('stage').clientWidth);
       if (!movement) return reject('Percurso invalido.');
@@ -211,7 +213,7 @@ window.MesaLocalSession = (() => {
   function requestResize(token) {
     const previous = current?.data?.tokens?.find(item => item.id === token.id);
     if (!previous) { notify('Aguarde o estado confirmado pelo mestre.'); return false; }
-    const next = { path: [{ x: token.x, y: token.y }], tokenScale: token.tokenScale };
+      const next = { path: [{ x: token.x, y: token.y }], tokenScale: token.tokenScale, resize: true };
     Object.assign(token, { x: previous.x, y: previous.y, tokenScale: previous.tokenScale }); renderStage();
     return requestMove(token, next);
   }

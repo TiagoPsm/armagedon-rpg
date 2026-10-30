@@ -3,6 +3,16 @@
 const MesaMovement = (() => {
   const motions = new Map();
   const planned = new Map();
+  const diagnosticEvents = [];
+  function recordDiagnostic(event) {
+    diagnosticEvents.push({ at: Date.now(), ...event });
+    if (diagnosticEvents.length > 30) diagnosticEvents.shift();
+  }
+  function recordReceipt(payload) {
+    recordDiagnostic({ phase: 'received', sharedPath: Boolean(payload.movement),
+      stale: isStaleMesaSceneVersion(payload.sceneVersion),
+      self: payload.clientId === mesaClientId });
+  }
   let frame = 0, scene = null, canvas = null, label = null;
   const sceneId = () => state.sceneId || "default";
   const different = (a, b) => Math.hypot(a.x - b.x, a.y - b.y) > 1e-6;
@@ -227,6 +237,7 @@ const MesaMovement = (() => {
     const moved = [];
     for (const [id, motion] of motions) {
       const token = findToken(id);
+      if (!motion.firstFrame) { motion.firstFrame = true; recordDiagnostic({ phase: 'first-frame', delayMs: Math.round(performance.now() - motion.started) }); }
       if (!token || motion.sceneId !== sceneId() || different(token, motion.to) || performance.now() - motion.started >= motion.duration) motions.delete(id);
       const element = mesaStageTokenElements.get(id);
       if (token && element) { updateMesaTokenPosition(element, token, dimensions); moved.push(id); }
@@ -236,10 +247,11 @@ const MesaMovement = (() => {
   }
   function animate(from, to, path, duration) {
     if (!from || !to || !Number.isFinite(to.x) || !Number.isFinite(to.y) || (!different(from, to) && !path?.length)) return;
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { motions.delete(to.id); return; }
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { recordDiagnostic({ phase: 'reduced-motion' }); motions.delete(to.id); return; }
     const g = geometry(), points = path?.length ? [{ x: from.x, y: from.y }, ...path] : route(from, to);
     const lengths = points.slice(1).map((p, i) => Math.hypot((p.x - points[i].x) / 100 * g.width, (p.y - points[i].y) / 100 * g.height));
     const distance = lengths.reduce((sum, n) => sum + n, 0);
+    recordDiagnostic({ phase: 'animate', duration: duration ?? MesaMovementRules.duration(from, points.slice(1), g.height / g.width), sharedDuration: duration != null, distancePx: Math.round(distance) });
     motions.set(to.id, { points, lengths, distance, to: { x: to.x, y: to.y }, sceneId: sceneId(), started: performance.now(), duration: duration ?? MesaMovementRules.duration(from, points.slice(1), g.height / g.width) });
     if (!frame) frame = requestAnimationFrame(tick);
   }
@@ -307,5 +319,6 @@ const MesaMovement = (() => {
     }, true);
   }
   function refreshPreview() { if (state.drag?.destination) draw(state.drag); }
-  return { destination, preview, commit, clearPreview, refreshPreview, visual, animate, beforeSnapshot, isAnimating, cellsBetween, route, footprints, init };
+  return { destination, preview, commit, clearPreview, refreshPreview, visual, animate, beforeSnapshot, isAnimating, cellsBetween, route, footprints, init,
+    recordReceipt, diagnostics: () => ({ online: state.realtimeStatus, reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches, events: diagnosticEvents.map(event => ({ ...event })) }) };
 })();

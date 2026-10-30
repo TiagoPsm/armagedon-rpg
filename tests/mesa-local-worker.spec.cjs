@@ -14,7 +14,7 @@ test('mestre salva localmente e confirma dois jogadores; reconexao recupera esta
   const player1 = await login('jogador1', password), player2 = await login(username, password);
   const writes = [], contexts = [], sentSceneChunks = [], browserErrors = [];
   async function open(session, role) {
-    const context = await browser.newContext(); contexts.push(context);
+    const context = await browser.newContext({ viewport: role === 'master' ? { width: 1440, height: 900 } : { width: 1920, height: 1080 } }); contexts.push(context);
     const page = await context.newPage();
     page.on('pageerror', error => browserErrors.push(error.message));
     page.on('websocket', socket => socket.on('framesent', frame => {
@@ -62,14 +62,38 @@ test('mestre salva localmente e confirma dois jogadores; reconexao recupera esta
     }
     async function move(page, id, x) {
       await page.evaluate(async ({ id, x }) => {
-        const token = findToken(id); await MesaLocalSession.requestMove(token, { path: [{ x, y: token.y }], tokenScale: token.tokenScale });
+        const token = findToken(id); await MesaLocalSession.requestMove(token, { path: [{ x, y: token.y }], tokenScale: token.tokenScale * 1.5 });
       }, { id, x });
     }
-    await Promise.all([move(a, 'jogador1', 40), move(b, username, 60)]);
+    for (const page of [host, a, b]) await page.evaluate(() => {
+      window.__motionSamples = [];
+      const sample = () => { const token = findToken('jogador1'), el = mesaStageTokenElements.get('jogador1'), stage = getMesaDomRef('stage').getBoundingClientRect(); if (token && el) __motionSamples.push((el.getBoundingClientRect().left - stage.left) / stage.width * 100); requestAnimationFrame(sample); };
+      requestAnimationFrame(sample);
+    });
+    await Promise.all([move(a, 'jogador1', 40.123456), move(b, username, 60)]);
     for (const page of [host, a, b]) {
-      await expect.poll(() => page.evaluate(() => findToken('jogador1')?.x)).toBeCloseTo(40, 2);
+      await expect.poll(() => page.evaluate(() => findToken('jogador1')?.x)).toBeCloseTo(40.123456, 2);
       await expect.poll(() => page.evaluate(() => findToken('localplayer2')?.x)).toBeCloseTo(60, 2);
+      expect(await page.evaluate(() => findToken('jogador1').tokenScale)).toBe(.5);
     }
+    for (const page of [host, a, b]) {
+      await expect.poll(() => page.evaluate(() => __motionSamples.some(x => x > 21 && x < 39))).toBe(true);
+    }
+    // Exercise the opposite direction too: host movement must animate on both
+    // players, not merely update their final scene position.
+    for (const page of [host, a, b]) await page.evaluate(() => { __motionSamples.length = 0; });
+    await host.evaluate(async () => {
+      const token = findToken('jogador1');
+      await MesaLocalSession.commitMove(token, { path: [{ x: 70.321456, y: token.y }] });
+    });
+    for (const page of [host, a, b]) {
+      await expect.poll(() => page.evaluate(() => __motionSamples.some(x => x > 50 && x < 65))).toBe(true);
+    }
+    await host.evaluate(async () => {
+      const token = findToken('jogador1');
+      await MesaLocalSession.commitMove(token, { path: [{ x: 40.123456, y: token.y }] });
+    });
+    for (const page of [a, b]) await expect.poll(() => page.evaluate(() => findToken('jogador1').x)).toBeCloseTo(40.123456, 2);
     await a.evaluate(() => APP.sendRealtime({ type: 'mesa:host:move', requestId: 'forged', sceneId: 'default', tokenId: 'localplayer2', origin: { x: 60, y: 40 }, path: [{ x: 90, y: 40 }] }));
     await host.waitForTimeout(250);
     expect(await host.evaluate(() => findToken('localplayer2').x)).toBe(60);
@@ -81,19 +105,19 @@ test('mestre salva localmente e confirma dois jogadores; reconexao recupera esta
     }
     await host.evaluate(() => APP.activateMesaScene('default'));
     for (const page of [a, b]) {
-      await expect.poll(() => page.evaluate(() => findToken('jogador1')?.x)).toBe(40);
+      await expect.poll(() => page.evaluate(() => findToken('jogador1')?.x)).toBeCloseTo(40.123456, 2);
       await expect(page.locator('#mesaMapLayer')).toBeVisible();
     }
     await host.reload();
     await expect.poll(() => host.evaluate(() => MesaLocalSession.isHost)).toBe(true);
-    expect(await host.evaluate(() => findToken('jogador1').x)).toBe(40);
+    expect(await host.evaluate(() => findToken('jogador1').x)).toBeCloseTo(40.123456, 2);
     await b.reload();
     await expect.poll(() => b.evaluate(() => findToken('localplayer2')?.x)).toBe(60);
     await host.close();
     await expect(a.locator('.ui-toast').last()).toContainText('Mestre anfitriao desconectado');
     await move(a, 'jogador1', 70);
     await expect(a.locator('.ui-toast').last()).toContainText('Mestre anfitriao desconectado');
-    expect(await a.evaluate(() => findToken('jogador1').x)).toBe(40);
+    expect(await a.evaluate(() => findToken('jogador1').x)).toBeCloseTo(40.123456, 2);
     expect(writes).toEqual([]);
     expect(sentSceneChunks.length).toBeGreaterThan(1);
     expect(sentSceneChunks.join('')).not.toContain('Segredo');

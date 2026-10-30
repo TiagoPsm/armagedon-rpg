@@ -199,7 +199,8 @@ function renderMesaGrid() {
   _gridCtx.beginPath();
   // Clip the paint on whole device pixels, not through a completed border.
   // Fractional geometry bounds otherwise dim the last row differently at each zoom.
-  _gridCtx.rect(Math.floor(clipLeft), Math.floor(clipTop), Math.ceil(clipRight) + 1 - Math.floor(clipLeft), Math.ceil(clipBottom) + 1 - Math.floor(clipTop));
+  const paintBottom = Math.min(ch, surfTop + surfH);
+  _gridCtx.rect(Math.floor(clipLeft), Math.floor(clipTop), Math.ceil(clipRight) + 1 - Math.floor(clipLeft), Math.ceil(paintBottom) + 1 - Math.floor(clipTop));
   _gridCtx.clip();
 
   // ALINHAMENTO AO PIXEL DE DISPOSITIVO — não remover (Etapa 60).
@@ -239,7 +240,9 @@ function renderMesaGrid() {
   // As extremidades também alinham: sem isso o traço fica meio-pixel curto nas
   // pontas e as bordas da grade acendem mais fraco que o miolo.
   const top    = snapToDevicePx(clipTop);
-  const bottom = snapToDevicePx(clipBottom);
+  // Complete-cell bounds still govern snapping. Paint vertical lines through
+  // the remaining bottom strip too, so the visible grid has no missing columns.
+  const bottom = snapToDevicePx(paintBottom);
   const left   = snapToDevicePx(clipLeft);
   const right  = snapToDevicePx(clipRight);
 

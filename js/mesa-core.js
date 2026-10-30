@@ -708,6 +708,7 @@ function applyMesaRealtimeBatch(payload) {
 }
 
 async function applyMesaRealtimeDelta(payload) {
+  if (payload?.type === 'mesa:token:move' && typeof MesaMovement !== 'undefined') MesaMovement.recordReceipt(payload);
   if (window.MesaLocalSession?.active && payload?.type === "mesa:token:move" && payload.actor?.role !== "master") return;
   const type = String(payload?.type || "");
   if (!MESA_REALTIME_DELTA_TYPES.has(type)) return;
@@ -908,8 +909,8 @@ function applyMesaTokenMoveDelta(payload) {
     if (!actorName || token.type !== "player" || actorName !== ownerName) return false;
   }
 
-  const nextX = roundTo(clamp(Number(payload.x), 0, 100), 2);
-  const nextY = roundTo(clamp(Number(payload.y), 0, 100), 2);
+  const nextX = clamp(Number(payload.x), 0, 100);
+  const nextY = clamp(Number(payload.y), 0, 100);
   const nextOrder = asPositiveInt(payload.order, token.order || 1);
   // Clientes antigos nao mandam tokenScale — nesse caso o tamanho atual fica.
   const nextScale = payload.tokenScale == null

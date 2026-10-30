@@ -1,5 +1,9 @@
 # SYSTEM RULES
 
+## Correcao multiplayer preparada — 2026-10-29
+
+No modo de cenas locais, movimento normal usa a escala calculada pela grade do mestre, sem importar a escala em pixels do viewport do jogador. Apenas pedido de resize explicito pode alterar o tamanho, conservando permissoes existentes. Deltas preservam coordenadas fracionarias recebidas. Pintura de verticais cobre a faixa inferior parcial da superficie; limites de celulas completas para encaixe/movimento permanecem. Velocidade, regras e autoridade do mestre inalteradas. Diagnostico de animacao e temporario e local, sem dados de personagens ou transmissao externa. Atraso online relatado ainda nao homologado como corrigido.
+
 ## Otimizacoes locais e compatibilidade de imagens — 2026-10-29
 
 Cache somente de leitura: GET simultaneos compartilham request mas retornam copias; listagens Directory/Echos expiram em tres segundos. Escritas, eventos relevantes, troca de identidade/API e logout invalidam resultados. Resposta de sessao anterior nao e entregue. Escritas nunca sao repetidas automaticamente. Fichas detalhadas continuam carregadas quando solicitadas. SQL da listagem filtra os mesmos personagens acessiveis antes de normalizar dados; indice lower(sheet_key) e aditivo, sem mudanca de permissao ou mecanica.

@@ -1,5 +1,9 @@
 # Deploy Gratuito do Armagedon
 
+## Publicacao corretiva multiplayer autorizada — 2026-10-29
+
+Tiago autorizou publicar correcoes de escala/precisao/rodape e diagnostico temporario em memoria. Apenas frontend/testes/documentacao; nenhum schema, plano, bucket ou catalogo alterado. Aguardar CI GitHub aprovada e usar o mesmo artefato minificado na Cloudflare, depois conferir hashes e testes publicos. Nao declarar o atraso de producao resolvido apenas por regressao local. Versoes finais em DEV_STATUS.md.
+
 ## Otimizacoes publicadas — 2026-10-29
 
 Commit `cfdc5bc`, CI `40971749060` aprovada e GitHub Pages atualizado. Artefato da CI recuperado e hash ZIP conferido, enviado sem recompilar a Cloudflare Pages `4591b336`; seis paginas e dez hashes de cada site conferidos. Worker `b45824b9-f1a0-4034-b53e-03e87d278cdb` com --keep-vars, fingerprint/health conferidos e tres secrets preservados. Indice aditivo aplicado separadamente, uso confirmado; sem schema completo. Quatro testes publicos aprovados. Catalogo de avatares false, imagens preparadas ja presentes nos dois destinos; corte e CI unica ainda conforme lista viva. Nenhum objeto R2 excluido ou plano alterado.

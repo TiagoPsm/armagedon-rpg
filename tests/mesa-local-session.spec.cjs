@@ -6,6 +6,16 @@ test.beforeEach(async ({ page }) => {
   await page.goto(`${await getMesaBaseUrl()}/mesa.html`);
   await expect.poll(() => page.evaluate(() => state.bootCompleted)).toBe(true);
 });
+
+test('movimento nao importa escala de outro viewport', async ({ page }) => {
+  const result = await page.evaluate(async () => {
+    const token = { ...buildRoster()[0], id: 'scale-test', x: 20, y: 20, tokenScale: .5, layer: 'tokens' };
+    state.tokens = [token]; renderStage();
+    await MesaLocalSession.commitMove(token, { path: [{ x: 35.123456, y: 20 }], tokenScale: 1.5 });
+    return { scale: token.tokenScale, x: token.x };
+  });
+  expect(result).toEqual({ scale: .5, x: 35.123456 });
+});
 test('cenas locais salvam, recarregam e importam backup sem imagens ou chamadas D1', async ({ page }) => {
   const requests = []; page.on('request', request => { if (/\/api\/mesa\/scene/.test(request.url())) requests.push(request.url()); });
   const id = await page.evaluate(async () => {

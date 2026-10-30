@@ -1,5 +1,19 @@
 # DEV STATUS
 
+## Publicacao corretiva multiplayer autorizada — 2026-10-29
+
+Tiago autorizou publicar as correcoes de escala/precisao/rodape e o diagnostico local de animacao. Preflight repetiu sintaxe de 63 JS, auditorias estatica/pendencias/diff e alinhamento com main, aprovados. Ultima regressao: seis testes de Worker real no pacote minificado (mestre e dois jogadores em ambos os sentidos) e 35 testes de movimento/cenas locais aprovados. Sem mudanca de Worker, schema, planos, R2 ou catalogo de avatares. Publicar o pacote aprovado pela CI nos dois destinos; atraso online segue em investigacao, sem declarar resolvido. Resultados finais serao registrados apos conferencia.
+
+## Regressao multiplayer relatada e correcoes locais — 2026-10-29
+
+Fechamento local apos o diagnostico: seis testes Worker reais no pacote minificado e 35 testes de movimento/cenas aprovados; acrescentada verificacao do deslocamento DOM no sentido mestre para ambos os jogadores, alem dos pedidos simultaneos deles. Teste de rodape usa palco retangular com ultima linha parcial. Ainda sem reproduzir os dois segundos de atraso, sem commit/deploy; nao declarar a regressao de producao integralmente corrigida.
+
+Tiago testou o site publicado: jogadores veem atraso de cerca de dois segundos e teletransporte nos dois sentidos (movimentos do mestre e de jogadores), em todos os navegadores/dispositivos; movimento de jogador aumenta token/desalinha grade e faltam verticais no rodape. Corrigidos localmente: aprovacao normal nao aceita mais escala em pixels calculada no viewport do jogador (resize explicito mantido); destino recebido preserva precisao em vez de arredondar a duas casas; verticais da grade cobrem faixa inferior parcial sem alterar limites de celulas completas usados no snap.
+
+Reproducao conectada usa Worker/D1/DO reais descartaveis, mestre 1440x900 e jogadores 1920x1080, destino fracionario e escala divergente enviada por jogador. Testa retangulos DOM intermediarios nos tres clientes, nao so estado final. Seis testes desse fluxo passaram nos fontes e no pacote minificado; 35 testes minificados de movimento/cenas locais aprovados, incluindo leitura de pixels da faixa inferior retangular e preservacao de escala. Dez contratos Node e sintaxe/auditorias aprovados. Estes resultados nao reproduziram o atraso de producao; nao foi declarado resolvido.
+
+Diagnostico local limitado aos ultimos 30 eventos, acessivel por MesaMovement.diagnostics(): recebimento, metadados de percurso, descarte por versao/eco, preferencia de movimento reduzido, duracao e atraso do primeiro quadro. Sem nomes/IDs de personagem, imagens, fichas, persistencia ou telemetria externa. Esse diagnostico permite confrontar um movimento real entre mestre e jogador, sem alterar permissoes ou mecanismos de confirmacao/salvamento. Ainda sem commit ou publicacao desta correcao. Lista viva registra o que falta observar online.
+
 ## Otimizacoes publicadas e verificadas — 2026-10-29
 
 Publicacao autorizada concluida do commit `cfdc5bc`: push fast-forward para main, [CI 40971749060](https://github.com/TiagoPsm/armagedon-rpg/actions/runs/40971749060) aprovada em contratos, dez testes de build, regressao minificada e deploy/verificacao GitHub Pages. Artefato github-pages `12941450294` recuperado pelo conector GitHub e SHA-256 `b2d6fd706089f646747b1da24eec7765c35dde9e8a452f8eea1e48eff78a5249` conferido antes da extracao. Exatamente esse pacote enviado a Cloudflare Pages, publicacao final `4591b336` (apos build automatico `2750513d`). Ambos os sites com seis paginas HTTP 200 e dez arquivos do manifesto identicos por SHA-256 ao artefato aprovado; dois testes publicos em cada dominio aprovados.
@@ -426,6 +440,8 @@ Validacao: 333 testes de Mesa contra o artefato passaram; 27 testes puros/servid
 Por que a regra existe: ate 2026-08-16 cada etapa escrevia as proprias pendencias dentro do proprio bloco, num arquivo que cresce por cima. Nada obrigava uma etapa futura a voltar e dar baixa. Deu 28 mencoes espalhadas por 9 lugares em 6 formatos, varias mortas ha semanas — uma delas listava "Etapa 7: jogador move o proprio token" como pendente com a secao "Etapa Concluida — Etapa 7" logo abaixo, na mesma tela. `npm run audit:pendencias` reprova quem escrever pendencia fora daqui.
 
 Formato: `- [DONO] item — aberta em AAAA-MM-DD (origem)`. Ao fechar, tirar daqui e registrar a baixa no bloco da etapa que fechou.
+
+- **[Codex/Tiago]** Reproduzir e corrigir atraso/teletransporte multiplayer observado por Tiago nos dois sentidos e em todos os dispositivos na versao publicada. Correcoes locais de escala/precisao/grade e regressao DOM conectada aprovadas; atraso de dois segundos ainda nao reproduzido localmente. Confrontar diagnosticos de recebimento/versao/preferencia/quadro do mesmo movimento em mestre e jogador antes de declarar resolvido; nao confundir teste local com homologacao de campanha. — aberta em 2026-10-29 (relato apos publicacao das otimizacoes)
 
 
 - **[Codex/Tiago]** Homologar a Mesa atual em sessao controlada com mestre e ate seis jogadores: movimento simultaneo, reconexao/fechamento, recuperacao/troca de cenas, mapas WebRTC/alternativa WebSocket/falha, percursos, moldes, grade e decoracoes; medir fluidez e investigar variacao de abertura no computador de referencia. Visao dinamica, paredes/portas, iluminacao vinculada e giro foram removidos na integracao de 2026-10-29 e nao sao requisitos da Mesa atual. Testes locais reais e pacote minificado nao substituem round-trip autenticado da campanha. — aberta em 2026-09-20 (homologacao da Mesa, atualizada ao estado presente)
